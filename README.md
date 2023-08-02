@@ -2,6 +2,12 @@
 
 ...
 
+## Installing docker
+
+Installation on Mac: https://docs.docker.com/desktop/install/mac-install/
+
+Installation on Windows: https://docs.docker.com/desktop/install/windows-install/
+
 ## Creating a docker image to be shared
 
 Docker images can be quite large and so distributing via pypi is not an option. One common method of sharing is to use the docker repository. However, for now, we instead save the built images as an executable .tar file which can be distributed like any other file.
