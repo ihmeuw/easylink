@@ -23,8 +23,8 @@ import pandas as pd, numpy as np
     
 
 
-reference_file = pd.read_parquet('generate_simulated_data/reference_file_sample.parquet')
-census_2030 = pd.read_parquet('generate_simulated_data/census_2030_sample.parquet')
+reference_file = pd.read_parquet('input_data/reference_file_sample.parquet')
+census_2030 = pd.read_parquet('input_data/census_2030_sample.parquet')
     
 
 
@@ -473,8 +473,8 @@ census_2030.pik.notnull().mean()
 
 
 
-census_2030_ground_truth = pd.read_parquet('generate_simulated_data/census_2030_ground_truth_sample.parquet').set_index('record_id').simulant_id
-reference_file_ground_truth = pd.read_parquet('generate_simulated_data/reference_file_ground_truth_sample.parquet').set_index('record_id').simulant_id
+census_2030_ground_truth = pd.read_parquet('input_data/census_2030_ground_truth_sample.parquet').set_index('record_id').simulant_id
+reference_file_ground_truth = pd.read_parquet('input_data/reference_file_ground_truth_sample.parquet').set_index('record_id').simulant_id
     
 
 
