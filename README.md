@@ -27,10 +27,12 @@ Dockerfile. refer to the `Creating a docker image to be shared` section, below.
 Assuming you have the image .tar file, you can run the pipeline by:
 
 ```
-$ 
 $ sh <path-to-repo>/run_step.sh <step>
-$ 
+$ # e.g. from linker/, `sh run_step.sh pvs_like_case_study_sample_data`
 ```
+
+This will run the step in the container and save the output file in the results
+folder.
 
 ### Requirements
 

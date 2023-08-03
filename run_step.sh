@@ -20,16 +20,22 @@ mkdir $dir/results
 
 echo "" &&
 echo "Loading image" &&
-docker load -i $dir/step.tar &&
+docker load -i $dir/step.tar
 image_id=$(docker images --filter=reference=$step --format "{{.ID}}")
+
 echo "" &&
 echo "Running the step" &&
 docker run --rm -v $dir:/app $image_id 2>&1 | tee $dir/results/$step.o &&
+
+echo "" &&
+echo "Moving results file into results/ directory" &&
 # TODO: mount the results folder and move it in the container itself
-mv census_2030_with_piks_sample.parquet $dir/results &&
+mv $dir/census_2030_with_piks_sample.parquet $dir/results/ &&
+
 echo "" &&
 echo "Removing image" &&
 docker rmi $image_id &&
+
 echo "" &&
 echo "*** finished ***" &&
 echo ""
