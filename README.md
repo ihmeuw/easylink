@@ -44,7 +44,7 @@ In the event you do not have the image file(s), you can create them from the
 Dockerfile. To do so, first ensure Docker is installed and then:
 
 ```
-$ cd linker/pvs_like_case_study_sample_data/docker/
+$ cd linker/pvs_like_case_study_sample_data/
 $ docker build -t pvs_like_case_study_sample_data --no-cache .
 $ # Convert to .tar
 $ docker save -o step.tar pvs_like_case_study_sample_data
