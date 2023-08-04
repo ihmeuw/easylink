@@ -21,18 +21,12 @@ entity resolution (ER) pipelines.
 NOTE: Each pipeline step gets its own sub-folder in the "linker/" parent
 directory, e.g. "linker/pvs_like_case_study_sample_data/".
 
-If the image file(s) (.tar) have not been provided, you can create them from the
-Dockerfile. refer to the `Creating a docker image to be shared` section, below.
-
-Assuming you have the image .tar file, you can run the pipeline by:
-
 ```
 $ sh <path-to-repo>/run_step.sh <step>
 $ # e.g. from linker/, `sh run_step.sh pvs_like_case_study_sample_data`
 ```
 
-This will run the step in the container and save the output file in the results
-folder.
+This will build the image from the Dockerfile, run the step in the container, and save the output file in the results folder.
 
 ### Requirements
 
@@ -40,10 +34,10 @@ TBD
 
 ## Creating a docker image to be shared
 
-Docker images can be quite large and so distributing via pypi is not an option. One common method of sharing is to use the docker repository. However, for now, we instead save the built images as an executable .tar file which can be distributed like any other file.
+The docker images are built from the Dockerfile. There may be unique situations,
+however, where you want to share a pre-built image. Images can be quite large and so distributing via pypi is not an option. One common method of sharing is to use the docker repository. Another one is to save the built image as an executable .tar file which can be distributed like any other file.
 
-In the event you do not have the image file(s), you can create them from the
-Dockerfile. To do so, first ensure Docker is installed and then:
+To create an image .tar file from a Dockerfile,  first ensure Docker is installed and then:
 
 ```
 $ cd linker/pvs_like_case_study_sample_data/

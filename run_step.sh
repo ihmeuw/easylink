@@ -19,13 +19,13 @@ step=$(basename $dir);
 mkdir $dir/results
 
 echo "" &&
-echo "Loading image" &&
-docker load -i $dir/step.tar
+echo "Building image" &&
+docker build -t $step --no-cache $dir 2>&1 | tee $dir/results/build.o
 image_id=$(docker images --filter=reference=$step --format "{{.ID}}")
 
 echo "" &&
 echo "Running the step" &&
-docker run --rm -v $dir:/app $image_id 2>&1 | tee $dir/results/$step.o &&
+docker run --rm -v $dir:/app $image_id 2>&1 | tee $dir/results/run.o &&
 
 echo "" &&
 echo "Moving results file into results/ directory" &&
