@@ -21,18 +21,15 @@ step=$(basename $dir);
 mkdir $dir/results
 
 echo ""
-echo "Building image"
-docker build -t $step --no-cache $dir 2>&1 | tee $dir/results/build.o
-image_id=$(docker images --filter=reference=$step --format "{{.ID}}")
+echo "Loading the image"
+# TODO: make flexibile to different compressions (bzip2 or xz) or no compression
+docker load -i $dir/image.tar.gz 2>&1 | tee $dir/results/docker.o
+image_id=$(docker images --filter=reference=linker:$step --format "{{.ID}}")
+echo "Loaded image with image ID $image_id"
 
 echo ""
 echo "Running the step"
-docker run --rm -v $dir:/app $image_id 2>&1 | tee $dir/results/run.o
-
-echo ""
-echo "Moving results file into results/ directory"
-# TODO: mount the results folder and move it in the container itself
-mv $dir/census_2030_with_piks_sample.parquet $dir/results/
+docker run --rm -v $dir/input_data:/app/input_data/ -v $dir/results:/app/results/ $image_id 2>&1 | tee -a $dir/results/docker.o
 
 echo ""
 echo "Removing image"

@@ -1,6 +1,5 @@
-FROM python:3.11
+FROM python:3.11-slim
 WORKDIR /app
-COPY . .
-# TODO: Do not copy everything b/c we want users to provide input data
+COPY pvs_like_case_study_sample_data.py requirements.txt ./
 RUN pip install -r requirements.txt
-CMD ["python", "pvs_like_case_study_sample_data.py"]
+CMD ["bash", "-c", "python pvs_like_case_study_sample_data.py && mv census_2030_with_piks_sample.parquet /app/results/"]
