@@ -22,7 +22,7 @@ mkdir $dir/results
 
 echo ""
 echo "Loading the image"
-# TODO: make flexibile to different compressions (bzip2 or xz) or no compression
+# TODO: make flexible to different compressions (bzip2 or xz) or no compression
 docker load -i $dir/image.tar.gz 2>&1 | tee $dir/results/docker.o
 image_id=$(docker images --filter=reference=linker:$step --format "{{.ID}}")
 echo "Loaded image with image ID $image_id"
