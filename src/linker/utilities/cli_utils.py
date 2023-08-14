@@ -1,8 +1,12 @@
 import functools
-from bdb import BdbQuit
-from typing import Any, Callable, TextIO
 import sys
+from bdb import BdbQuit
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, TextIO
+
 from loguru import logger
+
 
 def handle_exceptions(
     func: Callable, exceptions_logger: Any, with_debugger: bool
@@ -26,7 +30,6 @@ def handle_exceptions(
             raise
 
     return wrapped
-
 
 
 def configure_logging_to_terminal(verbose: int):
@@ -68,15 +71,21 @@ def _add_logging_sink(
         logger.add(
             sink,
             colorize=colorize,
-            level="WARNING",
+            level="INFO",
             format=message_format,
             serialize=serialize,
         )
-    elif verbose == 1:
+    elif verbose >= 1:
         logger.add(
-            sink, colorize=colorize, level="INFO", format=message_format, serialize=serialize
+            sink,
+            colorize=colorize,
+            level="DEBUG",
+            format=message_format,
+            serialize=serialize,
         )
-    elif verbose >= 2:
-        logger.add(
-            sink, colorize=colorize, level="DEBUG", format=message_format, serialize=serialize
-        )
+
+
+def get_output_dir():
+    launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    output_root = Path("results") / launch_time
+    return output_root.resolve()

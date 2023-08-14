@@ -1,0 +1,3 @@
+implementation:
+  # TODO: Add options for input dir and results dir
+  pvs_like_python: '/Users/sbachmei/repos/linker/steps/pvs_like_case_study_sample_data/'
