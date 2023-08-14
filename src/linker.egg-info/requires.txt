@@ -1,0 +1,12 @@
+click
+loguru
+
+[data]
+
+[dev]
+pytest
+pytest-mock
+
+[test]
+pytest
+pytest-mock
