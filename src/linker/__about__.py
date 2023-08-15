@@ -15,7 +15,7 @@ __uri__ = "https://github.com/ihmeuw/linker"
 
 __version__ = "0.0.1"
 
-__author__ = "The vivarium developers"
+__author__ = "The linker developers"
 __email__ = "vivarium.dev@gmail.com"
 
 __license__ = "BSD-3-Clause"
