@@ -1,4 +1,6 @@
 import functools
+import os
+import shutil
 import sys
 from bdb import BdbQuit
 from datetime import datetime
@@ -85,7 +87,16 @@ def _add_logging_sink(
         )
 
 
-def get_output_dir():
+def prepare_results_directory(pipeline_specification):
+    results_dir = _generate_results_dir_name()
+    _ = os.umask(0o002)
+    # TODO: Consider adding an output directory argument
+    results_dir.mkdir(parents=True, exist_ok=False)
+    shutil.copy(pipeline_specification, results_dir)
+    return results_dir
+
+
+def _generate_results_dir_name():
     launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     output_root = Path("results") / launch_time
     return output_root.resolve()

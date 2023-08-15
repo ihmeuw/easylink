@@ -1,5 +1,3 @@
-import os
-import shutil
 from pathlib import Path
 
 import click
@@ -8,8 +6,8 @@ from loguru import logger
 
 from linker.utilities.cli_utils import (
     configure_logging_to_terminal,
-    get_output_dir,
     handle_exceptions,
+    prepare_results_directory,
 )
 from linker.utilities.docker_utils import (
     is_docker_daemon_running,
@@ -63,11 +61,7 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
-    results_dir = get_output_dir()
-    _ = os.umask(0o002)
-    # TODO: Consider adding an output directory argument
-    results_dir.mkdir(parents=True, exist_ok=False)
-    shutil.copy(pipeline_specification, results_dir)
+    results_dir = prepare_results_directory(pipeline_specification)
     main = handle_exceptions(
         func=_run, exceptions_logger=logger, with_debugger=with_debugger
     )
