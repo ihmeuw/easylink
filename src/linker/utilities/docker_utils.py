@@ -48,6 +48,6 @@ def remove_docker_image(image_id):
     try:
         client = docker.from_env()
         client.images.remove(image_id)
-        print(f"Removed image {image_id}")
+        logger.info(f"Removed image {image_id}")
     except Exception as e:
-        print(f"Error removing image {image_id}: {e}")
+        logger.error(f"Error removing image {image_id}: {e}")
