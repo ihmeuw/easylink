@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import click
@@ -78,7 +79,18 @@ def _run(computing_environment: str, pipeline_specification: Path, results_dir: 
         with open(pipeline_specification, "r") as f:
             pipeline = yaml.full_load(f)
         # TODO: make pipeline implementation generic
-        step_dir = Path(pipeline["implementation"]["pvs_like_python"])
+        implementation = pipeline["implementation"]
+        if implementation == "pvs_like_python":
+            # TODO: stop hard-coding filepaths
+            step_dir = (
+                Path(os.path.realpath(__file__)).parent.parent.parent
+                / "steps"
+                / "pvs_like_case_study_sample_data"
+            )
+        else:
+            raise NotImplementedError(
+                f"No support for impementation '{implementation}'"
+            )
         # TODO: implement singularity
         image_id = load_docker_image(step_dir / "image.tar.gz")
         run_docker_container(image_id, step_dir / "input_data", results_dir)
