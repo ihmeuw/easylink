@@ -1,4 +1,5 @@
 import os
+import subprocess
 from pathlib import Path
 
 import click
@@ -11,10 +12,15 @@ from linker.utilities.cli_utils import (
     prepare_results_directory,
 )
 from linker.utilities.docker_utils import (
-    is_docker_daemon_running,
+    confirm_docker_daemon_running,
     load_docker_image,
     remove_docker_image,
     run_docker_container,
+)
+from linker.utilities.singularity_utils import (
+    build_singularity_container,
+    clean_up_singularity,
+    run_singularity_container,
 )
 
 
@@ -71,30 +77,40 @@ def run(
 
 
 def _run(computing_environment: str, pipeline_specification: Path, results_dir: Path):
+    with open(pipeline_specification, "r") as f:
+        pipeline = yaml.full_load(f)
+    # TODO: make pipeline implementation generic
+    implementation = pipeline["implementation"]
+    if implementation == "pvs_like_python":
+        # TODO: stop hard-coding filepaths
+        step_dir = (
+            Path(os.path.realpath(__file__)).parent.parent.parent
+            / "steps"
+            / "pvs_like_case_study_sample_data"
+        )
+    else:
+        raise NotImplementedError(f"No support for impementation '{implementation}'")
     if computing_environment == "local":
-        if not is_docker_daemon_running():
-            raise EnvironmentError(
-                "The Docker daemon is not running; please start Docker."
-            )
-        with open(pipeline_specification, "r") as f:
-            pipeline = yaml.full_load(f)
-        # TODO: make pipeline implementation generic
-        implementation = pipeline["implementation"]
-        if implementation == "pvs_like_python":
-            # TODO: stop hard-coding filepaths
-            step_dir = (
-                Path(os.path.realpath(__file__)).parent.parent.parent
-                / "steps"
-                / "pvs_like_case_study_sample_data"
-            )
-        else:
-            raise NotImplementedError(
-                f"No support for impementation '{implementation}'"
-            )
-        # TODO: implement singularity
-        image_id = load_docker_image(step_dir / "image.tar.gz")
-        run_docker_container(image_id, step_dir / "input_data", results_dir)
-        remove_docker_image(image_id)
+        try:  # docker
+            logger.info("Trying to run container with docker")
+            confirm_docker_daemon_running()
+            image_id = load_docker_image(step_dir / "image.tar.gz")
+            run_docker_container(image_id, step_dir / "input_data", results_dir)
+            remove_docker_image(image_id)
+        except Exception as e_docker:
+            logger.warning("Docker failed; trying to run container with singularity")
+            try:  # singularity
+                build_singularity_container(results_dir, step_dir)
+                run_singularity_container(results_dir, step_dir)
+                # remove singulaity image from cache?
+                clean_up_singularity(results_dir, step_dir)
+            except subprocess.CalledProcessError as e_singularity:
+                raise RuntimeError(
+                    f"Both docker and singularity failed:\n"
+                    f"    Docker error: {e_docker}\n"
+                    f"    Singularity error: {str(e_singularity.output)}"
+                )
+
     else:
         raise NotImplementedError(
             "only --computing-invironment 'local' is supported; "

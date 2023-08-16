@@ -42,10 +42,13 @@ To create an image .tar file from a Dockerfile, first ensure Docker is installed
 then convert like the following example:
 
 ```
-$ cd <path/to/repositories>/linker/pvs_like_case_study_sample_data/
-$ docker build -t linker:pvs_like_case_study_sample_data .
-$ docker save linker | gzip > image.tar.gz
-$ docker rmi linker
+$ cd <path/to/repositories>/linker/steps/pvs_like_case_study_sample_data/
+$ # build the image
+$ sudo docker build -t linker:pvs_like_case_study_sample_data .
+$ # save as compressed tarball
+$ sudo docker save linker | gzip > image.tar.gz
+$ # remove the image
+$ sudo docker rmi linker:pvs_like_case_study_sample_data
 ```
 
 You should now have a step.tar image file alongside the Dockerfile which can be

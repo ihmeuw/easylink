@@ -18,6 +18,7 @@ if __name__ == "__main__":
         "click",
         "docker",
         "loguru",
+        "pyyaml",
     ]
 
     # use "pip install -e .[dev]" to install required components + extra components
