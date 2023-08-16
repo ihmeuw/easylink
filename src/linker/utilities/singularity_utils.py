@@ -25,7 +25,7 @@ def run_singularity_container(results_dir: Path, step_dir: Path) -> None:
 
 
 def _run_cmd(results_dir: Path, cmd: str) -> None:
-    logger.info(f"Command: {cmd}")
+    logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
     process = subprocess.run(
         cmd,

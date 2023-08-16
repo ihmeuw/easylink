@@ -100,11 +100,9 @@ def _run(computing_environment: str, pipeline_specification: Path, results_dir: 
             # TODO: clean up image even if error raised
             remove_docker_image(image_id)
         except Exception as e_docker:
-            logger.warning(
-                f"Docker failed with error: '{e_docker}'\n"
-                "Trying to run container with singularity"
-            )
+            logger.warning(f"Docker failed with error: '{e_docker}'")
             try:  # singularity
+                logger.info("Trying to run container with singularity")
                 build_singularity_container(results_dir, step_dir)
                 run_singularity_container(results_dir, step_dir)
                 # remove singulaity image from cache?
