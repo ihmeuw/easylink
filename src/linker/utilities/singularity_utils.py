@@ -27,15 +27,18 @@ def run_singularity_container(results_dir: Path, step_dir: Path) -> None:
 def _run_cmd(results_dir: Path, cmd: str) -> None:
     logger.info(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
-    output = subprocess.run(
+    process = subprocess.run(
         cmd,
         shell=True,
         capture_output=True,
         text=True,
     )
+    if process.returncode != 0:
+        raise RuntimeError(f"Error running command {cmd}\n" f"Error: {process.stderr}")
+
     with (results_dir / "singularity.o").open(mode="a") as output_file:
-        output_file.write(f"{output.stdout}\n")
-        output_file.write(output.stderr)
+        output_file.write(f"{process.stdout}\n")
+        output_file.write(process.stderr)
 
 
 def clean_up_singularity(results_dir: Path, step_dir: Path) -> None:

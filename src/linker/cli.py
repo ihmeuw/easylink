@@ -81,6 +81,7 @@ def _run(computing_environment: str, pipeline_specification: Path, results_dir: 
         pipeline = yaml.full_load(f)
     # TODO: make pipeline implementation generic
     implementation = pipeline["implementation"]
+    # TODO: get a handle on exception handling and logging
     if implementation == "pvs_like_python":
         # TODO: stop hard-coding filepaths
         step_dir = (
@@ -96,23 +97,27 @@ def _run(computing_environment: str, pipeline_specification: Path, results_dir: 
             confirm_docker_daemon_running()
             image_id = load_docker_image(step_dir / "image.tar.gz")
             run_docker_container(image_id, step_dir / "input_data", results_dir)
+            # TODO: clean up image even if error raised
             remove_docker_image(image_id)
         except Exception as e_docker:
-            logger.warning("Docker failed; trying to run container with singularity")
+            logger.warning(
+                f"Docker failed with error: '{e_docker}'\n"
+                "Trying to run container with singularity"
+            )
             try:  # singularity
                 build_singularity_container(results_dir, step_dir)
                 run_singularity_container(results_dir, step_dir)
                 # remove singulaity image from cache?
                 clean_up_singularity(results_dir, step_dir)
-            except subprocess.CalledProcessError as e_singularity:
+            except Exception as e_singularity:
                 raise RuntimeError(
                     f"Both docker and singularity failed:\n"
                     f"    Docker error: {e_docker}\n"
-                    f"    Singularity error: {str(e_singularity.output)}"
+                    f"    Singularity error: {str(e_singularity)}"
                 )
 
     else:
         raise NotImplementedError(
             "only --computing-invironment 'local' is supported; "
-            "provided {computing_environment}"
+            f"provided '{computing_environment}'"
         )
