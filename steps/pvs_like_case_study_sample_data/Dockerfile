@@ -1,5 +1,7 @@
 FROM python:3.11-slim
 WORKDIR /app
+VOLUME /app/results
+VOLUME /app/input_data
 COPY pvs_like_case_study_sample_data.py requirements.txt ./
 RUN pip install -r requirements.txt
 CMD ["bash", "-c", \
