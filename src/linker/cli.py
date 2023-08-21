@@ -32,8 +32,7 @@ def linker():
 )
 @click.option(
     "--container-engine",
-    default="unknown",
-    show_default=True,
+    required=True,
     type=click.Choice(["docker", "singularity", "unknown"]),
     help=(
         "The framework to be used to run the pipeline step containers. "
@@ -88,7 +87,7 @@ def _run(pipeline_specification: Path, container_engine: str, computing_environm
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
    
-    if compute_config[computing_environment] == "local":
+    if compute_config["computing_environment"] == "local":
         if container_engine == "docker":
             run_with_docker(results_dir, step_dir)
         elif container_engine == "singularity":
@@ -106,7 +105,7 @@ def _run(pipeline_specification: Path, container_engine: str, computing_environm
                         f"    Docker error: {e_docker}\n"
                         f"    Singularity error: {str(e_singularity)}"
                     )
-    elif compute_config[computing_environment] == "slurm":
+    elif compute_config["computing_environment"] == "slurm":
         raise NotImplementedError(
             "only --computing-invironment 'local' is supported; "
             f"provided '{computing_environment}'"
