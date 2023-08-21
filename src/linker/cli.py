@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from typing import Union
-
 import click
 from loguru import logger
 
@@ -29,7 +27,8 @@ def linker():
 )
 @click.option(
     "--container-engine",
-    required=True,
+    default="unknown",
+    show_default=True,
     type=click.Choice(["docker", "singularity", "unknown"]),
     help=(
         "The framework to be used to run the pipeline step containers. "
