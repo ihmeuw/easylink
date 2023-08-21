@@ -1,9 +1,6 @@
-import os
-import subprocess
 from pathlib import Path
 
 import click
-import yaml
 from loguru import logger
 
 from linker.utilities.cli_utils import (
@@ -17,6 +14,7 @@ from linker.utilities.docker_utils import (
     remove_docker_image,
     run_docker_container,
 )
+from linker.utilities.pipeline_utils import get_steps
 from linker.utilities.singularity_utils import (
     build_singularity_container,
     clean_up_singularity,
@@ -77,20 +75,7 @@ def run(
 
 
 def _run(computing_environment: str, pipeline_specification: Path, results_dir: Path):
-    with open(pipeline_specification, "r") as f:
-        pipeline = yaml.full_load(f)
-    # TODO: make pipeline implementation generic
-    implementation = pipeline["implementation"]
-    # TODO: get a handle on exception handling and logging
-    if implementation == "pvs_like_python":
-        # TODO: stop hard-coding filepaths
-        step_dir = (
-            Path(os.path.realpath(__file__)).parent.parent.parent
-            / "steps"
-            / "pvs_like_case_study_sample_data"
-        )
-    else:
-        raise NotImplementedError(f"No support for impementation '{implementation}'")
+    step_dir = get_steps(pipeline_specification)
     if computing_environment == "local":
         try:  # docker
             logger.info("Trying to run container with docker")
