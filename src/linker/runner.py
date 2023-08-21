@@ -7,7 +7,7 @@ from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.pipeline_utils import get_steps
 from linker.utilities.singularity_utils import run_with_singularity
 
-def run(pipeline_specification: Path, container_engine: str, computing_environment: str, results_dir: Path):
+def main(pipeline_specification: Path, container_engine: str, computing_environment: str, results_dir: Path):
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
    

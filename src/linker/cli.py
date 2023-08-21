@@ -73,7 +73,7 @@ def run(
     configure_logging_to_terminal(verbose)
     results_dir = prepare_results_directory(pipeline_specification, computing_environment)
     main = handle_exceptions(
-        func=runner.run, exceptions_logger=logger, with_debugger=with_debugger
+        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(pipeline_specification, container_engine, computing_environment, results_dir)
     logger.info("*** FINISHED ***")
