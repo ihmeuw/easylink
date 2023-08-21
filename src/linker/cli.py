@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from typing import Union
+
 import click
 from loguru import logger
 
