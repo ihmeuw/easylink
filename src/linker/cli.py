@@ -29,8 +29,7 @@ def linker():
 )
 @click.option(
     "--container-engine",
-    default="unknown",
-    show_default=True,
+    required=True,
     type=click.Choice(["docker", "singularity", "unknown"]),
     help=(
         "The framework to be used to run the pipeline step containers. "
