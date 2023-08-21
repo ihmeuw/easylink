@@ -11,7 +11,7 @@ def get_steps(pipeline_specification: Path) -> Path:
     if implementation == "pvs_like_python":
         # TODO: stop hard-coding filepaths
         step_dir = (
-            Path(os.path.realpath(__file__)).parent.parent.parent
+            Path(os.path.realpath(__file__)).parent.parent.parent.parent
             / "steps"
             / "pvs_like_case_study_sample_data"
         )

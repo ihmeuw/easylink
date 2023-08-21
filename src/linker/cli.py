@@ -45,7 +45,7 @@ def linker():
     "--computing-environment",
     default="local",
     show_default=True,
-    type=click.Path(exists=False, dir_okay=False, resolve_path=False),
+    type=click.STRING,
     help=(
         "The computing environment on which to launch the step. Can be either "
         "'local' or a path to an environment.yaml file."
@@ -64,7 +64,7 @@ def linker():
 def run(
     pipeline_specification: Path,
     container_engine: str,
-    computing_environment: Union[str, Path],
+    computing_environment: str,
     verbose: int,
     with_debugger: bool,
 ) -> None:
@@ -75,7 +75,7 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
-    results_dir = prepare_results_directory(pipeline_specification)
+    results_dir = prepare_results_directory(pipeline_specification, computing_environment)
     main = handle_exceptions(
         func=_run, exceptions_logger=logger, with_debugger=with_debugger
     )
@@ -83,7 +83,7 @@ def run(
     logger.info("*** FINISHED ***")
 
 
-def _run(pipeline_specification: Path, container_engine: str, computing_environment: Union[Path, str], results_dir: Path):
+def _run(pipeline_specification: Path, container_engine: str, computing_environment: str, results_dir: Path):
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
    

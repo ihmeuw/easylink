@@ -1,8 +1,8 @@
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Dict, Union
 import yaml
 
-def get_compute_config(computing_environment: Union[str, Path]) -> Dict[str, Union[Dict, str]]:
+def get_compute_config(computing_environment: str) -> Dict[str, Union[Dict, str]]:
     if computing_environment == "local":
         return {"computing_environment": "local"}
     else:
