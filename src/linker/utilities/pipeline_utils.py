@@ -2,7 +2,7 @@ import os
 import yaml
 from pathlib import Path
 
-def get_steps(pipeline_specification):
+def get_steps(pipeline_specification: Path) -> Path:
     with open(pipeline_specification, "r") as f:
         pipeline = yaml.full_load(f)
     # TODO: make pipeline implementation generic

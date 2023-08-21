@@ -11,18 +11,9 @@ from linker.utilities.cli_utils import (
     prepare_results_directory,
 )
 from linker.utilities.env_utils import get_compute_config
-from linker.utilities.docker_utils import (
-    confirm_docker_daemon_running,
-    load_docker_image,
-    remove_docker_image,
-    run_docker_container,
-)
+from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.pipeline_utils import get_steps
-from linker.utilities.singularity_utils import (
-    build_singularity_container,
-    clean_up_singularity,
-    run_singularity_container,
-)
+from linker.utilities.singularity_utils import run_with_singularity
 
 
 @click.group()
@@ -38,6 +29,18 @@ def linker():
 @click.argument(
     "pipeline_specification",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+)
+@click.option(
+    "--container-engine",
+    default="unknown",
+    show_default=True,
+    type=click.Choice(["docker", "singularity", "unknown"]),
+    help=(
+        "The framework to be used to run the pipeline step containers. "
+        "Options include 'docker', 'singularity', or 'unknown'. If 'unknown' is "
+        "used, the tool will first try to run with Docker and if that fails "
+        "will then try to run with Singularity."
+    ),
 )
 @click.option(
     "--computing-environment",
@@ -61,6 +64,7 @@ def linker():
 )
 def run(
     pipeline_specification: Path,
+    container_engine: str,
     computing_environment: Union[str, Path],
     verbose: int,
     with_debugger: bool,
@@ -76,39 +80,39 @@ def run(
     main = handle_exceptions(
         func=_run, exceptions_logger=logger, with_debugger=with_debugger
     )
-    main(pipeline_specification, computing_environment, results_dir)
+    main(pipeline_specification, container_engine, computing_environment, results_dir)
     logger.info("*** FINISHED ***")
 
 
-def _run(pipeline_specification: Path, computing_environment: Union[Path, str], results_dir: Path):
+def _run(pipeline_specification: Path, container_engine: str, computing_environment: Union[Path, str], results_dir: Path):
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
+   
     if compute_config[computing_environment] == "local":
-        try:  # docker
-            logger.info("Trying to run container with docker")
-            confirm_docker_daemon_running()
-            image_id = load_docker_image(step_dir / "image.tar.gz")
-            run_docker_container(image_id, step_dir / "input_data", results_dir)
-            # TODO: clean up image even if error raised
-            remove_docker_image(image_id)
-        except Exception as e_docker:
-            logger.warning(f"Docker failed with error: '{e_docker}'")
-            try:  # singularity
-                logger.info("Trying to run container with singularity")
-                build_singularity_container(results_dir, step_dir)
-                run_singularity_container(results_dir, step_dir)
-                # remove singulaity image from cache?
-                clean_up_singularity(results_dir, step_dir)
-            except Exception as e_singularity:
-                raise RuntimeError(
-                    f"Both docker and singularity failed:\n"
-                    f"    Docker error: {e_docker}\n"
-                    f"    Singularity error: {str(e_singularity)}"
-                )
+        if container_engine == "docker":
+            run_with_docker(results_dir, step_dir)
+        elif container_engine == "singularity":
+            run_with_singularity(results_dir, step_dir)
+        else:  # "unknown"
+            try:
+                run_with_docker(results_dir, step_dir)
+            except Exception as e_docker:
+                logger.warning(f"Docker failed with error: '{e_docker}'")
+                try:
+                    run_with_singularity(results_dir, step_dir)
+                except Exception as e_singularity:
+                    raise RuntimeError(
+                        f"Both docker and singularity failed:\n"
+                        f"    Docker error: {e_docker}\n"
+                        f"    Singularity error: {str(e_singularity)}"
+                    )
     elif compute_config[computing_environment] == "slurm":
-        pass
+        raise NotImplementedError(
+            "only --computing-invironment 'local' is supported; "
+            f"provided '{computing_environment}'"
+        )
     else:
         raise NotImplementedError(
-            "only --computing-invironment 'local' or 'slurm' is supported; "
+            "only --computing-invironment 'local' is supported; "
             f"provided '{computing_environment}'"
         )
