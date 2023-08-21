@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from typing import Union
+
 import click
 from loguru import logger
 
@@ -8,6 +10,7 @@ from linker.utilities.cli_utils import (
     handle_exceptions,
     prepare_results_directory,
 )
+from linker.utilities.env_utils import get_compute_config
 from linker.utilities.docker_utils import (
     confirm_docker_daemon_running,
     load_docker_image,
@@ -40,8 +43,11 @@ def linker():
     "--computing-environment",
     default="local",
     show_default=True,
-    type=click.Choice(["local"]),
-    help=("The computing environment on which to launch the step."),
+    type=click.Path(exists=False, dir_okay=False, resolve_path=False),
+    help=(
+        "The computing environment on which to launch the step. Can be either "
+        "'local' or a path to an environment.yaml file."
+    ),
 )
 @click.option(
     "-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True
@@ -55,7 +61,7 @@ def linker():
 )
 def run(
     pipeline_specification: Path,
-    computing_environment: str,
+    computing_environment: Union[str, Path],
     verbose: int,
     with_debugger: bool,
 ) -> None:
@@ -70,13 +76,14 @@ def run(
     main = handle_exceptions(
         func=_run, exceptions_logger=logger, with_debugger=with_debugger
     )
-    main(computing_environment, pipeline_specification, results_dir)
+    main(pipeline_specification, computing_environment, results_dir)
     logger.info("*** FINISHED ***")
 
 
-def _run(computing_environment: str, pipeline_specification: Path, results_dir: Path):
+def _run(pipeline_specification: Path, computing_environment: Union[Path, str], results_dir: Path):
     step_dir = get_steps(pipeline_specification)
-    if computing_environment == "local":
+    compute_config = get_compute_config(computing_environment)
+    if compute_config[computing_environment] == "local":
         try:  # docker
             logger.info("Trying to run container with docker")
             confirm_docker_daemon_running()
@@ -98,9 +105,10 @@ def _run(computing_environment: str, pipeline_specification: Path, results_dir: 
                     f"    Docker error: {e_docker}\n"
                     f"    Singularity error: {str(e_singularity)}"
                 )
-
+    elif compute_config[computing_environment] == "slurm":
+        pass
     else:
         raise NotImplementedError(
-            "only --computing-invironment 'local' is supported; "
+            "only --computing-invironment 'local' or 'slurm' is supported; "
             f"provided '{computing_environment}'"
         )
