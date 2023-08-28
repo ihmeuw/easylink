@@ -3,12 +3,12 @@ from pathlib import Path
 import click
 from loguru import logger
 
+from linker import runner
 from linker.utilities.cli_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
     prepare_results_directory,
 )
-from linker import runner
 
 
 @click.group()
@@ -71,7 +71,9 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
-    results_dir = prepare_results_directory(pipeline_specification, computing_environment)
+    results_dir = prepare_results_directory(
+        pipeline_specification, computing_environment
+    )
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )

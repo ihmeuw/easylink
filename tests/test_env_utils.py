@@ -1,5 +1,7 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from linker.utilities.env_utils import get_compute_config
 
 
@@ -25,4 +27,6 @@ def test_get_compute_env_local():
 
 
 def test_get_compute_env_yaml():
-    assert isinstance(get_compute_config("src/linker/configuration/environment.yaml"), dict)
+    assert isinstance(
+        get_compute_config("src/linker/configuration/environment.yaml"), dict
+    )

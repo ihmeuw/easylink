@@ -9,7 +9,7 @@ def run_with_docker(results_dir: Path, step_dir: Path) -> None:
     _confirm_docker_daemon_running()
     image_id = _load_image(step_dir / "image.tar.gz")
     _run_container(image_id, step_dir / "input_data", results_dir)
-            # TODO: clean up image even if error raised
+    # TODO: clean up image even if error raised
     _remove_image(image_id)
 
 
@@ -38,9 +38,7 @@ def _load_image(image_path: Path) -> str:
     return image_id
 
 
-def _run_container(
-    image_id: str, input_data_path: Path, results_dir: Path
-) -> None:
+def _run_container(image_id: str, input_data_path: Path, results_dir: Path) -> None:
     logger.info(f"Running the container from image {image_id}")
     client = docker.from_env()
     volumes = {

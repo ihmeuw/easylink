@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Dict, Union
+
 import yaml
+
 
 def get_compute_config(computing_environment: str) -> Dict[str, Union[Dict, str]]:
     if computing_environment == "local":
@@ -14,5 +16,5 @@ def get_compute_config(computing_environment: str) -> Dict[str, Union[Dict, str]
             )
     with open(compute_env, "r") as f:
         compute_env = yaml.full_load(f)
-    
+
     return compute_env

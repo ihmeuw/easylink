@@ -10,6 +10,7 @@ def run_with_singularity(results_dir: Path, step_dir: Path) -> None:
     _run_container(results_dir, step_dir)
     _clean(results_dir, step_dir)
 
+
 def _build_container(results_dir: Path, step_dir: Path) -> None:
     cmd = (
         f"singularity build {step_dir}/image.sif "

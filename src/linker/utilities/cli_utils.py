@@ -87,7 +87,9 @@ def _add_logging_sink(
         )
 
 
-def prepare_results_directory(pipeline_specification: Path, computing_environment: str) -> Path:
+def prepare_results_directory(
+    pipeline_specification: Path, computing_environment: str
+) -> Path:
     results_dir = _generate_results_dir_name()
     _ = os.umask(0o002)
     # TODO: Consider adding an output directory argument
