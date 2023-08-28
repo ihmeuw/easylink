@@ -3,6 +3,6 @@ computing_environment:
     implementation_resources:
       memory: 10  # GB
       cpus: 2
-      time_limit: 24  # hours
+      time_limit: 1  # hours
       account: proj_simscience
       partition: all.q

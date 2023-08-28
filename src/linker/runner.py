@@ -1,9 +1,12 @@
+import os
+import shutil
+import socket
 from pathlib import Path
+from typing import Any, Dict, NamedTuple
 
 from loguru import logger
-import shutil
-from typing import Dict, Any
 
+from linker.utilities.cli_utils import prepare_results_directory
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.env_utils import get_compute_config
 from linker.utilities.pipeline_utils import get_steps
@@ -14,12 +17,16 @@ def main(
     pipeline_specification: Path,
     container_engine: str,
     computing_environment: str,
-    results_dir: Path,
 ):
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
 
     if compute_config["computing_environment"] == "local":
+        # NOTE: All variations of running the pipeline converge to `--computing-environment local`
+        # and so we define the results directory there
+        results_dir = prepare_results_directory(
+            pipeline_specification, computing_environment
+        )
         if container_engine == "docker":
             run_with_docker(results_dir, step_dir)
         elif container_engine == "singularity":
@@ -38,7 +45,16 @@ def main(
                         f"    Singularity error: {str(e_singularity)}"
                     )
     elif [k for k in compute_config["computing_environment"]][0] == "slurm":
-        launch_slurm_job(compute_config)
+        hostname = socket.gethostname()
+        if "slurm" not in hostname:
+            raise RuntimeError(
+                f"Specified a 'slurm' computing-environment but on host {hostname}"
+            )
+        launch_slurm_job(
+            pipeline_specification,
+            container_engine,
+            compute_config,
+        )
 
     else:
         raise NotImplementedError(
@@ -46,69 +62,78 @@ def main(
             f"provided '{computing_environment}'"
         )
 
-def launch_slurm_job(compute_config: Dict[str, Dict]):
-    resources = compute_config["computing_environment"]["slurm"]["implementation_resources"]
-    breakpoint()
-    drmaa = _get_drmaa()
-    # with drmaa.Session() as s:
-    #     jt = s.createJobTemplate()
-    #     jt.remoteCommand = shutil.which("linker")
-    #     jt.args = ["run"]
-    #     jt.outputPath = f":{str(cluster_logging_root / '%A.%a.log')}"
-    #     jt.errorPath = f":{str(cluster_logging_root / '%A.%a.log')}"
-    #     jt.jobEnvironment = {
-    #         "LC_ALL": "en_US.UTF-8",
-    #         "LANG": "en_US.UTF-8",
-    #     }
-    #     jt.joinFiles = True
-    #     jt.nativeSpecification = native_specification.to_cli_args()
 
-    #     job_ids = s.runBulkJobs(jt, 1, num_workers, 1)
-    #     array_job_id = job_ids[0].split(".")[0]
+def launch_slurm_job(
+    pipeline_specification: Path,
+    container_engine: str,
+    results_dir: Path,
+    compute_config: Dict[str, Dict],
+    launch_time: str,
+) -> None:
+    resources = compute_config["computing_environment"]["slurm"][
+        "implementation_resources"
+    ]
+    drmaa = get_slurm_drmaa()
+    s = drmaa.Session()
+    s.initialize()
+    jt = s.createJobTemplate()
+    jt.jobName = f"linker_run_{launch_time}"
+    jt.joinFiles = False  # keeps stdout separate from stderr
+    jt.outputPath = f":{str(results_dir / '%A.o%a')}"
+    jt.errorPath = f":{str(results_dir / '%A.e%a')}"
+    jt.remoteCommand = shutil.which("linker")
+    jt.args = [
+        "run",
+        str(pipeline_specification),
+        "--container-engine",
+        container_engine,
+        "--computing-environment",
+        "local",  # Running 'local' on landed node
+        "-vvv",
+    ]
+    jt.jobEnvironment = {
+        "LC_ALL": "en_US.UTF-8",
+        "LANG": "en_US.UTF-8",
+    }
+    native_specification = NativeSpecification(
+        job_name=jt.jobName,
+        account=resources["account"],
+        partition=resources["partition"],
+        peak_memory=resources["memory"],
+        max_runtime=resources["time_limit"],
+        num_threads=resources["cpus"],
+    )
+    jt.nativeSpecification = native_specification.to_cli_args()
+    job_id = s.runJob(jt)
+    logger.info(f"Job submitted with jobid '{job_id}'")
+    s.deleteJobTemplate(jt)
+    s.exit()
 
-    #     def kill_jobs() -> None:
-    #         try:
-    #             s.control(array_job_id, drmaa.JobControlAction.TERMINATE)
-    #         # FIXME: Hack around issue where drmaa.errors sometimes doesn't
-    #         #        exist.
-    #         except Exception as e:
-    #             if "already completing" in str(e) or "Invalid job" in str(e):
-    #                 # This is the case where all our workers have already shut down
-    #                 # on their own, which isn't actually an error.
-    #                 pass
-    #             else:
-    #                 raise
+class NativeSpecification(NamedTuple):
+    job_name: str
+    account: str
+    partition: str
+    peak_memory: int  # GB
+    max_runtime: int  # hours
+    num_threads: int
 
-    #     atexit.register(kill_jobs)
+    def to_cli_args(self):
+        return (
+            f"-J {self.job_name} "
+            f"-A {self.account} "
+            f"-p {self.partition} "
+            f"--mem={self.peak_memory*1024} "
+            f"-t {self.max_runtime}:00:00 "
+            f"-c {self.num_threads}"
+        )
 
-# class NativeSpecification(NamedTuple):
-#     job_name: str
-#     project: str
-#     queue: str
-#     peak_memory: str
-#     max_runtime: str
 
-#     # Class constant
-#     NUM_THREADS: int = 1
-
-#     def to_cli_args(self):
-#         return (
-#             f"-J {self.job_name} "
-#             f"-A {self.project} "
-#             f"-p {self.queue} "
-#             f"--mem={self.peak_memory*1024} "
-#             f"-t {self.max_runtime} "
-#             f"-c {self.NUM_THREADS}"
-#         )
-
-def _get_drmaa() -> Any:
+def get_slurm_drmaa() -> Any:
     """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
     try:
         import drmaa
     except (RuntimeError, OSError):
-        # if "slurm" in ENV_VARIABLES.HOSTNAME.value:
-        #     ENV_VARIABLES.DRMAA_LIB_PATH.update("/opt/slurm-drmaa/lib/libdrmaa.so")
-        #     import drmaa
-        # else:
-        drmaa = object()
+        os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
+        import drmaa
+
     return drmaa
