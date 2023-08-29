@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 from linker.utilities.env_utils import get_compute_config
+from tests.unit.conftest import ENV_CONFIG_DICT
 
 
 @pytest.mark.parametrize(
@@ -24,5 +25,6 @@ def test_get_compute_env_local():
     assert get_compute_config("local")["computing_environment"] == "local"
 
 
-def test_get_compute_env_yaml():
-    assert isinstance(get_compute_config("src/linker/configuration/environment.yaml"), dict)
+def test_get_compute_env_yaml(env_config_path):
+    config = get_compute_config(f"{env_config_path}/environment.yaml")
+    assert config == ENV_CONFIG_DICT
