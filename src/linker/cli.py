@@ -4,10 +4,7 @@ import click
 from loguru import logger
 
 from linker import runner
-from linker.utilities.cli_utils import (
-    configure_logging_to_terminal,
-    handle_exceptions,
-)
+from linker.utilities.cli_utils import configure_logging_to_terminal, handle_exceptions
 
 
 @click.group()

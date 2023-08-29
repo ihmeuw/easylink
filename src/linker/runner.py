@@ -109,6 +109,7 @@ def launch_slurm_job(
     s.deleteJobTemplate(jt)
     s.exit()
 
+
 class NativeSpecification(NamedTuple):
     job_name: str
     account: str

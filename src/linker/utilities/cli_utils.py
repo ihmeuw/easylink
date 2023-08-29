@@ -5,7 +5,7 @@ import sys
 from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, TextIO, Tuple
+from typing import Any, Callable, TextIO
 
 from loguru import logger
 
