@@ -4,7 +4,11 @@ import click
 from loguru import logger
 
 from linker import runner
-from linker.utilities.cli_utils import configure_logging_to_terminal, handle_exceptions
+from linker.utilities.cli_utils import (
+    configure_logging_to_terminal,
+    handle_exceptions,
+    prepare_results_directory,
+)
 
 
 @click.group()
@@ -54,7 +58,7 @@ def linker():
     hidden=True,
 )
 def run(
-    pipeline_specification: Path,
+    pipeline_specification: str,
     container_engine: str,
     computing_environment: str,
     verbose: int,
@@ -66,13 +70,55 @@ def run(
 
     Results will be written to the working directory.
     """
+    pipeline_specification = Path(pipeline_specification)
     configure_logging_to_terminal(verbose)
+    results_dir = prepare_results_directory(
+        pipeline_specification, computing_environment
+    )
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(
-        pipeline_specification,
-        container_engine,
-        computing_environment,
+        pipeline_specification=pipeline_specification,
+        container_engine=container_engine,
+        computing_environment=computing_environment,
+        results_dir=results_dir,
+    )
+    logger.info("*** FINISHED ***")
+
+
+@linker.command()
+@click.argument(
+    "pipeline_specification",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+)
+@click.argument(
+    "container_engine",
+    type=click.Choice(["docker", "singularity", "unknown"]),
+)
+@click.argument(
+    "results_dir",
+    type=click.Path(exists=True, resolve_path=True),
+)
+@click.option(
+    "-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True
+)
+def run_slurm_job(
+    pipeline_specification: str, container_engine: str, results_dir: str, verbose: int
+) -> None:
+    """Runs a job on Slurm. The standard use case is this would be kicked off
+    when a slurm computing environment is defined in the environment.yaml
+    """
+    configure_logging_to_terminal(verbose)
+    pipeline_specification = Path(pipeline_specification)
+    results_dir = Path(results_dir)
+    main = handle_exceptions(
+        func=runner.main, exceptions_logger=logger, with_debugger=False
+    )
+    main(
+        pipeline_specification=pipeline_specification,
+        container_engine=container_engine,
+        computing_environment="local",
+        results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")

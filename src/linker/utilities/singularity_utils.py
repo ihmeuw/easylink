@@ -12,6 +12,11 @@ def run_with_singularity(results_dir: Path, step_dir: Path) -> None:
 
 
 def _build_container(results_dir: Path, step_dir: Path) -> None:
+    if (step_dir / "image.sif").exists():
+        raise RuntimeError(
+            "Trying to build a singularity image.sif but one already exists at "
+            f"location {step_dir}"
+        )
     cmd = (
         f"singularity build {step_dir}/image.sif "
         f"docker-archive://{step_dir}/image.tar.gz"

@@ -1,6 +1,7 @@
 import os
 import shutil
 import socket
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, NamedTuple
 
@@ -17,33 +18,13 @@ def main(
     pipeline_specification: Path,
     container_engine: str,
     computing_environment: str,
+    results_dir: Path,
 ):
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
 
     if compute_config["computing_environment"] == "local":
-        # NOTE: All variations of running the pipeline converge to `--computing-environment local`
-        # and so we define the results directory there
-        results_dir = prepare_results_directory(
-            pipeline_specification, computing_environment
-        )
-        if container_engine == "docker":
-            run_with_docker(results_dir, step_dir)
-        elif container_engine == "singularity":
-            run_with_singularity(results_dir, step_dir)
-        else:  # "unknown"
-            try:
-                run_with_docker(results_dir, step_dir)
-            except Exception as e_docker:
-                logger.warning(f"Docker failed with error: '{e_docker}'")
-                try:
-                    run_with_singularity(results_dir, step_dir)
-                except Exception as e_singularity:
-                    raise RuntimeError(
-                        f"Both docker and singularity failed:\n"
-                        f"    Docker error: {e_docker}\n"
-                        f"    Singularity error: {str(e_singularity)}"
-                    )
+        _run_container(container_engine, results_dir, step_dir)
     elif [k for k in compute_config["computing_environment"]][0] == "slurm":
         hostname = socket.gethostname()
         if "slurm" not in hostname:
@@ -53,6 +34,7 @@ def main(
         launch_slurm_job(
             pipeline_specification,
             container_engine,
+            results_dir,
             compute_config,
         )
 
@@ -63,51 +45,24 @@ def main(
         )
 
 
-def launch_slurm_job(
-    pipeline_specification: Path,
-    container_engine: str,
-    results_dir: Path,
-    compute_config: Dict[str, Dict],
-    launch_time: str,
-) -> None:
-    resources = compute_config["computing_environment"]["slurm"][
-        "implementation_resources"
-    ]
-    drmaa = get_slurm_drmaa()
-    s = drmaa.Session()
-    s.initialize()
-    jt = s.createJobTemplate()
-    jt.jobName = f"linker_run_{launch_time}"
-    jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(results_dir / '%A.o%a')}"
-    jt.errorPath = f":{str(results_dir / '%A.e%a')}"
-    jt.remoteCommand = shutil.which("linker")
-    jt.args = [
-        "run",
-        str(pipeline_specification),
-        "--container-engine",
-        container_engine,
-        "--computing-environment",
-        "local",  # Running 'local' on landed node
-        "-vvv",
-    ]
-    jt.jobEnvironment = {
-        "LC_ALL": "en_US.UTF-8",
-        "LANG": "en_US.UTF-8",
-    }
-    native_specification = NativeSpecification(
-        job_name=jt.jobName,
-        account=resources["account"],
-        partition=resources["partition"],
-        peak_memory=resources["memory"],
-        max_runtime=resources["time_limit"],
-        num_threads=resources["cpus"],
-    )
-    jt.nativeSpecification = native_specification.to_cli_args()
-    job_id = s.runJob(jt)
-    logger.info(f"Job submitted with jobid '{job_id}'")
-    s.deleteJobTemplate(jt)
-    s.exit()
+def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
+    if container_engine == "docker":
+        run_with_docker(results_dir, step_dir)
+    elif container_engine == "singularity":
+        run_with_singularity(results_dir, step_dir)
+    else:  # "unknown"
+        try:
+            run_with_docker(results_dir, step_dir)
+        except Exception as e_docker:
+            logger.warning(f"Docker failed with error: '{e_docker}'")
+            try:
+                run_with_singularity(results_dir, step_dir)
+            except Exception as e_singularity:
+                raise RuntimeError(
+                    f"Both docker and singularity failed:\n"
+                    f"    Docker error: {e_docker}\n"
+                    f"    Singularity error: {str(e_singularity)}"
+                )
 
 
 class NativeSpecification(NamedTuple):
@@ -129,7 +84,51 @@ class NativeSpecification(NamedTuple):
         )
 
 
-def get_slurm_drmaa() -> Any:
+def launch_slurm_job(
+    pipeline_specification: Path,
+    container_engine: str,
+    results_dir: Path,
+    compute_config: Dict[str, Dict],
+) -> None:
+    resources = compute_config["computing_environment"]["slurm"][
+        "implementation_resources"
+    ]
+    drmaa = _get_slurm_drmaa()
+    s = drmaa.Session()
+    s.initialize()
+    jt = s.createJobTemplate()
+    jt.jobName = f"linker_run_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    jt.joinFiles = False  # keeps stdout separate from stderr
+    jt.outputPath = f":{str(results_dir / '%A.o%a')}"
+    jt.errorPath = f":{str(results_dir / '%A.e%a')}"
+    jt.remoteCommand = shutil.which("linker")
+    jt.args = [
+        "run-slurm-job",
+        str(pipeline_specification),
+        container_engine,
+        str(results_dir),
+        "-vvv",
+    ]
+    jt.jobEnvironment = {
+        "LC_ALL": "en_US.UTF-8",
+        "LANG": "en_US.UTF-8",
+    }
+    native_specification = NativeSpecification(
+        job_name=jt.jobName,
+        account=resources["account"],
+        partition=resources["partition"],
+        peak_memory=resources["memory"],
+        max_runtime=resources["time_limit"],
+        num_threads=resources["cpus"],
+    )
+    jt.nativeSpecification = native_specification.to_cli_args()
+    job_id = s.runJob(jt)
+    logger.info(f"Job submitted with jobid '{job_id}'")
+    s.deleteJobTemplate(jt)
+    s.exit()
+
+
+def _get_slurm_drmaa() -> Any:
     """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
     try:
         import drmaa
