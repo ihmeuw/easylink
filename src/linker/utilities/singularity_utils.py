@@ -4,7 +4,13 @@ from pathlib import Path
 from loguru import logger
 
 
-def build_singularity_container(results_dir: Path, step_dir: Path) -> None:
+def run_with_singularity(results_dir: Path, step_dir: Path) -> None:
+    logger.info("Trying to run container with singularity")
+    _build_container(results_dir, step_dir)
+    _run_container(results_dir, step_dir)
+    _clean(results_dir, step_dir)
+
+def _build_container(results_dir: Path, step_dir: Path) -> None:
     cmd = (
         f"singularity build {step_dir}/image.sif "
         f"docker-archive://{step_dir}/image.tar.gz"
@@ -13,7 +19,7 @@ def build_singularity_container(results_dir: Path, step_dir: Path) -> None:
     _run_cmd(results_dir, cmd)
 
 
-def run_singularity_container(results_dir: Path, step_dir: Path) -> None:
+def _run_container(results_dir: Path, step_dir: Path) -> None:
     cmd = (
         f"singularity run --pwd {step_dir} "
         f"--bind {results_dir}:/app/results "
@@ -41,7 +47,7 @@ def _run_cmd(results_dir: Path, cmd: str) -> None:
         output_file.write(process.stderr)
 
 
-def clean_up_singularity(results_dir: Path, step_dir: Path) -> None:
+def _clean(results_dir: Path, step_dir: Path) -> None:
     # Move singularity image file to results dir
     (step_dir / "image.sif").rename(results_dir / "image.sif")
     # TODO: do I need to clean up the cache?

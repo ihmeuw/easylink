@@ -5,7 +5,7 @@ import sys
 from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, TextIO
+from typing import Any, Callable, TextIO, Union
 
 from loguru import logger
 
@@ -87,12 +87,15 @@ def _add_logging_sink(
         )
 
 
-def prepare_results_directory(pipeline_specification):
+def prepare_results_directory(pipeline_specification: Path, computing_environment: str) -> Path:
     results_dir = _generate_results_dir_name()
     _ = os.umask(0o002)
     # TODO: Consider adding an output directory argument
     results_dir.mkdir(parents=True, exist_ok=False)
     shutil.copy(pipeline_specification, results_dir)
+    if computing_environment != "local":
+        shutil.copy(Path(computing_environment).resolve(), results_dir)
+
     return results_dir
 
 

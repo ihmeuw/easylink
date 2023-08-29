@@ -4,7 +4,16 @@ import docker
 from loguru import logger
 
 
-def confirm_docker_daemon_running() -> None:
+def run_with_docker(results_dir: Path, step_dir: Path) -> None:
+    logger.info("Trying to run container with docker")
+    _confirm_docker_daemon_running()
+    image_id = _load_image(step_dir / "image.tar.gz")
+    _run_container(image_id, step_dir / "input_data", results_dir)
+            # TODO: clean up image even if error raised
+    _remove_image(image_id)
+
+
+def _confirm_docker_daemon_running() -> None:
     try:
         client = docker.from_env()
         client.ping()
@@ -15,7 +24,7 @@ def confirm_docker_daemon_running() -> None:
         ) from e
 
 
-def load_docker_image(image_path: Path) -> str:
+def _load_image(image_path: Path) -> str:
     logger.info(f"Loading the image ({str(image_path)})")
     try:
         client = docker.from_env()
@@ -29,7 +38,7 @@ def load_docker_image(image_path: Path) -> str:
     return image_id
 
 
-def run_docker_container(
+def _run_container(
     image_id: str, input_data_path: Path, results_dir: Path
 ) -> None:
     logger.info(f"Running the container from image {image_id}")
@@ -48,7 +57,7 @@ def run_docker_container(
     container.wait()
 
 
-def remove_docker_image(image_id: str) -> None:
+def _remove_image(image_id: str) -> None:
     try:
         client = docker.from_env()
         client.images.remove(image_id)
