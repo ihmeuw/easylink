@@ -4,6 +4,7 @@ import socket
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, NamedTuple
+import types
 
 from loguru import logger
 
@@ -19,13 +20,14 @@ def main(
     container_engine: str,
     computing_environment: str,
     results_dir: Path,
-):
+) -> None:
     step_dir = get_steps(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
 
     if compute_config["computing_environment"] == "local":
         _run_container(container_engine, results_dir, step_dir)
     elif [k for k in compute_config["computing_environment"]][0] == "slurm":
+        # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
         if "slurm" not in hostname:
             raise RuntimeError(
@@ -128,12 +130,12 @@ def launch_slurm_job(
     s.exit()
 
 
-def _get_slurm_drmaa() -> Any:
+def _get_slurm_drmaa() -> types.ModuleType("drmaa"):
     """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
     try:
         import drmaa
     except (RuntimeError, OSError):
-        # TODO: is this IHME-specific?
+        # TODO [MIC-4469]: make more generic for external users
         os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
         import drmaa
 
