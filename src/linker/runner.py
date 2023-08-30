@@ -133,6 +133,7 @@ def _get_slurm_drmaa() -> Any:
     try:
         import drmaa
     except (RuntimeError, OSError):
+        # TODO: is this IHME-specific?
         os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
         import drmaa
 
