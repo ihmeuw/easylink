@@ -26,7 +26,7 @@ def main(
 
     if compute_config["computing_environment"] == "local":
         _run_container(container_engine, results_dir, step_dir)
-    elif [k for k in compute_config["computing_environment"]][0] == "slurm":
+    elif [k for k in compute_config["computing_environment"]] == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
         if "slurm" not in hostname:
@@ -92,9 +92,10 @@ def launch_slurm_job(
     results_dir: Path,
     compute_config: Dict[str, Dict],
 ) -> None:
-    resources = compute_config["computing_environment"]["slurm"][
-        "implementation_resources"
-    ]
+    resources = {
+        **compute_config["implementation_resources"],
+        **compute_config["slurm"],
+    }
     drmaa = _get_slurm_drmaa()
     s = drmaa.Session()
     s.initialize()

@@ -106,7 +106,7 @@ def run(
 def run_slurm_job(
     pipeline_specification: str, container_engine: str, results_dir: str, verbose: int
 ) -> None:
-    """Runs a job on Slurm. The standard use case is this would be kicked off
+    """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
     when a slurm computing environment is defined in the environment.yaml
     """
     configure_logging_to_terminal(verbose)
