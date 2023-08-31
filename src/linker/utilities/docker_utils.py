@@ -8,9 +8,10 @@ def run_with_docker(results_dir: Path, step_dir: Path) -> None:
     logger.info("Trying to run container with docker")
     _confirm_docker_daemon_running()
     image_id = _load_image(step_dir / "image.tar.gz")
-    _run_container(image_id, step_dir / "input_data", results_dir)
-    # TODO [MIC-4470]: clean up image even if error raised
-    _remove_image(image_id)
+    try:
+        _run_container(image_id, step_dir / "input_data", results_dir)
+    finally:
+        _remove_image(image_id)
 
 
 def _confirm_docker_daemon_running() -> None:
