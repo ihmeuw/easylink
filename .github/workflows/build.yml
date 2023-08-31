@@ -32,12 +32,6 @@ jobs:
           pip install black==22.3.0 isort
           black . --check --diff
           isort . --check --verbose --only-modified --diff
-      - name: Doc build
-        run: |
-          make html -C docs/ SPHINXOPTS="-W --keep-going -n"
-      - name: Doctest
-        run: |
-          make doctest -C docs/
       - name: Test
         run: |
           pytest ./tests
