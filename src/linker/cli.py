@@ -9,6 +9,7 @@ from linker.utilities.cli_utils import (
     handle_exceptions,
     prepare_results_directory,
 )
+from linker.utilities.env_utils import get_compute_config
 
 
 @click.group()
@@ -70,8 +71,9 @@ def run(
 
     Results will be written to the working directory.
     """
-    pipeline_specification = Path(pipeline_specification)
     configure_logging_to_terminal(verbose)
+    pipeline_specification = Path(pipeline_specification)
+    compute_config = get_compute_config(computing_environment)
     results_dir = prepare_results_directory(
         pipeline_specification, computing_environment
     )
@@ -81,7 +83,7 @@ def run(
     main(
         pipeline_specification=pipeline_specification,
         container_engine=container_engine,
-        computing_environment=computing_environment,
+        compute_config=compute_config,
         results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")
@@ -111,6 +113,7 @@ def run_slurm_job(
     """
     configure_logging_to_terminal(verbose)
     pipeline_specification = Path(pipeline_specification)
+    compute_config = get_compute_config("local")
     results_dir = Path(results_dir)
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=False
@@ -118,7 +121,7 @@ def run_slurm_job(
     main(
         pipeline_specification=pipeline_specification,
         container_engine=container_engine,
-        computing_environment="local",
+        compute_config=compute_config,
         results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")

@@ -4,13 +4,11 @@ import socket
 import types
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, NamedTuple
+from typing import Dict, NamedTuple, Union
 
 from loguru import logger
 
-from linker.utilities.cli_utils import prepare_results_directory
 from linker.utilities.docker_utils import run_with_docker
-from linker.utilities.env_utils import get_compute_config
 from linker.utilities.pipeline_utils import get_steps
 from linker.utilities.singularity_utils import run_with_singularity
 
@@ -18,15 +16,14 @@ from linker.utilities.singularity_utils import run_with_singularity
 def main(
     pipeline_specification: Path,
     container_engine: str,
-    computing_environment: str,
+    compute_config: Dict[str, Union[str, Dict]],
     results_dir: Path,
 ) -> None:
     step_dir = get_steps(pipeline_specification)
-    compute_config = get_compute_config(computing_environment)
 
     if compute_config["computing_environment"] == "local":
         _run_container(container_engine, results_dir, step_dir)
-    elif [k for k in compute_config["computing_environment"]] == "slurm":
+    elif compute_config["computing_environment"] == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
         if "slurm" not in hostname:
@@ -42,8 +39,8 @@ def main(
 
     else:
         raise NotImplementedError(
-            "only --computing-invironment 'local' is supported; "
-            f"provided '{computing_environment}'"
+            "only computing_environment 'local' and 'slurm' are supported; "
+            f"provided {compute_config['computing_environment']}"
         )
 
 
