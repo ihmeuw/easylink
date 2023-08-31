@@ -48,9 +48,7 @@ def linker():
         "'local' or a path to an environment.yaml file."
     ),
 )
-@click.option(
-    "-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True
-)
+@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 @click.option(
     "--pdb",
     "with_debugger",
@@ -74,9 +72,7 @@ def run(
     configure_logging_to_terminal(verbose)
     pipeline_specification = Path(pipeline_specification)
     compute_config = get_compute_config(computing_environment)
-    results_dir = prepare_results_directory(
-        pipeline_specification, computing_environment
-    )
+    results_dir = prepare_results_directory(pipeline_specification, computing_environment)
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
@@ -102,9 +98,7 @@ def run(
     "results_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
-@click.option(
-    "-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True
-)
+@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
     pipeline_specification: str, container_engine: str, results_dir: str, verbose: int
 ) -> None:
@@ -115,9 +109,7 @@ def run_slurm_job(
     pipeline_specification = Path(pipeline_specification)
     compute_config = get_compute_config("local")
     results_dir = Path(results_dir)
-    main = handle_exceptions(
-        func=runner.main, exceptions_logger=logger, with_debugger=False
-    )
+    main = handle_exceptions(func=runner.main, exceptions_logger=logger, with_debugger=False)
     main(
         pipeline_specification=pipeline_specification,
         container_engine=container_engine,
