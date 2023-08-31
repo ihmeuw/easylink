@@ -1,6 +1,5 @@
-import yaml
-
 import pytest
+import yaml
 
 ENV_CONFIG_DICT = {
     "foo": "bar",
@@ -9,6 +8,7 @@ ENV_CONFIG_DICT = {
         "quux",
     },
 }
+
 
 @pytest.fixture(scope="session")
 def env_config_path(tmpdir_factory):

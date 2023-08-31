@@ -1,1 +1,8 @@
-computing_environment: local
+computing_environment: slurm
+slurm:
+  account: proj_simscience
+  partition: all.q
+implementation_resources:
+  memory: 10  # GB
+  cpus: 2
+  time_limit: 1  # hours

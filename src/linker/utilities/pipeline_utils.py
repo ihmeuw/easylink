@@ -1,6 +1,8 @@
 import os
-import yaml
 from pathlib import Path
+
+import yaml
+
 
 def get_steps(pipeline_specification: Path) -> Path:
     with open(pipeline_specification, "r") as f:

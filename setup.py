@@ -17,6 +17,7 @@ if __name__ == "__main__":
     install_requirements = [
         "click",
         "docker",
+        "drmaa",
         "loguru",
         "pyyaml",
     ]

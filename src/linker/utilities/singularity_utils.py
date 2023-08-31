@@ -10,9 +10,15 @@ def run_with_singularity(results_dir: Path, step_dir: Path) -> None:
     _run_container(results_dir, step_dir)
     _clean(results_dir, step_dir)
 
+
 def _build_container(results_dir: Path, step_dir: Path) -> None:
+    if (results_dir / "image.sif").exists():
+        raise RuntimeError(
+            "Trying to build a Singularity image.sif but one already exists at "
+            f"{results_dir}"
+        )
     cmd = (
-        f"singularity build {step_dir}/image.sif "
+        f"singularity build {results_dir}/image.sif "
         f"docker-archive://{step_dir}/image.tar.gz"
     )
     logger.info("Building the singularity container from docker image")
@@ -24,7 +30,7 @@ def _run_container(results_dir: Path, step_dir: Path) -> None:
         f"singularity run --pwd {step_dir} "
         f"--bind {results_dir}:/app/results "
         f"--bind {step_dir}/input_data:/app/input_data "
-        f"{step_dir}/image.sif"
+        f"{results_dir}/image.sif"
     )
     logger.info("Running the singularity container")
     _run_cmd(results_dir, cmd)
@@ -48,6 +54,5 @@ def _run_cmd(results_dir: Path, cmd: str) -> None:
 
 
 def _clean(results_dir: Path, step_dir: Path) -> None:
-    # Move singularity image file to results dir
-    (step_dir / "image.sif").rename(results_dir / "image.sif")
+    pass
     # TODO: do I need to clean up the cache?

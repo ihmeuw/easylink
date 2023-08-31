@@ -1,5 +1,7 @@
-import pytest
 from pathlib import Path
+
+import pytest
+
 from linker.utilities.env_utils import get_compute_config
 from tests.unit.conftest import ENV_CONFIG_DICT
 
