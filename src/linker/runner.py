@@ -4,7 +4,7 @@ import socket
 import types
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, NamedTuple, Union
+from typing import Dict, Union
 
 from loguru import logger
 
@@ -64,25 +64,6 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
                 )
 
 
-class NativeSpecification(NamedTuple):
-    job_name: str
-    account: str
-    partition: str
-    peak_memory: int  # GB
-    max_runtime: int  # hours
-    num_threads: int
-
-    def to_cli_args(self):
-        return (
-            f"-J {self.job_name} "
-            f"-A {self.account} "
-            f"-p {self.partition} "
-            f"--mem={self.peak_memory*1024} "
-            f"-t {self.max_runtime}:00:00 "
-            f"-c {self.num_threads}"
-        )
-
-
 def launch_slurm_job(
     pipeline_specification: Path,
     container_engine: str,
@@ -113,7 +94,7 @@ def launch_slurm_job(
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",
     }
-    native_specification = NativeSpecification(
+    jt.nativeSpecification = _get_cli_args(
         job_name=jt.jobName,
         account=resources["account"],
         partition=resources["partition"],
@@ -121,7 +102,6 @@ def launch_slurm_job(
         max_runtime=resources["time_limit"],
         num_threads=resources["cpus"],
     )
-    jt.nativeSpecification = native_specification.to_cli_args()
     job_id = s.runJob(jt)
     logger.info(f"Job submitted with jobid '{job_id}'")
     s.deleteJobTemplate(jt)
@@ -138,3 +118,14 @@ def _get_slurm_drmaa() -> types.ModuleType("drmaa"):
         import drmaa
 
     return drmaa
+
+
+def _get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
+    return (
+        f"-J {job_name} "
+        f"-A {account} "
+        f"-p {partition} "
+        f"--mem={peak_memory*1024} "
+        f"-t {max_runtime}:00:00 "
+        f"-c {num_threads}"
+    )
