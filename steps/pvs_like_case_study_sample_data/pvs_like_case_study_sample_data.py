@@ -27,9 +27,7 @@ census_2030 = census_2030.fillna(np.nan).replace("", np.nan)
 
 
 # We want to compare mailing address with physical address
-reference_file = reference_file.rename(
-    columns=lambda c: c.replace("mailing_address_", "")
-)
+reference_file = reference_file.rename(columns=lambda c: c.replace("mailing_address_", ""))
 
 
 # My working theory: the purpose of the "geokey" is because address parts violate conditional independence
@@ -171,9 +169,7 @@ PROBABILITY_THRESHOLD = 0.85
 
 
 # Calculate this once to save time -- mapping from record_id to index of each dataframe
-reference_file_index_of_ids = reference_file.reset_index().set_index("record_id")[
-    "index"
-]
+reference_file_index_of_ids = reference_file.reset_index().set_index("record_id")["index"]
 census_index_of_ids = census_2030.reset_index().set_index("record_id")["index"]
 
 
@@ -238,9 +234,7 @@ def pvs_matching_pass(blocking_cols):
         right_on="record_id",
         how="left",
     ).drop(columns=["record_id"])
-    print(
-        f"{potential_links.record_id_census_2030.nunique()} input records have a match"
-    )
+    print(f"{potential_links.record_id_census_2030.nunique()} input records have a match")
     census_records_with_multiple_potential_piks = (
         potential_links.groupby("record_id_census_2030")
         .pik.nunique()
@@ -441,9 +435,7 @@ assert not census_2030_ground_truth.duplicated().any()
 # Interesting: in pseudopeople, sometimes siblings are assigned the same (common) first name, making them almost identical.
 # The only giveaway is their age and DOB.
 # Presumably, this tends not to happen in real life.
-duplicate_piks = census_2030.pik.value_counts()[
-    census_2030.pik.value_counts() > 1
-].index
+duplicate_piks = census_2030.pik.value_counts()[census_2030.pik.value_counts() > 1].index
 census_2030[census_2030.pik.isin(duplicate_piks)].sort_values("pik")
 
 
