@@ -12,7 +12,7 @@ def run_with_docker(results_dir: Path, step_dir: Path) -> None:
     client = docker.from_env()
     image_id = _load_image(client, step_dir / "image.tar.gz")
     container = _run_container(client, image_id, step_dir / "input_data", results_dir)
-    _remove_image(client, image_id, container)
+    _clean(client, image_id, container)
 
 
 def _confirm_docker_daemon_running() -> None:
@@ -55,20 +55,30 @@ def _run_container(
         with open(results_dir / "docker.o", "wb") as output_file:
             for log in logs:
                 output_file.write(log)
-        # container.wait()
+        container.wait()
     except KeyboardInterrupt:
-        _remove_image(client, image_id, container)
+        _clean(client, image_id, container)
         raise
     except Exception as e:
-        _remove_image(client, image_id, container)
+        _clean(client, image_id, container)
         raise RuntimeError(
             f"An error occurred running docker container {container.short_id}: {e}"
         )
     return container
 
 
-def _remove_image(client: DockerClient, image_id: str, container: Container) -> None:
-    container.wait()
+def _clean(client: DockerClient, image_id: str, container: Container) -> None:
+    try:
+        client.containers.get(container.id)
+        running = True
+    except docker.errors.NotFound:
+        running = False
+    if running:
+        try:
+            container.kill()
+            logger.info(f"Removed container {container.short_id}")
+        except Exception as e:
+            logger.error(f"Error removing container {container.short_id}: {e}")
     try:
         client.images.remove(image_id, force=True)
         logger.info(f"Removed image {image_id}")
