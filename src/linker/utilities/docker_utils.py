@@ -8,18 +8,17 @@ from loguru import logger
 
 def run_with_docker(results_dir: Path, step_dir: Path) -> None:
     logger.info("Trying to run container with docker")
-    _confirm_docker_daemon_running()
-    client = docker.from_env()
+    client = get_docker_client()
     image_id = _load_image(client, step_dir / "image.tar.gz")
     container = _run_container(client, image_id, step_dir / "input_data", results_dir)
     _clean(client, image_id, container)
 
 
-def _confirm_docker_daemon_running() -> None:
+def get_docker_client() -> DockerClient:
     try:
         client = docker.from_env()
         client.ping()
-        return
+        return client
     except Exception as e:
         raise EnvironmentError(
             "The Docker daemon is not running; please start Docker."
