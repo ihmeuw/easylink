@@ -8,22 +8,21 @@ from typing import Dict, Union
 
 from loguru import logger
 
+from linker.configuration import Config
 from linker.utilities.docker_utils import run_with_docker
-from linker.utilities.pipeline_utils import get_steps
 from linker.utilities.singularity_utils import run_with_singularity
 
 
 def main(
-    pipeline_specification: Path,
+    config: Config,
     container_engine: str,
-    compute_config: Dict[str, Union[str, Dict]],
     results_dir: Path,
 ) -> None:
-    step_dir = get_steps(pipeline_specification)
+    step_dir = config.get_steps()
 
-    if compute_config["computing_environment"] == "local":
+    if config.computing_environment == "local":
         _run_container(container_engine, results_dir, step_dir)
-    elif compute_config["computing_environment"] == "slurm":
+    elif config.computing_environment == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
         if "slurm" not in hostname:
@@ -31,16 +30,15 @@ def main(
                 f"Specified a 'slurm' computing-environment but on host {hostname}"
             )
         launch_slurm_job(
-            pipeline_specification,
+            config,
             container_engine,
             results_dir,
-            compute_config,
         )
 
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
-            f"provided {compute_config['computing_environment']}"
+            f"provided {config.computing_environment}"
         )
 
 
@@ -67,14 +65,13 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
 
 
 def launch_slurm_job(
-    pipeline_specification: Path,
+    config: Config,
     container_engine: str,
     results_dir: Path,
-    compute_config: Dict[str, Dict],
 ) -> None:
     resources = {
-        **compute_config["implementation_resources"],
-        **compute_config["slurm"],
+        **config.implementation_resources,
+        **config.slurm,
     }
     drmaa = _get_slurm_drmaa()
     s = drmaa.Session()
@@ -87,7 +84,7 @@ def launch_slurm_job(
     jt.remoteCommand = shutil.which("linker")
     jt.args = [
         "run-slurm-job",
-        str(pipeline_specification),
+        str(config.pipeline_path),
         container_engine,
         str(results_dir),
         "-vvv",
