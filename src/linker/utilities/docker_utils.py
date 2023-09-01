@@ -1,33 +1,33 @@
 from pathlib import Path
 
 import docker
+from docker import DockerClient
+from docker.models.containers import Container
 from loguru import logger
 
 
 def run_with_docker(results_dir: Path, step_dir: Path) -> None:
     logger.info("Trying to run container with docker")
-    _confirm_docker_daemon_running()
-    image_id = _load_image(step_dir / "image.tar.gz")
-    _run_container(image_id, step_dir / "input_data", results_dir)
-    # TODO [MIC-4470]: clean up image even if error raised
-    _remove_image(image_id)
+    client = get_docker_client()
+    image_id = _load_image(client, step_dir / "image.tar.gz")
+    container = _run_container(client, image_id, step_dir / "input_data", results_dir)
+    _clean(client, image_id, container)
 
 
-def _confirm_docker_daemon_running() -> None:
+def get_docker_client() -> DockerClient:
     try:
         client = docker.from_env()
         client.ping()
-        return
+        return client
     except Exception as e:
         raise EnvironmentError(
             "The Docker daemon is not running; please start Docker."
         ) from e
 
 
-def _load_image(image_path: Path) -> str:
+def _load_image(client: DockerClient, image_path: Path) -> str:
     logger.info(f"Loading the image ({str(image_path)})")
     try:
-        client = docker.from_env()
         with open(str(image_path), "rb") as f:
             image_data = f.read()
         loaded_image = client.images.load(image_data)[0]
@@ -38,27 +38,48 @@ def _load_image(image_path: Path) -> str:
     return image_id
 
 
-def _run_container(image_id: str, input_data_path: Path, results_dir: Path) -> None:
+def _run_container(
+    client: DockerClient, image_id: str, input_data_path: Path, results_dir: Path
+):
     logger.info(f"Running the container from image {image_id}")
-    client = docker.from_env()
     volumes = {
         str(input_data_path): {"bind": "/app/input_data", "mode": "ro"},
         str(results_dir): {"bind": "/app/results", "mode": "rw"},
     }
-    container = client.containers.run(
-        image_id, volumes=volumes, detach=True, auto_remove=True, tty=True
-    )
-    logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
-    with open(results_dir / "docker.o", "wb") as output_file:
-        for log in logs:
-            output_file.write(log)
-    container.wait()
-
-
-def _remove_image(image_id: str) -> None:
     try:
-        client = docker.from_env()
-        client.images.remove(image_id)
+        container = client.containers.run(
+            image_id, volumes=volumes, detach=True, auto_remove=True, tty=True
+        )
+        logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
+        with open(results_dir / "docker.o", "wb") as output_file:
+            for log in logs:
+                output_file.write(log)
+        container.wait()
+    except KeyboardInterrupt:
+        _clean(client, image_id, container)
+        raise
+    except Exception as e:
+        _clean(client, image_id, container)
+        raise RuntimeError(
+            f"An error occurred running docker container {container.short_id}: {e}"
+        )
+    return container
+
+
+def _clean(client: DockerClient, image_id: str, container: Container) -> None:
+    try:
+        client.containers.get(container.id)
+        running = True
+    except docker.errors.NotFound:
+        running = False
+    if running:
+        try:
+            container.kill()
+            logger.info(f"Removed container {container.short_id}")
+        except Exception as e:
+            logger.error(f"Error removing container {container.short_id}: {e}")
+    try:
+        client.images.remove(image_id, force=True)
         logger.info(f"Removed image {image_id}")
     except Exception as e:
         logger.error(f"Error removing image {image_id}: {e}")

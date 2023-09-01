@@ -45,6 +45,8 @@ def main(
 
 
 def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
+    # TODO: send error to stdout in the event the step script fails
+    #   (currently it's only logged in the .o file)
     if container_engine == "docker":
         run_with_docker(results_dir, step_dir)
     elif container_engine == "singularity":

@@ -116,4 +116,6 @@ def run_slurm_job(
         compute_config=compute_config,
         results_dir=results_dir,
     )
+    # TODO: Update log message to be more clear when job is launched
+    #   (i.e. "finished" is not a good message when the job is still running)
     logger.info("*** FINISHED ***")
