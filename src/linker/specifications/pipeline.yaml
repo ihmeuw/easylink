@@ -1,2 +1,3 @@
-implementation: pvs_like_python
-# TODO: Add options for input dir and results dir
+steps:
+  full_entity_resolution:
+    implementation: pvs_like_python

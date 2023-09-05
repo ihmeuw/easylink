@@ -2,6 +2,7 @@ computing_environment: slurm
 slurm:
   account: proj_simscience
   partition: all.q
+# TODO: Move implementation resources (pipeline.yaml? input spec?)
 implementation_resources:
   memory: 10  # GB
   cpus: 2

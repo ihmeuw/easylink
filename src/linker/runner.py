@@ -4,7 +4,6 @@ import socket
 import types
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Union
 
 from loguru import logger
 
@@ -18,28 +17,29 @@ def main(
     container_engine: str,
     results_dir: Path,
 ) -> None:
-    step_dir = config.get_steps()
-
-    if config.computing_environment == "local":
-        _run_container(container_engine, results_dir, step_dir)
-    elif config.computing_environment == "slurm":
-        # TODO [MIC-4468]: Check for slurm in a more meaningful way
-        hostname = socket.gethostname()
-        if "slurm" not in hostname:
-            raise RuntimeError(
-                f"Specified a 'slurm' computing-environment but on host {hostname}"
+    for pipeline_step in config.steps:
+        step_dir = config.get_step(pipeline_step)
+        if config.computing_environment == "local":
+            _run_container(container_engine, results_dir, step_dir)
+        elif config.computing_environment == "slurm":
+            # TODO [MIC-4468]: Check for slurm in a more meaningful way
+            hostname = socket.gethostname()
+            if "slurm" not in hostname:
+                raise RuntimeError(
+                    f"Specified a 'slurm' computing-environment but on host {hostname}"
+                )
+            launch_slurm_job(
+                pipeline_step,
+                config,
+                container_engine,
+                results_dir,
             )
-        launch_slurm_job(
-            config,
-            container_engine,
-            results_dir,
-        )
 
-    else:
-        raise NotImplementedError(
-            "only computing_environment 'local' and 'slurm' are supported; "
-            f"provided {config.computing_environment}"
-        )
+        else:
+            raise NotImplementedError(
+                "only computing_environment 'local' and 'slurm' are supported; "
+                f"provided {config.computing_environment}"
+            )
 
 
 def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
@@ -65,14 +65,12 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
 
 
 def launch_slurm_job(
+    pipeline_step: str,
     config: Config,
     container_engine: str,
     results_dir: Path,
 ) -> None:
-    resources = {
-        **config.implementation_resources,
-        **config.slurm,
-    }
+    resources = config.get_resources()
     drmaa = _get_slurm_drmaa()
     s = drmaa.Session()
     s.initialize()

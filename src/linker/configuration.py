@@ -1,8 +1,15 @@
 import os
 from pathlib import Path
-from typing import Dict, Union
+from typing import Dict, Set, Union
 
 import yaml
+from loguru import logger
+
+STEP_ORDER = set(
+    [
+        "full_entity_resolution",
+    ]
+)
 
 
 class Config:
@@ -18,19 +25,34 @@ class Config:
             self.computing_environment_path = None
         else:
             self.computing_environment_path = Path(computing_environment_input)
-        self.full_config = self._combine_configurations(
-            self.pipeline_path, computing_environment_input
-        )
-        # TODO: make pipeline implementation generic
-        self.implementation = self.full_config["implementation"]
-        self.computing_environment = self.full_config["computing_environment"]
-        self.implementation_resources = self.full_config.get("implementation_resources", None)
-        self.slurm = self.full_config.get("slurm", None)
+        self.pipeline = self._load_yaml(pipeline_path)
+        self.environment = self._load_computing_environment(computing_environment_input)
+        self.computing_environment = self.environment["computing_environment"]
+        self.steps = self._get_steps()
 
-    def _combine_configurations(self, pipeline_path: Path, env_input: str):
-        pipeline = self._load_yaml(pipeline_path)
-        compute_env = self._load_computing_environment(env_input)
-        return {**pipeline, **compute_env}
+    def get_step(self, pipeline_step: str) -> Path:
+        # TODO: move this into proper config validator
+        implementation = self.pipeline["steps"][pipeline_step]["implementation"]
+        if implementation == "pvs_like_python":
+            # TODO: stop hard-coding filepaths
+            step_dir = (
+                Path(os.path.realpath(__file__)).parent.parent.parent
+                / "steps"
+                / "pvs_like_case_study_sample_data"
+            )
+        else:
+            raise NotImplementedError(f"No support for impementation '{implementation}'")
+        return step_dir
+
+    def get_resources(self) -> Dict[str, str]:
+        return {
+            **self.environment["implementation_resources"],
+            **self.environment[self.environment["computing_environment"]],
+        }
+
+    ####################
+    # Helper Functions #
+    ####################
 
     def _load_yaml(self, path: Path) -> Dict:
         with open(path, "r") as file:
@@ -49,15 +71,13 @@ class Config:
                 )
         return self._load_yaml(path)
 
-    def get_steps(self) -> Path:
-        # TODO: get a handle on exception handling and logging
-        if self.implementation == "pvs_like_python":
-            # TODO: stop hard-coding filepaths
-            step_dir = (
-                Path(os.path.realpath(__file__)).parent.parent.parent
-                / "steps"
-                / "pvs_like_case_study_sample_data"
+    def _get_steps(self) -> Set:
+        spec_steps = set([x for x in self.pipeline["steps"]])
+        steps = set([x for x in spec_steps if x in STEP_ORDER])
+        unknown_steps = spec_steps.difference(STEP_ORDER)
+        if unknown_steps:
+            logger.warning(
+                f"Unknown steps are included in the pipeline specification: {unknown_steps}.\n"
+                f"Support steps: {STEP_ORDER}"
             )
-        else:
-            raise NotImplementedError(f"No support for impementation '{self.implementation}'")
-        return step_dir
+        return steps

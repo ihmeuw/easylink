@@ -9,7 +9,13 @@ ENV_CONFIG_DICT = {
     },
 }
 
-PIPELINE_CONFIG_DICT = {"implementation": "some_implementation"}
+PIPELINE_CONFIG_DICT = {
+    "steps": {
+        "full_entity_resolution": {
+            "implementation": "some_implementation",
+        },
+    },
+}
 
 
 @pytest.fixture(scope="session")
