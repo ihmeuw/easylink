@@ -10,7 +10,6 @@ from linker.utilities.cli_utils import (
     handle_exceptions,
     prepare_results_directory,
 )
-# from linker.utilities.env_utils import get_compute_config
 
 
 @click.group()
@@ -71,8 +70,11 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
-    config = Config(pipeline_path=pipeline_specification, computing_environment_input=computing_environment)
-    breakpoint()
+    config = Config(
+        pipeline_path=pipeline_specification,
+        computing_environment_input=computing_environment,
+    )
+    # TODO [MIC-4493]: Add configuration validation
     results_dir = prepare_results_directory(config)
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
@@ -106,14 +108,12 @@ def run_slurm_job(
     when a slurm computing environment is defined in the environment.yaml
     """
     configure_logging_to_terminal(verbose)
-    pipeline_specification = Path(pipeline_specification)
-    compute_config = get_compute_config("local")
+    config = Config(pipeline_path=pipeline_specification, computing_environment_input="local")
     results_dir = Path(results_dir)
     main = handle_exceptions(func=runner.main, exceptions_logger=logger, with_debugger=False)
     main(
-        pipeline_specification=pipeline_specification,
+        config=config,
         container_engine=container_engine,
-        compute_config=compute_config,
         results_dir=results_dir,
     )
     # TODO: Update log message to be more clear when job is launched

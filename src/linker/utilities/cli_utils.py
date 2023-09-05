@@ -7,9 +7,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, TextIO
 
-from linker.configuration import Config
-
 from loguru import logger
+
+from linker.configuration import Config
 
 
 def handle_exceptions(
