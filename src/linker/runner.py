@@ -17,6 +17,7 @@ def main(
     results_dir: Path,
 ) -> None:
     for pipeline_step in config.steps:
+        logger.info(f"Running step {pipeline_step}")
         step_dir = config.get_step(pipeline_step)
         if config.computing_environment == "local":
             _run_container(config.container_engine, results_dir, step_dir)
@@ -48,6 +49,17 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
     elif container_engine == "singularity":
         run_with_singularity(results_dir, step_dir)
     else:
+        if container_engine:
+            logger.warning(
+                "The container engine is expected to be either 'docker' or "
+                f"'singularity' but got '{container_engine}' - trying to run "
+                "with Docker and then (if that fails) Singularity."
+            )
+        else:
+            logger.info(
+                "No container engine is specified - trying to run with Docker and "
+                "then (if that fails) Singularity."
+            )
         try:
             run_with_docker(results_dir, step_dir)
         except Exception as e_docker:
