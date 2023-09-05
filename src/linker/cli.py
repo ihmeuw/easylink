@@ -27,18 +27,6 @@ def linker():
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.option(
-    "--container-engine",
-    default="unknown",
-    show_default=True,
-    type=click.Choice(["docker", "singularity", "unknown"]),
-    help=(
-        "The framework to be used to run the pipeline step containers. "
-        "Options include 'docker', 'singularity', or 'unknown'. If 'unknown' is "
-        "used, the tool will first try to run with Docker and if that fails "
-        "will then try to run with Singularity."
-    ),
-)
-@click.option(
     "--computing-environment",
     default="local",
     show_default=True,
@@ -58,7 +46,6 @@ def linker():
 )
 def run(
     pipeline_specification: str,
-    container_engine: str,
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
@@ -81,7 +68,6 @@ def run(
     )
     main(
         config=config,
-        container_engine=container_engine,
         results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")
@@ -93,17 +79,11 @@ def run(
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.argument(
-    "container_engine",
-    type=click.Choice(["docker", "singularity", "unknown"]),
-)
-@click.argument(
     "results_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
-def run_slurm_job(
-    pipeline_specification: str, container_engine: str, results_dir: str, verbose: int
-) -> None:
+def run_slurm_job(pipeline_specification: str, results_dir: str, verbose: int) -> None:
     """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
     when a slurm computing environment is defined in the environment.yaml
     """
@@ -113,7 +93,6 @@ def run_slurm_job(
     main = handle_exceptions(func=runner.main, exceptions_logger=logger, with_debugger=False)
     main(
         config=config,
-        container_engine=container_engine,
         results_dir=results_dir,
     )
     # TODO: Update log message to be more clear when job is launched

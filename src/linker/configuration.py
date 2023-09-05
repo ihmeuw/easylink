@@ -28,6 +28,7 @@ class Config:
         self.pipeline = self._load_yaml(pipeline_path)
         self.environment = self._load_computing_environment(computing_environment_input)
         self.computing_environment = self.environment["computing_environment"]
+        self.container_engine = self.environment.get("container_engine", None)
         self.steps = self._get_steps()
 
     def get_step(self, pipeline_step: str) -> Path:

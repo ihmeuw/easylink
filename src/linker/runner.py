@@ -14,13 +14,12 @@ from linker.utilities.singularity_utils import run_with_singularity
 
 def main(
     config: Config,
-    container_engine: str,
     results_dir: Path,
 ) -> None:
     for pipeline_step in config.steps:
         step_dir = config.get_step(pipeline_step)
         if config.computing_environment == "local":
-            _run_container(container_engine, results_dir, step_dir)
+            _run_container(config.container_engine, results_dir, step_dir)
         elif config.computing_environment == "slurm":
             # TODO [MIC-4468]: Check for slurm in a more meaningful way
             hostname = socket.gethostname()
@@ -31,7 +30,6 @@ def main(
             launch_slurm_job(
                 pipeline_step,
                 config,
-                container_engine,
                 results_dir,
             )
 
@@ -49,7 +47,7 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
         run_with_docker(results_dir, step_dir)
     elif container_engine == "singularity":
         run_with_singularity(results_dir, step_dir)
-    else:  # "unknown"
+    else:
         try:
             run_with_docker(results_dir, step_dir)
         except Exception as e_docker:
@@ -67,7 +65,6 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
 def launch_slurm_job(
     pipeline_step: str,
     config: Config,
-    container_engine: str,
     results_dir: Path,
 ) -> None:
     resources = config.get_resources()
@@ -75,7 +72,7 @@ def launch_slurm_job(
     s = drmaa.Session()
     s.initialize()
     jt = s.createJobTemplate()
-    jt.jobName = f"linker_run_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}"
+    jt.jobName = f"{pipeline_step}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
     jt.outputPath = f":{str(results_dir / '%A.o%a')}"
     jt.errorPath = f":{str(results_dir / '%A.e%a')}"
@@ -83,7 +80,6 @@ def launch_slurm_job(
     jt.args = [
         "run-slurm-job",
         str(config.pipeline_path),
-        container_engine,
         str(results_dir),
         "-vvv",
     ]
