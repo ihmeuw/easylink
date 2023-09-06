@@ -1,4 +1,4 @@
-computing_environment: local
+computing_environment: slurm
 slurm:
   account: proj_simscience
   partition: all.q
