@@ -76,7 +76,10 @@ def run(
 
 
 @linker.command()
-@click.argument("container_engine")
+@click.argument(
+    "container_engine",
+    type=click.Choice(["docker", "singularity", "None"]),
+)
 @click.argument(
     "results_dir",
     type=click.Path(exists=True, resolve_path=True),

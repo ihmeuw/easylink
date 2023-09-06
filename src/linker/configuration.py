@@ -75,9 +75,9 @@ class Config:
         return self._load_yaml(filepath)
 
     def _get_steps(self) -> Tuple:
-        spec_steps = tuple([x for x in self.pipeline["steps"]])
+        spec_steps = tuple(self.pipeline["steps"])
         steps = tuple([x for x in spec_steps if x in STEP_ORDER])
-        unknown_steps = tuple([x for x in spec_steps if x not in STEP_ORDER])
+        unknown_steps = [x for x in spec_steps if x not in STEP_ORDER]
         if unknown_steps:
             logger.warning(
                 f"Unknown steps are included in the pipeline specification: {unknown_steps}.\n"
