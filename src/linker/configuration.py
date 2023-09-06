@@ -5,7 +5,7 @@ from typing import Dict, Set, Union
 import yaml
 from loguru import logger
 
-STEP_ORDER = set(
+STEP_ORDER = tuple(
     [
         "full_entity_resolution",
     ]
@@ -63,13 +63,13 @@ class Config:
         if arg == "local":
             return {"computing_environment": "local"}
         else:
-            path = Path(arg).resolve()
-            if not path.is_file():
+            filepath = Path(arg).resolve()
+            if not filepath.is_file():
                 raise RuntimeError(
                     "Computing environment is expected to be either 'local' or a path "
                     f"to an existing yaml file. Input is neither: '{arg}'"
                 )
-        return self._load_yaml(path)
+        return self._load_yaml(filepath)
 
     def _get_steps(self) -> Set:
         spec_steps = set([x for x in self.pipeline["steps"]])

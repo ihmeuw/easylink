@@ -108,6 +108,7 @@ def launch_slurm_job(
     job_id = session.runJob(jt)
     logger.info(f"Job submitted with jobid '{job_id}'")
     job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
+    # TODO: clean up if job failed?
     logger.info(f"Job {job_id} finished with status '{job_status}'")
     session.deleteJobTemplate(jt)
     session.exit()
