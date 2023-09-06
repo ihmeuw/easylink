@@ -27,18 +27,6 @@ def linker():
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.option(
-    "--container-engine",
-    default="unknown",
-    show_default=True,
-    type=click.Choice(["docker", "singularity", "unknown"]),
-    help=(
-        "The framework to be used to run the pipeline step containers. "
-        "Options include 'docker', 'singularity', or 'unknown'. If 'unknown' is "
-        "used, the tool will first try to run with Docker and if that fails "
-        "will then try to run with Singularity."
-    ),
-)
-@click.option(
     "--computing-environment",
     default="local",
     show_default=True,
@@ -58,7 +46,6 @@ def linker():
 )
 def run(
     pipeline_specification: str,
-    container_engine: str,
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
@@ -70,18 +57,19 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
+    logger.info("Running pipeline")
     config = Config(
         pipeline_specification=pipeline_specification,
         computing_environment=computing_environment,
     )
     # TODO [MIC-4493]: Add configuration validation
     results_dir = prepare_results_directory(config)
+    logger.info(f"Results directory: {str(results_dir)}")
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(
         config=config,
-        container_engine=container_engine,
         results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")
@@ -90,7 +78,7 @@ def run(
 @linker.command()
 @click.argument(
     "container_engine",
-    type=click.Choice(["docker", "singularity", "unknown"]),
+    type=click.Choice(["docker", "singularity", "None"]),
 )
 @click.argument(
     "results_dir",

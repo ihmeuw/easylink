@@ -16,7 +16,6 @@ from linker.utilities.singularity_utils import run_with_singularity
 
 def main(
     config: Config,
-    container_engine: str,
     results_dir: Path,
 ) -> None:
     if config.computing_environment == "local":
@@ -40,7 +39,7 @@ def main(
         )
     for step_name in config.steps:
         step_dir = config.get_step_directory(step_name)
-        runner(container_engine, results_dir, step_name, step_dir)
+        runner(config.container_engine, results_dir, step_name, step_dir)
 
 
 def run_container(
@@ -51,12 +50,23 @@ def run_container(
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
-    logger.info(f"Running step: {step_name}")
+    logger.info(f"Running step: '{step_name}'")
     if container_engine == "docker":
         run_with_docker(results_dir, step_dir)
     elif container_engine == "singularity":
         run_with_singularity(results_dir, step_dir)
-    else:  # "unknown"
+    else:
+        if container_engine:
+            logger.warning(
+                "The container engine is expected to be either 'docker' or "
+                f"'singularity' but got '{container_engine}' - trying to run "
+                "with Docker and then (if that fails) Singularity."
+            )
+        else:
+            logger.info(
+                "No container engine is specified - trying to run with Docker and "
+                "then (if that fails) Singularity."
+            )
         try:
             run_with_docker(results_dir, step_dir)
         except Exception as e_docker:
@@ -106,7 +116,12 @@ def launch_slurm_job(
         num_threads=resources["cpus"],
     )
     job_id = session.runJob(jt)
-    logger.info(f"Job submitted with jobid '{job_id}'")
+    logger.info(
+        f"Launching slurm job for step '{step_name}'\n"
+        f"Job submitted with jobid '{job_id}'\n"
+        f"Output log: {str(results_dir / f'{job_id}.o*')}\n"
+        f"Error log: {str(results_dir / f'{job_id}.e*')}"
+    )
     job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
     # TODO: clean up if job failed?
     logger.info(f"Job {job_id} finished with status '{job_status}'")
