@@ -9,6 +9,8 @@ from typing import Any, Callable, TextIO
 
 from loguru import logger
 
+from linker.configuration import Config
+
 
 def handle_exceptions(
     func: Callable, exceptions_logger: Any, with_debugger: bool
@@ -87,16 +89,14 @@ def _add_logging_sink(
         )
 
 
-def prepare_results_directory(
-    pipeline_specification: Path, computing_environment: str
-) -> Path:
+def prepare_results_directory(config: Config) -> Path:
     results_dir = _generate_results_dir_name()
     _ = os.umask(0o002)
     # TODO: Consider adding an output directory argument
     results_dir.mkdir(parents=True, exist_ok=False)
-    shutil.copy(pipeline_specification, results_dir)
-    if computing_environment != "local":
-        shutil.copy(Path(computing_environment).resolve(), results_dir)
+    shutil.copy(config.pipeline_path, results_dir)
+    if config.computing_environment != "local":
+        shutil.copy(config.computing_environment_path, results_dir)
 
     return results_dir
 

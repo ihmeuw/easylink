@@ -4,12 +4,12 @@ import click
 from loguru import logger
 
 from linker import runner
+from linker.configuration import Config
 from linker.utilities.cli_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
     prepare_results_directory,
 )
-from linker.utilities.env_utils import get_compute_config
 
 
 @click.group()
@@ -70,26 +70,24 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
-    pipeline_specification = Path(pipeline_specification)
-    compute_config = get_compute_config(computing_environment)
-    results_dir = prepare_results_directory(pipeline_specification, computing_environment)
+    config = Config(
+        pipeline_specification=pipeline_specification,
+        computing_environment=computing_environment,
+    )
+    # TODO [MIC-4493]: Add configuration validation
+    results_dir = prepare_results_directory(config)
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(
-        pipeline_specification=pipeline_specification,
+        config=config,
         container_engine=container_engine,
-        compute_config=compute_config,
         results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")
 
 
 @linker.command()
-@click.argument(
-    "pipeline_specification",
-    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-)
 @click.argument(
     "container_engine",
     type=click.Choice(["docker", "singularity", "unknown"]),
@@ -98,23 +96,33 @@ def run(
     "results_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
+@click.argument("step_name")
+@click.argument(
+    "step_dir",
+    type=click.Path(exists=True, resolve_path=True),
+)
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
-    pipeline_specification: str, container_engine: str, results_dir: str, verbose: int
+    container_engine: str,
+    results_dir: str,
+    step_name: str,
+    step_dir: str,
+    verbose: int,
 ) -> None:
     """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
     when a slurm computing environment is defined in the environment.yaml
     """
     configure_logging_to_terminal(verbose)
-    pipeline_specification = Path(pipeline_specification)
-    compute_config = get_compute_config("local")
     results_dir = Path(results_dir)
-    main = handle_exceptions(func=runner.main, exceptions_logger=logger, with_debugger=False)
+    step_dir = Path(step_dir)
+    main = handle_exceptions(
+        func=runner.run_container, exceptions_logger=logger, with_debugger=False
+    )
     main(
-        pipeline_specification=pipeline_specification,
         container_engine=container_engine,
-        compute_config=compute_config,
         results_dir=results_dir,
+        step_name=step_name,
+        step_dir=step_dir,
     )
     # TODO: Update log message to be more clear when job is launched
     #   (i.e. "finished" is not a good message when the job is still running)

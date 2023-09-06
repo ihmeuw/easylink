@@ -1,0 +1,3 @@
+steps:
+  full_entity_resolution:
+    implementation: pvs_like_python
