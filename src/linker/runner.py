@@ -32,7 +32,7 @@ def main(
         session = drmaa.Session()
         session.initialize()
         resources = config.get_resources()
-        runner = partial(launch_slurm_job, drmaa, session, resources)
+        runner = partial(launch_slurm_job, session, resources)
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
@@ -72,7 +72,6 @@ def run_container(
 
 
 def launch_slurm_job(
-    drmaa: types.ModuleType("drmaa"),
     session: types.ModuleType("drmaa.Session"),
     resources: Dict[str, str],
     container_engine: str,
@@ -108,7 +107,7 @@ def launch_slurm_job(
     )
     job_id = session.runJob(jt)
     logger.info(f"Job submitted with jobid '{job_id}'")
-    job_status = session.wait(job_id, drmaa.Session.TIMEOUT_WAIT_FOREVER)
+    job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
     logger.info(f"Job {job_id} finished with status '{job_status}'")
     session.deleteJobTemplate(jt)
     session.exit()
