@@ -30,7 +30,7 @@ def test_local_computing_environment(pipeline_config_path):
     assert config.computing_environment == "local"
 
 
-def get_get_specs(pipeline_config_path, env_config_path):
+def test_get_specs(pipeline_config_path, env_config_path):
     config = Config(pipeline_config_path, env_config_path)
     assert config.pipeline == PIPELINE_CONFIG_DICT
     assert config.environment == ENV_CONFIG_DICT

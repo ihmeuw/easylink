@@ -3,7 +3,9 @@ import shutil
 import socket
 import types
 from datetime import datetime
+from functools import partial
 from pathlib import Path
+from typing import Dict
 
 from loguru import logger
 
@@ -16,34 +18,39 @@ def main(
     config: Config,
     results_dir: Path,
 ) -> None:
-    for pipeline_step in config.steps:
-        logger.info(f"Running step {pipeline_step}")
-        step_dir = config.get_step(pipeline_step)
-        if config.computing_environment == "local":
-            _run_container(config.container_engine, results_dir, step_dir)
-        elif config.computing_environment == "slurm":
-            # TODO [MIC-4468]: Check for slurm in a more meaningful way
-            hostname = socket.gethostname()
-            if "slurm" not in hostname:
-                raise RuntimeError(
-                    f"Specified a 'slurm' computing-environment but on host {hostname}"
-                )
-            launch_slurm_job(
-                pipeline_step,
-                config,
-                results_dir,
+    if config.computing_environment == "local":
+        runner = run_container
+    elif config.computing_environment == "slurm":
+        # TODO [MIC-4468]: Check for slurm in a more meaningful way
+        hostname = socket.gethostname()
+        if "slurm" not in hostname:
+            raise RuntimeError(
+                f"Specified a 'slurm' computing-environment but on host {hostname}"
             )
+        drmaa = _get_slurm_drmaa()
+        session = drmaa.Session()
+        session.initialize()
+        resources = config.get_resources()
+        runner = partial(launch_slurm_job, session, resources)
+    else:
+        raise NotImplementedError(
+            "only computing_environment 'local' and 'slurm' are supported; "
+            f"provided {config.computing_environment}"
+        )
+    for step_name in config.steps:
+        step_dir = config.get_step_directory(step_name)
+        runner(container_engine, results_dir, step_name, step_dir)
 
-        else:
-            raise NotImplementedError(
-                "only computing_environment 'local' and 'slurm' are supported; "
-                f"provided {config.computing_environment}"
-            )
 
-
-def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
+def run_container(
+    container_engine: str,
+    results_dir: Path,
+    step_name: str,
+    step_dir: Path,
+):
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
+    logger.info(f"Running step: {step_name}")
     if container_engine == "docker":
         run_with_docker(results_dir, step_dir)
     elif container_engine == "singularity":
@@ -75,24 +82,25 @@ def _run_container(container_engine: str, results_dir: Path, step_dir: Path):
 
 
 def launch_slurm_job(
-    pipeline_step: str,
-    config: Config,
+    session: types.ModuleType("drmaa.Session"),
+    resources: Dict[str, str],
+    container_engine: str,
     results_dir: Path,
+    step_name: str,
+    step_dir: Path,
 ) -> None:
-    resources = config.get_resources()
-    drmaa = _get_slurm_drmaa()
-    s = drmaa.Session()
-    s.initialize()
-    jt = s.createJobTemplate()
-    jt.jobName = f"{pipeline_step}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    jt = session.createJobTemplate()
+    jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
     jt.outputPath = f":{str(results_dir / '%A.o%a')}"
     jt.errorPath = f":{str(results_dir / '%A.e%a')}"
     jt.remoteCommand = shutil.which("linker")
     jt.args = [
         "run-slurm-job",
-        str(config.pipeline_path),
+        container_engine,
         str(results_dir),
+        step_name,
+        str(step_dir),
         "-vvv",
     ]
     jt.jobEnvironment = {
@@ -107,10 +115,13 @@ def launch_slurm_job(
         max_runtime=resources["time_limit"],
         num_threads=resources["cpus"],
     )
-    job_id = s.runJob(jt)
+    job_id = session.runJob(jt)
     logger.info(f"Job submitted with jobid '{job_id}'")
-    s.deleteJobTemplate(jt)
-    s.exit()
+    job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
+    # TODO: clean up if job failed?
+    logger.info(f"Job {job_id} finished with status '{job_status}'")
+    session.deleteJobTemplate(jt)
+    session.exit()
 
 
 def _get_slurm_drmaa() -> types.ModuleType("drmaa"):

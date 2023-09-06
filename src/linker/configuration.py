@@ -5,7 +5,7 @@ from typing import Dict, Set, Union
 import yaml
 from loguru import logger
 
-STEP_ORDER = set(
+STEP_ORDER = tuple(
     [
         "full_entity_resolution",
     ]
@@ -18,22 +18,22 @@ class Config:
 
     """
 
-    def __init__(self, pipeline_path: str, computing_environment_input: str):
+    def __init__(self, pipeline_specification: str, computing_environment: str):
 
-        self.pipeline_path = Path(pipeline_path)
-        if computing_environment_input == "local":
+        self.pipeline_path = Path(pipeline_specification)
+        if computing_environment == "local":
             self.computing_environment_path = None
         else:
-            self.computing_environment_path = Path(computing_environment_input)
-        self.pipeline = self._load_yaml(pipeline_path)
-        self.environment = self._load_computing_environment(computing_environment_input)
+            self.computing_environment_path = Path(computing_environment)
+        self.pipeline = self._load_yaml(pipeline_specification)
+        self.environment = self._load_computing_environment(computing_environment)
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", None)
         self.steps = self._get_steps()
 
-    def get_step(self, pipeline_step: str) -> Path:
+    def get_step_directory(self, step_name: str) -> Path:
         # TODO: move this into proper config validator
-        implementation = self.pipeline["steps"][pipeline_step]["implementation"]
+        implementation = self.pipeline["steps"][step_name]["implementation"]
         if implementation == "pvs_like_python":
             # TODO: stop hard-coding filepaths
             step_dir = (
@@ -55,22 +55,22 @@ class Config:
     # Helper Functions #
     ####################
 
-    def _load_yaml(self, path: Path) -> Dict:
-        with open(path, "r") as file:
+    def _load_yaml(self, filepath: Path) -> Dict:
+        with open(filepath, "r") as file:
             data = yaml.safe_load(file)
         return data
 
-    def _load_computing_environment(self, input: str) -> Dict[str, Union[Dict, str]]:
-        if input == "local":
+    def _load_computing_environment(self, arg: str) -> Dict[str, Union[Dict, str]]:
+        if arg == "local":
             return {"computing_environment": "local"}
         else:
-            path = Path(input).resolve()
-            if not path.is_file():
+            filepath = Path(arg).resolve()
+            if not filepath.is_file():
                 raise RuntimeError(
                     "Computing environment is expected to be either 'local' or a path "
-                    f"to an existing yaml file. Input is neither: '{input}'"
+                    f"to an existing yaml file. Input is neither: '{arg}'"
                 )
-        return self._load_yaml(path)
+        return self._load_yaml(filepath)
 
     def _get_steps(self) -> Set:
         spec_steps = set([x for x in self.pipeline["steps"]])
