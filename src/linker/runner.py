@@ -89,7 +89,6 @@ def launch_slurm_job(
     step_name: str,
     step_dir: Path,
 ) -> None:
-    logger.info(f"Launching slurm job for step '{step_name}'")
     jt = session.createJobTemplate()
     jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
@@ -117,7 +116,12 @@ def launch_slurm_job(
         num_threads=resources["cpus"],
     )
     job_id = session.runJob(jt)
-    logger.info(f"Job submitted with jobid '{job_id}'")
+    logger.info(
+        f"Launching slurm job for step '{step_name}'\n"
+        f"Job submitted with jobid '{job_id}'\n"
+        f"Output log: {str(results_dir / f'{job_id}.o*')}\n"
+        f"Error log: {str(results_dir / f'{job_id}.e*')}"
+    )
     job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
     # TODO: clean up if job failed?
     logger.info(f"Job {job_id} finished with status '{job_status}'")

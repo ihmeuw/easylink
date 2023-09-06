@@ -57,12 +57,14 @@ def run(
     Results will be written to the working directory.
     """
     configure_logging_to_terminal(verbose)
+    logger.info("Running pipeline")
     config = Config(
         pipeline_specification=pipeline_specification,
         computing_environment=computing_environment,
     )
     # TODO [MIC-4493]: Add configuration validation
     results_dir = prepare_results_directory(config)
+    logger.info(f"Results directory: {str(results_dir)}")
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
