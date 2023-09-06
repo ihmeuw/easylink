@@ -59,15 +59,17 @@ class Config:
             data = yaml.safe_load(file)
         return data
 
-    def _load_computing_environment(self, arg: str) -> Dict[str, Union[Dict, str]]:
-        if arg == "local":
+    def _load_computing_environment(
+        self, computing_environment: str
+    ) -> Dict[str, Union[Dict, str]]:
+        if computing_environment == "local":
             return {"computing_environment": "local"}
         else:
-            filepath = Path(arg).resolve()
+            filepath = Path(computing_environment).resolve()
             if not filepath.is_file():
                 raise RuntimeError(
                     "Computing environment is expected to be either 'local' or a path "
-                    f"to an existing yaml file. Input is neither: '{arg}'"
+                    f"to an existing yaml file. Input is neither: '{computing_environment}'"
                 )
         return self._load_yaml(filepath)
 

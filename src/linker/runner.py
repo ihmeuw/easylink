@@ -48,7 +48,7 @@ def run_container(
     results_dir: Path,
     step_name: str,
     step_dir: Path,
-):
+) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
     logger.info(f"Running step: {step_name}")
