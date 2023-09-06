@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, Set, Union
+from typing import Dict, Tuple, Union
 
 import yaml
 from loguru import logger
@@ -72,13 +72,13 @@ class Config:
                 )
         return self._load_yaml(filepath)
 
-    def _get_steps(self) -> Set:
-        spec_steps = set([x for x in self.pipeline["steps"]])
-        steps = set([x for x in spec_steps if x in STEP_ORDER])
-        unknown_steps = spec_steps.difference(STEP_ORDER)
+    def _get_steps(self) -> Tuple:
+        spec_steps = tuple([x for x in self.pipeline["steps"]])
+        steps = tuple([x for x in spec_steps if x in STEP_ORDER])
+        unknown_steps = tuple([x for x in spec_steps if x not in STEP_ORDER])
         if unknown_steps:
             logger.warning(
                 f"Unknown steps are included in the pipeline specification: {unknown_steps}.\n"
-                f"Support steps: {STEP_ORDER}"
+                f"Supported steps: {STEP_ORDER}"
             )
         return steps

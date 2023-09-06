@@ -39,18 +39,18 @@ def main(
         )
     for step_name in config.steps:
         step_dir = config.get_step_directory(step_name)
-        logger.info(f"Running step '{step_name}'")
-        runner(config.container_engine, results_dir, step_dir, step_name)
+        runner(config.container_engine, results_dir, step_name, step_dir)
 
 
 def run_container(
     container_engine: str,
     results_dir: Path,
+    step_name: str,
     step_dir: Path,
-    _step_name: str,
 ):
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
+    logger.info(f"Running step: '{step_name}'")
     if container_engine == "docker":
         run_with_docker(results_dir, step_dir)
     elif container_engine == "singularity":
@@ -86,9 +86,10 @@ def launch_slurm_job(
     resources: Dict[str, str],
     container_engine: str,
     results_dir: Path,
-    step_dir: Path,
     step_name: str,
+    step_dir: Path,
 ) -> None:
+    logger.info(f"Launching slurm job for step '{step_name}'")
     jt = session.createJobTemplate()
     jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
