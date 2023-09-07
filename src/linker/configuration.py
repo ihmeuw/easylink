@@ -18,7 +18,7 @@ class Config:
 
     """
 
-    def __init__(self, pipeline_specification: str, computing_environment: str):
+    def __init__(self, pipeline_specification: str, computing_environment: str, input_data: str):
 
         self.pipeline_path = Path(pipeline_specification)
         if computing_environment == "local":
@@ -27,6 +27,8 @@ class Config:
             self.computing_environment_path = Path(computing_environment)
         self.pipeline = self._load_yaml(pipeline_specification)
         self.environment = self._load_computing_environment(computing_environment)
+        self.input_data = self._load_yaml(input_data)
+        breakpoint()
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", None)
         self.steps = self._get_steps()

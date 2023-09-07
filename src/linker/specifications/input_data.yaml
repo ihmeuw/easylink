@@ -1,0 +1,4 @@
+census_2030_sample: /mnt/share/homes/sbachmei/repos/linker/sample_data/pvs_like_case_study/census_2030_sample.parquet 
+reference_file_sample: /mnt/share/homes/sbachmei/repos/linker/sample_data/pvs_like_case_study/reference_file_sample.parquet 
+census_2030_ground_truth_sample: /mnt/share/homes/sbachmei/repos/linker/sample_data/pvs_like_case_study/census_2030_ground_truth_sample.parquet 
+reference_file_ground_truth_sample: /mnt/share/homes/sbachmei/repos/linker/sample_data/pvs_like_case_study/reference_file_ground_truth_sample.parquet

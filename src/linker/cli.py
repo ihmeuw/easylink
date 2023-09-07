@@ -26,6 +26,10 @@ def linker():
     "pipeline_specification",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
+@click.argument(
+    "input_data",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+)
 @click.option(
     "--computing-environment",
     default="local",
@@ -46,6 +50,7 @@ def linker():
 )
 def run(
     pipeline_specification: str,
+    input_data: str,
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
@@ -61,6 +66,7 @@ def run(
     config = Config(
         pipeline_specification=pipeline_specification,
         computing_environment=computing_environment,
+        input_data=input_data,
     )
     # TODO [MIC-4493]: Add configuration validation
     results_dir = prepare_results_directory(config)
