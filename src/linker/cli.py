@@ -95,12 +95,14 @@ def run(
     "step_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
+@click.option("--input-data", multiple=True)
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
     container_engine: str,
     results_dir: str,
     step_name: str,
     step_dir: str,
+    input_data: str,
     verbose: int,
 ) -> None:
     """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
@@ -109,15 +111,16 @@ def run_slurm_job(
     configure_logging_to_terminal(verbose)
     results_dir = Path(results_dir)
     step_dir = Path(step_dir)
+    input_data = [Path(x) for x in input_data]
     main = handle_exceptions(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     main(
         container_engine=container_engine,
+        input_data=input_data,
         results_dir=results_dir,
         step_name=step_name,
         step_dir=step_dir,
     )
-    # TODO: Update log message to be more clear when job is launched
-    #   (i.e. "finished" is not a good message when the job is still running)
+
     logger.info("*** FINISHED ***")

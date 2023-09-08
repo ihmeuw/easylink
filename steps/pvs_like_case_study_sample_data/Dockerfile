@@ -1,7 +1,4 @@
 FROM python:3.11-slim
-# WORKDIR /app
-# VOLUME /app/results
-# VOLUME /app/input_data
 RUN mkdir -p /input_data
 RUN mkdir -p /results
 VOLUME /results
