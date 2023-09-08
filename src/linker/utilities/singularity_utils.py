@@ -27,10 +27,7 @@ def _build_container(results_dir: Path, step_dir: Path) -> None:
 
 
 def _run_container(input_data: List[Path], results_dir: Path, step_dir: Path) -> None:
-    cmd = (
-        f"singularity run --pwd {step_dir} "
-        f"--bind {results_dir}:/results "
-    )
+    cmd = f"singularity run --pwd {step_dir} " f"--bind {results_dir}:/results "
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
     cmd += f"{results_dir}/image.sif"
