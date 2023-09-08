@@ -45,10 +45,10 @@ def _run_container(
     logger.info(f"Running the container from image {image_id}")
     volumes = {
         **{
-            str(dataset): {"bind": f"/app/input_data/{dataset.name}", "mode": "ro"}
+            str(dataset): {"bind": f"/input_data/{dataset.name}", "mode": "ro"}
             for dataset in input_data
         },
-        str(results_dir): {"bind": "/app/results", "mode": "rw"},
+        str(results_dir): {"bind": "/results", "mode": "rw"},
     }
     try:
         container = client.containers.run(
