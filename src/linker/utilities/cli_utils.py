@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Optional, TextIO
 
+import click
 from loguru import logger
 
 from linker.configuration import Config

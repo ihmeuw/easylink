@@ -90,7 +90,6 @@ def run(
     # TODO [MIC-4493]: Add configuration validation
     results_dir = prepare_results_directory(output_dir, timestamp, config)
     logger.info(f"Results directory: {str(results_dir)}")
-    breakpoint()
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )

@@ -13,16 +13,13 @@ def run_with_singularity(input_data: List[Path], results_dir: Path, step_dir: Pa
 
 
 def _build_container(results_dir: Path, step_dir: Path) -> None:
-    if (results_dir / "image.sif").exists():
-        raise RuntimeError(
-            "Trying to build a Singularity image.sif but one already exists at "
-            f"{results_dir}"
-        )
     cmd = (
-        f"singularity build {results_dir}/image.sif "
+        f"singularity build --force {results_dir}/image.sif "
         f"docker-archive://{step_dir}/image.tar.gz"
     )
     logger.info("Building the singularity container from docker image")
+    if (results_dir / "image.sif").exists():
+        logger.warning(f"Overwriting an existing singularity image {results_dir}/image.sif")
     _run_cmd(results_dir, cmd)
 
 
