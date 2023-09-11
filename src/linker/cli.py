@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple
 
 import click
 from loguru import logger
@@ -26,6 +27,10 @@ def linker():
     "pipeline_specification",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
+@click.argument(
+    "input_data",
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+)
 @click.option(
     "--computing-environment",
     default="local",
@@ -46,21 +51,24 @@ def linker():
 )
 def run(
     pipeline_specification: str,
+    input_data: str,
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
 ) -> None:
     """Run a pipeline from the command line.
 
-    The pipeline itself is defined by the given PIPELINE_SPECIFICATION yaml file.
+    PIPELINE_SPECIFICATION: The path to the pipline specification yaml file.
 
-    Results will be written to the working directory.
+    INPUT_DATA: The path to the input data specification yaml file (not the
+        paths to the input data themselves).
     """
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
     config = Config(
         pipeline_specification=pipeline_specification,
         computing_environment=computing_environment,
+        input_data=input_data,
     )
     # TODO [MIC-4493]: Add configuration validation
     results_dir = prepare_results_directory(config)
@@ -89,12 +97,14 @@ def run(
     "step_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
+@click.option("--input-data", multiple=True)
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
     container_engine: str,
     results_dir: str,
     step_name: str,
     step_dir: str,
+    input_data: Tuple[str],
     verbose: int,
 ) -> None:
     """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
@@ -103,15 +113,16 @@ def run_slurm_job(
     configure_logging_to_terminal(verbose)
     results_dir = Path(results_dir)
     step_dir = Path(step_dir)
+    input_data = [Path(x) for x in input_data]
     main = handle_exceptions(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     main(
         container_engine=container_engine,
+        input_data=input_data,
         results_dir=results_dir,
         step_name=step_name,
         step_dir=step_dir,
     )
-    # TODO: Update log message to be more clear when job is launched
-    #   (i.e. "finished" is not a good message when the job is still running)
+
     logger.info("*** FINISHED ***")

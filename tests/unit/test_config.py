@@ -16,21 +16,28 @@ from tests.unit.conftest import ENV_CONFIG_DICT, PIPELINE_CONFIG_DICT
         Path("another/bad/path"),
     ],
 )
-def test_bad_computing_environment_fails(pipeline_config_path, computing_environment):
+def test_bad_computing_environment_fails(config_path, computing_environment):
     match = (
         "Computing environment is expected to be either 'local' or a path to an "
         f"existing yaml file. Input is neither: '{computing_environment}'"
     )
     with pytest.raises(RuntimeError, match=match):
-        Config(pipeline_config_path, computing_environment)
+        Config(f"{config_path}/pipeline.yaml", computing_environment, "foo")
 
 
-def test_local_computing_environment(pipeline_config_path):
-    config = Config(pipeline_config_path, "local")
+def test_local_computing_environment(config_path):
+    config = Config(f"{config_path}/pipeline.yaml", "local", f"{config_path}/input_data.yaml")
     assert config.computing_environment == "local"
 
 
-def test_get_specs(pipeline_config_path, env_config_path):
-    config = Config(pipeline_config_path, env_config_path)
+def test_get_specs(config_path):
+    config = Config(
+        f"{config_path}/pipeline.yaml",
+        f"{config_path}/environment.yaml",
+        f"{config_path}/input_data.yaml",
+    )
     assert config.pipeline == PIPELINE_CONFIG_DICT
     assert config.environment == ENV_CONFIG_DICT
+    assert config.input_data == [
+        Path(x) for x in [f"{config_path}/input_data{n}/file{n}" for n in [1, 2]]
+    ]

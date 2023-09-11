@@ -5,7 +5,7 @@ import types
 from datetime import datetime
 from functools import partial
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from loguru import logger
 
@@ -39,11 +39,12 @@ def main(
         )
     for step_name in config.steps:
         step_dir = config.get_step_directory(step_name)
-        runner(config.container_engine, results_dir, step_name, step_dir)
+        runner(config.container_engine, config.input_data, results_dir, step_name, step_dir)
 
 
 def run_container(
     container_engine: str,
+    input_data: List[str],
     results_dir: Path,
     step_name: str,
     step_dir: Path,
@@ -52,9 +53,9 @@ def run_container(
     #   (currently it's only logged in the .o file)
     logger.info(f"Running step: '{step_name}'")
     if container_engine == "docker":
-        run_with_docker(results_dir, step_dir)
+        run_with_docker(input_data, results_dir, step_dir)
     elif container_engine == "singularity":
-        run_with_singularity(results_dir, step_dir)
+        run_with_singularity(input_data, results_dir, step_dir)
     else:
         if container_engine:
             logger.warning(
@@ -68,11 +69,11 @@ def run_container(
                 "then (if that fails) Singularity."
             )
         try:
-            run_with_docker(results_dir, step_dir)
+            run_with_docker(input_data, results_dir, step_dir)
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
-                run_with_singularity(results_dir, step_dir)
+                run_with_singularity(input_data, results_dir, step_dir)
             except Exception as e_singularity:
                 raise RuntimeError(
                     f"Both docker and singularity failed:\n"
@@ -85,6 +86,7 @@ def launch_slurm_job(
     session: types.ModuleType("drmaa.Session"),
     resources: Dict[str, str],
     container_engine: str,
+    input_data: List[Path],
     results_dir: Path,
     step_name: str,
     step_dir: Path,
@@ -95,7 +97,7 @@ def launch_slurm_job(
     jt.outputPath = f":{str(results_dir / '%A.o%a')}"
     jt.errorPath = f":{str(results_dir / '%A.e%a')}"
     jt.remoteCommand = shutil.which("linker")
-    jt.args = [
+    jt_args = [
         "run-slurm-job",
         container_engine,
         str(results_dir),
@@ -103,6 +105,9 @@ def launch_slurm_job(
         str(step_dir),
         "-vvv",
     ]
+    for filepath in input_data:
+        jt_args.extend(("--input-data", str(filepath)))
+    jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",
