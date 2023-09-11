@@ -105,9 +105,8 @@ def prepare_results_directory(
 
 def _generate_results_dir_name(output_dir: Optional[str], timestamp: bool):
     launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    if output_dir:
-        output_root = Path(output_dir) / launch_time if timestamp else Path(output_dir)
-    else:
-        output_root = Path("results") / launch_time if timestamp else Path("results")
+    output_root = Path("results" if output_dir is None else output_dir).resolve()
+    if timestamp:
+        output_root = output_root / launch_time
 
-    return output_root.resolve()
+    return output_root

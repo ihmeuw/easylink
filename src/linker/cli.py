@@ -44,7 +44,7 @@ def linker():
     "--timestamp/--no-timestamp",
     default=True,
     show_default=True,
-    help="Save the results in a timestamped sub-directory of --output-dir",
+    help="Save the results in a timestamped sub-directory of --output-dir.",
 )
 @click.option(
     "--computing-environment",
