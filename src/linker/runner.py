@@ -97,7 +97,7 @@ def launch_slurm_job(
     jt.outputPath = f":{str(results_dir / '%A.o%a')}"
     jt.errorPath = f":{str(results_dir / '%A.e%a')}"
     jt.remoteCommand = shutil.which("linker")
-    args = [
+    jt_args = [
         "run-slurm-job",
         container_engine,
         str(results_dir),
@@ -106,9 +106,8 @@ def launch_slurm_job(
         "-vvv",
     ]
     for filepath in input_data:
-        args.append("--input-data")
-        args.append(f"{str(filepath)}")
-    jt.args = args
+        jt_args.extend(("--input-data", str(filepath)))
+    jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Tuple
 
 import click
 from loguru import logger
@@ -57,9 +58,10 @@ def run(
 ) -> None:
     """Run a pipeline from the command line.
 
-    The pipeline itself is defined by the given PIPELINE_SPECIFICATION yaml file.
+    PIPELINE_SPECIFICATION: The path to the pipline specification yaml file.
 
-    Results will be written to the working directory.
+    INPUT_DATA: The path to the input data specification yaml file (not the
+        paths to the input data themselves).
     """
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
@@ -102,7 +104,7 @@ def run_slurm_job(
     results_dir: str,
     step_name: str,
     step_dir: str,
-    input_data: str,
+    input_data: Tuple[str],
     verbose: int,
 ) -> None:
     """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
