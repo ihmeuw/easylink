@@ -100,7 +100,7 @@ def run(
     logger.info("*** FINISHED ***")
 
 
-@linker.command()
+@linker.command(hidden=True)
 @click.argument(
     "container_engine",
     type=click.Choice(["docker", "singularity", "None"]),
@@ -124,8 +124,8 @@ def run_slurm_job(
     input_data: Tuple[str],
     verbose: int,
 ) -> None:
-    """(TEMPORARY COMMAND FOR DEVELOPMENT) Runs a job on Slurm. The standard use case is this would be kicked off
-    when a slurm computing environment is defined in the environment.yaml
+    """Runs a job on Slurm. The standard use case is this would be kicked off
+    when a slurm computing environment is defined in the environment.yaml.
     """
     configure_logging_to_terminal(verbose)
     results_dir = Path(results_dir)
