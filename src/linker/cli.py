@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 import click
 from loguru import logger
@@ -32,6 +32,15 @@ def linker():
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.option(
+    "--output-dir",
+    type=click.Path(exists=False, dir_okay=True, resolve_path=True),
+    help=(
+        "The directory to write results and incidental files (logs, etc.) to. "
+        "If no value is passed, results will be written to a 'results/' directory "
+        "in the current working directory."
+    ),
+)
+@click.option(
     "--computing-environment",
     default="local",
     show_default=True,
@@ -52,6 +61,7 @@ def linker():
 def run(
     pipeline_specification: str,
     input_data: str,
+    output_dir: Optional[str],
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
@@ -71,7 +81,7 @@ def run(
         input_data=input_data,
     )
     # TODO [MIC-4493]: Add configuration validation
-    results_dir = prepare_results_directory(config)
+    results_dir = prepare_results_directory(output_dir, config)
     logger.info(f"Results directory: {str(results_dir)}")
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger

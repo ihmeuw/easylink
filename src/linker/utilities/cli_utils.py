@@ -5,7 +5,7 @@ import sys
 from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, TextIO
+from typing import Any, Callable, Optional, TextIO
 
 from loguru import logger
 
@@ -89,10 +89,9 @@ def _add_logging_sink(
         )
 
 
-def prepare_results_directory(config: Config) -> Path:
-    results_dir = _generate_results_dir_name()
+def prepare_results_directory(output_dir: Optional[str], config: Config) -> Path:
+    results_dir = _generate_results_dir_name(output_dir)
     _ = os.umask(0o002)
-    # TODO: Consider adding an output directory argument
     results_dir.mkdir(parents=True, exist_ok=False)
     shutil.copy(config.pipeline_path, results_dir)
     if config.computing_environment != "local":
@@ -101,7 +100,11 @@ def prepare_results_directory(config: Config) -> Path:
     return results_dir
 
 
-def _generate_results_dir_name():
+def _generate_results_dir_name(output_dir: Optional[str]):
     launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    output_root = Path("results") / launch_time
+    if output_dir:
+        output_root = Path(output_dir) / launch_time
+    else:
+        output_root = Path("results") / launch_time
+
     return output_root.resolve()
