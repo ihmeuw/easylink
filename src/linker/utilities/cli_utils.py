@@ -89,10 +89,12 @@ def _add_logging_sink(
         )
 
 
-def prepare_results_directory(output_dir: Optional[str], config: Config) -> Path:
-    results_dir = _generate_results_dir_name(output_dir)
+def prepare_results_directory(
+    output_dir: Optional[str], timestamp: bool, config: Config
+) -> Path:
+    results_dir = _generate_results_dir_name(output_dir, timestamp)
     _ = os.umask(0o002)
-    results_dir.mkdir(parents=True, exist_ok=False)
+    results_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy(config.pipeline_path, results_dir)
     if config.computing_environment != "local":
         shutil.copy(config.computing_environment_path, results_dir)
@@ -100,11 +102,11 @@ def prepare_results_directory(output_dir: Optional[str], config: Config) -> Path
     return results_dir
 
 
-def _generate_results_dir_name(output_dir: Optional[str]):
+def _generate_results_dir_name(output_dir: Optional[str], timestamp: bool):
     launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     if output_dir:
-        output_root = Path(output_dir) / launch_time
+        output_root = Path(output_dir) / launch_time if timestamp else Path(output_dir)
     else:
-        output_root = Path("results") / launch_time
+        output_root = Path("results") / launch_time if timestamp else Path("results")
 
     return output_root.resolve()

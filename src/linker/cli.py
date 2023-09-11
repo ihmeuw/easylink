@@ -41,6 +41,12 @@ def linker():
     ),
 )
 @click.option(
+    "--timestamp/--no-timestamp",
+    default=True,
+    show_default=True,
+    help="Save the results in a timestamped sub-directory of --output-dir",
+)
+@click.option(
     "--computing-environment",
     default="local",
     show_default=True,
@@ -62,6 +68,7 @@ def run(
     pipeline_specification: str,
     input_data: str,
     output_dir: Optional[str],
+    timestamp: bool,
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
@@ -81,8 +88,9 @@ def run(
         input_data=input_data,
     )
     # TODO [MIC-4493]: Add configuration validation
-    results_dir = prepare_results_directory(output_dir, config)
+    results_dir = prepare_results_directory(output_dir, timestamp, config)
     logger.info(f"Results directory: {str(results_dir)}")
+    breakpoint()
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
