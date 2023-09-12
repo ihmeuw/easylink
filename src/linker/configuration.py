@@ -7,7 +7,7 @@ from loguru import logger
 
 STEP_ORDER = tuple(
     [
-        "full_entity_resolution",
+        "pvs_like_case_study",
     ]
 )
 
@@ -41,10 +41,14 @@ class Config:
             step_dir = (
                 Path(os.path.realpath(__file__)).parent.parent.parent
                 / "steps"
-                / "pvs_like_case_study_sample_data"
+                / step_name
+                / "implementation"
+                / implementation
             )
         else:
-            raise NotImplementedError(f"No support for impementation '{implementation}'")
+            raise NotImplementedError(
+                f"No support for step '{step_name}', impementation '{implementation}'."
+            )
         return step_dir
 
     def get_resources(self) -> Dict[str, str]:
