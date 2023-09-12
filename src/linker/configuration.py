@@ -42,7 +42,7 @@ class Config:
                 Path(os.path.realpath(__file__)).parent.parent.parent
                 / "steps"
                 / step_name
-                / "implementation"
+                / "implementations"
                 / implementation
             )
         else:
