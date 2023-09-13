@@ -1,0 +1,19 @@
+name: pvs_like_case_study_r
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10
+  # We use a slightly older version of R, because that
+  # is what is compatible with IHME's RStudio
+  - r-base=4.2
+  - r-devtools
+  - r-renv
+  # Python packages
+  - rpy2
+  - pandas
+  - numpy
+  - matplotlib
+  - pyarrow
+  # Not technically necessary if not using notebooks
+  - ipykernel
