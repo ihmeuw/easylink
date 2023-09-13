@@ -196,8 +196,8 @@ census_2030
     
 census_2030.pik.notnull().mean()
     
-census_2030_ground_truth = pd.read_parquet('census_2030_ground_truth_sample.parquet').set_index('record_id').simulant_id
-reference_file_ground_truth = pd.read_parquet('reference_file_ground_truth_sample.parquet').set_index('record_id').simulant_id
+census_2030_ground_truth = pd.read_parquet(input_file_dir / 'census_2030_ground_truth_sample.parquet').set_index('record_id').simulant_id
+reference_file_ground_truth = pd.read_parquet(input_file_dir / 'reference_file_ground_truth_sample.parquet').set_index('record_id').simulant_id
     
 # Not possible to be PIKed, since they are truly not in the reference file
 (~census_2030_ground_truth.isin(reference_file_ground_truth)).mean()
