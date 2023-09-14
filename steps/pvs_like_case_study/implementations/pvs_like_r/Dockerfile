@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM continuumio/miniconda3
 RUN mkdir -p /input_data
 RUN mkdir -p /results
 VOLUME /results
