@@ -1,5 +1,5 @@
 # NOTE: the key names provided below are irrelevent as only the filepaths themselves are used
-census_2030_sample: /Users/mkappel/git/ecosystem/linker/sample_data/pvs_like_case_study/census_2030_sample.parquet
-reference_file_sample: /Users/mkappel/git/ecosystem/linker//sample_data/pvs_like_case_study/reference_file_sample.parquet
-census_2030_ground_truth_sample: /Users/mkappel/git/ecosystem/linker/sample_data/pvs_like_case_study/census_2030_ground_truth_sample.parquet
-reference_file_ground_truth_sample: /Users/mkappel/git/ecosystem/linker/sample_data/pvs_like_case_study/reference_file_ground_truth_sample.parquet
+census_2030_sample: /mnt/team/simulation_science/priv/engineering/scratch/ecosystem/sample_data/pvs_like_case_study/census_2030_sample.parquet
+reference_file_sample: /mnt/team/simulation_science/priv/engineering/scratch/ecosystem//sample_data/pvs_like_case_study/reference_file_sample.parquet
+census_2030_ground_truth_sample: /mnt/team/simulation_science/priv/engineering/scratch/ecosystem/sample_data/pvs_like_case_study/census_2030_ground_truth_sample.parquet
+reference_file_ground_truth_sample: /mnt/team/simulation_science/priv/engineering/scratch/ecosystem/sample_data/pvs_like_case_study/reference_file_ground_truth_sample.parquet
