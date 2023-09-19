@@ -36,22 +36,15 @@ class Config:
     def get_step_directory(self, step_name: str) -> Path:
         # TODO: move this into proper config validator
         implementation = self.pipeline["steps"][step_name]["implementation"]
-        implementation_names = next(
-            os.walk(
-                Path(os.path.realpath(__file__)).parent.parent.parent
-                / "steps"
-                / step_name
-                / "implementations"
-            )
-        )[1]
+        implementation_dir = (
+            Path(os.path.realpath(__file__)).parent.parent.parent
+            / "steps"
+            / step_name
+            / "implementations"
+        )
+        implementation_names = next(os.walk(implementation_dir))[1]
         if implementation in implementation_names:
-            step_dir = (
-                Path(os.path.realpath(__file__)).parent.parent.parent
-                / "steps"
-                / step_name
-                / "implementations"
-                / implementation
-            )
+            step_dir = implementation_dir / implementation
         else:
             raise NotImplementedError(
                 f"No support found for step '{step_name}', implementation '{implementation}'."
