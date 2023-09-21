@@ -28,10 +28,12 @@ def linker():
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.argument(
+    "-i",
     "input_data",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.option(
+    "-o",
     "--output-dir",
     type=click.Path(exists=False, dir_okay=True, resolve_path=True),
     help=(
@@ -47,10 +49,12 @@ def linker():
     help="Save the results in a timestamped sub-directory of --output-dir.",
 )
 @click.option(
+    "-e",
     "--computing-environment",
     default="local",
     show_default=True,
     type=click.STRING,
+    ### XXX TODO: should we require an environment.yaml and get rid of 'local'?
     help=(
         "The computing environment on which to launch the step. Can be either "
         "'local' or a path to an environment.yaml file."
