@@ -1,5 +1,5 @@
 computing_environment: slurm
-container_engine: singularity  # or docker
+# container_engine: singularity  # singularity or docker; comment out completely if unknown
 slurm:
   account: proj_simscience
   partition: all.q
