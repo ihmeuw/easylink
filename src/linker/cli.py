@@ -28,7 +28,6 @@ def linker():
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
 @click.argument(
-    "-i",
     "input_data",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
 )
@@ -51,16 +50,12 @@ def linker():
 @click.option(
     "-e",
     "--computing-environment",
-    default="local",
+    default=None,
     show_default=True,
-    type=click.STRING,
-    ### XXX TODO: should we require an environment.yaml and get rid of 'local'?
-    help=(
-        "The computing environment on which to launch the step. Can be either "
-        "'local' or a path to an environment.yaml file."
-    ),
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help=("Path to a computing environment yaml file on which to launch the step."),
 )
-@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
+@click.option("-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True)
 @click.option(
     "--pdb",
     "with_debugger",

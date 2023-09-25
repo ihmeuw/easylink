@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import yaml
 from loguru import logger
@@ -19,10 +19,10 @@ class Config:
     """
 
     def __init__(
-        self, pipeline_specification: str, computing_environment: str, input_data: str
+        self, pipeline_specification: str, computing_environment: Path, input_data: str
     ):
         self.pipeline_path = Path(pipeline_specification)
-        if computing_environment == "local":
+        if computing_environment is None:
             self.computing_environment_path = None
         else:
             self.computing_environment_path = Path(computing_environment)
@@ -61,23 +61,24 @@ class Config:
     # Helper Functions #
     ####################
 
-    def _load_yaml(self, filepath: Path) -> Dict:
+    @staticmethod
+    def _load_yaml(filepath: Path) -> Dict:
         with open(filepath, "r") as file:
             data = yaml.safe_load(file)
         return data
 
     def _load_computing_environment(
-        self, computing_environment: str
+        self, computing_environment: Optional[Path]
     ) -> Dict[str, Union[Dict, str]]:
-        if computing_environment == "local":
-            return {"computing_environment": "local"}
-        else:
-            filepath = Path(computing_environment).resolve()
-            if not filepath.is_file():
-                raise RuntimeError(
-                    "Computing environment is expected to be either 'local' or a path "
-                    f"to an existing yaml file. Input is neither: '{computing_environment}'"
-                )
+        """Load the computing environment yaml file and return the contents as a dict."""
+        if computing_environment is None:
+            return {"computing_environment": "local", "container_engine": "undefined"}
+        filepath = Path(computing_environment).resolve()
+        if not filepath.is_file():
+            raise RuntimeError(
+                "Computing environment is expected to be a path to an existing"
+                f" yaml file. Input was: '{computing_environment}'"
+            )
         return self._load_yaml(filepath)
 
     def _load_input_data_paths(self, input_data: str) -> List[Path]:
