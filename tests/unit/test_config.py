@@ -21,7 +21,7 @@ def test_bad_computing_environment_fails(config_path, computing_environment):
         Config(f"{config_path}/pipeline.yaml", computing_environment, "foo")
 
 
-def test_local_computing_environment(config_path):
+def test_default_computing_environment(config_path):
     config = Config(f"{config_path}/pipeline.yaml", None, f"{config_path}/input_data.yaml")
     assert config.computing_environment == "local"
 
