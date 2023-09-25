@@ -6,28 +6,16 @@ from loguru import logger
 
 
 def run_with_singularity(input_data: List[Path], results_dir: Path, step_dir: Path) -> None:
-    logger.info("Trying to run container with singularity")
-    _build_container(results_dir, step_dir)
+    logger.info("Running container with singularity")
     _run_container(input_data, results_dir, step_dir)
     _clean(results_dir, step_dir)
-
-
-def _build_container(results_dir: Path, step_dir: Path) -> None:
-    cmd = (
-        f"singularity build --force {results_dir}/image.sif "
-        f"docker-archive://{step_dir}/image.tar.gz"
-    )
-    logger.info("Building the singularity container from docker image")
-    if (results_dir / "image.sif").exists():
-        logger.warning(f"Overwriting an existing singularity image {results_dir}/image.sif")
-    _run_cmd(results_dir, cmd)
 
 
 def _run_container(input_data: List[Path], results_dir: Path, step_dir: Path) -> None:
     cmd = f"singularity run --pwd {step_dir} --bind {results_dir}:/results "
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
-    cmd += f"{results_dir}/image.sif"
+    cmd += f"{step_dir}/image.sif"
     logger.info("Running the singularity container")
     _run_cmd(results_dir, cmd)
 

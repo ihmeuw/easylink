@@ -57,7 +57,7 @@ def run_container(
     elif container_engine == "singularity":
         run_with_singularity(input_data, results_dir, step_dir)
     else:
-        if container_engine:
+        if container_engine and container_engine != "undefined":
             logger.warning(
                 "The container engine is expected to be either 'docker' or "
                 f"'singularity' but got '{container_engine}' - trying to run "

@@ -39,17 +39,30 @@ The docker images are built from the Dockerfile. There may be unique situations,
 however, where you want to share a pre-built image. Images can be quite large and so distributing via pypi is not an option. One common method of sharing is to use the docker repository. Another one is to save the built image as an executable .tar file which can be distributed like any other file.
 
 To create an image .tar file from a Dockerfile, first ensure Docker is installed
-then convert like the following example:
+then convert like the following example for some `<implementation>`:
 
 ```
-$ cd <path/to/repositories>/linker/steps/pvs_like_case_study_sample_data/
+$ cd <path/to/repositories>/linker/steps/<step_name>/implementations/<implementation>
 $ # build the image
-$ sudo docker build -t linker:pvs_like_case_study_sample_data .
+$ sudo docker build -t linker:<implementation> .
 $ # save as compressed tarball
-$ sudo docker save linker | gzip > image.tar.gz
+$ sudo docker save linker:<implementation> | gzip > image.tar.gz
 $ # remove the image
-$ sudo docker rmi linker:pvs_like_case_study_sample_data
+$ sudo docker rmi linker:<implementation>
 ```
 
-You should now have a step.tar image file alongside the Dockerfile which can be
-used to spin up the container.
+You should now have an image file named `image.tar.gz` alongside the Dockerfile 
+which can be used to spin up the container.
+
+
+## Creating a singularity image to be shared
+
+Singularity images should be built from a docker image created using the
+instructions in the section above. With an `image.tar.gz` docker image,
+you can create a SIF using:
+
+```
+$ cd <path/to/repositories>/linker/steps/<step_name>/implementations/<implementation>
+$ # convert the image from the docker image
+$ singularity build --force image.sif docker-archive://$(pwd)/image.tar.gz
+```
