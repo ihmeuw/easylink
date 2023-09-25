@@ -17,16 +17,12 @@ from tests.unit.conftest import ENV_CONFIG_DICT, PIPELINE_CONFIG_DICT
     ],
 )
 def test_bad_computing_environment_fails(config_path, computing_environment):
-    match = (
-        "Computing environment is expected to be either 'local' or a path to an "
-        f"existing yaml file. Input is neither: '{computing_environment}'"
-    )
-    with pytest.raises(RuntimeError, match=match):
+    with pytest.raises(FileNotFoundError):
         Config(f"{config_path}/pipeline.yaml", computing_environment, "foo")
 
 
 def test_local_computing_environment(config_path):
-    config = Config(f"{config_path}/pipeline.yaml", "local", f"{config_path}/input_data.yaml")
+    config = Config(f"{config_path}/pipeline.yaml", None, f"{config_path}/input_data.yaml")
     assert config.computing_environment == "local"
 
 

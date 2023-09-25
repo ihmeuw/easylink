@@ -75,7 +75,7 @@ class Config:
             return {"computing_environment": "local", "container_engine": "undefined"}
         filepath = Path(computing_environment).resolve()
         if not filepath.is_file():
-            raise RuntimeError(
+            raise FileNotFoundError(
                 "Computing environment is expected to be a path to an existing"
                 f" yaml file. Input was: '{computing_environment}'"
             )
