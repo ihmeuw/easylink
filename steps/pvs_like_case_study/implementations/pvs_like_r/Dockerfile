@@ -10,8 +10,6 @@ RUN conda init bash \
     && conda create -n pvs_like_case_study_r --file=pvs_like_case_study_r_lock.txt \
     && conda activate pvs_like_case_study_r \
     && Rscript -e 'renv::restore(library=.libPaths())'
-#RUN echo 'source ~/anaconda3/etc/profile.d/conda.sh' >> ~/.bashrc
-#RUN echo "conda activate pvs_like_case_study_r" >> ~/.bashrc
-CMD ["bash", "-c", "conda activate pvs_like_case_study_r \
-     && python pvs_like_case_study_sample_data_r.py \
+RUN echo "conda activate pvs_like_case_study_r" >> ~/.bash_profile
+CMD ["bash", "-c", "python pvs_like_case_study_sample_data_r.py \
      && mv census_2030_with_piks_sample.parquet /results/"]
