@@ -7,11 +7,7 @@ COPY pvs_like_case_study_r_lock.txt pvs_like_case_study_sample_data_r.py renv.lo
 SHELL ["/bin/bash", "--login", "-c"]
 RUN conda init bash \
     && . ~/.bashrc \
-    && conda create -n pvs_like_case_study_r --file=pvs_like_case_study_r_lock.txt \
-    && conda activate pvs_like_case_study_r \
+    && conda install --file=pvs_like_case_study_r_lock.txt \
     && Rscript -e 'renv::restore(library=.libPaths())' \
-#RUN echo 'source ~/anaconda3/etc/profile.d/conda.sh' >> ~/.bashrc
-#RUN echo "conda activate pvs_like_case_study_r" >> ~/.bashrc
-CMD ["bash", "-c", "conda activate pvs_like_case_study_r \
-     && python pvs_like_case_study_sample_data_r.py \
+CMD ["bash", "-c", "python pvs_like_case_study_sample_data_r.py \
      && mv census_2030_with_piks_sample.parquet /results/"]
