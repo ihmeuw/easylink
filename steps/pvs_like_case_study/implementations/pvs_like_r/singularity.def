@@ -1,0 +1,17 @@
+Bootstrap: docker
+From: continuumio/miniconda3
+
+%post
+    # Create a new conda environment 'pvs_like_case_study_r'
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc
+    /opt/conda/bin/conda create --name pvs_like_case_study_r
+
+%environment
+    # Activate the conda environment 'pvs_like_case_study_r'
+    source /opt/conda/etc/profile.d/conda.sh
+    conda activate pvs_like_case_study_r
+
+%runscript
+    # Run a bash command
+    echo "Running the bash command now:"
+    /bin/bash -c "echo 'Hello World!'"
