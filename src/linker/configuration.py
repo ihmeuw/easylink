@@ -36,18 +36,18 @@ class Config:
     def get_step_directory(self, step_name: str) -> Path:
         # TODO: move this into proper config validator
         implementation = self.pipeline["steps"][step_name]["implementation"]
-        if implementation == "pvs_like_python":
-            # TODO: stop hard-coding filepaths
-            step_dir = (
-                Path(os.path.realpath(__file__)).parent.parent.parent
-                / "steps"
-                / step_name
-                / "implementations"
-                / implementation
-            )
+        implementation_dir = (
+            Path(os.path.realpath(__file__)).parent.parent.parent
+            / "steps"
+            / step_name
+            / "implementations"
+        )
+        implementation_names = next(os.walk(implementation_dir))[1]
+        if implementation in implementation_names:
+            step_dir = implementation_dir / implementation
         else:
             raise NotImplementedError(
-                f"No support for step '{step_name}', impementation '{implementation}'."
+                f"No support found for step '{step_name}', implementation '{implementation}'."
             )
         return step_dir
 

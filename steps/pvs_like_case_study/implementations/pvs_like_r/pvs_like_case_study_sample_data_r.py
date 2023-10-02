@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-input_file_dir = Path("../../../../sample_data/pvs_like_case_study")
+input_file_dir = Path("/input_data")
 reference_file = pd.read_parquet(input_file_dir / "reference_file_sample.parquet")
 census_2030 = pd.read_parquet(input_file_dir / "census_2030_sample.parquet")
 
