@@ -12,20 +12,20 @@ VOLUME /input_data
 COPY pvs_like_case_study_sample_data_spark_local.py pvs_like_case_study_spark_local_lock_no_jupyter.txt ./
 
 # Create a new conda environment
-RUN conda create -n pvs_like_case_study_spark_local --file=pvs_like_case_study_spark_local_lock_no_jupyter.txt
-
-# Activate the conda environment and install any necessary Python packages
-RUN echo "source activate pvs_like_case_study_spark_local" > ~/.bashrc
-ENV PATH /opt/conda/envs/pvs_like_case_study_spark_local/bin:$PATH
+SHELL ["/bin/bash", "--login", "-c"]
+RUN conda init bash \
+    && . ~/.bashrc \
+    && conda create -n pvs_like_case_study_spark_local --file=pvs_like_case_study_spark_local_lock_no_jupyter.txt
 
 # Final Stage: Copy from the previous stages
 FROM spark-base
 
-COPY --from=conda-base /opt/conda/envs/pvs_like_case_study_spark_local /opt/conda/envs/pvs_like_case_study_spark_local
+# COPY --from=conda-base /opt/conda/envs/pvs_like_case_study_spark_local /opt/conda/envs/pvs_like_case_study_spark_local
+COPY --from=conda-base /opt/conda /opt/conda
 
-# Set environment variables for conda
-ENV PATH=/opt/conda/envs/pvs_like_case_study_spark_local/bin:${PATH}
+# Set PATH for conda environment and conda itself
+ENV PATH=/opt/conda/envs/pvs_like_case_study_spark_local/bin:/opt/conda/condabin:${PATH}
 
 # Run your script with Spark on startup
-CMD ["/bin/bash", "-c", "conda run pvs_like_case_study_spark_local python myscript.py \
+CMD ["/bin/bash", "-c", "conda run -n pvs_like_case_study_spark_local python pvs_like_case_study_sample_data_spark_local.py \
      && mv census_2030_with_piks_sample.parquet /results/"]
