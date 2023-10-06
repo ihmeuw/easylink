@@ -22,6 +22,7 @@ FROM spark-base
 
 # COPY --from=conda-base /opt/conda/envs/pvs_like_case_study_spark_local /opt/conda/envs/pvs_like_case_study_spark_local
 COPY --from=conda-base /opt/conda /opt/conda
+COPY --from=conda-base pvs_like_case_study_sample_data_spark_local.py pvs_like_case_study_spark_local_lock_no_jupyter.txt ./
 
 # Set PATH for conda environment and conda itself
 ENV PATH=/opt/conda/envs/pvs_like_case_study_spark_local/bin:/opt/conda/condabin:${PATH}
