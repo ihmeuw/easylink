@@ -1,5 +1,4 @@
-# Use an official Apache Spark runtime as a parent image
-FROM apache/spark:3.0.1
+FROM apache/spark
 
 # Set the working directory in the container to /app
 WORKDIR /app
@@ -8,8 +7,8 @@ WORKDIR /app
 ADD *.py *.txt /app/
 
 # Install wget and bzip2
-RUN apt-get update -y && apt-get upgrade -y
-RUN apt-get install -y wget bzip2
+#RUN apt-get update -y && apt-get upgrade -y
+#RUN apt-get install -y wget bzip2
 
 # Install miniconda to /miniconda
 RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
