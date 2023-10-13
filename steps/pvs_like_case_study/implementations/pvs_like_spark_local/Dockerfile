@@ -1,29 +1,32 @@
-FROM apache/spark
+# Stage 1: Start with the Apache Spark base image
+FROM apache/spark as spark-base
 
-# Set the working directory in the container to /app
-WORKDIR /app
+# Stage 2: Start with the miniconda3 base image
+FROM continuumio/miniconda3 as conda-base
 
-# Add the current directory contents into the container at /app
-ADD *.py *.txt /app/
+# Setup I/O directories and copy the environment and Python script
+RUN mkdir -p /input_data
+RUN mkdir -p /results
+VOLUME /results
+VOLUME /input_data
+COPY pvs_like_case_study_sample_data_spark_local.py pvs_like_case_study_spark_local_lock_no_jupyter.txt ./
 
-# Install wget and bzip2
-#RUN apt-get update -y && apt-get upgrade -y
-#RUN apt-get install -y wget bzip2
+# Create a new conda environment
+SHELL ["/bin/bash", "--login", "-c"]
+RUN conda init bash \
+    && . ~/.bashrc \
+    && conda create -n pvs_like_case_study_spark_local --file=pvs_like_case_study_spark_local_lock_no_jupyter.txt
 
-# Install miniconda to /miniconda
-RUN wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh
-RUN bash ~/miniconda.sh -b -p /miniconda
-ENV PATH="/miniconda/bin:${PATH}"
-RUN conda update -y conda
+# Final Stage: Copy from the previous stages
+FROM spark-base
 
-# Create a conda environment based on myenvironment.txt
-COPY pvs_like_case_study_spark_local_lock_no_jupyter.txt /app/pvs_like_case_study_spark_local_lock_no_jupyter.txt
-COPY pvs_like_case_study_sample_data_spark_local.py /app/pvs_like_case_study_sample_data_spark_local.py
-RUN conda create -n pvs_like_case_study_spark_local -f pvs_like_case_study_spark_local_lock_no_jupyter.txt
+# COPY --from=conda-base /opt/conda/envs/pvs_like_case_study_spark_local /opt/conda/envs/pvs_like_case_study_spark_local
+COPY --from=conda-base /opt/conda /opt/conda
+COPY --from=conda-base pvs_like_case_study_sample_data_spark_local.py pvs_like_case_study_spark_local_lock_no_jupyter.txt ./
 
-# Activate the environment
-RUN echo "source activate pvs_like_case_study_spark_local" > ~/.bashrc
-ENV PATH /opt/conda/envs/pvs_like_case_study_spark_local/bin:$PATH
+# Set PATH for conda environment and conda itself
+ENV PATH=/opt/conda/envs/pvs_like_case_study_spark_local/bin:/opt/conda/condabin:${PATH}
 
-# Run command from conda environment
-CMD /bin/bash -c "source activate pvs_like_case_study_spark_local && python pvs_like_case_study_sample_data_spark_local.py"
+# Run your script with Spark on startup
+CMD ["/bin/bash", "-c", "conda run -n pvs_like_case_study_spark_local python pvs_like_case_study_sample_data_spark_local.py \
+     && mv census_2030_with_piks_sample.parquet /results/"]
