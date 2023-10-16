@@ -1,19 +1,27 @@
-FROM ubuntu:23.04
-ENV PATH="/root/miniconda3/bin:${PATH}"
-ARG PATH="/root/miniconda3/bin:${PATH}"
-RUN apt-get update
+# Stage 1: Start with the Apache Spark base image
+FROM continuumio/miniconda3 as conda-base
+FROM apache/spark as spark-base
 
-RUN apt-get install -y wget && rm -rf /var/lib/apt/lists/*
+COPY --from=conda-base /opt/conda /opt/conda
 
-# Install Spark and Java
-RUN apt-get install -y openjdk-8-jdk-headless -qq > /dev/null && \
-    wget -q https://downloads.apache.org/spark/spark-3.0.1/spark-3.0.1-bin-hadoop2.7.tgz && \
-    tar xf spark-3.0.1-bin-hadoop2.7.tgz && \
-    rm spark-3.0.1-bin-hadoop2.7.tgz
 
-RUN wget \
-    https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && mkdir /root/.conda \
-    && bash Miniconda3-latest-Linux-x86_64.sh -b \
-    && rm -f Miniconda3-latest-Linux-x86_64.sh 
-RUN conda --version
+
+# Setup I/O directories and copy the environment and Python script
+RUN mkdir -p /input_data
+RUN mkdir -p /results
+VOLUME /results
+VOLUME /input_data
+COPY pvs_like_case_study_sample_data_spark_local.py pvs_like_case_study_spark_local_lock_no_jupyter.txt ./
+
+# Create a new conda environment
+SHELL ["/bin/bash", "--login", "-c"]
+RUN conda init bash \
+    && . ~/.bashrc \
+    && conda create -n pvs_like_case_study_spark_local --file=pvs_like_case_study_spark_local_lock_no_jupyter.txt
+
+# Set PATH for conda environment and conda itself
+ENV PATH=/opt/conda/envs/pvs_like_case_study_spark_local/bin:/opt/conda/condabin:${PATH}
+
+# Run your script with Spark on startup
+CMD ["/bin/bash", "-c", "conda run -n pvs_like_case_study_spark_local python pvs_like_case_study_sample_data_spark_local.py \
+     && mv census_2030_with_piks_sample.parquet /results/"]

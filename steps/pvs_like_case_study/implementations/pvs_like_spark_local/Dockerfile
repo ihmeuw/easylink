@@ -1,5 +1,5 @@
 # Stage 1: Start with the Apache Spark base image
-FROM apache/spark as spark-base
+#FROM apache/spark as spark-base
 
 # Stage 2: Start with the miniconda3 base image
 FROM continuumio/miniconda3 as conda-base
@@ -18,7 +18,8 @@ RUN conda init bash \
     && conda create -n pvs_like_case_study_spark_local --file=pvs_like_case_study_spark_local_lock_no_jupyter.txt
 
 # Final Stage: Copy from the previous stages
-FROM spark-base
+#FROM spark-base
+FROM apache/spark as spark-base
 
 # COPY --from=conda-base /opt/conda/envs/pvs_like_case_study_spark_local /opt/conda/envs/pvs_like_case_study_spark_local
 COPY --from=conda-base /opt/conda /opt/conda
