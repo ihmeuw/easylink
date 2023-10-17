@@ -4,8 +4,6 @@ FROM apache/spark as spark-base
 
 COPY --from=conda-base /opt/conda /opt/conda
 
-
-
 # Setup I/O directories and copy the environment and Python script
 RUN mkdir -p /input_data
 RUN mkdir -p /results

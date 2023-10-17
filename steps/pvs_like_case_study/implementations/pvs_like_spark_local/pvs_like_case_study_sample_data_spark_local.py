@@ -10,13 +10,15 @@ import re
 import numpy as np
 import pandas as pd
 
+print("HELLO WORLD")
+
 # TODO: MIC-4587, MIC-4588: update these paths for the container
 
 reference_file = pd.read_parquet(
-    "../../../../sample_data/pvs_like_case_study/reference_file_sample.parquet"
+    "/input_data/reference_file_sample.parquet"
 )
 census_2030 = pd.read_parquet(
-    "../../../../sample_data/pvs_like_case_study/census_2030_sample.parquet"
+    "/input_data/census_2030_sample.parquet"
 )
 
 # Use NaN for all forms of missingness, including empty string
@@ -407,14 +409,14 @@ census_2030.pik.notnull().mean()
 
 census_2030_ground_truth = (
     pd.read_parquet(
-        "../../../../sample_data/pvs_like_case_study/census_2030_ground_truth_sample.parquet"
+        "/input_data/census_2030_ground_truth_sample.parquet"
     )
     .set_index("record_id")
     .simulant_id
 )
 reference_file_ground_truth = (
     pd.read_parquet(
-        "../../../../sample_data/pvs_like_case_study/reference_file_ground_truth_sample.parquet"
+        "/input_data/reference_file_ground_truth_sample.parquet"
     )
     .set_index("record_id")
     .simulant_id

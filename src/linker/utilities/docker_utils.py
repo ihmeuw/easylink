@@ -28,6 +28,8 @@ def get_docker_client() -> DockerClient:
 
 def _load_image(client: DockerClient, image_path: Path) -> str:
     logger.info(f"Loading the image ({str(image_path)})")
+    ### XXX Hack
+    return "linker:pvs_like_spark_local"
     try:
         with open(str(image_path), "rb") as f:
             image_data = f.read()

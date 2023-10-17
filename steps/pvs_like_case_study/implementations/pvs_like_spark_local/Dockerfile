@@ -1,7 +1,4 @@
-# Stage 1: Start with the Apache Spark base image
-#FROM apache/spark as spark-base
-
-# Stage 2: Start with the miniconda3 base image
+# Stage 1: Start with the miniconda3 base image
 FROM continuumio/miniconda3 as conda-base
 
 # Setup I/O directories and copy the environment and Python script
