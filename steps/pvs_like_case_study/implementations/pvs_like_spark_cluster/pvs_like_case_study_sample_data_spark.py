@@ -7,12 +7,14 @@
 
 import os
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-reference_file = pd.read_parquet("reference_file_sample.parquet")
-census_2030 = pd.read_parquet("census_2030_sample.parquet")
+input_file_dir = Path("../../../../sample_data/pvs_like_case_study")
+reference_file = pd.read_parquet(input_file_dir / "reference_file_sample.parquet")
+census_2030 = pd.read_parquet(input_file_dir / "census_2030_sample.parquet")
 
 # Use NaN for all forms of missingness, including empty string
 reference_file = reference_file.fillna(np.nan).replace("", np.nan)
@@ -401,12 +403,12 @@ census_2030
 census_2030.pik.notnull().mean()
 
 census_2030_ground_truth = (
-    pd.read_parquet("census_2030_ground_truth_sample.parquet")
+    pd.read_parquet(input_file_dir / "census_2030_ground_truth_sample.parquet")
     .set_index("record_id")
     .simulant_id
 )
 reference_file_ground_truth = (
-    pd.read_parquet("reference_file_ground_truth_sample.parquet")
+    pd.read_parquet(input_file_dir / "reference_file_ground_truth_sample.parquet")
     .set_index("record_id")
     .simulant_id
 )
