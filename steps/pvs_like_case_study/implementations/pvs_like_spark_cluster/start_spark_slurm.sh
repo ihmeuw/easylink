@@ -14,7 +14,7 @@
 # It is a heavily modified version of https://serverfault.com/a/776688
 
 unset SPARK_HOME
-CONDA_PATH=/mnt/share/homes/zmbc/mambaforge/condabin/mamba # must be accessible within container
+CONDA_PATH=/ihme/homes/mkappel/miniconda3/condabin/conda # must be accessible within container
 CONDA_ENV=pvs_like_case_study_spark_node
 SINGULARITY_IMG=docker://apache/spark@sha256:a1dd2487a97fb5e35c5a5b409e830b501a92919029c62f9a559b13c4f5c50f63
 
