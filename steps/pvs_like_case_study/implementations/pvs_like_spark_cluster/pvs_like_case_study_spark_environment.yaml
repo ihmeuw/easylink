@@ -1,0 +1,14 @@
+name: pvs_like_case_study_spark
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.10
+  # Python packages
+  - pandas
+  - numpy
+  - matplotlib
+  - pyarrow
+  - splink
+  - jellyfish
+  - pyspark
