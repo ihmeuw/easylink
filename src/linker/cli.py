@@ -144,3 +144,43 @@ def run_slurm_job(
     )
 
     logger.info("*** FINISHED ***")
+
+
+@linker.command(hidden=True)
+@click.option(
+    "-e",
+    "--computing-environment",
+    default=None,
+    show_default=True,
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help=("Path to a computing environment yaml file on which to launch the step."),
+)
+@click.option("--input-data", multiple=True)
+@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
+def build_spark_cluster(
+    container_engine: str,
+    results_dir: str,
+    step_name: str,
+    step_dir: str,
+    input_data: Tuple[str],
+    verbose: int,
+) -> None:
+    """Runs a job on Slurm. The standard use case is this would be kicked off
+    when a slurm computing environment is defined in the environment.yaml.
+    """
+    configure_logging_to_terminal(verbose)
+    results_dir = Path(results_dir)
+    step_dir = Path(step_dir)
+    input_data = [Path(x) for x in input_data]
+    main = handle_exceptions(
+        func=runner.run_container, exceptions_logger=logger, with_debugger=False
+    )
+    main(
+        container_engine=container_engine,
+        input_data=input_data,
+        results_dir=results_dir,
+        step_name=step_name,
+        step_dir=step_dir,
+    )
+
+    logger.info("*** FINISHED ***")
