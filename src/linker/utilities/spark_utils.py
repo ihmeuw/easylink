@@ -26,6 +26,7 @@ def build_cluster():
 
 
 def get_singularity_image_from_dockerhub():
+    ...
 
 
 def build_cluster_launch_script(
@@ -68,7 +69,7 @@ if [ "$1" != 'multi_job' ]; then
     # that's why this script is being copied to a shared location to which
     # all nodes have access:
     mkdir -p $HOME/.spark_temp
-    script=$HOME/.spark_temp/${SLURM_JOBID}_$( basename -- "$0" )
+    script=$HOME/.spark_temp/${{SLURM_JOBID}}_$( basename -- "$0" )
     cp "$this" "$script"
 
     srun $script 'multi_job'
