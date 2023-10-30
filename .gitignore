@@ -137,3 +137,6 @@ notebooks/
 
 # Mac OS stuff
 .DS_Store
+
+# Version
+src/linker/_version.py
