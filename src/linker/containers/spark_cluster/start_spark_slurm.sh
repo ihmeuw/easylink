@@ -53,8 +53,8 @@ else
         singularity exec -B /mnt:/mnt,/tmp/pvs_like_case_study_spark_local_$USER:/tmp $SINGULARITY_IMG $CONDA_PATH run --no-capture-output -n $CONDA_ENV "$SPARK_ROOT/bin/spark-class" org.apache.spark.deploy.master.Master --host "$SPARK_MASTER_IP" --port "$SPARK_MASTER_PORT" --webui-port "$SPARK_MASTER_WEBUI_PORT"
     else
         # $(scontrol show hostname) is used to convert e.g. host20[39-40]
-        # to host2039 this step assumes that SLURM_PROCID=0 corresponds to
-        # the first node in SLURM_NODELIST !
+        # to host2039.
+        # TODO: This step assumes that SLURM_PROCID=0 corresponds to the first node in SLURM_NODELIST. Is this reasonable?
         MASTER_NODE=spark://$( scontrol show hostname $SLURM_NODELIST | head -n 1 ):$SPARK_MASTER_PORT
 
         mkdir -p /tmp/pvs_like_case_study_spark_local_$USER
