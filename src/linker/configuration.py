@@ -58,9 +58,7 @@ class Config:
         }
 
     def get_spark_resources(self) -> Dict[str, str]:
-        return {
-            **self.environment["spark"]
-        }
+        return {**self.environment["spark"]}
 
     ####################
     # Helper Functions #

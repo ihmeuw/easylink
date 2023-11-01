@@ -10,6 +10,7 @@ from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
 
+
 def main(
     config: Config,
     results_dir: Path,
