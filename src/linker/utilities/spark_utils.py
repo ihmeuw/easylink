@@ -5,6 +5,8 @@ import tempfile
 
 from typing import TextIO
 
+from linker.utilities.slurm_utils import submit_spark_cluster_job
+
 CONDA_PATH="/ihme/homes/mkappel/miniconda3/condabin/conda "# must be accessible within container
 CONDA_ENV="pvs_like_case_study_spark_node"
 SINGULARITY_IMG="docker://apache/spark@sha256:a1dd2487a97fb5e35c5a5b409e830b501a92919029c62f9a559b13c4f5c50f63"
@@ -18,22 +20,21 @@ def build_cluster():
     spark_master_url = ""
 
     # call build_launch_script
+    launcher = build_cluster_launch_script()
+
+    # submit job
 
 
-    # grep log for spark master url
+    # grep log for spark master url or is there a better approach?
 
     return spark_master_url
-
-
-def get_singularity_image_from_dockerhub():
-    ...
 
 
 def build_cluster_launch_script(
     worker_settings_file: Path,
     worker_log_directory: Path,
 ) -> TextIO:
-    """Generates a shell file that, on execution, spins up an RQ worker."""
+    """Generates a shell file that, on execution, spins up a Spark cluster."""
     launcher = tempfile.NamedTemporaryFile(
         mode="w",
         dir=".",
@@ -43,14 +44,17 @@ def build_cluster_launch_script(
     )
 
     output_dir = str(worker_settings_file.resolve().parent)
+    # TODO: handle .cluster.ihme.washington.edu
     launcher.write(
         f"""
-unset SPARK_HOME
+#!/bin/bash
 
+unset SPARK_HOME
+CONDA_PATH=/opt/conda/condabin/conda # must be accessible within container
+CONDA_ENV=spark_cluster
+SINGULARITY_IMG=image.sif
 
 export sparkLogs=$HOME/.spark_temp/logs
-export sparkTmp=$HOME/.spark_temp/tmp
-
 export SPARK_ROOT=/opt/spark # within the container
 export SPARK_WORKER_DIR=$sparkLogs
 export SPARK_LOCAL_DIRS=$sparkLogs
@@ -69,7 +73,7 @@ if [ "$1" != 'multi_job' ]; then
     # that's why this script is being copied to a shared location to which
     # all nodes have access:
     mkdir -p $HOME/.spark_temp
-    script=$HOME/.spark_temp/${{SLURM_JOBID}}_$( basename -- "$0" )
+    script=$HOME/.spark_temp/${SLURM_JOBID}_$( basename -- "$0" )
     cp "$this" "$script"
 
     srun $script 'multi_job'
@@ -83,8 +87,8 @@ else
         singularity exec -B /mnt:/mnt,/tmp/pvs_like_case_study_spark_local_$USER:/tmp $SINGULARITY_IMG $CONDA_PATH run --no-capture-output -n $CONDA_ENV "$SPARK_ROOT/bin/spark-class" org.apache.spark.deploy.master.Master --host "$SPARK_MASTER_IP" --port "$SPARK_MASTER_PORT" --webui-port "$SPARK_MASTER_WEBUI_PORT"
     else
         # $(scontrol show hostname) is used to convert e.g. host20[39-40]
-        # to host2039 this step assumes that SLURM_PROCID=0 corresponds to
-        # the first node in SLURM_NODELIST !
+        # to host2039.
+        # TODO: This step assumes that SLURM_PROCID=0 corresponds to the first node in SLURM_NODELIST. Is this reasonable?
         MASTER_NODE=spark://$( scontrol show hostname $SLURM_NODELIST | head -n 1 ):$SPARK_MASTER_PORT
 
         mkdir -p /tmp/pvs_like_case_study_spark_local_$USER

@@ -103,7 +103,8 @@ def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_thr
         f"-c {num_threads}"
     )
 
-def launch_spark_cluster(
+
+def submit_spark_cluster_job(
     session: types.ModuleType("drmaa.Session"),
     resources: Dict[str, str],
     container_engine: str,
@@ -113,7 +114,7 @@ def launch_spark_cluster(
     step_dir: Path,
 ) -> None:
     jt = session.createJobTemplate()
-    jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
     jt.outputPath = f":{str(results_dir / '%A.o%a')}"
     jt.errorPath = f":{str(results_dir / '%A.e%a')}"
@@ -126,8 +127,8 @@ def launch_spark_cluster(
         str(step_dir),
         "-vvv",
     ]
-    for filepath in input_data:
-        jt_args.extend(("--input-data", str(filepath)))
+    # for filepath in input_data:
+    #     jt_args.extend(("--input-data", str(filepath)))
     jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",

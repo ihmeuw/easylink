@@ -14,6 +14,8 @@ spark:
     cpus_per_task: 5
     mem_per_cpu: 8000  # MB
     time_limit: 1  # hours
+    # TODO: use fqdn to specify node URL
+    fqdn: "cluster.ihme.washington.edu"  # node URL: hostname.[spark.workers.fqdn]
   # config:
   #   spark.some.config.option: some-value
 
