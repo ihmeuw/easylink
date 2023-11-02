@@ -105,6 +105,21 @@ def submit_spark_cluster_job(
     num_workers: int,
     cpus_per_task: int,
 ) -> None:
+    """Submits a job to launch a Spark cluster.
+
+    Args:
+        session: DRMAA session.
+        launcher: Launcher script.
+        account: Account to charge.
+        partition: Partition to run on.
+        memory_per_node: Memory per node in GB.
+        max_runtime: Maximum runtime in hours.
+        num_workers: Number of workers.
+        cpus_per_task: Number of CPUs per task.
+
+    Returns:
+        None
+    """
     jt = session.createJobTemplate()
     jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     # jt.joinFiles = False  # keeps stdout separate from stderr
