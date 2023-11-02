@@ -152,15 +152,20 @@ def run_slurm_job(
     default=None,
     show_default=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    help=("Path to a computing environment yaml file describing Spark configuration."),
+    help="Path to a computing environment yaml file describing Spark configuration.",
 )
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def build_spark_cluster(
     computing_environment: str,
     verbose: int,
 ) -> None:
-    """Submit a Spark job to build a Spark cluster."""
+    """Submit a Slurm job to build a Spark cluster."""
     configure_logging_to_terminal(verbose)
+    # config = Config(
+    #     pipeline_specification=pipeline_specification,
+    #     computing_environment=computing_environment,
+    #     input_data=input_data,
+    # )
     main = handle_exceptions(
         func=build_cluster, exceptions_logger=logger, with_debugger=False
     )
