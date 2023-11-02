@@ -15,6 +15,7 @@ def build_cluster(environment_file: Path) -> str:
     """
     drmaa = get_slurm_drmaa()
     session = drmaa.Session()
+    session.initialize()
 
     spark_master_url = ""
 
