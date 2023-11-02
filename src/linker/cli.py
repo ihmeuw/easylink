@@ -147,7 +147,7 @@ def run_slurm_job(
     logger.info("*** FINISHED ***")
 
 
-@linker.command(hidden=True)
+# @linker.command(hidden=True)
 @click.option(
     "-e",
     "--computing-environment",
