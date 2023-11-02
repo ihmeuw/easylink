@@ -132,7 +132,6 @@ def submit_spark_cluster_job(
         "LANG": "en_US.UTF-8",
     }
     jt.nativeSpecification = (
-        f"--job-name={jt.jobName} "
         f"--account={account} "
         f"--partition={partition} "
         f"--mem-per-cpu={memory_per_node * 1024} "
