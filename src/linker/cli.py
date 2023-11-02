@@ -147,7 +147,7 @@ def run_slurm_job(
     logger.info("*** FINISHED ***")
 
 
-# @linker.command(hidden=True)
+@linker.command()
 @click.option(
     "-e",
     "--computing-environment",
@@ -161,9 +161,7 @@ def build_spark_cluster(
     computing_environment: str,
     verbose: int,
 ) -> None:
-    """Runs a job on Slurm. The standard use case is this would be kicked off
-    when a slurm computing environment is defined in the environment.yaml.
-    """
+    """Submit a Spark job to build a Spark cluster."""
     configure_logging_to_terminal(verbose)
     main = handle_exceptions(
         func=build_cluster, exceptions_logger=logger, with_debugger=False
