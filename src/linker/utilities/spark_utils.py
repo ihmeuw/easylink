@@ -19,7 +19,7 @@ def build_cluster(environment_file: Path) -> str:
 
     spark_master_url = ""
 
-    # TODO: Read environment file
+    # TODO: Read environment file for configuration
 
     # call build_launch_script
     launcher = build_cluster_launch_script()
@@ -38,7 +38,6 @@ def build_cluster(environment_file: Path) -> str:
     )
 
     # grep log for spark master url or is there a better approach?
-
     return spark_master_url
 
 
@@ -74,15 +73,15 @@ export SPARK_DAEMON_MEMORY=$(( $SLURM_MEM_PER_CPU * $SLURM_CPUS_PER_TASK / 2 ))m
 export SPARK_MEM=$SPARK_DAEMON_MEMORY
 
 # This section will be run when started by sbatch
-if [ "$1" != 'multi_job' ]; then
-    this=$0
-    mkdir -p "$HOME/.spark_temp"
-    script=$HOME/.spark_temp/${{SLURM_JOBID}}_$( basename -- "$0" )
-    cp "$this" "$script"
-
-    srun "$script multi_job"
-# If run by srun, then decide by $SLURM_PROCID whether we are master or worker
-else
+# if [ "$1" != 'multi_job' ]; then
+#     this=$0
+#     mkdir -p "$HOME/.spark_temp"
+#     script=$HOME/.spark_temp/${{SLURM_JOBID}}_$( basename -- "$0" )
+#     cp "$this" "$script"
+# 
+#     srun "$script multi_job"
+# # If run by srun, then decide by $SLURM_PROCID whether we are master or worker
+# else
     if [ "$SLURM_PROCID" -eq 0 ]; then
         HOSTNAME=$(hostname)
         # TODO: use fqdn from configuration
