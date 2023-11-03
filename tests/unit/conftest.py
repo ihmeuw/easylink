@@ -11,8 +11,8 @@ ENV_CONFIG_DICT = {
 
 PIPELINE_CONFIG_DICT = {
     "steps": {
-        "full_entity_resolution": {
-            "implementation": "some_implementation",
+        "pvs_like_case_study": {
+            "implementation": "pvs_like_python",
         },
     },
 }

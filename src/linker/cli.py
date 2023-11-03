@@ -110,16 +110,18 @@ def run(
 )
 @click.argument("step_name")
 @click.argument(
-    "step_dir",
+    "implementation_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
+@click.argument("container_full_stem")
 @click.option("--input-data", multiple=True)
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
     container_engine: str,
     results_dir: str,
     step_name: str,
-    step_dir: str,
+    implementation_dir: str,
+    container_full_stem: str,
     input_data: Tuple[str],
     verbose: int,
 ) -> None:
@@ -128,7 +130,7 @@ def run_slurm_job(
     """
     configure_logging_to_terminal(verbose)
     results_dir = Path(results_dir)
-    step_dir = Path(step_dir)
+    implementation_dir = Path(implementation_dir)
     input_data = [Path(x) for x in input_data]
     main = handle_exceptions(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
@@ -138,7 +140,8 @@ def run_slurm_job(
         input_data=input_data,
         results_dir=results_dir,
         step_name=step_name,
-        step_dir=step_dir,
+        implementation_dir=implementation_dir,
+        container_full_stem=container_full_stem,
     )
 
     logger.info("*** FINISHED ***")

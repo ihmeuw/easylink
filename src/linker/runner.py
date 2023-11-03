@@ -38,8 +38,14 @@ def main(
             f"provided {config.computing_environment}"
         )
     for step_name in config.steps:
-        step_dir = config.get_step_directory(step_name)
-        runner(config.container_engine, config.input_data, results_dir, step_name, step_dir)
+        runner(
+            container_engine=config.container_engine,
+            input_data=config.input_data,
+            results_dir=results_dir,
+            step_name=step_name,
+            implementation_dir=config.get_implementation_directory(step_name),
+            container_full_stem=config.get_container_full_stem(step_name),
+        )
 
 
 def run_container(
@@ -47,15 +53,23 @@ def run_container(
     input_data: List[str],
     results_dir: Path,
     step_name: str,
-    step_dir: Path,
+    implementation_dir: Path,
+    container_full_stem: str,
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
     logger.info(f"Running step: '{step_name}'")
     if container_engine == "docker":
-        run_with_docker(input_data, results_dir, step_dir)
+        run_with_docker(
+            input_data, results_dir, Path(f"{container_full_stem}.tar.gz").resolve()
+        )
     elif container_engine == "singularity":
-        run_with_singularity(input_data, results_dir, step_dir)
+        run_with_singularity(
+            input_data,
+            results_dir,
+            implementation_dir,
+            Path(f"{container_full_stem}.sif").resolve(),
+        )
     else:
         if container_engine and container_engine != "undefined":
             logger.warning(
@@ -69,11 +83,18 @@ def run_container(
                 "then (if that fails) Singularity."
             )
         try:
-            run_with_docker(input_data, results_dir, step_dir)
+            run_with_docker(
+                input_data, results_dir, Path(f"{container_full_stem}.tar.gz").resolve()
+            )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
-                run_with_singularity(input_data, results_dir, step_dir)
+                run_with_singularity(
+                    input_data,
+                    results_dir,
+                    implementation_dir,
+                    Path(f"{container_full_stem}.sif").resolve(),
+                )
             except Exception as e_singularity:
                 raise RuntimeError(
                     f"Both docker and singularity failed:\n"
@@ -89,7 +110,8 @@ def launch_slurm_job(
     input_data: List[Path],
     results_dir: Path,
     step_name: str,
-    step_dir: Path,
+    implementation_dir: Path,
+    container_full_stem: str,
 ) -> None:
     jt = session.createJobTemplate()
     jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -102,7 +124,8 @@ def launch_slurm_job(
         container_engine,
         str(results_dir),
         step_name,
-        str(step_dir),
+        str(implementation_dir),
+        container_full_stem,
         "-vvv",
     ]
     for filepath in input_data:
