@@ -43,7 +43,9 @@ class Config:
             / step_name
             / "implementations"
         )
-        implementation_names = next(os.walk(implementation_dir))[1]
+        implementation_names = [
+            str(d.name) for d in implementation_dir.iterdir() if d.is_dir()
+        ]
         if implementation in implementation_names:
             implementation_dir = implementation_dir / implementation
         else:
