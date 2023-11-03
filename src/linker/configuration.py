@@ -38,10 +38,7 @@ class Config:
         # TODO: move this into proper config validator
         implementation = self.pipeline["steps"][step_name]["implementation"]
         implementation_dir = (
-            Path(os.path.realpath(__file__)).parent.parent.parent
-            / "steps"
-            / step_name
-            / "implementations"
+            Path(os.path.realpath(__file__)).parent / "steps" / step_name / "implementations"
         )
         implementation_names = [
             str(d.name) for d in implementation_dir.iterdir() if d.is_dir()
