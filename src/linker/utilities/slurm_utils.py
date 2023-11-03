@@ -126,7 +126,7 @@ def submit_spark_cluster_job(
     jt.joinFiles = False  # keeps stdout separate from stderr
     jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.o%a')}"
     jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.e%a')}"
-    jt.remoteCommand = shutil.which("sh")
+    jt.remoteCommand = shutil.which("/bin/bash")
     jt.args = [launcher.name]
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",
