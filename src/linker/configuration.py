@@ -32,8 +32,9 @@ class Config:
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", None)
         self.steps = self._get_steps()
+        self.implementation_metadata = self._load_implementation_metadata()
 
-    def get_step_directory(self, step_name: str) -> Path:
+    def get_implementation_directory(self, step_name: str) -> Path:
         # TODO: move this into proper config validator
         implementation = self.pipeline["steps"][step_name]["implementation"]
         implementation_dir = (
@@ -44,12 +45,16 @@ class Config:
         )
         implementation_names = next(os.walk(implementation_dir))[1]
         if implementation in implementation_names:
-            step_dir = implementation_dir / implementation
+            implementation_dir = implementation_dir / implementation
         else:
             raise NotImplementedError(
                 f"No support found for step '{step_name}', implementation '{implementation}'."
             )
-        return step_dir
+        return implementation_dir
+
+    def get_container_full_stem(self, step_name: str) -> Path:
+        container_dict = self.implementation_metadata[step_name]["image"]
+        return (Path(container_dict["directory"]) / container_dict["filename"]).resolve()
 
     def get_resources(self) -> Dict[str, str]:
         return {
@@ -100,6 +105,26 @@ class Config:
         if unknown_steps:
             logger.warning(
                 f"Unknown steps are included in the pipeline specification: {unknown_steps}.\n"
+                "These steps will be ignored.\n"
                 f"Supported steps: {STEP_ORDER}"
             )
+        if not steps:
+            raise RuntimeError(
+                "No supported steps found in pipeline specification.\n"
+                f"Steps found in pipeline specification: {spec_steps}\n"
+                f"Supported steps: {STEP_ORDER}"
+            )
+
         return steps
+
+    def _load_implementation_metadata(self) -> Dict[str, Path]:
+        implementation_metadata = {}
+        for step in self.steps:
+            implementation_dir = self.get_implementation_directory(step)
+            metadata_path = implementation_dir / "metadata.yaml"
+            if metadata_path.exists():
+                metadata = self._load_yaml(metadata_path)
+                implementation_metadata[step] = metadata
+            else:
+                implementation_metadata[step] = None
+        return implementation_metadata

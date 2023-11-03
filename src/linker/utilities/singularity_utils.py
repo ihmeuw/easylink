@@ -5,17 +5,21 @@ from typing import List
 from loguru import logger
 
 
-def run_with_singularity(input_data: List[Path], results_dir: Path, step_dir: Path) -> None:
+def run_with_singularity(
+    input_data: List[Path], results_dir: Path, implementation_dir: Path, container_path: Path
+) -> None:
     logger.info("Running container with singularity")
-    _run_container(input_data, results_dir, step_dir)
-    _clean(results_dir, step_dir)
+    _run_container(input_data, results_dir, implementation_dir, container_path)
+    _clean(results_dir, implementation_dir, container_path)
 
 
-def _run_container(input_data: List[Path], results_dir: Path, step_dir: Path) -> None:
-    cmd = f"singularity run --pwd {step_dir} --bind /tmp:/tmp --bind {results_dir}:/results "
+def _run_container(
+    input_data: List[Path], results_dir: Path, implementation_dir: Path, container_path: Path
+) -> None:
+    cmd = f"singularity run --pwd {implementation_dir} --bind /tmp:/tmp --bind {results_dir}:/results "
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
-    cmd += f"{step_dir}/image.sif"
+    cmd += f"{container_path}"
     logger.info("Running the singularity container")
     _run_cmd(results_dir, cmd)
 
@@ -37,6 +41,6 @@ def _run_cmd(results_dir: Path, cmd: str) -> None:
         output_file.write(process.stderr)
 
 
-def _clean(results_dir: Path, step_dir: Path) -> None:
+def _clean(results_dir: Path, step_dir: Path, container_dir: Path) -> None:
     pass
     # TODO: do I need to clean up the cache?
