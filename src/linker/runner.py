@@ -60,10 +60,15 @@ def run_container(
     #   (currently it's only logged in the .o file)
     logger.info(f"Running step: '{step_name}'")
     if container_engine == "docker":
-        run_with_docker(input_data, results_dir, Path(f"{container_full_stem}.tar.gz"))
+        run_with_docker(
+            input_data, results_dir, Path(f"{container_full_stem}.tar.gz").resolve()
+        )
     elif container_engine == "singularity":
         run_with_singularity(
-            input_data, results_dir, implementation_dir, Path(f"{container_full_stem}.sif")
+            input_data,
+            results_dir,
+            implementation_dir,
+            Path(f"{container_full_stem}.sif").resolve(),
         )
     else:
         if container_engine and container_engine != "undefined":
@@ -78,7 +83,9 @@ def run_container(
                 "then (if that fails) Singularity."
             )
         try:
-            run_with_docker(input_data, results_dir, Path(f"{container_full_stem}.tar.gz"))
+            run_with_docker(
+                input_data, results_dir, Path(f"{container_full_stem}.tar.gz").resolve()
+            )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
@@ -86,7 +93,7 @@ def run_container(
                     input_data,
                     results_dir,
                     implementation_dir,
-                    Path(f"{container_full_stem}.sif"),
+                    Path(f"{container_full_stem}.sif").resolve(),
                 )
             except Exception as e_singularity:
                 raise RuntimeError(

@@ -10,7 +10,6 @@ from loguru import logger
 def run_with_docker(input_data: List[Path], results_dir: Path, container_dir: Path) -> None:
     logger.info("Trying to run container with docker")
     client = get_docker_client()
-    breakpoint()
     image_id = _load_image(client, container_dir)
     container = _run_container(client, image_id, input_data, results_dir)
     _clean(client, image_id, container)

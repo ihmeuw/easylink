@@ -54,9 +54,9 @@ class Config:
             )
         return implementation_dir
 
-    def get_container_full_stem(self, step_name: str) -> Path:
+    def get_container_full_stem(self, step_name: str) -> str:
         container_dict = self.implementation_metadata[step_name]["image"]
-        return (Path(container_dict["directory"]) / container_dict["filename"]).resolve()
+        return f"{container_dict['directory']}/{container_dict['filename']}"
 
     def get_resources(self) -> Dict[str, str]:
         return {
