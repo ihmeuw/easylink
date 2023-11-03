@@ -81,7 +81,7 @@ if [ "$1" != 'multi_job' ]; then
     script=$HOME/.spark_temp/${{SLURM_JOBID}}_$( basename -- "$0" )
     cp "$this" "$script"
 
-    srun "$script 'multi_job'"
+    srun "$script multi_job"
 # If run by srun, then decide by $SLURM_PROCID whether we are master or worker
 else
     if [ "$SLURM_PROCID" -eq 0 ]; then
