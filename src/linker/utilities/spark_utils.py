@@ -53,6 +53,7 @@ def build_cluster_launch_script() -> TextIO:
 
     # output_dir = str(worker_settings_file.resolve().parent)
 
+    # TODO: 23/11/03 21:53:23 WARN MasterArguments: SPARK_MASTER_IP is deprecated, please use SPARK_MASTER_HOST
     # TODO: handle .cluster.ihme.washington.edu
     launcher.write(
         f"""#!/bin/bash
@@ -82,27 +83,26 @@ export SPARK_MEM=$SPARK_DAEMON_MEMORY
 #     srun "$script multi_job"
 # # If run by srun, then decide by $SLURM_PROCID whether we are master or worker
 # else
-    if [ "$SLURM_PROCID" -eq 0 ]; then
-        HOSTNAME=$(hostname)
-        # TODO: use fqdn from configuration
-        export SPARK_MASTER_IP="$HOSTNAME.cluster.ihme.washington.edu"
-        MASTER_NODE=$( scontrol show hostname "$SLURM_NODELIST "| head -n 1 )
+if [ "$SLURM_PROCID" -eq 0 ]; then
+    HOSTNAME=$(hostname)
+    # TODO: use fqdn from configuration
+    export SPARK_MASTER_IP="$HOSTNAME.cluster.ihme.washington.edu"
+    MASTER_NODE=$( scontrol show hostname "$SLURM_NODELIST "| head -n 1 )
 
-        mkdir -p "/tmp/spark_cluster_$USER"
-        singularity exec -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp $SINGULARITY_IMG \
-         $CONDA_PATH run --no-capture-output -n $CONDA_ENV "$SPARK_ROOT/bin/spark-class" \
-         org.apache.spark.deploy.master.Master --host "$SPARK_MASTER_IP" --port "$SPARK_MASTER_PORT" \
-         --webui-port "$SPARK_MASTER_WEBUI_PORT"
-    else
-        # TODO: This step assumes that SLURM_PROCID=0 corresponds to the first node in SLURM_NODELIST.
-        #  Is this reasonable?
-        MASTER_NODE=spark://$( scontrol show hostname "$SLURM_NODELIST" | head -n 1 ):"$SPARK_MASTER_PORT"
+    mkdir -p "/tmp/spark_cluster_$USER"
+    singularity exec -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp $SINGULARITY_IMG \
+     $CONDA_PATH run --no-capture-output -n $CONDA_ENV "$SPARK_ROOT/bin/spark-class" \
+     org.apache.spark.deploy.master.Master --host "$SPARK_MASTER_IP" --port "$SPARK_MASTER_PORT" \
+     --webui-port "$SPARK_MASTER_WEBUI_PORT"
+else
+    # TODO: This step assumes that SLURM_PROCID=0 corresponds to the first node in SLURM_NODELIST.
+    #  Is this reasonable?
+    MASTER_NODE=spark://$( scontrol show hostname "$SLURM_NODELIST" | head -n 1 ):"$SPARK_MASTER_PORT"
 
-        mkdir -p "/tmp/spark_cluster_$USER"
-        singularity exec -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp "$SINGULARITY_IMG" \
-        "$CONDA_PATH" run --no-capture-output -n "$CONDA_ENV" "$SPARK_ROOT/bin/spark-class" \
-         org.apache.spark.deploy.worker.Worker "$MASTER_NODE"
-    fi
+    mkdir -p "/tmp/spark_cluster_$USER"
+    singularity exec -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp "$SINGULARITY_IMG" \
+    "$CONDA_PATH" run --no-capture-output -n "$CONDA_ENV" "$SPARK_ROOT/bin/spark-class" \
+     org.apache.spark.deploy.worker.Worker "$MASTER_NODE"
 fi
 """
     )

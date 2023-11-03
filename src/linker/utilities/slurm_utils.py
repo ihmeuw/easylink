@@ -148,7 +148,8 @@ def submit_spark_cluster_job(
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
     )
-    job_id = session.runBulkJobs(jt, 1, num_workers + 1, 1)
+    job_id = session.runJob(jt)
+    # job_id = session.runBulkJobs(jt, 1, num_workers + 1, 1)
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobid '{job_id}' to execute script '{launcher.name}'\n"
