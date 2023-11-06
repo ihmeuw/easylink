@@ -10,6 +10,7 @@ from typing import Dict, List
 from loguru import logger
 
 from linker.configuration import Config
+from linker.pipeline import Pipeline
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 
@@ -18,6 +19,16 @@ def main(
     config: Config,
     results_dir: Path,
 ) -> None:
+    """Set up and run the pipeline"""
+
+    pipeline = Pipeline(config)
+
+    # Copy config files to results
+    shutil.copy(config.pipeline_path, results_dir)
+    if config.computing_environment_path:
+        shutil.copy(config.computing_environment_path, results_dir)
+
+    # Set up computing environment
     if config.computing_environment == "local":
         runner = run_container
     elif config.computing_environment == "slurm":
@@ -37,15 +48,8 @@ def main(
             "only computing_environment 'local' and 'slurm' are supported; "
             f"provided {config.computing_environment}"
         )
-    for step_name in config.steps:
-        runner(
-            container_engine=config.container_engine,
-            input_data=config.input_data,
-            results_dir=results_dir,
-            step_name=step_name,
-            implementation_dir=config.get_implementation_directory(step_name),
-            container_full_stem=config.get_container_full_stem(step_name),
-        )
+
+    pipeline.run(runner, results_dir)
 
 
 def run_container(

@@ -6,10 +6,11 @@ from loguru import logger
 
 from linker import runner
 from linker.configuration import Config
-from linker.utilities.cli_utils import (
+from linker.pipeline import Pipeline
+from linker.utilities.general_utils import (
     configure_logging_to_terminal,
+    create_results_directory,
     handle_exceptions,
-    prepare_results_directory,
 )
 
 
@@ -87,7 +88,7 @@ def run(
         input_data=input_data,
     )
     # TODO [MIC-4493]: Add configuration validation
-    results_dir = prepare_results_directory(output_dir, timestamp, config)
+    results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
