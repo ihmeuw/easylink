@@ -6,7 +6,6 @@ from loguru import logger
 
 from linker import runner
 from linker.configuration import Config
-from linker.pipeline import Pipeline
 from linker.utilities.general_utils import (
     configure_logging_to_terminal,
     create_results_directory,
@@ -24,13 +23,19 @@ def linker():
 
 
 @linker.command()
-@click.argument(
-    "pipeline_specification",
+@click.option(
+    "-p",
+    "--pipeline-specification",
+    required=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="The path to the pipeline specification yaml file.",
 )
-@click.argument(
-    "input_data",
+@click.option(
+    "-i",
+    "--input-data",
+    required=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="The path to the input data specification yaml file (not the paths to the input data themselves).",
 )
 @click.option(
     "-o",
@@ -73,13 +78,7 @@ def run(
     verbose: int,
     with_debugger: bool,
 ) -> None:
-    """Run a pipeline from the command line.
-
-    PIPELINE_SPECIFICATION: The path to the pipline specification yaml file.
-
-    INPUT_DATA: The path to the input data specification yaml file (not the
-        paths to the input data themselves).
-    """
+    """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
     config = Config(

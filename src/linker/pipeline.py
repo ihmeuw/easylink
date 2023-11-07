@@ -5,9 +5,8 @@ from typing import Callable, Dict, Tuple
 from loguru import logger
 
 from linker.configuration import Config
+from linker.step import Step
 from linker.utilities.general_utils import load_yaml
-
-STEPS = ("pvs_like_case_study",)
 
 
 class Pipeline:
@@ -25,42 +24,41 @@ class Pipeline:
     def run(self, results_dir: Path):
         if not self.runner:
             raise RuntimeError("Runner has not been set.")
-        for step_name in self.steps:
+        for step in self.steps:
             self.runner(
                 container_engine=self.config.container_engine,
                 input_data=self.config.input_data,
                 results_dir=results_dir,
-                step_name=step_name,
-                implementation_dir=self._get_implementation_directory(step_name),
-                container_full_stem=self._get_container_full_stem(step_name),
+                step_name=step.name,
+                implementation_dir=self._get_implementation_directory(step.name),
+                container_full_stem=self._get_container_full_stem(step.name),
             )
 
     #################
     # Setup methods #
     #################
 
-    def _get_steps(self) -> Tuple:
+    def _get_steps(self) -> Tuple[Step, ...]:
         spec_steps = tuple(self.config.pipeline["steps"])
-        steps = tuple([x for x in spec_steps if x in STEPS])
-        unknown_steps = [x for x in spec_steps if x not in STEPS]
+        steps = tuple([Step(step) for step in spec_steps if step in Step.IMPLEMENTATIONS])
+        unknown_steps = [step for step in spec_steps if step not in Step.IMPLEMENTATIONS]
         if unknown_steps:
             logger.warning(
                 f"Unknown steps are included in the pipeline specification: {unknown_steps}.\n"
                 "These steps will be ignored.\n"
-                f"Supported steps: {STEPS}"
+                f"Supported steps: {list(Step.IMPLEMENTATIONS.keys())}"
             )
         if not steps:
             raise RuntimeError(
                 "No supported steps found in pipeline specification.\n"
                 f"Steps found in pipeline specification: {spec_steps}\n"
-                f"Supported steps: {STEPS}"
+                f"Supported steps: {list(Step.IMPLEMENTATIONS.keys())}"
             )
-
         return steps
 
     def _load_implementation_metadata(self) -> Dict[str, Path]:
         implementation_metadata = {}
-        for step in self.steps:
+        for step in [step.name for step in self.steps]:
             implementation_dir = self._get_implementation_directory(step)
             metadata_path = implementation_dir / "metadata.yaml"
             if metadata_path.exists():
