@@ -30,7 +30,7 @@ def main(
 
     # Set up computing environment
     if config.computing_environment == "local":
-        runner = run_container
+        pipeline.set_runner(run_container)
     elif config.computing_environment == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
@@ -42,14 +42,14 @@ def main(
         session = drmaa.Session()
         session.initialize()
         resources = config.get_resources()
-        runner = partial(launch_slurm_job, session, resources)
+        pipeline.set_runner(partial(launch_slurm_job, session, resources))
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
             f"provided {config.computing_environment}"
         )
 
-    pipeline.run(runner, results_dir)
+    pipeline.run(results_dir)
 
 
 def run_container(

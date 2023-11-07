@@ -11,7 +11,10 @@ class Config:
     """
 
     def __init__(
-        self, pipeline_specification: str, computing_environment: Union[None, str], input_data: str
+        self,
+        pipeline_specification: str,
+        computing_environment: Union[None, str],
+        input_data: str,
     ):
         self.pipeline_path = Path(pipeline_specification)
         if computing_environment is None:

@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Callable, Dict, Tuple
 
 from loguru import logger
 
+from linker.configuration import Config
 from linker.utilities.general_utils import load_yaml
 
 STEPS = ("pvs_like_case_study",)
@@ -12,14 +13,20 @@ STEPS = ("pvs_like_case_study",)
 class Pipeline:
     """Abstraction to handle pipeline specification and execution."""
 
-    def __init__(self, config):
+    def __init__(self, config: Config):
         self.config = config
         self.steps = self._get_steps()
         self.implementation_metadata = self._load_implementation_metadata()
+        self.runner = None  # Assigned later from set_runner method
 
-    def run(self, runner, results_dir):
+    def set_runner(self, runner: Callable) -> None:
+        self.runner = runner
+
+    def run(self, results_dir: Path):
+        if not self.runner:
+            raise RuntimeError("Runner has not been set.")
         for step_name in self.steps:
-            runner(
+            self.runner(
                 container_engine=self.config.container_engine,
                 input_data=self.config.input_data,
                 results_dir=results_dir,
