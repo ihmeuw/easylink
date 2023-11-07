@@ -69,7 +69,7 @@ def run(
     input_data: str,
     output_dir: Optional[str],
     timestamp: bool,
-    computing_environment: str,
+    computing_environment: Optional[str],
     verbose: int,
     with_debugger: bool,
 ) -> None:

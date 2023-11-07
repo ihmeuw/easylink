@@ -89,9 +89,9 @@ def _add_logging_sink(
 
 
 def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
-    launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
     results_dir = Path("results" if output_dir is None else output_dir).resolve()
     if timestamp:
+        launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
         results_dir = results_dir / launch_time
     _ = os.umask(0o002)
     results_dir.mkdir(parents=True, exist_ok=True)
