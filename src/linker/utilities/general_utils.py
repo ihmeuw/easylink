@@ -5,12 +5,10 @@ import sys
 from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Optional, TextIO
+from typing import Any, Callable, Dict, Optional, TextIO
 
-import click
+import yaml
 from loguru import logger
-
-from linker.configuration import Config
 
 
 def handle_exceptions(
@@ -90,23 +88,18 @@ def _add_logging_sink(
         )
 
 
-def prepare_results_directory(
-    output_dir: Optional[str], timestamp: bool, config: Config
-) -> Path:
-    results_dir = _generate_results_dir_name(output_dir, timestamp)
+def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
+    results_dir = Path("results" if output_dir is None else output_dir).resolve()
+    if timestamp:
+        launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        results_dir = results_dir / launch_time
     _ = os.umask(0o002)
     results_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy(config.pipeline_path, results_dir)
-    if config.computing_environment != "local":
-        shutil.copy(config.computing_environment_path, results_dir)
 
     return results_dir
 
 
-def _generate_results_dir_name(output_dir: Optional[str], timestamp: bool):
-    launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    output_root = Path("results" if output_dir is None else output_dir).resolve()
-    if timestamp:
-        output_root = output_root / launch_time
-
-    return output_root
+def load_yaml(filepath: Path) -> Dict:
+    with open(filepath, "r") as file:
+        data = yaml.safe_load(file)
+    return data

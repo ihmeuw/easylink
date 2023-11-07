@@ -1,15 +1,7 @@
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
-import yaml
-from loguru import logger
-
-STEP_ORDER = tuple(
-    [
-        "pvs_like_case_study",
-    ]
-)
+from linker.utilities.general_utils import load_yaml
 
 
 class Config:
@@ -19,41 +11,21 @@ class Config:
     """
 
     def __init__(
-        self, pipeline_specification: str, computing_environment: Path, input_data: str
+        self,
+        pipeline_specification: str,
+        computing_environment: Union[None, str],
+        input_data: str,
     ):
         self.pipeline_path = Path(pipeline_specification)
         if computing_environment is None:
             self.computing_environment_path = None
         else:
             self.computing_environment_path = Path(computing_environment)
-        self.pipeline = self._load_yaml(pipeline_specification)
-        self.environment = self._load_computing_environment(computing_environment)
-        self.input_data = self._load_input_data_paths(input_data)
+        self.pipeline = load_yaml(self.pipeline_path)
+        self.environment = self._load_computing_environment(self.computing_environment_path)
+        self.input_data = self._load_input_data_paths(Path(input_data))
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", None)
-        self.steps = self._get_steps()
-        self.implementation_metadata = self._load_implementation_metadata()
-
-    def get_implementation_directory(self, step_name: str) -> Path:
-        # TODO: move this into proper config validator
-        implementation = self.pipeline["steps"][step_name]["implementation"]
-        implementation_dir = (
-            Path(os.path.realpath(__file__)).parent / "steps" / step_name / "implementations"
-        )
-        implementation_names = [
-            str(d.name) for d in implementation_dir.iterdir() if d.is_dir()
-        ]
-        if implementation in implementation_names:
-            implementation_dir = implementation_dir / implementation
-        else:
-            raise NotImplementedError(
-                f"No support found for step '{step_name}', implementation '{implementation}'."
-            )
-        return implementation_dir
-
-    def get_container_full_stem(self, step_name: str) -> str:
-        container_dict = self.implementation_metadata[step_name]["image"]
-        return f"{container_dict['directory']}/{container_dict['filename']}"
 
     def get_resources(self) -> Dict[str, str]:
         return {
@@ -66,29 +38,23 @@ class Config:
     ####################
 
     @staticmethod
-    def _load_yaml(filepath: Path) -> Dict:
-        with open(filepath, "r") as file:
-            data = yaml.safe_load(file)
-        return data
-
     def _load_computing_environment(
-        self, computing_environment: Optional[Path]
+        computing_environment_path: Union[Path, None],
     ) -> Dict[str, Union[Dict, str]]:
         """Load the computing environment yaml file and return the contents as a dict."""
-        if computing_environment is None:
+        if computing_environment_path is None:
             return {"computing_environment": "local", "container_engine": "undefined"}
-        filepath = Path(computing_environment).resolve()
+        filepath = computing_environment_path.resolve()
         if not filepath.is_file():
             raise FileNotFoundError(
                 "Computing environment is expected to be a path to an existing"
-                f" yaml file. Input was: '{computing_environment}'"
+                f" yaml file. Input was: '{computing_environment_path}'"
             )
-        return self._load_yaml(filepath)
+        return load_yaml(filepath)
 
-    def _load_input_data_paths(self, input_data: str) -> List[Path]:
-        file_list = [
-            Path(filepath).resolve() for filepath in self._load_yaml(input_data).values()
-        ]
+    @staticmethod
+    def _load_input_data_paths(input_data: Path) -> List[str]:
+        file_list = [Path(filepath).resolve() for filepath in load_yaml(input_data).values()]
         missing = []
         for file in file_list:
             if not file.exists():
@@ -96,34 +62,3 @@ class Config:
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list
-
-    def _get_steps(self) -> Tuple:
-        spec_steps = tuple(self.pipeline["steps"])
-        steps = tuple([x for x in spec_steps if x in STEP_ORDER])
-        unknown_steps = [x for x in spec_steps if x not in STEP_ORDER]
-        if unknown_steps:
-            logger.warning(
-                f"Unknown steps are included in the pipeline specification: {unknown_steps}.\n"
-                "These steps will be ignored.\n"
-                f"Supported steps: {STEP_ORDER}"
-            )
-        if not steps:
-            raise RuntimeError(
-                "No supported steps found in pipeline specification.\n"
-                f"Steps found in pipeline specification: {spec_steps}\n"
-                f"Supported steps: {STEP_ORDER}"
-            )
-
-        return steps
-
-    def _load_implementation_metadata(self) -> Dict[str, Path]:
-        implementation_metadata = {}
-        for step in self.steps:
-            implementation_dir = self.get_implementation_directory(step)
-            metadata_path = implementation_dir / "metadata.yaml"
-            if metadata_path.exists():
-                metadata = self._load_yaml(metadata_path)
-                implementation_metadata[step] = metadata
-            else:
-                implementation_metadata[step] = None
-        return implementation_metadata
