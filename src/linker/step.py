@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Callable
+from pathlib import Path
 
 
 class Step:
@@ -35,3 +36,21 @@ class Step:
     #             f"Supported implementations: {self.allowable_implementations}"
     #         )
     #     return Implementation(name, config)
+
+    def run(self,
+        runner: Callable,
+        container_engine: str,
+        input_data: List[str],
+        results_dir: Path,
+        step_name: str,
+        implementation_dir: Path,
+        container_full_stem: str,
+    ) -> None:
+        runner(
+            container_engine=container_engine,
+            input_data=input_data,
+            results_dir=results_dir,
+            step_name=step_name,
+            implementation_dir=implementation_dir,
+            container_full_stem=container_full_stem, 
+        )

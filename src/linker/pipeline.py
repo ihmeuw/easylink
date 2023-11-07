@@ -25,7 +25,8 @@ class Pipeline:
         if not self.runner:
             raise RuntimeError("Runner has not been set.")
         for step in self.steps:
-            self.runner(
+            step.run(
+                runner=self.runner,
                 container_engine=self.config.container_engine,
                 input_data=self.config.input_data,
                 results_dir=results_dir,
