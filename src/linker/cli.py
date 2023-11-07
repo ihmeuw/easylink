@@ -102,7 +102,7 @@ def run(
 @linker.command(hidden=True)
 @click.argument(
     "container_engine",
-    type=click.Choice(["docker", "singularity", "None"]),
+    type=click.Choice(["docker", "singularity", "undefined"]),
 )
 @click.argument(
     "results_dir",
@@ -129,18 +129,15 @@ def run_slurm_job(
     when a slurm computing environment is defined in the environment.yaml.
     """
     configure_logging_to_terminal(verbose)
-    results_dir = Path(results_dir)
-    implementation_dir = Path(implementation_dir)
-    input_data = [Path(x) for x in input_data]
     main = handle_exceptions(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     main(
         container_engine=container_engine,
-        input_data=input_data,
-        results_dir=results_dir,
+        input_data=[Path(x) for x in input_data],
+        results_dir=Path(results_dir),
         step_name=step_name,
-        implementation_dir=implementation_dir,
+        implementation_dir=Path(implementation_dir),
         container_full_stem=container_full_stem,
     )
 

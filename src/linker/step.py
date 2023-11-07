@@ -1,9 +1,10 @@
-from typing import List, Callable
 from pathlib import Path
+from typing import Callable, List
+
+from linker.implementation import Implementation
 
 
 class Step:
-
     IMPLEMENTATIONS = {
         "pvs_like_case_study": [
             "pvs_like_python",
@@ -13,8 +14,12 @@ class Step:
         ],
     }
 
-    def __init__(self, name):
+    def __init__(self, name, config):
         self.name = name
+        self.config = config
+        self.implementation = Implementation(
+            self.name, self.config, self.allowable_implementations
+        )
 
     def __repr__(self):
         return self.name
@@ -27,30 +32,17 @@ class Step:
                 f"Supported steps: {list(self.IMPLEMENTATIONS.keys())}"
             )
         return self.IMPLEMENTATIONS[self.name]
-    
-    # @property
-    # def implementation(self, name, config) -> Implementation:
-    #     if name not in self.allowable_implementations:
-    #         raise ValueError(
-    #             f"Implementation '{name}' is not supported for step '{self.name}'.\n"
-    #             f"Supported implementations: {self.allowable_implementations}"
-    #         )
-    #     return Implementation(name, config)
 
-    def run(self,
+    def run(
+        self,
         runner: Callable,
         container_engine: str,
         input_data: List[str],
         results_dir: Path,
-        step_name: str,
-        implementation_dir: Path,
-        container_full_stem: str,
     ) -> None:
-        runner(
+        self.implementation.run(
+            runner=runner,
             container_engine=container_engine,
             input_data=input_data,
             results_dir=results_dir,
-            step_name=step_name,
-            implementation_dir=implementation_dir,
-            container_full_stem=container_full_stem, 
         )
