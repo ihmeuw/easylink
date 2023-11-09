@@ -81,15 +81,15 @@ def run(
     """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
-    pipeline_specification = Path(pipeline_specification).resolve()
-    input_data = Path(input_data).resolve()
+    pipeline_specification = Path(pipeline_specification)
+    input_data = Path(input_data)
     results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
     # TODO [MIC-4493]: Add configuration validation
     config = Config(
         pipeline_specification=pipeline_specification,
-        computing_environment=computing_environment,
         input_data=input_data,
+        computing_environment=computing_environment,
     )
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
@@ -111,6 +111,7 @@ def run(
     type=click.Path(exists=True, resolve_path=True),
 )
 @click.argument("step_name")
+@click.argument("implementation_name")
 @click.argument(
     "implementation_dir",
     type=click.Path(exists=True, resolve_path=True),
@@ -122,6 +123,7 @@ def run_slurm_job(
     container_engine: str,
     results_dir: str,
     step_name: str,
+    implementation_name: str,
     implementation_dir: str,
     container_full_stem: str,
     input_data: Tuple[str],
@@ -139,6 +141,7 @@ def run_slurm_job(
         input_data=[Path(x) for x in input_data],
         results_dir=Path(results_dir),
         step_name=step_name,
+        implementation_name=implementation_name,
         implementation_dir=Path(implementation_dir),
         container_full_stem=container_full_stem,
     )
