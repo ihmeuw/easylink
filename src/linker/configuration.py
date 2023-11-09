@@ -16,14 +16,18 @@ class Config:
         input_data: Path,
         computing_environment: Optional[str],
     ):
-        self.pipeline_path = pipeline_specification
-        self.input_data = self._load_input_data_paths(input_data)
+        if pipeline_specification is not None:
+            self.pipeline_path = Path(pipeline_specification)
         if computing_environment is None:
             self.computing_environment_path = None
         else:
             self.computing_environment_path = Path(computing_environment)
-        self.pipeline = load_yaml(self.pipeline_path)
+        if pipeline_specification is not None:
+            self.pipeline = load_yaml(self.pipeline_path)
         self.environment = self._load_computing_environment(self.computing_environment_path)
+        if input_data is not None:
+            self.input_data = self._load_input_data_paths(input_data)
+
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
 

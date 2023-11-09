@@ -4,11 +4,12 @@ import tempfile
 from pathlib import Path
 from typing import TextIO
 
+from linker.configuration import Config
 from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
 
 
-def build_cluster(environment_file: Path) -> str:
-    """Builds a Spark cluster.
+def build_cluster(config: Config) -> str:
+    """Builds a Spark cluster. Main function for the `build-spark-cluster` command.
 
     Returns:
         spark_master_url: Spark master URL.
@@ -19,22 +20,19 @@ def build_cluster(environment_file: Path) -> str:
 
     spark_master_url = ""
 
-    # TODO: Read environment file for configuration
-
     # call build_launch_script
     launcher = build_cluster_launch_script()
 
-    # TODO: update these for configuration
     # submit job
     submit_spark_cluster_job(
         session=session,
         launcher=launcher,
-        account="proj_simscience",
-        partition="all.q",
-        memory_per_node=8,
-        max_runtime=1,
-        num_workers=2,
-        cpus_per_task=5,
+        account=config.environment["slurm"]["account"],
+        partition=config.environment["slurm"]["partition"],
+        memory_per_cpu=config.environment["spark"]["workers"]["mem_per_cpu"],
+        max_runtime=config.environment["spark"]["workers"]["time_limit"],
+        num_workers=config.environment["spark"]["workers"]["num_workers"],
+        cpus_per_task=config.environment["spark"]["workers"]["cpus_per_task"]
     )
 
     # grep log for spark master url or is there a better approach?

@@ -163,14 +163,14 @@ def build_spark_cluster(
 ) -> None:
     """Submit a Slurm job to build a Spark cluster."""
     configure_logging_to_terminal(verbose)
-    # config = Config(
-    #     pipeline_specification=pipeline_specification,
-    #     computing_environment=computing_environment,
-    #     input_data=input_data,
-    # )
+    config = Config(
+        pipeline_specification=None,
+        computing_environment=computing_environment,
+        input_data=None,
+    )
     main = handle_exceptions(
         func=build_cluster, exceptions_logger=logger, with_debugger=False
     )
-    main(computing_environment)
+    main(config)
 
     logger.info("*** FINISHED ***")

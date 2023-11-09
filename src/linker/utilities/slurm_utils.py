@@ -107,7 +107,7 @@ def submit_spark_cluster_job(
     launcher: TextIO,
     account: str,
     partition: str,
-    memory_per_node: int,
+    memory_per_cpu: int,
     max_runtime: int,
     num_workers: int,
     cpus_per_task: int,
@@ -119,7 +119,7 @@ def submit_spark_cluster_job(
         launcher: Launcher script.
         account: Account to charge.
         partition: Partition to run on.
-        memory_per_node: Memory per node in GB.
+        memory_per_cpu: Memory per node in GB.
         max_runtime: Maximum runtime in hours.
         num_workers: Number of workers.
         cpus_per_task: Number of CPUs per task.
@@ -142,14 +142,13 @@ def submit_spark_cluster_job(
     jt.nativeSpecification = (
         f"--account={account} "
         f"--partition={partition} "
-        f"--mem-per-cpu={memory_per_node * 1024} "
+        f"--mem-per-cpu={memory_per_cpu * 1024} "
         f"--time={max_runtime}:00:00 "
         f"--nodes={num_workers + 1} "
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
     )
     job_id = session.runJob(jt)
-    # job_id = session.runBulkJobs(jt, 1, num_workers + 1, 1)
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobid '{job_id}' to execute script '{launcher.name}'\n"
