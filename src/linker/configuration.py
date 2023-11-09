@@ -13,17 +13,17 @@ class Config:
     def __init__(
         self,
         pipeline_specification: Path,
-        computing_environment: Union[None, str],
         input_data: Path,
+        computing_environment: Union[None, str],
     ):
         self.pipeline_path = pipeline_specification
+        self.input_data = self._load_input_data_paths(input_data)
         if computing_environment is None:
             self.computing_environment_path = None
         else:
             self.computing_environment_path = Path(computing_environment)
         self.pipeline = load_yaml(self.pipeline_path)
         self.environment = self._load_computing_environment(self.computing_environment_path)
-        self.input_data = self._load_input_data_paths(input_data)
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
 
