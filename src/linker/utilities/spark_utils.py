@@ -32,7 +32,7 @@ def build_cluster(config: Config) -> str:
         memory_per_cpu=config.environment["spark"]["workers"]["mem_per_cpu"],
         max_runtime=config.environment["spark"]["workers"]["time_limit"],
         num_workers=config.environment["spark"]["workers"]["num_workers"],
-        cpus_per_task=config.environment["spark"]["workers"]["cpus_per_task"]
+        cpus_per_task=config.environment["spark"]["workers"]["cpus_per_task"],
     )
 
     # grep log for spark master url or is there a better approach?
