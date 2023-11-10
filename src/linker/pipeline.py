@@ -6,8 +6,6 @@ from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.step import Step
 
-STEPS = ("pvs_like_case_study",)
-
 
 class Pipeline:
     """Abstraction to handle pipeline specification and execution."""
@@ -29,7 +27,7 @@ class Pipeline:
                 container_engine=self.config.container_engine,
                 input_data=self.config.input_data,
                 results_dir=results_dir,
-                step_name=implementation.step_name,
+                step_name=implementation.step.name,
                 implementation_name=implementation.name,
                 implementation_dir=implementation.directory,
                 container_full_stem=implementation.container_full_stem,
@@ -53,5 +51,5 @@ class Pipeline:
                 / "implementations"
                 / implementation_name
             )
-            implementations.append(Implementation(implementation_dir))
+            implementations.append(Implementation(step, implementation_dir))
         return tuple(implementations)
