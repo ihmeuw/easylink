@@ -37,9 +37,10 @@ class PipelineSchema:
 
 def validate_pipeline(pipeline: Pipeline):
     """Validates the pipeline against supported schemas."""
+    # TODO: Think about how to generate useful diagnostic messages.
     for schema in PipelineSchema.get_schemas():
         if schema.validate_pipeline(pipeline):
-            return
+            return True
         else:  # invalid pipeline for this schema
             pass  # try the next schema
     raise RuntimeError("Pipeline is not valid.")

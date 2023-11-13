@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from typing import Callable, Tuple
 
@@ -41,15 +40,16 @@ class Pipeline:
         return tuple(Step(step) for step in self.config.pipeline["steps"])
 
     def _get_implementations(self) -> Tuple[Implementation, ...]:
+        steps_root_dir = self._get_steps_root_dir()
         implementations = []
         for step in self.steps:
             implementation_name = self.config.pipeline["steps"][step.name]["implementation"]
             implementation_dir = (
-                Path(os.path.realpath(__file__)).parent
-                / "steps"
-                / step.name
-                / "implementations"
-                / implementation_name
+                steps_root_dir / step.name / "implementations" / implementation_name
             )
             implementations.append(Implementation(step, implementation_dir))
         return tuple(implementations)
+
+    @staticmethod
+    def _get_steps_root_dir() -> Path:
+        return Path(__file__).parent / "steps"

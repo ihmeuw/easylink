@@ -16,24 +16,19 @@ from tests.unit.conftest import ENV_CONFIG_DICT, PIPELINE_CONFIG_DICT
         Path("another/bad/path"),
     ],
 )
-def test_bad_computing_environment_fails(config_path, computing_environment):
+def test_bad_computing_environment_fails(test_dir, computing_environment):
     with pytest.raises(FileNotFoundError):
-        Config(f"{config_path}/pipeline.yaml", "foo", computing_environment)
+        Config(f"{test_dir}/pipeline.yaml", "foo", computing_environment)
 
 
-def test_default_computing_environment(config_path):
-    config = Config(f"{config_path}/pipeline.yaml", f"{config_path}/input_data.yaml", None)
+def test_default_computing_environment(test_dir):
+    config = Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/input_data.yaml", None)
     assert config.computing_environment == "local"
 
 
-def test_get_specs(config_path):
-    config = Config(
-        f"{config_path}/pipeline.yaml",
-        f"{config_path}/input_data.yaml",
-        f"{config_path}/environment.yaml",
-    )
-    assert config.pipeline == PIPELINE_CONFIG_DICT
+def test_get_specs(test_dir, config):
+    assert config.pipeline == PIPELINE_CONFIG_DICT["good"]
     assert config.environment == ENV_CONFIG_DICT
     assert config.input_data == [
-        Path(x) for x in [f"{config_path}/input_data{n}/file{n}" for n in [1, 2]]
+        Path(x) for x in [f"{test_dir}/input_data{n}/file{n}" for n in [1, 2]]
     ]
