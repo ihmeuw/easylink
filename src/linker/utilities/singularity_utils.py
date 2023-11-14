@@ -20,7 +20,6 @@ def _run_container(
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
     cmd += f"{container_path}"
-    logger.info("Running the singularity container")
     _run_cmd(results_dir, cmd)
 
 
