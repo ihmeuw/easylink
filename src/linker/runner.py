@@ -11,7 +11,6 @@ from loguru import logger
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
-from linker.pipeline_schema import validate_pipeline
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 
@@ -23,7 +22,6 @@ def main(
     """Set up and run the pipeline"""
 
     pipeline = Pipeline(config)
-    validate_pipeline(pipeline)
 
     # Copy config files to results
     shutil.copy(config.pipeline_path, results_dir)

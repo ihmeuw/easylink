@@ -47,7 +47,7 @@ class Implementation:
             metadata = load_yaml(metadata_path)
         else:
             raise FileNotFoundError(
-                f"Could not find metadata file for step '{self.step_name.name}' at '{metadata_path}'"
+                f"Could not find metadata file for step '{self.step_name}' at '{metadata_path}'"
             )
         container_dict = metadata["image"]
         return f"{container_dict['directory']}/{container_dict['filename']}"

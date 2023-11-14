@@ -29,14 +29,4 @@ class PipelineSchema:
         self.steps.append(step)
 
 
-_PIPELINE_SCHEMAS = PipelineSchema.get_schemas()
-
-
-def validate_pipeline(pipeline: "Pipeline") -> None:
-    """Validates the pipeline against supported schemas."""
-    for schema in _PIPELINE_SCHEMAS:
-        if pipeline._validate(schema):
-            return
-        else:  # invalid pipeline for this schema
-            pass  # try the next schema
-    raise RuntimeError("Pipeline is not valid.")
+PIPELINE_SCHEMAS = PipelineSchema.get_schemas()

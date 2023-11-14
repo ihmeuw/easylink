@@ -5,9 +5,6 @@ from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.step import Step
 
-if TYPE_CHECKING:
-    from linker.pipeline_schema import PipelineSchema
-
 
 class Pipeline:
     """Abstraction to handle pipeline specification and execution."""
@@ -16,6 +13,7 @@ class Pipeline:
         self.config = config
         self.steps = self._get_steps()
         self.implementations = self._get_implementations()
+        self._validate()
 
     def run(self, runner: Callable, results_dir: Path) -> None:
         for implementation in self.implementations:
@@ -26,18 +24,30 @@ class Pipeline:
                 results_dir=results_dir,
             )
 
-    def _validate(self, schema: "PipelineSchema") -> None:
-        for idx, implementation in enumerate(self.implementations):
-            # Check that all steps are accounted for and in the correct order
-            if implementation.step_name != schema.steps[idx].name:
-                return False
-            # Check that container exists
-            if (
-                not Path(f"{implementation._container_full_stem}.tar.gz").exists()
-                and not Path(f"{implementation._container_full_stem}.sif").exists()
-            ):
-                return False
-        return True
+    def _validate(self) -> None:
+        """Validates the pipeline against supported schemas."""
+
+        from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+
+        def validate_pipeline(schema: PipelineSchema):
+            for idx, implementation in enumerate(self.implementations):
+                # Check that all steps are accounted for and in the correct order
+                if implementation.step_name != schema.steps[idx].name:
+                    return False
+                # Check that container exists
+                if (
+                    not Path(f"{implementation._container_full_stem}.tar.gz").exists()
+                    and not Path(f"{implementation._container_full_stem}.sif").exists()
+                ):
+                    return False
+            return True
+
+        for schema in PIPELINE_SCHEMAS:
+            if validate_pipeline(schema):
+                return
+            else:  # invalid pipeline for this schema
+                pass  # try the next schema
+        raise RuntimeError("Pipeline is not valid.")
 
     #################
     # Setup methods #
