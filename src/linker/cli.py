@@ -6,7 +6,6 @@ from loguru import logger
 
 from linker import runner
 from linker.configuration import Config
-from linker.pipeline import Pipeline
 from linker.utilities.general_utils import (
     configure_logging_to_terminal,
     create_results_directory,
@@ -24,13 +23,19 @@ def linker():
 
 
 @linker.command()
-@click.argument(
-    "pipeline_specification",
+@click.option(
+    "-p",
+    "--pipeline-specification",
+    required=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="The path to the pipeline specification yaml file.",
 )
-@click.argument(
-    "input_data",
+@click.option(
+    "-i",
+    "--input-data",
+    required=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="The path to the input data specification yaml file (not the paths to the input data themselves).",
 )
 @click.option(
     "-o",
@@ -73,23 +78,19 @@ def run(
     verbose: int,
     with_debugger: bool,
 ) -> None:
-    """Run a pipeline from the command line.
-
-    PIPELINE_SPECIFICATION: The path to the pipline specification yaml file.
-
-    INPUT_DATA: The path to the input data specification yaml file (not the
-        paths to the input data themselves).
-    """
+    """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
+    pipeline_specification = Path(pipeline_specification).resolve()
+    input_data = Path(input_data).resolve()
+    results_dir = create_results_directory(output_dir, timestamp)
+    logger.info(f"Results directory: {str(results_dir)}")
+    # TODO [MIC-4493]: Add configuration validation
     config = Config(
         pipeline_specification=pipeline_specification,
         computing_environment=computing_environment,
         input_data=input_data,
     )
-    # TODO [MIC-4493]: Add configuration validation
-    results_dir = create_results_directory(output_dir, timestamp)
-    logger.info(f"Results directory: {str(results_dir)}")
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
@@ -103,7 +104,7 @@ def run(
 @linker.command(hidden=True)
 @click.argument(
     "container_engine",
-    type=click.Choice(["docker", "singularity", "None"]),
+    type=click.Choice(["docker", "singularity", "undefined"]),
 )
 @click.argument(
     "results_dir",
@@ -130,18 +131,15 @@ def run_slurm_job(
     when a slurm computing environment is defined in the environment.yaml.
     """
     configure_logging_to_terminal(verbose)
-    results_dir = Path(results_dir)
-    implementation_dir = Path(implementation_dir)
-    input_data = [Path(x) for x in input_data]
     main = handle_exceptions(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     main(
         container_engine=container_engine,
-        input_data=input_data,
-        results_dir=results_dir,
+        input_data=[Path(x) for x in input_data],
+        results_dir=Path(results_dir),
         step_name=step_name,
-        implementation_dir=implementation_dir,
+        implementation_dir=Path(implementation_dir),
         container_full_stem=container_full_stem,
     )
 

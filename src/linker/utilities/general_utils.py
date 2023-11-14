@@ -1,6 +1,5 @@
 import functools
 import os
-import shutil
 import sys
 from bdb import BdbQuit
 from datetime import datetime
