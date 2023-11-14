@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Callable, List
 
 from linker.utilities.general_utils import load_yaml
 
@@ -10,7 +11,13 @@ class Implementation:
         self._directory = self._get_implementation_directory(step_name, implementation_name)
         self._container_full_stem = self._get_container_full_stem()
 
-    def run(self, runner, container_engine, input_data, results_dir):
+    def run(
+        self,
+        runner: Callable,
+        container_engine: str,
+        input_data: List[Path],
+        results_dir: Path,
+    ) -> None:
         runner(
             container_engine=container_engine,
             input_data=input_data,

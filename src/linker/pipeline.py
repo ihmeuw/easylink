@@ -19,7 +19,7 @@ class Pipeline:
     def set_runner(self, runner: Callable) -> None:
         self.runner = runner
 
-    def run(self, results_dir: Path):
+    def run(self, results_dir: Path) -> None:
         if not self.runner:
             raise RuntimeError("Runner has not been set.")
         for implementation in self.implementations:
