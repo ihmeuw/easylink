@@ -22,10 +22,10 @@ class PipelineSchema:
         schemas.append(pvs_like_case_study)
         return schemas
 
-    def add_step(self, step: Step):
+    def add_step(self, step: Step) -> None:
         self.steps.append(step)
 
-    def validate_pipeline(self, pipeline: Pipeline):
+    def validate_pipeline(self, pipeline: Pipeline) -> bool:
         # TODO:
         ## ensure implementation is assigned to the correct step
         ## ensure that the implementations are in the correct step order
@@ -35,7 +35,7 @@ class PipelineSchema:
 _PIPELINE_SCHEMAS = PipelineSchema.get_schemas()
 
 
-def validate_pipeline(pipeline: Pipeline):
+def validate_pipeline(pipeline: Pipeline) -> None:
     """Validates the pipeline against supported schemas."""
     for schema in _PIPELINE_SCHEMAS:
         if schema.validate_pipeline(pipeline):
