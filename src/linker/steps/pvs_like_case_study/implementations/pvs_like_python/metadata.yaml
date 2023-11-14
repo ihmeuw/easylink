@@ -1,5 +1,5 @@
 step: pvs_like_case_study
 image:
-  path: /Users/sbachmei/scratch/linker/containers
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers
   # FIXME: how to better handle .sif vs .tar.gz?
   filename: pvs_like_python  # .sif or .tar.gz
