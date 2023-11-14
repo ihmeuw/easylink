@@ -1,7 +1,9 @@
-from typing import List
+from typing import TYPE_CHECKING, List
 
-from linker.pipeline import Pipeline
 from linker.step import Step
+
+if TYPE_CHECKING:
+    from linker.pipeline import Pipeline
 
 
 class PipelineSchema:
@@ -26,22 +28,14 @@ class PipelineSchema:
     def _add_step(self, step: Step) -> None:
         self.steps.append(step)
 
-    def validate_pipeline(self, pipeline: Pipeline) -> bool:
-        # Loop through the pipeline implementations and check if their order
-        ## and corresponding steps match the schema
-        for idx, implementation in enumerate(pipeline.implementations):
-            if implementation.step_name != self.steps[idx].name:
-                return False
-        return True
-
 
 _PIPELINE_SCHEMAS = PipelineSchema.get_schemas()
 
 
-def validate_pipeline(pipeline: Pipeline) -> None:
+def validate_pipeline(pipeline: "Pipeline") -> None:
     """Validates the pipeline against supported schemas."""
     for schema in _PIPELINE_SCHEMAS:
-        if schema.validate_pipeline(pipeline):
+        if pipeline._validate(schema):
             return
         else:  # invalid pipeline for this schema
             pass  # try the next schema
