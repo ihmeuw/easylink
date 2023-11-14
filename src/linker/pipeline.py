@@ -23,14 +23,11 @@ class Pipeline:
         if not self.runner:
             raise RuntimeError("Runner has not been set.")
         for implementation in self.implementations:
-            self.runner(
+            implementation.run(
+                runner=self.runner,
                 container_engine=self.config.container_engine,
                 input_data=self.config.input_data,
                 results_dir=results_dir,
-                step_name=implementation.step.name,
-                implementation_name=implementation.name,
-                implementation_dir=implementation.directory,
-                container_full_stem=implementation.container_full_stem,
             )
 
     #################

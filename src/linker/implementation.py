@@ -1,4 +1,5 @@
 from pathlib import Path
+from sys import implementation
 
 from linker.step import Step
 from linker.utilities.general_utils import load_yaml
@@ -17,6 +18,7 @@ class Implementation:
             input_data=input_data,
             results_dir=results_dir,
             step_name=self.step.name,
+            implementation_name=self.name,
             implementation_dir=self.directory,
             container_full_stem=self.container_full_stem,
         )
