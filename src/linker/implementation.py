@@ -7,8 +7,8 @@ class Implementation:
     def __init__(self, step_name: str, implementation_name: str):
         self.step_name = step_name
         self.name = implementation_name
-        self.directory = self._get_implementation_directory(step_name, implementation_name)
-        self.container_full_stem = self._get_container_full_stem()
+        self._directory = self._get_implementation_directory(step_name, implementation_name)
+        self._container_full_stem = self._get_container_full_stem()
 
     def run(self, runner, container_engine, input_data, results_dir):
         runner(
@@ -17,8 +17,8 @@ class Implementation:
             results_dir=results_dir,
             step_name=self.step_name,
             implementation_name=self.name,
-            implementation_dir=self.directory,
-            container_full_stem=self.container_full_stem,
+            implementation_dir=self._directory,
+            container_full_stem=self._container_full_stem,
         )
 
     ##################
@@ -35,7 +35,7 @@ class Implementation:
         )
 
     def _get_container_full_stem(self) -> str:
-        metadata_path = self.directory / "metadata.yaml"
+        metadata_path = self._directory / "metadata.yaml"
         if metadata_path.exists():
             metadata = load_yaml(metadata_path)
         else:
