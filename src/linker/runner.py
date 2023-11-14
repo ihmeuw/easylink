@@ -11,7 +11,6 @@ from loguru import logger
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
-from linker.pipeline_schema import validate_pipeline
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 
@@ -23,7 +22,6 @@ def main(
     """Set up and run the pipeline"""
 
     pipeline = Pipeline(config)
-    validate_pipeline(pipeline)
 
     # Copy config files to results
     shutil.copy(config.pipeline_path, results_dir)
@@ -32,7 +30,7 @@ def main(
 
     # Set up computing environment
     if config.computing_environment == "local":
-        pipeline.set_runner(run_container)
+        runner = run_container
     elif config.computing_environment == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
@@ -44,14 +42,14 @@ def main(
         session = drmaa.Session()
         session.initialize()
         resources = config.get_resources()
-        pipeline.set_runner(partial(launch_slurm_job, session, resources))
+        runner = partial(launch_slurm_job, session, resources)
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
             f"provided {config.computing_environment}"
         )
 
-    pipeline.run(results_dir)
+    pipeline.run(runner, results_dir)
 
 
 def run_container(
@@ -59,15 +57,18 @@ def run_container(
     input_data: List[str],
     results_dir: Path,
     step_name: str,
+    implementation_name: str,
     implementation_dir: Path,
     container_full_stem: str,
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
-    logger.info(f"Running step: '{step_name}'")
+    logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":
         run_with_docker(
-            input_data, results_dir, Path(f"{container_full_stem}.tar.gz").resolve()
+            input_data,
+            results_dir,
+            Path(f"{container_full_stem}.tar.gz").resolve(),
         )
     elif container_engine == "singularity":
         run_with_singularity(
@@ -90,7 +91,9 @@ def run_container(
             )
         try:
             run_with_docker(
-                input_data, results_dir, Path(f"{container_full_stem}.tar.gz").resolve()
+                input_data,
+                results_dir,
+                Path(f"{container_full_stem}.tar.gz").resolve(),
             )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
@@ -116,6 +119,7 @@ def launch_slurm_job(
     input_data: List[Path],
     results_dir: Path,
     step_name: str,
+    implementation_name: str,
     implementation_dir: Path,
     container_full_stem: str,
 ) -> None:
@@ -130,6 +134,7 @@ def launch_slurm_job(
         container_engine,
         str(results_dir),
         step_name,
+        implementation_name,
         str(implementation_dir),
         container_full_stem,
         "-vvv",
@@ -149,14 +154,17 @@ def launch_slurm_job(
         max_runtime=resources["time_limit"],
         num_threads=resources["cpus"],
     )
+
+    # Run the job
     job_id = session.runJob(jt)
     logger.info(
-        f"Launching slurm job for step '{step_name}'\n"
+        f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
         f"Job submitted with jobid '{job_id}'\n"
         f"Output log: {str(results_dir / f'{job_id}.o*')}\n"
         f"Error log: {str(results_dir / f'{job_id}.e*')}"
     )
     job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
+
     # TODO: clean up if job failed?
     logger.info(f"Job {job_id} finished with status '{job_status}'")
     session.deleteJobTemplate(jt)
