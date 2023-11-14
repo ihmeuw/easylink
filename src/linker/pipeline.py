@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Tuple
+from typing import Callable, Tuple
 
 from linker.configuration import Config
 from linker.implementation import Implementation
