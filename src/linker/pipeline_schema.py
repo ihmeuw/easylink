@@ -34,10 +34,11 @@ class PipelineSchema:
                 return False
         return True
 
+_PIPELINE_SCHEMAS = PipelineSchema.get_schemas()
 
 def validate_pipeline(pipeline: Pipeline) -> None:
     """Validates the pipeline against supported schemas."""
-    for schema in PipelineSchema.get_schemas():
+    for schema in _PIPELINE_SCHEMAS:
         if schema.validate_pipeline(pipeline):
             return
         else:  # invalid pipeline for this schema
