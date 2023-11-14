@@ -28,7 +28,14 @@ class Pipeline:
 
     def _validate(self, schema: "PipelineSchema") -> None:
         for idx, implementation in enumerate(self.implementations):
+            # Check that all steps are accounted for and in the correct order
             if implementation.step_name != schema.steps[idx].name:
+                return False
+            # Check that container exists
+            if (
+                not Path(f"{implementation._container_full_stem}.tar.gz").exists()
+                and not Path(f"{implementation._container_full_stem}.sif").exists()
+            ):
                 return False
         return True
 
