@@ -9,7 +9,9 @@ class Implementation:
         self.step_name = step_name
         self.name = implementation_name
         self._directory = self._get_implementation_directory(step_name, implementation_name)
+        self._metadata = self._load_metadata()
         self._container_full_stem = self._get_container_full_stem()
+        self._validate()
 
     def run(
         self,
@@ -41,13 +43,32 @@ class Implementation:
             / implementation_name
         )
 
-    def _get_container_full_stem(self) -> str:
+    def _load_metadata(self) -> dict:
         metadata_path = self._directory / "metadata.yaml"
         if metadata_path.exists():
-            metadata = load_yaml(metadata_path)
+            return load_yaml(metadata_path)
         else:
             raise FileNotFoundError(
                 f"Could not find metadata file for step '{self.step_name}' at '{metadata_path}'"
             )
-        container_dict = metadata["image"]
-        return f"{container_dict['directory']}/{container_dict['filename']}"
+
+    def _get_container_full_stem(self) -> str:
+        container_dict = self._metadata["image"]
+        return f"{container_dict['path']}/{container_dict['filename']}"
+
+    def _validate(self) -> None:
+        """Validates each Implementation"""
+        # Check that container exists
+        if (
+            not Path(f"{self._container_full_stem}.tar.gz").exists()
+            and not Path(f"{self._container_full_stem}.sif").exists()
+        ):
+            raise RuntimeError(f"Container '{self._container_full_stem}' does not exist.")
+        # Confirm that the metadata file step matches the pipeline yaml step
+        implementation_step = self._metadata["step"]
+        pipeline_step = self.step_name  # from pipeline yaml
+        if implementation_step != pipeline_step:
+            raise RuntimeError(
+                f"Implementaton's metadata step '{implementation_step}' does not "
+                f"match pipeline configuration's step '{pipeline_step}'"
+            )
