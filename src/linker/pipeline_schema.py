@@ -23,7 +23,6 @@ class PipelineSchema:
         schemas.append(pvs_like_case_study)
         return schemas
 
-
     def _add_step(self, step: Step) -> None:
         self.steps.append(step)
 

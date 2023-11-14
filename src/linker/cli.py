@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Optional, Tuple
 
 import click
 from loguru import logger
@@ -72,9 +72,9 @@ def linker():
 def run(
     pipeline_specification: str,
     input_data: str,
-    output_dir: Union[str, None],
+    output_dir: Optional[str],
     timestamp: bool,
-    computing_environment: Union[str, None],
+    computing_environment: Optional[str],
     verbose: int,
     with_debugger: bool,
 ) -> None:
