@@ -4,7 +4,7 @@ import sys
 from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, TextIO, Union
+from typing import Any, Callable, Dict, Optional, TextIO
 
 import yaml
 from loguru import logger
@@ -87,7 +87,7 @@ def _add_logging_sink(
         )
 
 
-def create_results_directory(output_dir: Union[str, None], timestamp: bool) -> Path:
+def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
     results_dir = Path("results" if output_dir is None else output_dir).resolve()
     if timestamp:
         launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")

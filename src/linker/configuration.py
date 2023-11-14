@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 from linker.utilities.general_utils import load_yaml
 
@@ -13,7 +13,7 @@ class Config:
     def __init__(
         self,
         pipeline_specification: Path,
-        computing_environment: Union[None, str],
+        computing_environment: Optional[str],
         input_data: Path,
     ):
         self.pipeline_path = pipeline_specification
@@ -39,7 +39,7 @@ class Config:
 
     @staticmethod
     def _load_computing_environment(
-        computing_environment_path: Union[Path, None],
+        computing_environment_path: Optional[Path],
     ) -> Dict[str, Union[Dict, str]]:
         """Load the computing environment yaml file and return the contents as a dict."""
         if computing_environment_path is None:
