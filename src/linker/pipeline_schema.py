@@ -30,11 +30,13 @@ class PipelineSchema:
         # Loop through the pipeline implementations and check if their order
         ## and corresponding steps match the schema
         for idx, implementation in enumerate(pipeline.implementations):
-            if implementation.step != self.steps[idx]:
+            if implementation.step_name != self.steps[idx].name:
                 return False
         return True
 
+
 _PIPELINE_SCHEMAS = PipelineSchema.get_schemas()
+
 
 def validate_pipeline(pipeline: Pipeline) -> None:
     """Validates the pipeline against supported schemas."""

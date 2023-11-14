@@ -41,12 +41,5 @@ class Pipeline:
         implementations = []
         for step in self.steps:
             implementation_name = self.config.pipeline["steps"][step.name]["implementation"]
-            implementation_dir = (
-                Path(os.path.realpath(__file__)).parent
-                / "steps"
-                / step.name
-                / "implementations"
-                / implementation_name
-            )
-            implementations.append(Implementation(step, implementation_dir))
+            implementations.append(Implementation(step.name, implementation_name))
         return tuple(implementations)
