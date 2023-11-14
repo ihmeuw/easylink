@@ -32,11 +32,12 @@ class Pipeline:
         return tuple(Step(step) for step in self.config.pipeline["steps"])
 
     def _get_implementations(self) -> Tuple[Implementation, ...]:
-        implementations = []
-        for step in self.steps:
-            implementation_name = self.config.pipeline["steps"][step.name]["implementation"]
-            implementations.append(Implementation(step.name, implementation_name))
-        return tuple(implementations)
+        return tuple(
+            Implementation(
+                step.name, self.config.pipeline["steps"][step.name]["implementation"]
+            )
+            for step in self.steps
+        )
 
     def _validate(self) -> None:
         """Validates the pipeline against supported schemas."""
