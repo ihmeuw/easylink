@@ -3,39 +3,51 @@ from pathlib import Path
 import pytest
 
 from linker.implementation import Implementation
-from linker.step import Step
-
-
-def test_implementation_instantiation(test_dir):
-    implementation_dir = (
-        Path(test_dir) / "steps/pvs_like_case_study/implementations/pvs_like_python"
-    )
-    implementation = Implementation(
-        step=Step("foo"),
-        directory=implementation_dir,
-    )
-    assert implementation.name == "pvs_like_python"
-    assert implementation.step == Step("foo")
-    assert implementation.directory == implementation_dir
-    assert (
-        implementation.container_full_stem
-        == "some/path/to/container/directory/pvs_like_python"
-    )
 
 
 def test_no_metadata_file():
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(
+        FileNotFoundError, match="Could not find metadata file for step 'pvs_like_case_study'"
+    ):
         Implementation(
-            step=Step("foo"),
-            directory=Path("/some/directory/"),
+            step_name="pvs_like_case_study",
+            implementation_name="no_metadata_file",
         )
 
 
-@pytest.mark.skip(reason="TODO")
-def test_implementation_run():
-    pass
+def test_no_container(test_dir, mocker):
+    mocker.patch(
+        "linker.implementation.Implementation._get_implementation_directory",
+        return_value=Path(test_dir) / "steps/foo/implementations/bar",
+    )
+    with pytest.raises(
+        RuntimeError, match="Container 'some/path/to/container/directory/bar' does not exist."
+    ):
+        Implementation(step_name="foo", implementation_name="bad_implementation_name")
 
 
-@pytest.mark.skip(reason="TODO")
-def test__get_implementation_directory():
-    pass
+def test_implemenation_does_not_match_step(test_dir, mocker):
+    mocker.patch(
+        "linker.implementation.Implementation._get_implementation_directory",
+        return_value=Path(test_dir) / "steps/foo/implementations/bar",
+    )
+    mocker.patch(
+        "linker.implementation.Implementation._validate_container_exists", return_value=None
+    )
+    with pytest.raises(
+        RuntimeError,
+        match="Implementaton's metadata step 'foo' does not match pipeline configuration's step 'not-foo'",
+    ):
+        Implementation(step_name="not-foo", implementation_name="bad_implementation_name")
+
+
+def test_implementation_directory(mocker):
+    """Tests the hard-coding of the expected implementation directory"""
+    # mock out validation so it runs on build
+    mocker.patch("linker.implementation.Implementation._validate")
+    implementation = Implementation(
+        step_name="pvs_like_case_study", implementation_name="pvs_like_python"
+    )
+    assert "steps/pvs_like_case_study/implementations/pvs_like_python" in str(
+        implementation._directory
+    )
