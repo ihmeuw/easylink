@@ -44,7 +44,7 @@ class Pipeline:
 
         from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 
-        # TODO: refactor this to batch all errors as output for user
+        # TODO [MIC-4709]: Batch all validation errors and log them all at once
         def validate_pipeline(schema: PipelineSchema):
             for idx, implementation in enumerate(self.implementations):
                 # Check that all steps are accounted for and in the correct order

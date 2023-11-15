@@ -58,7 +58,7 @@ class Implementation:
 
     def _validate(self) -> None:
         """Validates each Implementation"""
-
+        # TODO [MIC-4709]: Batch all validation errors and log them all at once
         self._validate_container_exists()
         self._validate_expected_step()
 
