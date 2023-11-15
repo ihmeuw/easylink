@@ -58,24 +58,25 @@ def run_container(
     results_dir: Path,
     step_name: str,
     implementation_name: str,
-    implementation_dir: Path,
-    container_full_stem: str,
+    container_location: Path,
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
+    container_full_stem = f"{container_location}/{implementation_name}"
     if container_engine == "docker":
         run_with_docker(
-            input_data,
-            results_dir,
-            Path(f"{container_full_stem}.tar.gz").resolve(),
+            input_data=input_data,
+            results_dir=results_dir,
+            container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
         )
     elif container_engine == "singularity":
         run_with_singularity(
-            input_data,
-            results_dir,
-            implementation_dir,
-            Path(f"{container_full_stem}.sif").resolve(),
+            input_data=input_data,
+            results_dir=results_dir,
+            container_path=Path(f"{container_full_stem}.sif").resolve(),
+            step_name=step_name,
+            implementation_name=implementation_name,
         )
     else:
         if container_engine and container_engine != "undefined":
@@ -91,18 +92,19 @@ def run_container(
             )
         try:
             run_with_docker(
-                input_data,
-                results_dir,
-                Path(f"{container_full_stem}.tar.gz").resolve(),
+                input_data=input_data,
+                results_dir=results_dir,
+                container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
             )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
                 run_with_singularity(
-                    input_data,
-                    results_dir,
-                    implementation_dir,
-                    Path(f"{container_full_stem}.sif").resolve(),
+                    input_data=input_data,
+                    results_dir=results_dir,
+                    container_path=Path(f"{container_full_stem}.sif").resolve(),
+                    step_name=step_name,
+                    implementation_name=implementation_name,
                 )
             except Exception as e_singularity:
                 raise RuntimeError(
@@ -120,8 +122,7 @@ def launch_slurm_job(
     results_dir: Path,
     step_name: str,
     implementation_name: str,
-    implementation_dir: Path,
-    container_full_stem: str,
+    container_location: Path,
 ) -> None:
     jt = session.createJobTemplate()
     jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -135,8 +136,7 @@ def launch_slurm_job(
         str(results_dir),
         step_name,
         implementation_name,
-        str(implementation_dir),
-        container_full_stem,
+        str(container_location),
         "-vvv",
     ]
     for filepath in input_data:

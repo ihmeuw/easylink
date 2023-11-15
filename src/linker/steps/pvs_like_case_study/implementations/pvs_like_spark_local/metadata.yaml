@@ -1,5 +1,0 @@
-step: pvs_like_case_study
-image:
-  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers
-  # FIXME: how to better handle .sif vs .tar.gz?
-  filename: pvs_like_spark_local  # .sif or .tar.gz
