@@ -131,8 +131,8 @@ def submit_spark_cluster_job(
     jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.workingDirectory = os.getcwd()
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.o%a')}"
-    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.e%a')}"
+    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.stdout')}"
+    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.stderr')}"
     jt.remoteCommand = shutil.which("/bin/bash")
     jt.args = [launcher.name]
     jt.jobEnvironment = {
@@ -152,8 +152,8 @@ def submit_spark_cluster_job(
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobid '{job_id}' to execute script '{launcher.name}'\n"
-        f"Output log: {jt.outputPath}\n"
-        f"Error log: {jt.errorPath}"
+        f"Output log: {str(Path(jt.workingDirectory) / f'{job_id}.stdout')}\n"
+        f"Error log: {str(Path(jt.workingDirectory) / f'{job_id}.stderr')}"
     )
     session.deleteJobTemplate(jt)
     session.exit()
