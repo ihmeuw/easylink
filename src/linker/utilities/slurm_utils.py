@@ -6,6 +6,8 @@ from pathlib import Path
 from time import sleep
 from typing import Dict, List, TextIO
 
+from drmaa.const import JobState
+
 from loguru import logger
 
 
@@ -147,7 +149,7 @@ def submit_spark_cluster_job(
 
     # Wait for job to start running
     job_status = session.jobStatus(job_id)
-    while job_status != session.const.JobState.RUNNING:
+    while job_status != JobState.RUNNING:
         sleep(5)
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
