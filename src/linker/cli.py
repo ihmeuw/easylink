@@ -157,6 +157,13 @@ def run_slurm_job(
     help="Path to a computing environment yaml file describing Spark configuration.",
 )
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
+@click.option(
+    "--pdb",
+    "with_debugger",
+    is_flag=True,
+    help="Drop into python debugger if an error occurs.",
+    default=False,
+)
 def build_spark_cluster(
     computing_environment: str,
     verbose: int,
@@ -169,7 +176,7 @@ def build_spark_cluster(
         input_data=None,
     )
     main = handle_exceptions(
-        func=build_cluster, exceptions_logger=logger, with_debugger=False
+        func=build_cluster, exceptions_logger=logger, with_debugger=pdb
     )
     main(config)
 

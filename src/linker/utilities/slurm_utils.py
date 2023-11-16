@@ -153,7 +153,6 @@ def submit_spark_cluster_job(
         sleep(5)
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
-    sleep(10)
 
     session.deleteJobTemplate(jt)
     session.exit()
