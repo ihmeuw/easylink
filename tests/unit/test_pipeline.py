@@ -8,6 +8,7 @@ from linker.step import Step
 def test__get_steps(config, mocker):
     mocker.patch("linker.pipeline.Pipeline._validate")
     mocker.patch("linker.implementation.Implementation._load_metadata")
+    mocker.patch("linker.implementation.Implementation._get_container_location")
     mocker.patch("linker.implementation.Implementation._validate")
     config.pipeline = {
         "steps": {
@@ -25,6 +26,7 @@ def test__get_steps(config, mocker):
 
 def test_unsupported_step(test_dir, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
+    mocker.patch("linker.implementation.Implementation._get_container_location")
     mocker.patch("linker.implementation.Implementation._validate")
     config = Config(
         f"{test_dir}/bad_step_pipeline.yaml",  # pipeline with unsupported step

@@ -37,6 +37,10 @@ class Implementation:
         return load_yaml(metadata_path)
 
     def _get_container_location(self) -> Path:
+        if not self.name in self._metadata:
+            raise RuntimeError(
+                f"Implementation '{self.name}' is not defined in implementation_metadata.yaml"
+            )
         return Path(self._metadata[self.name]["path"])
 
     def _validate(self) -> None:

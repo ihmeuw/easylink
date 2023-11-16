@@ -11,7 +11,8 @@ def test_no_container(mocker):
         return_value=Path("some/path/with/no/container"),
     )
     with pytest.raises(
-        RuntimeError, match="Container 'some/path/with/no/container/pvs_like_python' does not exist."
+        RuntimeError,
+        match="Container 'some/path/with/no/container/pvs_like_python' does not exist.",
     ):
         Implementation(step_name="pvs_like_case_study", implementation_name="pvs_like_python")
 
@@ -34,3 +35,20 @@ def test_implemenation_does_not_match_step(mocker):
         match="Implementaton's metadata step 'step-1' does not match pipeline configuration's step 'step-2'",
     ):
         Implementation(step_name="step-2", implementation_name="some-implementation")
+
+
+def test_implementation_is_missing_from_metadata(mocker):
+    mocker.patch(
+        "linker.implementation.Implementation._load_metadata",
+        return_value={
+            "some-implementation": {
+                "step": "some-step",
+                "path": "/some/path",
+            },
+        },
+    )
+    with pytest.raises(
+        RuntimeError,
+        match="Implementation 'some-other-implementation' is not defined in implementation_metadata.yaml",
+    ):
+        Implementation(step_name="some-step", implementation_name="some-other-implementation")
