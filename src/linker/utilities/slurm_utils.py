@@ -146,15 +146,14 @@ def submit_spark_cluster_job(
     )
 
     # Wait for job to start running
-    job_status = session.jobStatus(job_id)
-
     drmaa = get_slurm_drmaa()
+    job_status = session.jobStatus(job_id)
     while job_status != drmaa.JobState.RUNNING:
         sleep(5)
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
+    error_log = Path(jt.workingDirectory) / f'{job_id}.stderr'
 
     session.deleteJobTemplate(jt)
     session.exit()
-    print("here")
-    return Path(Path(jt.workingDirectory) / f'{job_id}.stderr')
+    return error_log
