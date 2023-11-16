@@ -156,4 +156,4 @@ def submit_spark_cluster_job(
 
     session.deleteJobTemplate(jt)
     session.exit()
-    return Path(jt.workingDirectory) / f"{job_id}.stderr"
+    return Path(Path(jt.workingDirectory) / f'{job_id}.stderr')
