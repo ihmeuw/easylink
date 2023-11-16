@@ -114,5 +114,5 @@ def find_spark_master_url(logfile: Path) -> str:
     with open(logfile, "r") as f:
         for line in f:
             if "Starting Spark master at" in line:
-                spark_master_url = line.split(" ")[-1].strip()
+                spark_master_url = line.split(" ")[-1:].strip()
     return spark_master_url
