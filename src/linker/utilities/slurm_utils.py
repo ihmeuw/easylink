@@ -147,7 +147,7 @@ def submit_spark_cluster_job(
 
     # Wait for job to start running
     job_status = session.jobStatus(job_id)
-    while job_status != session.JobState.RUNNING:
+    while job_status != session.const.JobState.RUNNING:
         sleep(5)
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
