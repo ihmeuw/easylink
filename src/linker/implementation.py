@@ -58,13 +58,11 @@ class Implementation:
 
     def _validate(self) -> None:
         """Validates each Implementation"""
-        # Check that container exists
-        if (
-            not Path(f"{self._container_full_stem}.tar.gz").exists()
-            and not Path(f"{self._container_full_stem}.sif").exists()
-        ):
-            raise RuntimeError(f"Container '{self._container_full_stem}' does not exist.")
-        # Confirm that the metadata file step matches the pipeline yaml step
+        # TODO [MIC-4709]: Batch all validation errors and log them all at once
+        self._validate_container_exists()
+        self._validate_expected_step()
+
+    def _validate_expected_step(self):
         implementation_step = self._metadata["step"]
         pipeline_step = self.step_name  # from pipeline yaml
         if implementation_step != pipeline_step:
@@ -72,3 +70,10 @@ class Implementation:
                 f"Implementaton's metadata step '{implementation_step}' does not "
                 f"match pipeline configuration's step '{pipeline_step}'"
             )
+
+    def _validate_container_exists(self):
+        if (
+            not Path(f"{self._container_full_stem}.tar.gz").exists()
+            and not Path(f"{self._container_full_stem}.sif").exists()
+        ):
+            raise RuntimeError(f"Container '{self._container_full_stem}' does not exist.")
