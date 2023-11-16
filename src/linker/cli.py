@@ -180,5 +180,4 @@ def build_spark_cluster(
         func=build_cluster, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(config)
-
     logger.info("*** FINISHED ***")

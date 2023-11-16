@@ -109,10 +109,11 @@ def find_spark_master_url(logfile: Path) -> str:
     Returns:
         Spark master URL.
     """
+    logger.debug(f"Searching for Spark master URL in {logfile}")
     # 23/11/15 04:38:09 INFO Master: Starting Spark master at spark://gen-slurm-sarchive-p0118.cluster.ihme.washington.edu:28508
     spark_master_url = ""
     with open(logfile, "r") as f:
         for line in f:
             if "Starting Spark master at" in line:
-                spark_master_url = line.split(" ")[-1:].strip()
-    return spark_master_url
+                spark_master_url = line.split(" ")[-1:][0].strip()
+    return spark_master_url[0].strip()

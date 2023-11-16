@@ -12,8 +12,8 @@ class Config:
 
     def __init__(
         self,
-        pipeline_specification: Path,
-        input_data: Path,
+        pipeline_specification: Optional[Path],
+        input_data: Optional[Path],
         computing_environment: Optional[str],
     ):
         if pipeline_specification is not None:
