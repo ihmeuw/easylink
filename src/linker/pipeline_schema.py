@@ -1,9 +1,6 @@
-from typing import TYPE_CHECKING, List
+from typing import List
 
 from linker.step import Step
-
-if TYPE_CHECKING:
-    from linker.pipeline import Pipeline
 
 
 class PipelineSchema:
