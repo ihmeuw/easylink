@@ -167,6 +167,7 @@ def run_slurm_job(
 def build_spark_cluster(
     computing_environment: str,
     verbose: int,
+    with_debugger: bool,
 ) -> None:
     """Submit a Slurm job to build a Spark cluster."""
     configure_logging_to_terminal(verbose)
@@ -176,7 +177,7 @@ def build_spark_cluster(
         input_data=None,
     )
     main = handle_exceptions(
-        func=build_cluster, exceptions_logger=logger, with_debugger=pdb
+        func=build_cluster, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(config)
 
