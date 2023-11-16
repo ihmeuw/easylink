@@ -3,6 +3,7 @@ import shutil
 import types
 from datetime import datetime
 from pathlib import Path
+from time import sleep
 from typing import Dict, List, TextIO
 
 from loguru import logger
@@ -79,18 +80,6 @@ def launch_slurm_job(
     session.exit()
 
 
-def get_slurm_drmaa() -> types.ModuleType("drmaa"):
-    """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
-    try:
-        import drmaa
-    except (RuntimeError, OSError):
-        # TODO [MIC-4469]: make more generic for external users
-        os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
-        import drmaa
-
-    return drmaa
-
-
 def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
     return (
         f"-J {job_name} "
@@ -111,7 +100,7 @@ def submit_spark_cluster_job(
     max_runtime: int,
     num_workers: int,
     cpus_per_task: int,
-) -> None:
+) -> Path:
     """Submits a job to launch a Spark cluster.
 
     Args:
@@ -125,7 +114,7 @@ def submit_spark_cluster_job(
         cpus_per_task: Number of CPUs per task.
 
     Returns:
-        None
+        Path to stderr log, which contains the Spark master URL.
     """
     jt = session.createJobTemplate()
     jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -155,5 +144,14 @@ def submit_spark_cluster_job(
         f"Output log: {str(Path(jt.workingDirectory) / f'{job_id}.stdout')}\n"
         f"Error log: {str(Path(jt.workingDirectory) / f'{job_id}.stderr')}"
     )
+
+    # Wait for job to start running
+    job_status = session.jobStatus(job_id)
+    while job_status != session.JobState.RUNNING:
+        sleep(5)
+        job_status = session.jobStatus(job_id)
+    logger.info(f"Job {job_id} started running")
+
     session.deleteJobTemplate(jt)
     session.exit()
+    return Path(jt.workingDirectory) / f"{job_id}.stderr"

@@ -4,6 +4,8 @@ import tempfile
 from pathlib import Path
 from typing import TextIO
 
+from loguru import logger
+
 from linker.configuration import Config
 from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
@@ -25,7 +27,7 @@ def build_cluster(config: Config) -> str:
     launcher = build_cluster_launch_script(config.environment["spark"]["workers"]["fqdn"])
 
     # submit job
-    submit_spark_cluster_job(
+    logfile = submit_spark_cluster_job(
         session=session,
         launcher=launcher,
         account=config.environment["slurm"]["account"],
@@ -36,7 +38,8 @@ def build_cluster(config: Config) -> str:
         cpus_per_task=config.environment["spark"]["workers"]["cpus_per_task"],
     )
 
-    # grep log for spark master url or is there a better approach?
+    spark_master_url = find_spark_master_url(logfile)
+    logger.info(f"Spark master URL: {spark_master_url}")
     return spark_master_url
 
 
@@ -93,6 +96,23 @@ fi
     )
     launcher.close()
 
-    # TODO: handle cleanup, but not here!!
-    # atexit.register(lambda: os.remove(launcher.name))
+    atexit.register(lambda: os.remove(launcher.name))
     return launcher
+
+
+def find_spark_master_url(logfile: Path) -> str:
+    """Finds the Spark master URL in the logfile.
+
+    Args:
+        logfile: Path to logfile.
+
+    Returns:
+        Spark master URL.
+    """
+    # 23/11/15 04:38:09 INFO Master: Starting Spark master at spark://gen-slurm-sarchive-p0118.cluster.ihme.washington.edu:28508
+    spark_master_url = ""
+    with open(logfile, "r") as f:
+        for line in f:
+            if "Starting Spark master at" in line:
+                spark_master_url = line.split(" ")[-1].strip()
+    return spark_master_url

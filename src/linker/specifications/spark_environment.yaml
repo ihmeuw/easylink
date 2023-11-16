@@ -15,6 +15,5 @@ spark:
     mem_per_cpu: 8  # GB
     time_limit: 1  # hours
     fqdn: "cluster.ihme.washington.edu"  # node URL: hostname.[spark.workers.fqdn]
-  # config:
-  #   spark.some.config.option: some-value
+
 
