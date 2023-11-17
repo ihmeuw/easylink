@@ -22,8 +22,6 @@ def build_cluster(config: Config) -> str:
     session = drmaa.Session()
     session.initialize()
 
-    spark_master_url = ""
-
     # call build_launch_script
     launcher = build_cluster_launch_script(config.environment["spark"]["workers"]["fqdn"])
 
@@ -111,7 +109,6 @@ def find_spark_master_url(logfile: Path) -> str:
         Spark master URL.
     """
     logger.debug(f"Searching for Spark master URL in {logfile}")
-    # 23/11/15 04:38:09 INFO Master: Starting Spark master at spark://gen-slurm-sarchive-p0118.cluster.ihme.washington.edu:28508
     spark_master_url = ""
     while spark_master_url == "":
         sleep(5)
