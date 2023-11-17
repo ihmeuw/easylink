@@ -153,6 +153,8 @@ def submit_spark_cluster_job(
         logger.debug("Waiting for job to start running...")
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
+
+    # Save path to error log, which will contain the Spark master URL
     error_log = Path(jt.workingDirectory) / f"{job_id}.stderr"
 
     session.deleteJobTemplate(jt)

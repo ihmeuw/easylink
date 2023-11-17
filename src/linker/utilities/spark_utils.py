@@ -15,6 +15,9 @@ from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_j
 def build_cluster(config: Config) -> str:
     """Builds a Spark cluster. Main function for the `build-spark-cluster` command.
 
+    Args:
+        config: Config object.
+
     Returns:
         spark_master_url: Spark master URL.
     """
@@ -43,7 +46,14 @@ def build_cluster(config: Config) -> str:
 
 
 def build_cluster_launch_script(domain_string) -> TextIO:
-    """Generates a shell file that, on execution, spins up a Spark cluster."""
+    """Generates a shell file that, on execution, spins up a Spark cluster.
+
+    Args:
+        domain_string: Domain string for the Spark master URL.
+
+    Returns:
+        launcher: Launcher script.
+    """
     launcher = tempfile.NamedTemporaryFile(
         mode="w",
         dir=".",
@@ -72,7 +82,6 @@ export SPARK_MEM=$SPARK_DAEMON_MEMORY
 
 if [ "$SLURM_PROCID" -eq 0 ]; then
     HOSTNAME=$(hostname)
-    # TODO: use fqdn from configuration
     export SPARK_MASTER_HOST="$HOSTNAME.{domain_string}"
     MASTER_NODE=$( scontrol show hostname "$SLURM_NODELIST "| head -n 1 )
 
@@ -82,8 +91,6 @@ if [ "$SLURM_PROCID" -eq 0 ]; then
      org.apache.spark.deploy.master.Master --host "$SPARK_MASTER_HOST" --port "$SPARK_MASTER_PORT" \
      --webui-port "$SPARK_MASTER_WEBUI_PORT"
 else
-    # TODO: This step assumes that SLURM_PROCID=0 corresponds to the first node in SLURM_NODELIST.
-    #  Is this reasonable?
     MASTER_NODE=spark://$( scontrol show hostname "$SLURM_NODELIST" | head -n 1 ):"$SPARK_MASTER_PORT"
 
     mkdir -p "/tmp/spark_cluster_$USER"

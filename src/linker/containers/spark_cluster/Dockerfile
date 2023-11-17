@@ -15,7 +15,6 @@ COPY --from=conda-base /opt/conda /opt/conda
 # Set PATH for conda environment and conda itself
 ENV PATH=/opt/conda/envs/spark_cluster/bin:/opt/conda/condabin:${PATH}
 
-# Run your script with Spark on startup
-# TODO: update to use slurm to build the cluster
+# Run your script with Spark on startup (this doesn't actually get run when invoked by linker)
 CMD ["/bin/bash", "-c", "conda run -n spark_cluster python /opt/spark/work-dir/pvs_like_case_study_sample_data_spark_local.py \
      && mv census_2030_with_piks_sample.parquet /results/"]
