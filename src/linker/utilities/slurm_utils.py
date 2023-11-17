@@ -150,6 +150,7 @@ def submit_spark_cluster_job(
     job_status = session.jobStatus(job_id)
     while job_status != drmaa.JobState.RUNNING:
         sleep(5)
+        logger.debug("Waiting for job to start running...")
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
     error_log = Path(jt.workingDirectory) / f'{job_id}.stderr'
