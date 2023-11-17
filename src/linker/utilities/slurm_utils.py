@@ -1,3 +1,4 @@
+import atexit
 import os
 import shutil
 import types
@@ -138,12 +139,20 @@ def submit_spark_cluster_job(
         "--ntasks-per-node=1"
     )
     job_id = session.runJob(jt)
+
+    # Save path to error log, which will contain the Spark master URL
+    error_log = Path(jt.workingDirectory) / f"{job_id}.stderr"
+    output_log = Path(jt.workingDirectory) / f"{job_id}.stdout"
+
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobid '{job_id}' to execute script '{launcher.name}'\n"
-        f"Output log: {str(Path(jt.workingDirectory) / f'{job_id}.stdout')}\n"
-        f"Error log: {str(Path(jt.workingDirectory) / f'{job_id}.stderr')}"
+        f"Output log: {output_log}\n"
+        f"Error log: {error_log}"
     )
+
+    atexit.register(lambda: os.remove(output_log))
+    atexit.register(lambda: os.remove(error_log))
 
     # Wait for job to start running
     drmaa = get_slurm_drmaa()
@@ -153,9 +162,6 @@ def submit_spark_cluster_job(
         logger.debug("Waiting for job to start running...")
         job_status = session.jobStatus(job_id)
     logger.info(f"Job {job_id} started running")
-
-    # Save path to error log, which will contain the Spark master URL
-    error_log = Path(jt.workingDirectory) / f"{job_id}.stderr"
 
     session.deleteJobTemplate(jt)
     session.exit()
