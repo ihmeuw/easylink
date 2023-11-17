@@ -7,10 +7,10 @@ from docker.models.containers import Container
 from loguru import logger
 
 
-def run_with_docker(input_data: List[Path], results_dir: Path, container_dir: Path) -> None:
+def run_with_docker(input_data: List[Path], results_dir: Path, container_path: Path) -> None:
     logger.info("Running container with docker")
     client = get_docker_client()
-    image_id = _load_image(client, container_dir)
+    image_id = _load_image(client, container_path)
     container = _run_container(client, image_id, input_data, results_dir)
     _clean(client, image_id, container)
 

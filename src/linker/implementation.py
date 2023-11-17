@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, Dict, List
 
 from linker.utilities.general_utils import load_yaml
 
@@ -8,9 +8,8 @@ class Implementation:
     def __init__(self, step_name: str, implementation_name: str):
         self.step_name = step_name
         self.name = implementation_name
-        self._directory = self._get_implementation_directory(step_name, implementation_name)
         self._metadata = self._load_metadata()
-        self._container_full_stem = self._get_container_full_stem()
+        self._container_location = self._get_container_location()
         self._validate()
 
     def run(
@@ -26,44 +25,31 @@ class Implementation:
             results_dir=results_dir,
             step_name=self.step_name,
             implementation_name=self.name,
-            implementation_dir=self._directory,
-            container_full_stem=self._container_full_stem,
+            container_location=self._container_location,
         )
 
     ##################
     # Helper methods #
     ##################
 
-    def _get_implementation_directory(self, step_name: str, implementation_name: str) -> Path:
-        return (
-            Path(__file__).parent
-            / "steps"
-            / step_name
-            / "implementations"
-            / implementation_name
-        )
+    def _load_metadata(self) -> Dict[str, str]:
+        metadata_path = Path(__file__).parent / "steps" / "implementation_metadata.yaml"
+        return load_yaml(metadata_path)
 
-    def _load_metadata(self) -> dict:
-        metadata_path = self._directory / "metadata.yaml"
-        if metadata_path.exists():
-            return load_yaml(metadata_path)
-        else:
-            raise FileNotFoundError(
-                f"Could not find metadata file for step '{self.step_name}' at '{metadata_path}'"
+    def _get_container_location(self) -> Path:
+        if not self.name in self._metadata:
+            raise RuntimeError(
+                f"Implementation '{self.name}' is not defined in implementation_metadata.yaml"
             )
-
-    def _get_container_full_stem(self) -> str:
-        container_dict = self._metadata["image"]
-        return f"{container_dict['path']}/{container_dict['filename']}"
+        return Path(self._metadata[self.name]["path"])
 
     def _validate(self) -> None:
-        """Validates each Implementation"""
         # TODO [MIC-4709]: Batch all validation errors and log them all at once
-        self._validate_container_exists()
         self._validate_expected_step()
+        self._validate_container_exists()
 
     def _validate_expected_step(self):
-        implementation_step = self._metadata["step"]
+        implementation_step = self._metadata[self.name]["step"]
         pipeline_step = self.step_name  # from pipeline yaml
         if implementation_step != pipeline_step:
             raise RuntimeError(
@@ -72,8 +58,9 @@ class Implementation:
             )
 
     def _validate_container_exists(self):
+        container_full_stem = f"{self._container_location}/{self.name}"
         if (
-            not Path(f"{self._container_full_stem}.tar.gz").exists()
-            and not Path(f"{self._container_full_stem}.sif").exists()
+            not Path(f"{container_full_stem}.tar.gz").exists()
+            and not Path(f"{container_full_stem}.sif").exists()
         ):
-            raise RuntimeError(f"Container '{self._container_full_stem}' does not exist.")
+            raise RuntimeError(f"Container '{container_full_stem}' does not exist.")

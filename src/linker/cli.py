@@ -113,10 +113,9 @@ def run(
 @click.argument("step_name")
 @click.argument("implementation_name")
 @click.argument(
-    "implementation_dir",
+    "container_location",
     type=click.Path(exists=True, resolve_path=True),
 )
-@click.argument("container_full_stem")
 @click.option("--input-data", multiple=True)
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
@@ -124,8 +123,7 @@ def run_slurm_job(
     results_dir: str,
     step_name: str,
     implementation_name: str,
-    implementation_dir: str,
-    container_full_stem: str,
+    container_location: str,
     input_data: Tuple[str],
     verbose: int,
 ) -> None:
@@ -142,8 +140,7 @@ def run_slurm_job(
         results_dir=Path(results_dir),
         step_name=step_name,
         implementation_name=implementation_name,
-        implementation_dir=Path(implementation_dir),
-        container_full_stem=container_full_stem,
+        container_location=Path(container_location),
     )
 
     logger.info("*** FINISHED ***")

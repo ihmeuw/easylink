@@ -5,49 +5,50 @@ import pytest
 from linker.implementation import Implementation
 
 
-def test_no_metadata_file():
-    with pytest.raises(
-        FileNotFoundError, match="Could not find metadata file for step 'pvs_like_case_study'"
-    ):
-        Implementation(
-            step_name="pvs_like_case_study",
-            implementation_name="no_metadata_file",
-        )
-
-
-def test_no_container(test_dir, mocker):
+def test_no_container(mocker):
     mocker.patch(
-        "linker.implementation.Implementation._get_implementation_directory",
-        return_value=Path(test_dir) / "steps/foo/implementations/bar",
+        "linker.implementation.Implementation._get_container_location",
+        return_value=Path("some/path/with/no/container"),
     )
     with pytest.raises(
-        RuntimeError, match="Container 'some/path/to/container/directory/bar' does not exist."
+        RuntimeError,
+        match="Container 'some/path/with/no/container/pvs_like_python' does not exist.",
     ):
-        Implementation(step_name="foo", implementation_name="bad_implementation_name")
+        Implementation(step_name="pvs_like_case_study", implementation_name="pvs_like_python")
 
 
-def test_implemenation_does_not_match_step(test_dir, mocker):
+def test_implemenation_does_not_match_step(mocker):
     mocker.patch(
-        "linker.implementation.Implementation._get_implementation_directory",
-        return_value=Path(test_dir) / "steps/foo/implementations/bar",
+        "linker.implementation.Implementation._load_metadata",
+        return_value={
+            "some-implementation": {
+                "step": "step-1",
+                "path": "/some/path",
+            },
+        },
     )
     mocker.patch(
         "linker.implementation.Implementation._validate_container_exists", return_value=None
     )
     with pytest.raises(
         RuntimeError,
-        match="Implementaton's metadata step 'foo' does not match pipeline configuration's step 'not-foo'",
+        match="Implementaton's metadata step 'step-1' does not match pipeline configuration's step 'step-2'",
     ):
-        Implementation(step_name="not-foo", implementation_name="bad_implementation_name")
+        Implementation(step_name="step-2", implementation_name="some-implementation")
 
 
-def test_implementation_directory(mocker):
-    """Tests the hard-coding of the expected implementation directory"""
-    # mock out validation so it runs on build
-    mocker.patch("linker.implementation.Implementation._validate")
-    implementation = Implementation(
-        step_name="pvs_like_case_study", implementation_name="pvs_like_python"
+def test_implementation_is_missing_from_metadata(mocker):
+    mocker.patch(
+        "linker.implementation.Implementation._load_metadata",
+        return_value={
+            "some-implementation": {
+                "step": "some-step",
+                "path": "/some/path",
+            },
+        },
     )
-    assert "steps/pvs_like_case_study/implementations/pvs_like_python" in str(
-        implementation._directory
-    )
+    with pytest.raises(
+        RuntimeError,
+        match="Implementation 'some-other-implementation' is not defined in implementation_metadata.yaml",
+    ):
+        Implementation(step_name="some-step", implementation_name="some-other-implementation")
