@@ -1,0 +1,19 @@
+computing_environment: slurm
+container_engine: singularity  # singularity or docker; comment out completely if unknown
+slurm:
+  account: proj_simscience
+  partition: all.q
+# TODO: Move implementation resources (pipeline.yaml? input spec?)
+implementation_resources:
+  memory: 10  # GB
+  cpus: 2
+  time_limit: 1  # hours
+spark:
+  workers:
+    num_workers: 2  # num_workers + 1 nodes will be requested
+    cpus_per_task: 5
+    mem_per_cpu: 8  # GB
+    time_limit: 1  # hours
+    fqdn: "cluster.ihme.washington.edu"  # node URL: hostname.[spark.workers.fqdn]
+
+

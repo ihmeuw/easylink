@@ -11,6 +11,7 @@ from linker.utilities.general_utils import (
     create_results_directory,
     handle_exceptions,
 )
+from linker.utilities.spark_utils import build_cluster
 
 
 @click.group()
@@ -143,4 +144,40 @@ def run_slurm_job(
         container_location=Path(container_location),
     )
 
+    logger.info("*** FINISHED ***")
+
+
+@linker.command()
+@click.option(
+    "-e",
+    "--computing-environment",
+    default=None,
+    show_default=True,
+    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+    help="Path to a computing environment yaml file describing Spark configuration.",
+)
+@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
+@click.option(
+    "--pdb",
+    "with_debugger",
+    is_flag=True,
+    help="Drop into python debugger if an error occurs.",
+    default=False,
+)
+def build_spark_cluster(
+    computing_environment: str,
+    verbose: int,
+    with_debugger: bool,
+) -> None:
+    """Submit a Slurm job to build a Spark cluster."""
+    configure_logging_to_terminal(verbose)
+    config = Config(
+        pipeline_specification=None,
+        computing_environment=computing_environment,
+        input_data=None,
+    )
+    main = handle_exceptions(
+        func=build_cluster, exceptions_logger=logger, with_debugger=with_debugger
+    )
+    main(config)
     logger.info("*** FINISHED ***")
