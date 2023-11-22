@@ -1,16 +1,16 @@
 pvs_like_python:
   step: pvs_like_case_study
-  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/pvs_like_python
-  name: image
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
+  name: pvs_like_python
 pvs_like_r:
   step: pvs_like_case_study
-  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/pvs_like_r
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: pvs_like_r
 pvs_like_spark_local:
   step: pvs_like_case_study
-  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/pvs_like_spark_local
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: pvs_like_spark_local
 pvs_like_spark_cluster:
   step: pvs_like_case_study
-  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/pvs_like_spark_cluster
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: pvs_like_spark_cluster

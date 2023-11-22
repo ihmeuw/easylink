@@ -78,7 +78,7 @@ def run_container(
             logger.warning(
                 "The container engine is expected to be either 'docker' or "
                 f"'singularity' but got '{container_engine}' - trying to run "
-                "with Docker and then (if that fails) Singularity."
+                "with docker and then (if that fails) singularity."
             )
         else:
             logger.info(
