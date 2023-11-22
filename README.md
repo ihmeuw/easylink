@@ -53,6 +53,8 @@ $ sudo docker rmi linker:<IMAGE-NAME>
 
 You should now have an image file named `<IMAGE-NAME>.tar.gz` alongside the Dockerfile which can be used to spin up the container.
 
+Note that it may be occasionally required to clean up unused data to make room for building
+images: `sudo docker system prune`.
 
 ## Creating a singularity image to be shared
 
