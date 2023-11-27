@@ -7,6 +7,9 @@ from docker.models.containers import Container
 from loguru import logger
 
 
+
+DOCKER_TIMEOUT = 120  # seconds
+
 def run_with_docker(input_data: List[Path], results_dir: Path, container_path: Path) -> None:
     logger.info("Running container with docker")
     client = get_docker_client()
@@ -17,7 +20,7 @@ def run_with_docker(input_data: List[Path], results_dir: Path, container_path: P
 
 def get_docker_client() -> DockerClient:
     try:
-        client = docker.from_env()
+        client = docker.from_env(timeout=DOCKER_TIMEOUT)
         client.ping()
         return client
     except Exception as e:
