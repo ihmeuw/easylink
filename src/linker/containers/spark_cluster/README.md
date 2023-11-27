@@ -1,7 +1,7 @@
 # spark_cluster container
 NOTE: Use of `linker build-spark-cluster` currently requires building an image.sif from this directory.
 
-This is done by running the following command from the `linker` this directory:
+This is done by running the following commands this directory:
 
 ```
 # build the image

@@ -11,7 +11,7 @@ pvs_like_spark_local:
   step: pvs_like_case_study
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: pvs_like_spark_local
-pvs_like_spark_cluster:
+person_linkage_spark_cluster:
   step: pvs_like_case_study
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: pvs_like_spark_cluster
@@ -24,4 +24,3 @@ step_2_python_pandas:
   step: step_2
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: python_pandas
-  
