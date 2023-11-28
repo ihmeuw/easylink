@@ -125,7 +125,7 @@ conf.set("spark.jars", path)
 sc = SparkContext.getOrCreate(conf=conf)
 
 spark = SparkSession(sc)
-spark.sparkContext.setCheckpointDir("./tmp_checkpoints")
+spark.sparkContext.setCheckpointDir("/tmp")
 
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SparkSession, types

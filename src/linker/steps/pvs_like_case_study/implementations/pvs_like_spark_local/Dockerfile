@@ -17,6 +17,8 @@ RUN conda init bash \
 # Stage 2: Start with the Apache Spark base image
 FROM apache/spark as spark-base
 
+USER root
+
 COPY --from=conda-base /opt/conda /opt/conda
 COPY --from=conda-base pvs_like_case_study_sample_data_spark_local.py ./
 
