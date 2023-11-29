@@ -42,4 +42,4 @@ def _run_cmd(results_dir: Path, cmd: str) -> None:
 
 def _clean(results_dir: Path, container_path: Path) -> None:
     pass
-    # TODO: do I need to clean up the cache?
+    # TODO [MIC-4730]: do I need to clean up the cache?
