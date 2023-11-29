@@ -26,11 +26,10 @@ def launch_slurm_job(
     session: types.ModuleType("drmaa.Session"),
     resources: Dict[str, str],
     container_engine: str,
-    input_data: List[Path],
+    input_data: List[str],
     results_dir: Path,
     step_name: str,
     implementation_name: str,
-    implementation_dir: Path,
     container_full_stem: str,
 ) -> None:
     jt = session.createJobTemplate()
@@ -45,7 +44,6 @@ def launch_slurm_job(
         str(results_dir),
         step_name,
         implementation_name,
-        str(implementation_dir),
         container_full_stem,
         "-vvv",
     ]

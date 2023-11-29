@@ -17,6 +17,8 @@ RUN conda init bash \
 # Stage 2: Start with the Apache Spark base image
 FROM apache/spark as spark-base
 
+USER root
+
 COPY --from=conda-base /opt/conda /opt/conda
 COPY --from=conda-base pvs_like_case_study_sample_data_spark_local.py ./
 
@@ -24,5 +26,4 @@ COPY --from=conda-base pvs_like_case_study_sample_data_spark_local.py ./
 ENV PATH=/opt/conda/envs/pvs_like_case_study_spark_local/bin:/opt/conda/condabin:${PATH}
 
 # Run your script with Spark on startup
-CMD ["/bin/bash", "-c", "conda run -n pvs_like_case_study_spark_local python /opt/spark/work-dir/pvs_like_case_study_sample_data_spark_local.py \
-     && mv census_2030_with_piks_sample.parquet /results/"]
+CMD ["/bin/bash", "-c", "conda run -n pvs_like_case_study_spark_local python /opt/spark/work-dir/pvs_like_case_study_sample_data_spark_local.py"]

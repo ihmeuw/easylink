@@ -30,6 +30,7 @@ class Config:
 
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
+        # TODO [MIC-4723]: validate configuration files
 
     def get_resources(self) -> Dict[str, str]:
         return {

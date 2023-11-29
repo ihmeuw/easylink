@@ -56,12 +56,11 @@ def run_container(
     results_dir: Path,
     step_name: str,
     implementation_name: str,
-    container_location: Path,
+    container_full_stem: str,
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
-    container_full_stem = f"{container_location}/{implementation_name}"
     if container_engine == "docker":
         run_with_docker(
             input_data=input_data,
@@ -73,15 +72,13 @@ def run_container(
             input_data=input_data,
             results_dir=results_dir,
             container_path=Path(f"{container_full_stem}.sif").resolve(),
-            step_name=step_name,
-            implementation_name=implementation_name,
         )
     else:
         if container_engine and container_engine != "undefined":
             logger.warning(
                 "The container engine is expected to be either 'docker' or "
                 f"'singularity' but got '{container_engine}' - trying to run "
-                "with Docker and then (if that fails) Singularity."
+                "with docker and then (if that fails) singularity."
             )
         else:
             logger.info(
@@ -101,8 +98,6 @@ def run_container(
                     input_data=input_data,
                     results_dir=results_dir,
                     container_path=Path(f"{container_full_stem}.sif").resolve(),
-                    step_name=step_name,
-                    implementation_name=implementation_name,
                 )
             except Exception as e_singularity:
                 raise RuntimeError(

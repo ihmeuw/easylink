@@ -125,7 +125,7 @@ conf.set("spark.jars", path)
 sc = SparkContext.getOrCreate(conf=conf)
 
 spark = SparkSession(sc)
-spark.sparkContext.setCheckpointDir("./tmp_checkpoints")
+spark.sparkContext.setCheckpointDir("/tmp")
 
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SparkSession, types
@@ -448,7 +448,7 @@ confused_for = (
 )
 errors[common_cols].compare(confused_for[common_cols], keep_shape=True, keep_equal=True)
 
-census_2030.to_parquet("census_2030_with_piks_sample.parquet")
+census_2030.to_parquet("/results/census_2030_with_piks_sample.parquet")
 
 # Convert this notebook to a Python script
 # ! ./convert_notebook.sh pvs_like_case_study_sample_data_spark_local
