@@ -151,8 +151,8 @@ def submit_spark_cluster_job(
     )
 
     # XXX TODO: uncomment this after debug
-    atexit.register(lambda: os.remove(output_log))
-    atexit.register(lambda: os.remove(error_log))
+    # atexit.register(lambda: os.remove(output_log))
+    # atexit.register(lambda: os.remove(error_log))
 
     # Wait for job to start running
     drmaa = get_slurm_drmaa()
