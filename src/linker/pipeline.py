@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable, List, Optional, Tuple
+
+from loguru import logger
 
 from linker.configuration import Config
 from linker.implementation import Implementation
@@ -13,6 +15,7 @@ class Pipeline:
         self.config = config
         self.steps = self._get_steps()
         self.implementations = self._get_implementations()
+        self._validation_errors = {}
         self._validate()
 
     def run(self, runner: Callable, results_dir: Path) -> None:
@@ -42,21 +45,70 @@ class Pipeline:
         )
 
     def _validate(self) -> None:
+        import errno
+
+        import yaml
+
+        validations = []
+        for validation in [
+            self._validate_pipeline,
+            self._validate_implementations,
+        ]:
+            validations.append(validation())
+        if not all(validations):
+            yaml_str = yaml.dump(self._validation_errors)
+            logger.error(
+                "\n\n=========================================="
+                "\nValidation errors found. Please see below."
+                f"\n\n{yaml_str}"
+                "\nValidation errors found. Please see above."
+                "\n==========================================\n"
+            )
+            exit(errno.EINVAL)
+
+    def _validate_pipeline(self) -> bool:
         """Validates the pipeline against supported schemas."""
 
         from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 
-        # TODO [MIC-4709]: Batch all validation errors and log them all at once
-        def validate_pipeline(schema: PipelineSchema):
+        def _validate(schema: PipelineSchema) -> Tuple[bool, List[Optional[str]]]:
+            logs = []
+            is_validated = False
             for idx, implementation in enumerate(self.implementations):
                 # Check that all steps are accounted for and in the correct order
-                if implementation.step_name != schema.steps[idx].name:
-                    return False
-            return True
+                schema_step = schema.steps[idx].name
+                pipeline_step = implementation._pipeline_step_name
+                if pipeline_step != schema_step:
+                    logs.append(
+                        f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
+                        f"but the provided pipeline specifies '{pipeline_step}'. "
+                        "Check step order and spelling in the pipeline configuration yaml."
+                    )
+            if not logs:
+                is_validated = True
+            return is_validated, logs
 
+        errors = {}
         for schema in PIPELINE_SCHEMAS:
-            if validate_pipeline(schema):
-                return
-            else:  # invalid pipeline for this schema
+            is_validated, schema_errors = _validate(schema)
+            if not is_validated:
+                errors[schema.name] = schema_errors
                 pass  # try the next schema
-        raise RuntimeError("Pipeline is not valid.")
+            else:
+                return True  # we have a winner
+        # No schemas were validated
+        self._validation_errors["PIPELINE ERRORS"] = errors
+        return False
+
+    def _validate_implementations(self) -> bool:
+        """Validates each individual Implementation instance."""
+        errors = {}
+        for implementation in self.implementations:
+            implementation_errors = implementation.validate()
+            if implementation_errors:
+                errors[implementation.name] = implementation_errors
+        if errors:
+            self._validation_errors["IMPLEMENTATION ERRORS"] = errors
+            return False
+        else:
+            return True

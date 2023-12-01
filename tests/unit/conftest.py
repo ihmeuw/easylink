@@ -5,7 +5,7 @@ from linker.configuration import Config
 
 ENV_CONFIG_DICT = {
     "computing_environment": "foo",
-    "container_engine": "some-container-engine",
+    "container_engine": "undefined",
     "baz": {
         "qux",
         "quux",
