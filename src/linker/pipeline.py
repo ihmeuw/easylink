@@ -57,8 +57,6 @@ class Pipeline:
             validations.append(validation())
         if not all(validations):
             yaml_str = yaml.dump(self._validation_errors)
-            # logger.error("vvvvv Validation errors were found. Please see below: vvvvv")
-            # logger.error(f"{pprint.PrettyPrinter(indent=1, width=1, compact=True).pprint(self._validation_errors)}")
             logger.error(
                 "\n\n=========================================="
                 "\nValidation errors found. Please see below."
