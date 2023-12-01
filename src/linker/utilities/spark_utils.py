@@ -99,8 +99,8 @@ fi
 """
     )
     launcher.close()
-
-    atexit.register(lambda: os.remove(launcher.name))
+    # XXX TODO uncomment this after debug
+    # atexit.register(lambda: os.remove(launcher.name))
     return launcher
 
 
