@@ -9,11 +9,10 @@ implementation_resources:
   cpus: 2
   time_limit: 1  # hours
 spark:
+  tmp_dir: /ihme/scratch/users/USERNAME/spark_tmp  # TODO: Replace USERNAME with your IHME username
   workers:
     num_workers: 2  # num_workers + 1 nodes will be requested
     cpus_per_task: 5
     mem_per_cpu: 8  # GB
     time_limit: 1  # hours
-    fqdn: "cluster.ihme.washington.edu"  # node URL: hostname.[spark.workers.fqdn]
-
 

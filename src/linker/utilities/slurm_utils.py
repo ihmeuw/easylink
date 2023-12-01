@@ -150,6 +150,7 @@ def submit_spark_cluster_job(
         f"Error log: {error_log}"
     )
 
+    # XXX TODO: uncomment this after debug
     atexit.register(lambda: os.remove(output_log))
     atexit.register(lambda: os.remove(error_log))
 
