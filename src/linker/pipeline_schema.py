@@ -12,6 +12,9 @@ class PipelineSchema:
         self.name = name
         self.steps = []
 
+    def __repr__(self) -> str:
+        return f"PipelineSchema.{self.name}"
+
     @classmethod
     def get_schemas(cls) -> List["PipelineSchema"]:
         """Creates the allowable schema for the pipeline."""

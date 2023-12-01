@@ -1,17 +1,20 @@
 from pathlib import Path
-from typing import Callable, Dict, List
+from typing import Callable, Dict, List, Optional
 
 from linker.utilities.general_utils import load_yaml
 
 
 class Implementation:
     def __init__(self, step_name: str, implementation_name: str, container_engine: str):
-        self.step_name = step_name
+        self._pipeline_step_name = step_name
         self.name = implementation_name
         self._container_engine = container_engine
         self._metadata = self._load_metadata()
+        self.step_name = self._metadata[self.name]["step"]
         self._container_full_stem = self._get_container_full_stem()
-        self._validate()
+
+    def __repr__(self) -> str:
+        return f"Implementation.{self.step_name}.{self.name}"
 
     def run(
         self,
@@ -29,6 +32,15 @@ class Implementation:
             container_full_stem=self._container_full_stem,
         )
 
+    def validate(self) -> List[Optional[str]]:
+        """Validates individual Implementation instances. This is intended to be
+        run from the Pipeline validate method
+        """
+        logs = []
+        logs = self._validate_expected_step(logs)
+        logs = self._validate_container_exists(logs)
+        return logs
+
     ##################
     # Helper methods #
     ##################
@@ -44,21 +56,15 @@ class Implementation:
             )
         return f"{self._metadata[self.name]['path']}/{self._metadata[self.name]['name']}"
 
-    def _validate(self) -> None:
-        # TODO [MIC-4709]: Batch all validation errors and log them all at once
-        self._validate_expected_step()
-        self._validate_container_exists()
-
-    def _validate_expected_step(self):
-        implementation_step = self._metadata[self.name]["step"]
-        pipeline_step = self.step_name  # from pipeline yaml
-        if implementation_step != pipeline_step:
-            raise RuntimeError(
-                f"Implementaton's metadata step '{implementation_step}' does not "
-                f"match pipeline configuration's step '{pipeline_step}'"
+    def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
+        if self.step_name != self._pipeline_step_name:
+            logs.append(
+                f"Implementaton metadata step '{self.step_name}' does not "
+                f"match pipeline configuration step '{self._pipeline_step_name}'"
             )
+        return logs
 
-    def _validate_container_exists(self):
+    def _validate_container_exists(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         # TODO [MIC-4723]: this should be moved into Config
         if not self._container_engine in ["docker", "singularity", "undefined"]:
             raise NotImplementedError(
@@ -69,15 +75,16 @@ class Implementation:
             self._container_engine == "docker"
             and not Path(f"{self._container_full_stem}.tar.gz").exists()
         ):
-            raise RuntimeError(err_str)
+            logs.append(err_str)
         if (
             self._container_engine == "singularity"
             and not Path(f"{self._container_full_stem}.sif").exists()
         ):
-            raise RuntimeError(err_str)
+            logs.append(err_str)
         if (
             self._container_engine == "undefined"
             and not Path(f"{self._container_full_stem}.tar.gz").exists()
             and not Path(f"{self._container_full_stem}.sif").exists()
         ):
-            raise RuntimeError(err_str)
+            logs.append(err_str)
+        return logs
