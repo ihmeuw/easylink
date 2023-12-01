@@ -30,7 +30,7 @@ class Config:
 
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
-        # TODO [MIC-4723]: validate configuration files
+        self._validate()
 
     def get_resources(self) -> Dict[str, str]:
         return {
@@ -41,9 +41,17 @@ class Config:
     def get_spark_resources(self) -> Dict[str, str]:
         return {**self.environment["spark"]}
 
-    ####################
-    # Helper Functions #
-    ####################
+    #################
+    # Setup Methods #
+    #################
+
+    def _validate(self) -> None:
+        # TODO [MIC-4723]: validate configuration files
+
+        if not self.container_engine in ["docker", "singularity", "undefined"]:
+            raise NotImplementedError(
+                f"Container engine '{self.container_engine}' is not supported."
+            )
 
     @staticmethod
     def _load_computing_environment(

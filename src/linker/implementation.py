@@ -47,13 +47,14 @@ class Implementation:
 
     def _load_metadata(self) -> Dict[str, str]:
         metadata_path = Path(__file__).parent / "implementation_metadata.yaml"
-        return load_yaml(metadata_path)
-
-    def _get_container_full_stem(self) -> str:
-        if not self.name in self._metadata:
+        metadata = load_yaml(metadata_path)
+        if not self.name in metadata:
             raise RuntimeError(
                 f"Implementation '{self.name}' is not defined in implementation_metadata.yaml"
             )
+        return metadata
+
+    def _get_container_full_stem(self) -> str:
         return f"{self._metadata[self.name]['path']}/{self._metadata[self.name]['name']}"
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
@@ -65,11 +66,6 @@ class Implementation:
         return logs
 
     def _validate_container_exists(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        # TODO [MIC-4723]: this should be moved into Config
-        if not self._container_engine in ["docker", "singularity", "undefined"]:
-            raise NotImplementedError(
-                f"Container engine '{self._container_engine}' is not supported."
-            )
         err_str = f"Container '{self._container_full_stem}' does not exist."
         if (
             self._container_engine == "docker"
