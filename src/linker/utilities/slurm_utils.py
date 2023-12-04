@@ -120,8 +120,8 @@ def submit_spark_cluster_job(
     jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.workingDirectory = os.getcwd()
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.stdout')}"
-    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.stderr')}"
+    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.%a.stdout')}"
+    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.%a.stderr')}"
     jt.remoteCommand = shutil.which("/bin/bash")
     jt.args = [launcher.name]
     jt.jobEnvironment = {
