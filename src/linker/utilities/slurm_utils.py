@@ -28,20 +28,22 @@ def launch_slurm_job(
     container_engine: str,
     input_data: List[str],
     results_dir: Path,
+    log_dir: Path,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
 ) -> None:
     jt = session.createJobTemplate()
-    jt.jobName = f"{step_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(results_dir / '%A.o%a')}"
-    jt.errorPath = f":{str(results_dir / '%A.e%a')}"
+    jt.outputPath = f":{str(log_dir / '%A.o%a')}"
+    jt.errorPath = f":{str(log_dir / '%A.e%a')}"
     jt.remoteCommand = shutil.which("linker")
     jt_args = [
         "run-slurm-job",
         container_engine,
         str(results_dir),
+        str(log_dir),
         step_name,
         implementation_name,
         container_full_stem,
@@ -68,8 +70,8 @@ def launch_slurm_job(
     logger.info(
         f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
         f"Job submitted with jobid '{job_id}'\n"
-        f"Output log: {str(results_dir / f'{job_id}.o*')}\n"
-        f"Error log: {str(results_dir / f'{job_id}.e*')}"
+        f"Output log: {str(log_dir / f'{job_id}.o*')}\n"
+        f"Error log: {str(log_dir / f'{job_id}.e*')}"
     )
     job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
 

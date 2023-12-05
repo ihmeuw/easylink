@@ -53,7 +53,7 @@ def main(
 
 def run_container(
     container_engine: str,
-    input_data: List[str],
+    input_data: List[Path],
     results_dir: Path,
     log_dir: Path,
     step_name: str,
@@ -65,16 +65,18 @@ def run_container(
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":
         run_with_docker(
+            implementation_name=implementation_name,
             input_data=input_data,
             results_dir=results_dir,
             log_dir=log_dir,
             container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
-            implementation_name=implementation_name,
         )
     elif container_engine == "singularity":
         run_with_singularity(
+            implementation_name=implementation_name,
             input_data=input_data,
             results_dir=results_dir,
+            log_dir=log_dir,
             container_path=Path(f"{container_full_stem}.sif").resolve(),
         )
     else:
@@ -91,18 +93,20 @@ def run_container(
             )
         try:
             run_with_docker(
+                implementation_name=implementation_name,
                 input_data=input_data,
                 results_dir=results_dir,
                 log_dir=log_dir,
                 container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
-                implementation_name=implementation_name,
             )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
                 run_with_singularity(
+                    implementation_name=implementation_name,
                     input_data=input_data,
                     results_dir=results_dir,
+                    log_dir=log_dir,
                     container_path=Path(f"{container_full_stem}.sif").resolve(),
                 )
             except Exception as e_singularity:

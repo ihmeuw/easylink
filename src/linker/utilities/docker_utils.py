@@ -10,17 +10,17 @@ DOCKER_TIMEOUT = 360  # seconds
 
 
 def run_with_docker(
+    implementation_name: str,
     input_data: List[Path],
     results_dir: Path,
     log_dir: Path,
     container_path: Path,
-    implementation_name: str,
 ) -> None:
     logger.info("Running container with docker")
     client = get_docker_client()
     image_id = _load_image(client, container_path)
     container = _run_container(
-        client, image_id, input_data, results_dir, log_dir, implementation_name
+        client, image_id, implementation_name, input_data, results_dir, log_dir
     )
     _clean(client, image_id, container)
 
@@ -52,10 +52,10 @@ def _load_image(client: DockerClient, image_path: Path) -> str:
 def _run_container(
     client: DockerClient,
     image_id: str,
+    implementation_name: str,
     input_data: List[Path],
     results_dir: Path,
     log_dir: Path,
-    implementation_name: str,
 ):
     logger.info(f"Running the container from image {image_id}")
     volumes = {
