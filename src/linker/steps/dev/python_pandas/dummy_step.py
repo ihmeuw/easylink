@@ -4,7 +4,6 @@ import logging
 import pandas as pd
 
 logging_handlers = [logging.StreamHandler()]
-logging_dir = "/logs/"
 
 logging.basicConfig(
     level=logging.INFO,

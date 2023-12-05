@@ -6,7 +6,7 @@ from docker import DockerClient
 from docker.models.containers import Container
 from loguru import logger
 
-DOCKER_TIMEOUT = 120  # seconds
+DOCKER_TIMEOUT = 360  # seconds
 
 
 def run_with_docker(
@@ -64,7 +64,6 @@ def _run_container(
             for dataset in input_data
         },
         str(results_dir): {"bind": "/results", "mode": "rw"},
-        str(log_dir): {"bind": "/logs", "mode": "rw"},
     }
     try:
         container = client.containers.run(
