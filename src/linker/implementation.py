@@ -22,11 +22,13 @@ class Implementation:
         container_engine: str,
         input_data: List[Path],
         results_dir: Path,
+        log_dir: Path,
     ) -> None:
         runner(
             container_engine=container_engine,
             input_data=input_data,
             results_dir=results_dir,
+            log_dir=log_dir,
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,

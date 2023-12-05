@@ -18,30 +18,44 @@ class Pipeline:
         self._validation_errors = {}
         self._validate()
 
-    def run(self, runner: Callable, results_dir: Path) -> None:
+    def run(self, runner: Callable, results_dir: Path, log_dir: Path) -> None:
         number_of_steps = len(self.implementations)
         for idx, implementation in enumerate(self.implementations):
-            breakpoint()
-            output_dir = results_dir if idx == (number_of_steps - 1) else results_dir / "intermediate" / implementation.name
+            output_dir = (
+                results_dir
+                if idx == (number_of_steps - 1)
+                else results_dir / "intermediate" / implementation.name
+            )
             if idx == 0:
-                # Run the first step (which requires the input data and which 
+                # Run the first step (which requires the input data and which
                 # writes out to the results intermediate directory)
                 output_dir.mkdir(exist_ok=True)
                 input_data = self.config.input_data
             elif idx == number_of_steps - 1:
                 # Run the last step (which requires the results of the previous step
                 # and which writes out to the results parent directory)
-                input_data = [f for f in (output_dir / "intermediate" / self.implementations[idx-1].name).glob("*.parquet")]
+                input_data = [
+                    f
+                    for f in (
+                        output_dir / "intermediate" / self.implementations[idx - 1].name
+                    ).glob("*.parquet")
+                ]
             else:
                 # Run the middle steps (which require the results of the previous
                 # step and which write out to the results intermediate directory)
                 output_dir.mkdir(exist_ok=True)
-                input_data = [f for f in (output_dir / "intermediate" / self.implementations[idx-1].name).glob("*.parquet")]
+                input_data = [
+                    f
+                    for f in (
+                        output_dir / "intermediate" / self.implementations[idx - 1].name
+                    ).glob("*.parquet")
+                ]
             implementation.run(
                 runner=runner,
                 container_engine=self.config.container_engine,
                 input_data=input_data,
                 results_dir=output_dir,
+                log_dir=log_dir,
             )
 
     #################
