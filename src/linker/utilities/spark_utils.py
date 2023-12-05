@@ -79,6 +79,7 @@ export SPARK_WORKER_CORES=$SLURM_CPUS_PER_TASK
 export SPARK_DAEMON_MEMORY=$(( $SLURM_MEM_PER_CPU * $SLURM_CPUS_PER_TASK / 2 ))m
 export SPARK_MEM=$SPARK_DAEMON_MEMORY
 
+echo "hello from $(hostname -f)"
 if [ "$SLURM_PROCID" -eq 0 ]; then
     SPARK_MASTER_HOST=$(hostname -f)
 
