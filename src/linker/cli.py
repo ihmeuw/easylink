@@ -99,6 +99,7 @@ def run(
         config=config,
         results_dir=results_dir,
     )
+    logger.info(f"Results directory: {str(results_dir)}")
     logger.info("*** FINISHED ***")
 
 

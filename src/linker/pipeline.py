@@ -19,12 +19,29 @@ class Pipeline:
         self._validate()
 
     def run(self, runner: Callable, results_dir: Path) -> None:
-        for implementation in self.implementations:
+        number_of_steps = len(self.implementations)
+        for idx, implementation in enumerate(self.implementations):
+            breakpoint()
+            output_dir = results_dir if idx == (number_of_steps - 1) else results_dir / "intermediate" / implementation.name
+            if idx == 0:
+                # Run the first step (which requires the input data and which 
+                # writes out to the results intermediate directory)
+                output_dir.mkdir(exist_ok=True)
+                input_data = self.config.input_data
+            elif idx == number_of_steps - 1:
+                # Run the last step (which requires the results of the previous step
+                # and which writes out to the results parent directory)
+                input_data = [f for f in (output_dir / "intermediate" / self.implementations[idx-1].name).glob("*.parquet")]
+            else:
+                # Run the middle steps (which require the results of the previous
+                # step and which write out to the results intermediate directory)
+                output_dir.mkdir(exist_ok=True)
+                input_data = [f for f in (output_dir / "intermediate" / self.implementations[idx-1].name).glob("*.parquet")]
             implementation.run(
                 runner=runner,
                 container_engine=self.config.container_engine,
-                input_data=self.config.input_data,
-                results_dir=results_dir,
+                input_data=input_data,
+                results_dir=output_dir,
             )
 
     #################
@@ -73,19 +90,23 @@ class Pipeline:
 
         def _validate(schema: PipelineSchema) -> Tuple[bool, List[Optional[str]]]:
             logs = []
-            is_validated = False
-            for idx, implementation in enumerate(self.implementations):
-                # Check that all steps are accounted for and in the correct order
-                schema_step = schema.steps[idx].name
-                pipeline_step = implementation._pipeline_step_name
-                if pipeline_step != schema_step:
-                    logs.append(
-                        f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
-                        f"but the provided pipeline specifies '{pipeline_step}'. "
-                        "Check step order and spelling in the pipeline configuration yaml."
-                    )
-            if not logs:
-                is_validated = True
+            # Check that number of schema steps matches number of implementations
+            if len(schema.steps) != len(self.implementations):
+                logs.append(
+                    f"Expected {len(schema.steps)} steps but found {len(self.implementations)} implementations."
+                )
+            else:
+                for idx, implementation in enumerate(self.implementations):
+                    # Check that all steps are accounted for and in the correct order
+                    schema_step = schema.steps[idx].name
+                    pipeline_step = implementation._pipeline_step_name
+                    if pipeline_step != schema_step:
+                        logs.append(
+                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
+                            f"but the provided pipeline specifies '{pipeline_step}'. "
+                            "Check step order and spelling in the pipeline configuration yaml."
+                        )
+            is_validated = False if logs else True
             return is_validated, logs
 
         errors = {}
