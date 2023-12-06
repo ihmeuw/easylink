@@ -29,6 +29,7 @@ def main(
 
     # Set up computing environment
     if config.computing_environment == "local":
+        session = None
         runner = run_container
     elif config.computing_environment == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
@@ -48,7 +49,7 @@ def main(
             f"provided {config.computing_environment}"
         )
 
-    pipeline.run(runner, results_dir, log_dir)
+    pipeline.run(runner=runner, results_dir=results_dir, log_dir=log_dir, session=session)
 
 
 def run_container(

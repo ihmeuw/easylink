@@ -1,3 +1,4 @@
+import types
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
@@ -18,7 +19,13 @@ class Pipeline:
         self._validation_errors = {}
         self._validate()
 
-    def run(self, runner: Callable, results_dir: Path, log_dir: Path) -> None:
+    def run(
+        self,
+        runner: Callable,
+        results_dir: Path,
+        log_dir: Path,
+        session: Optional[types.ModuleType("drmaa.Session")],
+    ) -> None:
         number_of_steps = len(self.implementations)
         for idx, implementation in enumerate(self.implementations):
             output_dir = (
@@ -57,6 +64,8 @@ class Pipeline:
                 results_dir=output_dir,
                 log_dir=log_dir,
             )
+        if session:
+            session.exit()
 
     #################
     # Setup methods #

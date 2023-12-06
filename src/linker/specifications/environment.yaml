@@ -1,10 +1,10 @@
 computing_environment: slurm
 # container_engine: singularity  # singularity or docker; comment out completely if unknown
 slurm:
-  account: proj_simscience_prod
+  account: proj_simscience
   partition: long.q
 # TODO: Move implementation resources (pipeline.yaml? input spec?)
 implementation_resources:
-  memory: 10  # GB
-  cpus: 2
+  memory: 5  # GB
+  cpus: 1
   time_limit: 1  # hours

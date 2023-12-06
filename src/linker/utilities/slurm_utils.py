@@ -36,8 +36,10 @@ def launch_slurm_job(
     jt = session.createJobTemplate()
     jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(log_dir / '%A.o%a')}"
-    jt.errorPath = f":{str(log_dir / '%A.e%a')}"
+    errorPath = str(log_dir / f"{jt.jobName}.%A.e%a")
+    outputPath = str(log_dir / f"{jt.jobName}.%A.o%a")
+    jt.outputPath = f":{outputPath}"
+    jt.errorPath = f":{errorPath}"
     jt.remoteCommand = shutil.which("linker")
     jt_args = [
         "run-slurm-job",
@@ -78,7 +80,6 @@ def launch_slurm_job(
     # TODO: clean up if job failed?
     logger.info(f"Job {job_id} finished with status '{job_status}'")
     session.deleteJobTemplate(jt)
-    session.exit()
 
 
 def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
