@@ -1,17 +1,16 @@
-from linker.pipeline_schema import PipelineSchema
+from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 
 
 def test_get_schemas():
-    schema = PipelineSchema("foo")
-    supported_schemas = schema.get_schemas()
+    supported_schemas = PIPELINE_SCHEMAS
     assert type(supported_schemas) == list
     # Ensure list is populated
     assert supported_schemas
-    # Check one of them
-    one_supported_schema = supported_schemas[0]
-    assert one_supported_schema.name
-    assert type(one_supported_schema.steps) == list
-    assert one_supported_schema.steps
+    # Check basic structure
+    for schema in supported_schemas:
+        assert schema.name
+        assert type(schema.steps) == list
+        assert schema.steps
 
 
 def test__add_step():

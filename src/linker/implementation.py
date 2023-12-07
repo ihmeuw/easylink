@@ -37,7 +37,7 @@ class Implementation:
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
-        run from the Pipeline validate method
+        run from the Pipeline validate method.
         """
         logs = []
         logs = self._validate_expected_step(logs)
