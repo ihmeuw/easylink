@@ -128,17 +128,29 @@ def submit_spark_cluster_job(
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",
     }
+    # TODO: runBulkJobs()?
+    # jt.nativeSpecification = (
+    #     f"--account={account} "
+    #     f"--partition={partition} "
+    #     f"--mem-per-cpu={memory_per_cpu * 1024} "
+    #     f"--time={max_runtime}:00:00 "
+    #     f"--nodes={num_workers + 1} "
+    #     f"--cpus-per-task={cpus_per_task} "
+    #     "--ntasks-per-node=1"
+    # )
     jt.nativeSpecification = (
         f"--account={account} "
         f"--partition={partition} "
         f"--mem-per-cpu={memory_per_cpu * 1024} "
-        f"--time={max_runtime}:00:00 "
-        f"--nodes={num_workers + 1} "
+        f"--time=00:10:00 "  # XXX DEBUG value!
+        # f"--time={max_runtime}:00:00 "
+        f"--nodes=1 "
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
     )
     job_id = session.runJob(jt)
-
+    jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
+    breakpoint()
     # Save path to error log, which will contain the Spark master URL
     error_log = Path(jt.workingDirectory) / f"{job_id}.stderr"
     output_log = Path(jt.workingDirectory) / f"{job_id}.stdout"
