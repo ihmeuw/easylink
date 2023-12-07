@@ -1,4 +1,3 @@
-import types
 from pathlib import Path
 from typing import Callable, List, Optional, Tuple
 
@@ -8,6 +7,9 @@ from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.step import Step
 
+
+if TYPE_CHECKING:
+    import drmaa
 
 class Pipeline:
     """Abstraction to handle pipeline specification and execution."""
@@ -24,7 +26,7 @@ class Pipeline:
         runner: Callable,
         results_dir: Path,
         log_dir: Path,
-        session: Optional[types.ModuleType("drmaa.Session")],
+        session: Optional["drmaa.Session"],
     ) -> None:
         number_of_steps = len(self.implementations)
         for idx, implementation in enumerate(self.implementations):
