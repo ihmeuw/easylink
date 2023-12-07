@@ -120,8 +120,8 @@ def submit_spark_cluster_job(
     jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.workingDirectory = os.getcwd()
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.%a.stdout')}"
-    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.%a.stderr')}"
+    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stdout')}"
+    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stderr')}"
     jt.remoteCommand = shutil.which("/bin/bash")
     jt.args = [launcher.name]
     jt.jobEnvironment = {
@@ -149,6 +149,8 @@ def submit_spark_cluster_job(
         "--ntasks-per-node=1"
     )
     job_id = session.runJob(jt)
+    # (Pdb) jobs
+    # ['52631040_1', '52631040_2', '52631040_3']
     jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
     breakpoint()
     # Save path to error log, which will contain the Spark master URL
