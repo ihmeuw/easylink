@@ -81,7 +81,7 @@ export SPARK_MEM=$SPARK_DAEMON_MEMORY
 
 env | sort
 echo "XXX Debug hello from $(hostname -f)"
-if [ "$SLURM_PROCID" -eq 0 ]; then
+if [ "$SLURM_ARRAY_TASK_ID" -eq 1 ]; then
     SPARK_MASTER_HOST=$(hostname -f)
 
     mkdir -p "/tmp/spark_cluster_$USER"
