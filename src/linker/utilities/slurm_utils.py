@@ -154,8 +154,8 @@ def submit_spark_cluster_job(
     jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
     breakpoint()
     # Save path to error log, which will contain the Spark master URL
-    error_log = Path(jt.workingDirectory) / f"{job_id}.stderr"
-    output_log = Path(jt.workingDirectory) / f"{job_id}.stdout"
+    error_log = Path(jt.workingDirectory) / f"{jobs}.stderr"
+    output_log = Path(jt.workingDirectory) / f"{jobs}.stdout"
 
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
