@@ -32,6 +32,7 @@ class Pipeline:
         number_of_steps = len(self.implementations)
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(len(str(number_of_steps)))
+            previous_step_number = str(idx).zfill(len(str(number_of_steps))
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)
@@ -46,9 +47,9 @@ class Pipeline:
                 # Run the last step (which requires the results of the previous step
                 # and which writes out to the results parent directory)
                 input_data = [
-                    f
-                    for f in (
-                        output_dir / "intermediate" / f"{step_number}_{self.implementations[idx - 1].step_name}"
+                    file
+                    for file in (
+                        output_dir / "intermediate" / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
                     ).glob("*.parquet")
                 ]
             else:
@@ -56,9 +57,9 @@ class Pipeline:
                 # step and which write out to the results intermediate directory)
                 output_dir.mkdir(exist_ok=True)
                 input_data = [
-                    f
-                    for f in (
-                        output_dir / "intermediate" / self.implementations[idx - 1].name
+                    file
+                    for file in (
+                        output_dir / "intermediate" / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
                     ).glob("*.parquet")
                 ]
             implementation.run(

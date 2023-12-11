@@ -35,7 +35,7 @@ TBD
 
 ## Creating a docker image to be shared
 
-Docker image binaries can be build from a Dockerfile. For example, to create a
+Docker image binaries can be built from a Dockerfile. For example, to create a
 compressed image .tar.gz file:
 
 ```
