@@ -148,7 +148,7 @@ def submit_spark_cluster_job(
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
     )
-    job_id = session.runJob(jt)
+    # job_id = session.runJob(jt)
     # (Pdb) jobs
     # ['52631040_1', '52631040_2', '52631040_3']
     jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
