@@ -32,7 +32,7 @@ class Pipeline:
         number_of_steps = len(self.implementations)
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(len(str(number_of_steps)))
-            previous_step_number = str(idx).zfill(len(str(number_of_steps))
+            previous_step_number = str(idx).zfill(len(str(number_of_steps)))
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)
