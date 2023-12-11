@@ -103,7 +103,8 @@ class Pipeline:
 
         from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 
-        def _validate(schema: PipelineSchema) -> Tuple[bool, List[Optional[str]]]:
+        errors = {}
+        for schema in PIPELINE_SCHEMAS:
             logs = []
             # Check that number of schema steps matches number of implementations
             if len(schema.steps) != len(self.implementations):
@@ -121,14 +122,8 @@ class Pipeline:
                             f"but the provided pipeline specifies '{pipeline_step}'. "
                             "Check step order and spelling in the pipeline configuration yaml."
                         )
-            is_validated = False if logs else True
-            return is_validated, logs
-
-        errors = {}
-        for schema in PIPELINE_SCHEMAS:
-            is_validated, schema_errors = _validate(schema)
-            if not is_validated:
-                errors[schema.name] = schema_errors
+            if logs:
+                errors[schema.name] = logs
                 pass  # try the next schema
             else:
                 return True  # we have a winner
