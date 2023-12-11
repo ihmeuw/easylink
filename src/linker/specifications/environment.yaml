@@ -2,7 +2,7 @@ computing_environment: slurm
 # container_engine: singularity  # singularity or docker; comment out completely if unknown
 slurm:
   account: proj_simscience
-  partition: long.q
+  partition: all.q
 # TODO: Move implementation resources (pipeline.yaml? input spec?)
 implementation_resources:
   memory: 5  # GB
