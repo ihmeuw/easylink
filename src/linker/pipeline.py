@@ -38,24 +38,11 @@ class Pipeline:
                 if idx == (number_of_steps - 1)
                 else results_dir / "intermediate" / f"{step_number}_{implementation.step_name}"
             )
-            if idx == 0:
-                # Run the first step (which requires the input data and which
-                # writes out to the results intermediate directory)
+            input_data = self.config.input_data
+            if idx < number_of_steps - 1:
                 output_dir.mkdir(exist_ok=True)
-                input_data = self.config.input_data
-            elif idx == number_of_steps - 1:
-                # Run the last step (which requires the results of the previous step
-                # and which writes out to the results parent directory)
-                input_data = [
-                    file
-                    for file in (
-                        output_dir / "intermediate" / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
-                    ).glob("*.parquet")
-                ]
-            else:
-                # Run the middle steps (which require the results of the previous
-                # step and which write out to the results intermediate directory)
-                output_dir.mkdir(exist_ok=True)
+            if idx > 0:
+                # Overwrite the pipeline input data with the results of the previous step
                 input_data = [
                     file
                     for file in (
