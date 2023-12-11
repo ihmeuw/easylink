@@ -21,20 +21,22 @@ class PipelineSchema:
         schemas = []
 
         # pvs-like case study
-        schemas.append(PipelineSchema._generate_schema(
-            "pvs_like_case_study",
-            Step("pvs_like_case_study"),
+        schemas.append(
+            PipelineSchema._generate_schema(
+                "pvs_like_case_study",
+                Step("pvs_like_case_study"),
             )
         )
 
         # development dummy
-        schemas.append(PipelineSchema._generate_schema(
-            "development",
-            Step("step_1"),
-            Step("step_2"),
+        schemas.append(
+            PipelineSchema._generate_schema(
+                "development",
+                Step("step_1"),
+                Step("step_2"),
             )
         )
-        
+
         return schemas
 
     def _add_step(self, step: Step) -> None:
@@ -46,5 +48,6 @@ class PipelineSchema:
         for step in steps:
             schema._add_step(step)
         return schema
+
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()
