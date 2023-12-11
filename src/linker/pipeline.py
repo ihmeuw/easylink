@@ -36,7 +36,9 @@ class Pipeline:
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)
-                else results_dir / "intermediate" / f"{step_number}_{implementation.step_name}"
+                else results_dir
+                / "intermediate"
+                / f"{step_number}_{implementation.step_name}"
             )
             input_data = self.config.input_data
             if idx < number_of_steps - 1:
@@ -46,7 +48,9 @@ class Pipeline:
                 input_data = [
                     file
                     for file in (
-                        output_dir / "intermediate" / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
+                        output_dir
+                        / "intermediate"
+                        / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
                     ).glob("*.parquet")
                 ]
             implementation.run(
