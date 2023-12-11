@@ -31,10 +31,11 @@ class Pipeline:
     ) -> None:
         number_of_steps = len(self.implementations)
         for idx, implementation in enumerate(self.implementations):
+            step_number = str(idx + 1).zfill(len(str(number_of_steps)))
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)
-                else results_dir / "intermediate" / implementation.name
+                else results_dir / "intermediate" / f"{step_number}_{implementation.step_name}"
             )
             if idx == 0:
                 # Run the first step (which requires the input data and which
@@ -47,7 +48,7 @@ class Pipeline:
                 input_data = [
                     f
                     for f in (
-                        output_dir / "intermediate" / self.implementations[idx - 1].name
+                        output_dir / "intermediate" / f"{step_number}_{self.implementations[idx - 1].step_name}"
                     ).glob("*.parquet")
                 ]
             else:
