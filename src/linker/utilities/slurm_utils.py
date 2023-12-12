@@ -166,7 +166,7 @@ def submit_spark_cluster_job(
     if not preserve_logs:
         for output_log in output_logs:
             atexit.register(lambda: os.remove(output_log))
-        for error_log  in error_logs:
+        for error_log in error_logs:
             atexit.register(lambda: os.remove(error_log))
 
     # Wait for job to start running
@@ -175,7 +175,9 @@ def submit_spark_cluster_job(
     while all(job_statuses):
         sleep(5)
         logger.debug("Waiting for jobs to start running...")
-        job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
+        job_statuses = [
+            session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs
+        ]
     logger.info(f"Jobs {jobs} are running")
 
     session.deleteJobTemplate(jt)
