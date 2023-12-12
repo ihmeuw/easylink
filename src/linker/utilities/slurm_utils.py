@@ -113,6 +113,7 @@ def submit_spark_cluster_job(
         max_runtime: Maximum runtime in hours.
         num_workers: Number of workers.
         cpus_per_task: Number of CPUs per task.
+        preserve_logs: Whether to preserve logs.
 
     Returns:
         Path to stderr log, which contains the Spark master URL.
@@ -149,13 +150,7 @@ def submit_spark_cluster_job(
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
     )
-    # job_id = session.runJob(jt)
-    # (Pdb) jobs
-    # ['52631040_1', '52631040_2', '52631040_3']
     jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
-    breakpoint()
-    # TODO: fix these paths!
-    # Save path to error log, which will contain the Spark master URL
     error_logs = [Path(jt.workingDirectory) / f"{job}.stderr" for job in jobs]
     output_logs = [Path(jt.workingDirectory) / f"{job}.stdout" for job in jobs]
     master_error_log = error_logs[0]
