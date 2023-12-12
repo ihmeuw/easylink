@@ -1,3 +1,4 @@
+# pvs-like
 pvs_like_python:
   step: pvs_like_case_study
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
@@ -14,3 +15,12 @@ pvs_like_spark_cluster:
   step: pvs_like_case_study
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
   name: pvs_like_spark_cluster
+# development dummies
+step_1_python_pandas:
+  step: step_1
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
+  name: python_pandas
+step_2_python_pandas:
+  step: step_2
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/
+  name: python_pandas

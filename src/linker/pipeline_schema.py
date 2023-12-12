@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from linker.step import Step
 
@@ -16,17 +16,38 @@ class PipelineSchema:
         return f"PipelineSchema.{self.name}"
 
     @classmethod
-    def get_schemas(cls) -> List["PipelineSchema"]:
+    def _get_schemas(cls) -> List["PipelineSchema"]:
         """Creates the allowable schema for the pipeline."""
         schemas = []
-        pvs_like_case_study = cls("pvs_like_case_study")
-        # Add the steps in the order they should be run
-        pvs_like_case_study._add_step(Step("pvs_like_case_study"))
-        schemas.append(pvs_like_case_study)
+
+        # pvs-like case study
+        schemas.append(
+            PipelineSchema._generate_schema(
+                "pvs_like_case_study",
+                Step("pvs_like_case_study"),
+            )
+        )
+
+        # development dummy
+        schemas.append(
+            PipelineSchema._generate_schema(
+                "development",
+                Step("step_1"),
+                Step("step_2"),
+            )
+        )
+
         return schemas
 
     def _add_step(self, step: Step) -> None:
         self.steps.append(step)
 
+    @classmethod
+    def _generate_schema(cls, name: str, *steps: Step) -> None:
+        schema = cls(name)
+        for step in steps:
+            schema._add_step(step)
+        return schema
 
-PIPELINE_SCHEMAS = PipelineSchema.get_schemas()
+
+PIPELINE_SCHEMAS = PipelineSchema._get_schemas()

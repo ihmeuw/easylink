@@ -6,14 +6,22 @@ from docker import DockerClient
 from docker.models.containers import Container
 from loguru import logger
 
-DOCKER_TIMEOUT = 120  # seconds
+DOCKER_TIMEOUT = 360  # seconds
 
 
-def run_with_docker(input_data: List[Path], results_dir: Path, container_path: Path) -> None:
+def run_with_docker(
+    implementation_name: str,
+    input_data: List[Path],
+    results_dir: Path,
+    log_dir: Path,
+    container_path: Path,
+) -> None:
     logger.info("Running container with docker")
     client = get_docker_client()
     image_id = _load_image(client, container_path)
-    container = _run_container(client, image_id, input_data, results_dir)
+    container = _run_container(
+        client, image_id, implementation_name, input_data, results_dir, log_dir
+    )
     _clean(client, image_id, container)
 
 
@@ -42,7 +50,12 @@ def _load_image(client: DockerClient, image_path: Path) -> str:
 
 
 def _run_container(
-    client: DockerClient, image_id: str, input_data: List[Path], results_dir: Path
+    client: DockerClient,
+    image_id: str,
+    implementation_name: str,
+    input_data: List[Path],
+    results_dir: Path,
+    log_dir: Path,
 ):
     logger.info(f"Running the container from image {image_id}")
     volumes = {
@@ -57,7 +70,7 @@ def _run_container(
             image_id, volumes=volumes, detach=True, auto_remove=True, tty=True
         )
         logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
-        with open(results_dir / "docker.o", "wb") as output_file:
+        with open(log_dir / f"{implementation_name}.o", "wb") as output_file:
             for log in logs:
                 output_file.write(log)
         container.wait()

@@ -35,11 +35,8 @@ TBD
 
 ## Creating a docker image to be shared
 
-The docker images are built from the Dockerfile. There may be unique situations,
-however, where you want to share a pre-built image. Images can be quite large and so distributing via pypi is not an option. One common method of sharing is to use the docker repository. Another one is to save the built image as an executable .tar file which can be distributed like any other file.
-
-To create an image .tar file from a Dockerfile, first ensure Docker is installed
-then convert like the following example:
+Docker image binaries can be built from a Dockerfile. For example, to create a
+compressed image .tar.gz file:
 
 ```
 $ cd <PATH-TO-DOCKERFILE-PARENT-DIRECTORY>
@@ -58,12 +55,16 @@ images: `sudo docker system prune`.
 
 ## Creating a singularity image to be shared
 
-Singularity images should be built from a docker image created using the
-instructions in the section above. With an `<IMAGE-NAME>.tar.gz` docker image,
-you can create a SIF using:
+Singularity image files can be created from a Singularity file. For example:
 
 ```
-$ cd <PATH-TO-DOCKER-IMAGE-PARENT-DIRECTORY>
-$ # convert the image from the docker image
+$ cd <PATH-TO-SINGULARITY-FILE-PARENT-DIRECTORY>
+$ # build the image
+$ singularity build --force <IMAGE-NAME>.sif Singularity
+```
+
+Alternatively, a Docker binary can be converted to a Singularity image file:
+
+```
 $ singularity build --force <IMAGE-NAME>.sif docker-archive://$(pwd)/<IMAGE-NAME>.tar.gz
 ```

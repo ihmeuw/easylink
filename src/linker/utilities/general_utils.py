@@ -94,8 +94,11 @@ def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path
         results_dir = results_dir / launch_time
     _ = os.umask(0o002)
     results_dir.mkdir(parents=True, exist_ok=True)
+    (results_dir / "intermediate").mkdir(exist_ok=True)
+    log_dir = results_dir / "logs"
+    log_dir.mkdir(exist_ok=True)
 
-    return results_dir
+    return results_dir, log_dir
 
 
 def load_yaml(filepath: Path) -> Dict:

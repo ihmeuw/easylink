@@ -1,11 +1,14 @@
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 from loguru import logger
 
 from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.step import Step
+
+if TYPE_CHECKING:
+    import drmaa
 
 
 class Pipeline:
@@ -18,14 +21,48 @@ class Pipeline:
         self._validation_errors = {}
         self._validate()
 
-    def run(self, runner: Callable, results_dir: Path) -> None:
-        for implementation in self.implementations:
+    def run(
+        self,
+        runner: Callable,
+        results_dir: Path,
+        log_dir: Path,
+        #
+        session: Optional["drmaa.Session"],
+    ) -> None:
+        number_of_steps = len(self.implementations)
+        number_of_steps_digit_length = len(str(number_of_steps))
+        for idx, implementation in enumerate(self.implementations):
+            step_number = str(idx + 1).zfill(number_of_steps_digit_length)
+            previous_step_number = str(idx).zfill(number_of_steps_digit_length)
+            output_dir = (
+                results_dir
+                if idx == (number_of_steps - 1)
+                else results_dir
+                / "intermediate"
+                / f"{step_number}_{implementation.step_name}"
+            )
+            input_data = self.config.input_data
+            if idx <= number_of_steps - 1:
+                output_dir.mkdir(exist_ok=True)
+            if idx > 0:
+                # Overwrite the pipeline input data with the results of the previous step
+                input_data = [
+                    file
+                    for file in (
+                        output_dir
+                        / "intermediate"
+                        / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
+                    ).glob("*.parquet")
+                ]
             implementation.run(
                 runner=runner,
                 container_engine=self.config.container_engine,
-                input_data=self.config.input_data,
-                results_dir=results_dir,
+                input_data=input_data,
+                results_dir=output_dir,
+                log_dir=log_dir,
             )
+        if session:
+            session.exit()
 
     #################
     # Setup methods #
@@ -71,28 +108,27 @@ class Pipeline:
 
         from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 
-        def _validate(schema: PipelineSchema) -> Tuple[bool, List[Optional[str]]]:
-            logs = []
-            is_validated = False
-            for idx, implementation in enumerate(self.implementations):
-                # Check that all steps are accounted for and in the correct order
-                schema_step = schema.steps[idx].name
-                pipeline_step = implementation._pipeline_step_name
-                if pipeline_step != schema_step:
-                    logs.append(
-                        f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
-                        f"but the provided pipeline specifies '{pipeline_step}'. "
-                        "Check step order and spelling in the pipeline configuration yaml."
-                    )
-            if not logs:
-                is_validated = True
-            return is_validated, logs
-
         errors = {}
         for schema in PIPELINE_SCHEMAS:
-            is_validated, schema_errors = _validate(schema)
-            if not is_validated:
-                errors[schema.name] = schema_errors
+            logs = []
+            # Check that number of schema steps matches number of implementations
+            if len(schema.steps) != len(self.implementations):
+                logs.append(
+                    f"Expected {len(schema.steps)} steps but found {len(self.implementations)} implementations."
+                )
+            else:
+                for idx, implementation in enumerate(self.implementations):
+                    # Check that all steps are accounted for and in the correct order
+                    schema_step = schema.steps[idx].name
+                    pipeline_step = implementation._pipeline_step_name
+                    if pipeline_step != schema_step:
+                        logs.append(
+                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
+                            f"but the provided pipeline specifies '{pipeline_step}'. "
+                            "Check step order and spelling in the pipeline configuration yaml."
+                        )
+            if logs:
+                errors[schema.name] = logs
                 pass  # try the next schema
             else:
                 return True  # we have a winner

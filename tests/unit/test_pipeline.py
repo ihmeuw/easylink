@@ -42,15 +42,18 @@ def test_unsupported_step(test_dir, caplog, mocker):
         config=config,
         caplog=caplog,
         error_no=errno.EINVAL,
-        expected_record_length=1,
-        expected_msg=(
-            [
-                "PIPELINE ERRORS: pvs_like_case_study: - 'Step 1: the pipeline "
-                "schema expects step ''pvs_like_case_study'' but the provided "
-                "pipeline specifies ''foo''. Check step order and spelling in the "
-                "pipeline configuration yaml.'"
-            ]
-        ),
+        expected_msg={
+            "PIPELINE ERRORS": {
+                "development": [
+                    "Expected 2 steps but found 1 implementations.",
+                ],
+                "pvs_like_case_study": [
+                    "Step 1: the pipeline schema expects step 'pvs_like_case_study' "
+                    "but the provided pipeline specifies 'foo'. Check step order "
+                    "and spelling in the pipeline configuration yaml.",
+                ],
+            }
+        },
     )
 
 
@@ -71,13 +74,13 @@ def test_no_container(test_dir, caplog, mocker):
         config=config,
         caplog=caplog,
         error_no=errno.EINVAL,
-        expected_record_length=1,
-        expected_msg=(
-            [
-                "IMPLEMENTATION ERRORS: pvs_like_python: - Container "
-                "'some/path/with/no/container' does not exist."
-            ]
-        ),
+        expected_msg={
+            "IMPLEMENTATION ERRORS": {
+                "pvs_like_python": [
+                    "Container 'some/path/with/no/container' does not exist.",
+                ],
+            },
+        },
     )
 
 
@@ -104,13 +107,10 @@ def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
         config=config,
         caplog=caplog,
         error_no=errno.EINVAL,
-        expected_record_length=1,
-        expected_msg=(
-            [
-                "IMPLEMENTATION ERRORS: pvs_like_python: - Container "
-                "'some/path/with/no/container' does not exist."
-            ]
-        ),
+        expected_msg=[
+            "IMPLEMENTATION ERRORS: pvs_like_python: - Container "
+            "'some/path/with/no/container' does not exist.",
+        ],
     )
 
 
@@ -134,22 +134,30 @@ def test_batch_validation():
 ####################
 
 
-def check_expected_validation_exit(
-    config, caplog, error_no, expected_record_length, expected_msg
-):
+def check_expected_validation_exit(config, caplog, error_no, expected_msg):
     try:
         Pipeline(config)
     except SystemExit as e:
         assert e.code == error_no
-        # We should only have one error message
-        assert len(caplog.record_tuples) == expected_record_length
+        # We should only have one record
+        assert len(caplog.record_tuples) == 1
         # Extract error message
         msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
             "Validation errors found. Please see above."
         )[0]
-        # Should only have one list item ("-" in yaml)
-        assert msg.count("-") == len(expected_msg)
-        # Should have the correct error message
         msg = re.sub("\n+", " ", msg)
         msg = re.sub(" +", " ", msg).strip()
-        assert msg in expected_msg
+        msg = re.sub("''", "'", msg)
+        # Check error types
+        expected_error_types = [error_type for error_type in expected_msg]
+        error_types = [x + " ERRORS" for x in msg.split(" ERRORS:")[0::2]]
+        assert set(error_types) == set(expected_error_types)
+        # Check actual messages. This is hacky; we remove expected substrings and
+        # ensure at the end that there is nothing subtantial left.
+        for error_type in error_types:
+            for schema in expected_msg[error_type]:
+                for str in expected_msg[error_type][schema]:
+                    msg = msg.replace(str, "")
+                msg = msg.replace(schema + ":", "")
+            msg = msg.replace(error_type + ":", "")
+        assert not any(ch.isalnum() for ch in msg)

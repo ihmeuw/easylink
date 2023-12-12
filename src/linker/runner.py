@@ -16,6 +16,7 @@ from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
 def main(
     config: Config,
     results_dir: Path,
+    log_dir: Path,
 ) -> None:
     """Set up and run the pipeline"""
 
@@ -28,6 +29,7 @@ def main(
 
     # Set up computing environment
     if config.computing_environment == "local":
+        session = None
         runner = run_container
     elif config.computing_environment == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
@@ -47,13 +49,14 @@ def main(
             f"provided {config.computing_environment}"
         )
 
-    pipeline.run(runner, results_dir)
+    pipeline.run(runner=runner, results_dir=results_dir, log_dir=log_dir, session=session)
 
 
 def run_container(
     container_engine: str,
-    input_data: List[str],
+    input_data: List[Path],
     results_dir: Path,
+    log_dir: Path,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -63,14 +66,18 @@ def run_container(
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":
         run_with_docker(
+            implementation_name=implementation_name,
             input_data=input_data,
             results_dir=results_dir,
+            log_dir=log_dir,
             container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
         )
     elif container_engine == "singularity":
         run_with_singularity(
+            implementation_name=implementation_name,
             input_data=input_data,
             results_dir=results_dir,
+            log_dir=log_dir,
             container_path=Path(f"{container_full_stem}.sif").resolve(),
         )
     else:
@@ -87,16 +94,20 @@ def run_container(
             )
         try:
             run_with_docker(
+                implementation_name=implementation_name,
                 input_data=input_data,
                 results_dir=results_dir,
+                log_dir=log_dir,
                 container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
             )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
                 run_with_singularity(
+                    implementation_name=implementation_name,
                     input_data=input_data,
                     results_dir=results_dir,
+                    log_dir=log_dir,
                     container_path=Path(f"{container_full_stem}.sif").resolve(),
                 )
             except Exception as e_singularity:

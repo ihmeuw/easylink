@@ -84,7 +84,7 @@ def run(
     logger.info("Running pipeline")
     pipeline_specification = Path(pipeline_specification)
     input_data = Path(input_data)
-    results_dir = create_results_directory(output_dir, timestamp)
+    results_dir, log_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
     # TODO [MIC-4493]: Add configuration validation
     config = Config(
@@ -98,7 +98,9 @@ def run(
     main(
         config=config,
         results_dir=results_dir,
+        log_dir=log_dir,
     )
+    logger.info(f"Results directory: {str(results_dir)}")
     logger.info("*** FINISHED ***")
 
 
@@ -111,6 +113,10 @@ def run(
     "results_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
+@click.argument(
+    "log_dir",
+    type=click.Path(exists=True, resolve_path=True),
+)
 @click.argument("step_name")
 @click.argument("implementation_name")
 @click.argument("container_full_stem")
@@ -119,6 +125,7 @@ def run(
 def run_slurm_job(
     container_engine: str,
     results_dir: str,
+    log_dir: str,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -136,6 +143,7 @@ def run_slurm_job(
         container_engine=container_engine,
         input_data=[Path(x) for x in input_data],
         results_dir=Path(results_dir),
+        log_dir=Path(log_dir),
         step_name=step_name,
         implementation_name=implementation_name,
         container_full_stem=container_full_stem,

@@ -1,3 +1,4 @@
+import types
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
@@ -22,11 +23,13 @@ class Implementation:
         container_engine: str,
         input_data: List[Path],
         results_dir: Path,
+        log_dir: Path,
     ) -> None:
         runner(
             container_engine=container_engine,
             input_data=input_data,
             results_dir=results_dir,
+            log_dir=log_dir,
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
@@ -34,7 +37,7 @@ class Implementation:
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
-        run from the Pipeline validate method
+        run from the Pipeline validate method.
         """
         logs = []
         logs = self._validate_expected_step(logs)
