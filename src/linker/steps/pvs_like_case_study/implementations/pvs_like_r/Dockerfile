@@ -1,9 +1,11 @@
 FROM continuumio/miniconda3
 RUN mkdir -p /input_data
 RUN mkdir -p /results
+RUN mkdir -p /diagnostics
 RUN mkdir -p /tmp
 VOLUME /results
 VOLUME /input_data
+VOLUME /diagnostics
 VOLUME /tmp
 COPY pvs_like_case_study_r_lock.txt pvs_like_case_study_sample_data_r.py renv.lock ./
 SHELL ["/bin/bash", "--login", "-c"]

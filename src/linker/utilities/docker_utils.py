@@ -60,6 +60,7 @@ def _run_container(
             for dataset in input_data
         },
         str(results_dir): {"bind": "/results", "mode": "rw"},
+        str(log_dir): {"bind": "/diagnostics", "mode": "rw"},
     }
     try:
         container = client.containers.run(

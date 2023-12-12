@@ -22,7 +22,7 @@ def _run_container(
     log_dir: Path,
     container_path: Path,
 ) -> None:
-    cmd = f"singularity run --containall --no-home --bind /tmp:/tmp --bind {results_dir}:/results "
+    cmd = f"singularity run --containall --no-home --bind /tmp:/tmp --bind {results_dir}:/results --bind {log_dir}:/diagnostics"
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
     cmd += f"{container_path}"
