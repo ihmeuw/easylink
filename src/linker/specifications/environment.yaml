@@ -1,5 +1,4 @@
-# computing_environment: slurm
-computing_environment: local
+computing_environment: slurm
 # container_engine: singularity  # singularity or docker; comment out completely if unknown
 slurm:
   account: proj_simscience
