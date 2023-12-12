@@ -36,8 +36,8 @@ def launch_slurm_job(
     jt = session.createJobTemplate()
     jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(diag_dir / f'{jt.jobName}.%A.o%a')}"
-    jt.errorPath = f":{str(diag_dir / f'{jt.jobName}.%A.e%a')}"
+    jt.outputPath = f":{str(diag_dir / '%A.o%a')}"
+    jt.errorPath = f":{str(diag_dir / '%A.e%a')}"
     jt.remoteCommand = shutil.which("linker")
     jt_args = [
         "run-slurm-job",
