@@ -25,8 +25,6 @@ class Pipeline:
         self,
         runner: Callable,
         results_dir: Path,
-        log_dir: Path,
-        #
         session: Optional["drmaa.Session"],
     ) -> None:
         number_of_steps = len(self.implementations)
@@ -34,6 +32,10 @@ class Pipeline:
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(number_of_steps_digit_length)
             previous_step_number = str(idx).zfill(number_of_steps_digit_length)
+            log_dir = (
+                results_dir / "diagnostics" / f"{step_number}_{implementation.step_name}"
+            )
+            log_dir.mkdir(parents=True, exist_ok=True)
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)

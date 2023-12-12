@@ -16,7 +16,6 @@ from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
 def main(
     config: Config,
     results_dir: Path,
-    log_dir: Path,
 ) -> None:
     """Set up and run the pipeline"""
 
@@ -49,7 +48,7 @@ def main(
             f"provided {config.computing_environment}"
         )
 
-    pipeline.run(runner=runner, results_dir=results_dir, log_dir=log_dir, session=session)
+    pipeline.run(runner=runner, results_dir=results_dir, session=session)
 
 
 def run_container(
@@ -66,7 +65,6 @@ def run_container(
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":
         run_with_docker(
-            implementation_name=implementation_name,
             input_data=input_data,
             results_dir=results_dir,
             log_dir=log_dir,
@@ -74,7 +72,6 @@ def run_container(
         )
     elif container_engine == "singularity":
         run_with_singularity(
-            implementation_name=implementation_name,
             input_data=input_data,
             results_dir=results_dir,
             log_dir=log_dir,
@@ -94,7 +91,6 @@ def run_container(
             )
         try:
             run_with_docker(
-                implementation_name=implementation_name,
                 input_data=input_data,
                 results_dir=results_dir,
                 log_dir=log_dir,
@@ -104,7 +100,6 @@ def run_container(
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
                 run_with_singularity(
-                    implementation_name=implementation_name,
                     input_data=input_data,
                     results_dir=results_dir,
                     log_dir=log_dir,

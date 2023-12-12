@@ -84,7 +84,7 @@ def run(
     logger.info("Running pipeline")
     pipeline_specification = Path(pipeline_specification)
     input_data = Path(input_data)
-    results_dir, log_dir = create_results_directory(output_dir, timestamp)
+    results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
     # TODO [MIC-4493]: Add configuration validation
     config = Config(
@@ -98,7 +98,6 @@ def run(
     main(
         config=config,
         results_dir=results_dir,
-        log_dir=log_dir,
     )
     logger.info(f"Results directory: {str(results_dir)}")
     logger.info("*** FINISHED ***")
