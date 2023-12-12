@@ -100,6 +100,7 @@ def submit_spark_cluster_job(
     max_runtime: int,
     num_workers: int,
     cpus_per_task: int,
+    preserve_logs: bool = False,
 ) -> Path:
     """Submits a job to launch a Spark cluster.
 
@@ -155,23 +156,26 @@ def submit_spark_cluster_job(
     breakpoint()
     # TODO: fix these paths!
     # Save path to error log, which will contain the Spark master URL
-    error_log = Path(jt.workingDirectory) / f"{jobs}.stderr"
-    output_log = Path(jt.workingDirectory) / f"{jobs}.stdout"
+    error_logs = [Path(jt.workingDirectory) / f"{job}.stderr" for job in jobs]
+    output_logs = [Path(jt.workingDirectory) / f"{job}.stdout" for job in jobs]
+    master_error_log = error_logs[0]
 
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobids '{jobs}' to execute script '{launcher.name}'\n"
-        f"Output log: {output_log}\n"
-        f"Error log: {error_log}"
+        f" Master error log: {master_error_log}\n"
+        f" Output logs: {output_logs}\n"
+        f" Error logs: {error_logs}"
     )
 
-    # XXX TODO: uncomment this after debug
-    # atexit.register(lambda: os.remove(output_log))
-    # atexit.register(lambda: os.remove(error_log))
+    if not preserve_logs:
+        for output_log in output_logs:
+            atexit.register(lambda: os.remove(output_log))
+        for error_log  in error_logs:
+            atexit.register(lambda: os.remove(error_log))
 
     # Wait for job to start running
     drmaa = get_slurm_drmaa()
-    # TODO: check for array status instead of job status, but how????
     job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
     while all(job_statuses):
         sleep(5)
@@ -181,4 +185,4 @@ def submit_spark_cluster_job(
 
     session.deleteJobTemplate(jt)
     session.exit()
-    return error_log
+    return master_error_log

@@ -12,11 +12,12 @@ from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
 
 
-def build_cluster(config: Config) -> str:
+def build_cluster(config: Config, preserve_logs: bool = False) -> str:
     """Builds a Spark cluster. Main function for the `build-spark-cluster` command.
 
     Args:
         config: Config object.
+        preserve_logs: Whether to preserve logs.
 
     Returns:
         spark_master_url: Spark master URL.
@@ -27,8 +28,10 @@ def build_cluster(config: Config) -> str:
 
     # call build_launch_script
     launcher = build_cluster_launch_script()
+    if not preserve_logs:
+        atexit.register(lambda: os.remove(launcher.name))
 
-    # submit job
+    # submit job, get logfile for master node
     logfile = submit_spark_cluster_job(
         session=session,
         launcher=launcher,
@@ -38,6 +41,7 @@ def build_cluster(config: Config) -> str:
         max_runtime=config.environment["spark"]["workers"]["time_limit"],
         num_workers=config.environment["spark"]["workers"]["num_workers"],
         cpus_per_task=config.environment["spark"]["workers"]["cpus_per_task"],
+        preserve_logs=preserve_logs,
     )
 
     spark_master_url = find_spark_master_url(logfile)
@@ -106,8 +110,6 @@ fi
 """
     )
     launcher.close()
-    # XXX TODO uncomment this after debug
-    # atexit.register(lambda: os.remove(launcher.name))
     return launcher
 
 

@@ -160,7 +160,12 @@ def run_slurm_job(
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
     help="Path to a computing environment yaml file describing Spark configuration.",
 )
-@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
+@click.option(
+    "-v",
+    "verbose",
+    count=True,
+    help="Configure logging verbosity.",
+)
 @click.option(
     "--pdb",
     "with_debugger",
@@ -168,10 +173,18 @@ def run_slurm_job(
     help="Drop into python debugger if an error occurs.",
     default=False,
 )
+@click.option(
+    "--preserve-logs",
+    "preserve_logs",
+    is_flag=True,
+    help="Preserve logs in the current directory, useful for debugging",
+    default=False,
+)
 def build_spark_cluster(
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
+    preserve_logs: bool,
 ) -> None:
     """Submit a Slurm job to build a Spark cluster."""
     configure_logging_to_terminal(verbose)
@@ -183,5 +196,5 @@ def build_spark_cluster(
     main = handle_exceptions(
         func=build_cluster, exceptions_logger=logger, with_debugger=with_debugger
     )
-    main(config)
+    main(config, preserve_logs)
     logger.info("*** FINISHED ***")
