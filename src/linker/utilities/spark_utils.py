@@ -92,7 +92,9 @@ if [ "$SLURM_ARRAY_TASK_ID" -eq 1 ]; then
      --webui-port "$SPARK_MASTER_WEBUI_PORT"
 else
     echo "DEBUG XXX: I AM A WORKER"
-    MASTER_HOST=$(squeue --job $SLURM_ARRAY_JOB_ID_1 -o "%N" | tail -n1 | xargs -I {{}} host {{}} | awk '{{print $1}}')
+    echo DEBUG XXX: squeue --job ${{SLURM_ARRAY_JOB_ID}}_1 -o "%N":
+    echo DEBUG XXX: $(squeue --job ${{SLURM_ARRAY_JOB_ID}}_1 -o "%N")
+    MASTER_HOST=$(squeue --job ${{SLURM_ARRAY_JOB_ID}}_1 -o "%N" | tail -n1 | xargs -I {{}} host {{}} | awk '{{print $1}}')
     # MASTER_HOST=$( scontrol show hostname $SLURM_NODELIST | head -n 1 | xargs -I {{}} host {{}} | awk '{{print $1}}')
     MASTER_URL=spark://$MASTER_HOST:$SPARK_MASTER_PORT
 

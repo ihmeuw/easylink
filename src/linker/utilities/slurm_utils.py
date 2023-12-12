@@ -171,12 +171,13 @@ def submit_spark_cluster_job(
 
     # Wait for job to start running
     drmaa = get_slurm_drmaa()
-    job_status = session.jobStatus(job_id)
-    while job_status != drmaa.JobState.RUNNING:
+    # TODO: check for array status instead of job status, but how????
+    job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
+    while all(job_statuses):
         sleep(5)
-        logger.debug("Waiting for job to start running...")
-        job_status = session.jobStatus(job_id)
-    logger.info(f"Job {job_id} started running")
+        logger.debug("Waiting for jobs to start running...")
+        job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
+    logger.info(f"Jobs {jobs} are running")
 
     session.deleteJobTemplate(jt)
     session.exit()
