@@ -113,7 +113,7 @@ def run(
     type=click.Path(exists=True, resolve_path=True),
 )
 @click.argument(
-    "log_dir",
+    "diag_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
 @click.argument("step_name")
@@ -124,7 +124,7 @@ def run(
 def run_slurm_job(
     container_engine: str,
     results_dir: str,
-    log_dir: str,
+    diag_dir: str,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -142,7 +142,7 @@ def run_slurm_job(
         container_engine=container_engine,
         input_data=[Path(x) for x in input_data],
         results_dir=Path(results_dir),
-        log_dir=Path(log_dir),
+        diag_dir=Path(diag_dir),
         step_name=step_name,
         implementation_name=implementation_name,
         container_full_stem=container_full_stem,
