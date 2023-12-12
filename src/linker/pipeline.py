@@ -30,9 +30,10 @@ class Pipeline:
         session: Optional["drmaa.Session"],
     ) -> None:
         number_of_steps = len(self.implementations)
+        number_of_steps_digit_length = len(str(number_of_steps))
         for idx, implementation in enumerate(self.implementations):
-            step_number = str(idx + 1).zfill(len(str(number_of_steps)))
-            previous_step_number = str(idx).zfill(len(str(number_of_steps)))
+            step_number = str(idx + 1).zfill(number_of_steps_digit_length)
+            previous_step_number = str(idx).zfill(number_of_steps_digit_length)
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)
@@ -41,7 +42,7 @@ class Pipeline:
                 / f"{step_number}_{implementation.step_name}"
             )
             input_data = self.config.input_data
-            if idx < number_of_steps - 1:
+            if idx <= number_of_steps - 1:
                 output_dir.mkdir(exist_ok=True)
             if idx > 0:
                 # Overwrite the pipeline input data with the results of the previous step
