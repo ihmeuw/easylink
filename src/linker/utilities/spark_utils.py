@@ -74,8 +74,8 @@ CONDA_ENV=spark_cluster
 SINGULARITY_IMG={CONTAINER_DIR}/spark_cluster.sif
 
 export SPARK_ROOT=/opt/spark # within the container
-export SPARK_WORKER_DIR=$HOME/.spark_temp/logs
-export SPARK_LOCAL_DIRS=$HOME/.spark_temp/logs
+# export SPARK_WORKER_DIR=$HOME/.spark_temp/logs
+# export SPARK_LOCAL_DIRS=$HOME/.spark_temp/logs
 export SPARK_MASTER_PORT=28508
 export SPARK_MASTER_WEBUI_PORT=28509
 export SPARK_WORKER_CORES=$SLURM_CPUS_PER_TASK
