@@ -2,5 +2,5 @@ from pathlib import Path
 
 import linker
 
-BASE_DIR = Path(linker.__file__).resolve().parent
-CONTAINER_DIR = BASE_DIR / "containers"
+# TODO: We'll need to update this to be more generic for external users and have a way of configuring this
+CONTAINER_DIR = "/mnt/team/simulation_science/priv/engineering/er_ecosystem/containers/"
