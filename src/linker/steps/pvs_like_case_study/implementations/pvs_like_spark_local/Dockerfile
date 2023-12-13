@@ -4,8 +4,10 @@ FROM continuumio/miniconda3 as conda-base
 # Setup I/O directories and copy the environment and Python script
 RUN mkdir -p /input_data
 RUN mkdir -p /results
+RUN mkdir -p /diagnostics
 VOLUME /results
 VOLUME /input_data
+VOLUME /diagnostics
 COPY pvs_like_case_study_sample_data_spark_local.py pvs_like_case_study_spark_local_lock_no_jupyter.txt ./
 
 # Create a new conda environment
