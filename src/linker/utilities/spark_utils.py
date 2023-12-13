@@ -71,7 +71,7 @@ def build_cluster_launch_script() -> TextIO:
 unset SPARK_HOME
 CONDA_PATH=/opt/conda/condabin/conda # must be accessible within container
 CONDA_ENV=spark_cluster
-SINGULARITY_IMG={CONTAINER_DIR / "spark_cluster.sif"}
+SINGULARITY_IMG={CONTAINER_DIR}/spark_cluster.sif
 
 export SPARK_ROOT=/opt/spark # within the container
 export SPARK_WORKER_DIR=$HOME/.spark_temp/logs
