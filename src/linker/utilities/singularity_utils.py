@@ -8,31 +8,31 @@ from loguru import logger
 def run_with_singularity(
     input_data: List[Path],
     results_dir: Path,
-    diag_dir: Path,
+    diagnostics_dir: Path,
     container_path: Path,
 ) -> None:
     logger.info("Running container with singularity")
-    _run_container(input_data, results_dir, diag_dir, container_path)
+    _run_container(input_data, results_dir, diagnostics_dir, container_path)
     _clean(results_dir, container_path)
 
 
 def _run_container(
     input_data: List[Path],
     results_dir: Path,
-    diag_dir: Path,
+    diagnostics_dir: Path,
     container_path: Path,
 ) -> None:
     cmd = (
         "singularity run --containall --no-home --bind /tmp:/tmp "
-        f"--bind {results_dir}:/results --bind {diag_dir}:/diagnostics "
+        f"--bind {results_dir}:/results --bind {diagnostics_dir}:/diagnostics "
     )
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
     cmd += f"{container_path}"
-    _run_cmd(diag_dir, cmd)
+    _run_cmd(diagnostics_dir, cmd)
 
 
-def _run_cmd(diag_dir: Path, cmd: str) -> None:
+def _run_cmd(diagnostics_dir: Path, cmd: str) -> None:
     logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
     process = subprocess.run(
@@ -44,7 +44,7 @@ def _run_cmd(diag_dir: Path, cmd: str) -> None:
     if process.returncode != 0:
         raise RuntimeError(f"Error running command '{cmd}'\n" f"Error: {process.stderr}")
 
-    with (diag_dir / "singularity.o").open(mode="a") as output_file:
+    with (diagnostics_dir / "singularity.o").open(mode="a") as output_file:
         output_file.write(f"{process.stdout}\n")
         output_file.write(process.stderr)
 

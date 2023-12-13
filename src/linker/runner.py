@@ -55,7 +55,7 @@ def run_container(
     container_engine: str,
     input_data: List[Path],
     results_dir: Path,
-    diag_dir: Path,
+    diagnostics_dir: Path,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -67,14 +67,14 @@ def run_container(
         run_with_docker(
             input_data=input_data,
             results_dir=results_dir,
-            diag_dir=diag_dir,
+            diagnostics_dir=diagnostics_dir,
             container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
         )
     elif container_engine == "singularity":
         run_with_singularity(
             input_data=input_data,
             results_dir=results_dir,
-            diag_dir=diag_dir,
+            diagnostics_dir=diagnostics_dir,
             container_path=Path(f"{container_full_stem}.sif").resolve(),
         )
     else:
@@ -93,7 +93,7 @@ def run_container(
             run_with_docker(
                 input_data=input_data,
                 results_dir=results_dir,
-                diag_dir=diag_dir,
+                diagnostics_dir=diagnostics_dir,
                 container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
             )
         except Exception as e_docker:
@@ -102,7 +102,7 @@ def run_container(
                 run_with_singularity(
                     input_data=input_data,
                     results_dir=results_dir,
-                    diag_dir=diag_dir,
+                    diagnostics_dir=diagnostics_dir,
                     container_path=Path(f"{container_full_stem}.sif").resolve(),
                 )
             except Exception as e_singularity:

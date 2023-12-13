@@ -32,10 +32,10 @@ class Pipeline:
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(number_of_steps_digit_length)
             previous_step_number = str(idx).zfill(number_of_steps_digit_length)
-            diag_dir = (
+            diagnostics_dir = (
                 results_dir / "diagnostics" / f"{step_number}_{implementation.step_name}"
             )
-            diag_dir.mkdir(parents=True, exist_ok=True)
+            diagnostics_dir.mkdir(parents=True, exist_ok=True)
             output_dir = (
                 results_dir
                 if idx == (number_of_steps - 1)
@@ -61,7 +61,7 @@ class Pipeline:
                 container_engine=self.config.container_engine,
                 input_data=input_data,
                 results_dir=output_dir,
-                diag_dir=diag_dir,
+                diagnostics_dir=diagnostics_dir,
             )
         if session:
             session.exit()
