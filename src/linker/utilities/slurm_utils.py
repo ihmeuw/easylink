@@ -159,8 +159,8 @@ def submit_spark_cluster_job(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobids '{jobs}' to execute script '{launcher.name}'\n"
         f" Master error log: {master_error_log}\n"
-        f" Output logs: {output_logs}\n"
-        f" Error logs: {error_logs}"
+        f" Output logs: {[str(o) for o in output_logs]}\n"
+        f" Error logs: {[str(e) for e in error_logs]}"
     )
 
     if not preserve_logs:
