@@ -8,8 +8,7 @@ dummy_step.py .
 # https://hub.docker.com/layers/library/python/3.10/images/sha256-1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899?context=explore
 mkdir -p /input_data
 mkdir -p /results
-# VOLUME /results
-# VOLUME /input_data
+mkdir -p /diagnostics
 pip install pandas==2.1.2 pyarrow
 
 %runscript
