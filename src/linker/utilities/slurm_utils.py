@@ -163,7 +163,7 @@ def submit_spark_cluster_job(
     # Wait for job to start running
     drmaa = get_slurm_drmaa()
     job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
-    while all(job_statuses):
+    while not all(job_statuses):
         sleep(5)
         logger.debug("Waiting for jobs to start running...")
         job_statuses = [
