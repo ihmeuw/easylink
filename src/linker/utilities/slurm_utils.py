@@ -130,22 +130,11 @@ def submit_spark_cluster_job(
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",
     }
-    # TODO: runBulkJobs()?
-    # jt.nativeSpecification = (
-    #     f"--account={account} "
-    #     f"--partition={partition} "
-    #     f"--mem-per-cpu={memory_per_cpu * 1024} "
-    #     f"--time={max_runtime}:00:00 "
-    #     f"--nodes={num_workers + 1} "
-    #     f"--cpus-per-task={cpus_per_task} "
-    #     "--ntasks-per-node=1"
-    # )
     jt.nativeSpecification = (
         f"--account={account} "
         f"--partition={partition} "
         f"--mem-per-cpu={memory_per_cpu * 1024} "
-        f"--time=00:10:00 "  # XXX DEBUG value!
-        # f"--time={max_runtime}:00:00 "
+        f"--time={max_runtime}:00:00 "
         f"--nodes=1 "
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
@@ -159,6 +148,8 @@ def submit_spark_cluster_job(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
         f"Job submitted with jobids '{jobs}' to execute script '{launcher.name}'\n"
         f" Master error log: {master_error_log}\n"
+    )
+    logger.debug(
         f" Output logs: {[str(o) for o in output_logs]}\n"
         f" Error logs: {[str(e) for e in error_logs]}"
     )
