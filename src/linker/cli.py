@@ -141,8 +141,8 @@ def run_slurm_job(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     # Put the implementation_config back to a dictionary
+    reformatted_config = {}
     if config:
-        reformatted_config = {}
         for item in config:
             key, value = item.split("=")
             reformatted_config[key.strip()] = value.strip()
