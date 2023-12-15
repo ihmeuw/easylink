@@ -88,7 +88,7 @@ if [ "$SLURM_ARRAY_TASK_ID" -eq 1 ]; then
 
     mkdir -p "/tmp/spark_cluster_$USER"
     singularity exec -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp $SINGULARITY_IMG \
-     $CONDA_PATH run --no-capture-output -n $CONDA_ENV "$SPARK_ROOT/bin/spark-class" \
+    $CONDA_PATH run --no-capture-output -n $CONDA_ENV "$SPARK_ROOT/bin/spark-class" \
      org.apache.spark.deploy.master.Master --host "$SPARK_MASTER_HOST" --port "$SPARK_MASTER_PORT" \
      --webui-port "$SPARK_MASTER_WEBUI_PORT"
 else
@@ -98,7 +98,7 @@ else
     mkdir -p "/tmp/spark_cluster_$USER"
     singularity exec -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp "$SINGULARITY_IMG" \
     "$CONDA_PATH" run --no-capture-output -n "$CONDA_ENV" "$SPARK_ROOT/bin/spark-class" \
-     org.apache.spark.deploy.worker.Worker "$MASTER_URL"
+    org.apache.spark.deploy.worker.Worker "$MASTER_URL"
 fi
 """
     )
