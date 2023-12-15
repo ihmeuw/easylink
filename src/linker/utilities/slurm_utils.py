@@ -5,7 +5,7 @@ import types
 from datetime import datetime
 from pathlib import Path
 from time import sleep
-from typing import Dict, List, Optional, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 from loguru import logger
 

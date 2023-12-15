@@ -1,8 +1,10 @@
 import os
 import subprocess
+from ast import Str
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
+from attr import s
 from loguru import logger
 
 
@@ -11,15 +13,10 @@ def run_with_singularity(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
-    config=Optional[Dict[str, str]],
+    config: Optional[Dict[str, str]],
 ) -> None:
     logger.info("Running container with singularity")
-    if config is not None:
-        # Singularity by default uses the current environment, so no need to do
-        # anything except export them
-        for var, val in config.items():
-            os.environ[var] = val
-    _run_container(input_data, results_dir, diagnostics_dir, container_path)
+    _run_container(input_data, results_dir, diagnostics_dir, container_path, config)
     _clean(results_dir, container_path)
 
 
@@ -28,6 +25,7 @@ def _run_container(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
+    config: Optional[Dict[str, str]],
 ) -> None:
     cmd = (
         "singularity run --containall --no-home --bind /tmp:/tmp "
@@ -36,17 +34,25 @@ def _run_container(
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
     cmd += f"{container_path}"
-    _run_cmd(diagnostics_dir, cmd)
+    _run_cmd(diagnostics_dir, cmd, config)
 
 
-def _run_cmd(diagnostics_dir: Path, cmd: str) -> None:
+def _run_cmd(diagnostics_dir: Path, cmd: str, config: Optional[Dict[str, str]]) -> None:
     logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
+    env_vars = os.environ.copy()
+    singularity_config = {}
+    if config:
+        for key, val in config.items():
+            # NOTE: singularity < 3.6 does not support --env argument
+            singularity_config[f"SINGULARITYENV_{key}"] = val
+    env_vars.update(singularity_config)
     process = subprocess.run(
         cmd,
         shell=True,
         capture_output=True,
         text=True,
+        env=env_vars,
     )
     if process.returncode != 0:
         raise RuntimeError(f"Error running command '{cmd}'\n" f"Error: {process.stderr}")
