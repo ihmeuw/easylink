@@ -5,7 +5,7 @@ import types
 from datetime import datetime
 from pathlib import Path
 from time import sleep
-from typing import Dict, List, TextIO
+from typing import Dict, List, Optional, TextIO
 
 from loguru import logger
 
@@ -32,6 +32,7 @@ def launch_slurm_job(
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
+    config: Optional[Dict[str, str]] = None,
 ) -> None:
     jt = session.createJobTemplate()
     jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -51,6 +52,10 @@ def launch_slurm_job(
     ]
     for filepath in input_data:
         jt_args.extend(("--input-data", str(filepath)))
+    if config is not None:
+        breakpoint()
+        for key, value in config:
+            jt_args.extend(("--config", f"{key}={value}"))
     jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",

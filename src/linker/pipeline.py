@@ -78,6 +78,9 @@ class Pipeline:
             Implementation(
                 step.name,
                 self.config.pipeline["steps"][step.name]["implementation"],
+                self.config.pipeline["steps"][step.name].get(
+                    "implementation_configuration", None
+                ),
                 self.config.container_engine,
             )
             for step in self.steps

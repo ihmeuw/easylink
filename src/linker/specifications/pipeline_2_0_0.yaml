@@ -1,5 +1,10 @@
 steps:
   step_1:
     implementation: step_1_python_pandas
+    implementation_configuration:
+      DUMMY_CONTAINER_INCREMENT: 2
   step_2:
     implementation: step_2_python_pandas
+    implementation_configuration:
+      DUMMY_CONTAINER_BROKEN: true
+      DUMMY_CONTAINER_INCREMENT: 3

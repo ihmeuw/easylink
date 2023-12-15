@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional
 
 import docker
 from docker import DockerClient
@@ -14,11 +14,14 @@ def run_with_docker(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
+    config: Optional[Dict[str, str]],
 ) -> None:
     logger.info("Running container with docker")
     client = get_docker_client()
     image_id = _load_image(client, container_path)
-    container = _run_container(client, image_id, input_data, results_dir, diagnostics_dir)
+    container = _run_container(
+        client, image_id, input_data, results_dir, diagnostics_dir, config
+    )
     _clean(client, image_id, container)
 
 
@@ -52,6 +55,7 @@ def _run_container(
     input_data: List[Path],
     results_dir: Path,
     diagnostics_dir: Path,
+    config: Optional[Dict[str, str]],
 ):
     logger.info(f"Running the container from image {image_id}")
     volumes = {
@@ -64,7 +68,12 @@ def _run_container(
     }
     try:
         container = client.containers.run(
-            image_id, volumes=volumes, detach=True, auto_remove=True, tty=True
+            image_id,
+            volumes=volumes,
+            detach=True,
+            auto_remove=True,
+            tty=True,
+            environment=config,
         )
         logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
         with open(diagnostics_dir / f"docker.o", "wb") as output_file:

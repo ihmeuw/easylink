@@ -1,6 +1,7 @@
+import os
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -10,8 +11,14 @@ def run_with_singularity(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
+    config=Optional[Dict[str, str]],
 ) -> None:
     logger.info("Running container with singularity")
+    if config is not None:
+        # Singularity by default uses the current environment, so no need to do
+        # anything except export them
+        for var, val in config.items():
+            os.environ[var] = val
     _run_container(input_data, results_dir, diagnostics_dir, container_path)
     _clean(results_dir, container_path)
 

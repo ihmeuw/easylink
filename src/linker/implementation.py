@@ -6,9 +6,16 @@ from linker.utilities.general_utils import load_yaml
 
 
 class Implementation:
-    def __init__(self, step_name: str, implementation_name: str, container_engine: str):
+    def __init__(
+        self,
+        step_name: str,
+        implementation_name: str,
+        implementation_config: Optional[Dict[str, str]],
+        container_engine: str,
+    ):
         self._pipeline_step_name = step_name
         self.name = implementation_name
+        self.config = implementation_config
         self._container_engine = container_engine
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
@@ -33,6 +40,7 @@ class Implementation:
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
+            config=self.config,
         )
 
     def validate(self) -> List[Optional[str]]:
