@@ -120,7 +120,7 @@ def run(
 @click.argument("implementation_name")
 @click.argument("container_full_stem")
 @click.option("--input-data", multiple=True)
-@click.option("--implementation-config", multiple=True)
+@click.option("--config", multiple=True)
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
     container_engine: str,
@@ -141,12 +141,11 @@ def run_slurm_job(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     # Put the implementation_config back to a dictionary
-    breakpoint()
     if config:
-        config = {}
+        reformatted_config = {}
         for item in config:
             key, value = item.split("=")
-            config[key.strip()] = value.strip()
+            reformatted_config[key.strip()] = value.strip()
 
     main(
         container_engine=container_engine,
@@ -156,7 +155,7 @@ def run_slurm_job(
         step_name=step_name,
         implementation_name=implementation_name,
         container_full_stem=container_full_stem,
-        config=config,
+        config=reformatted_config,
     )
 
     logger.info("*** FINISHED ***")

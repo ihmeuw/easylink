@@ -53,8 +53,7 @@ def launch_slurm_job(
     for filepath in input_data:
         jt_args.extend(("--input-data", str(filepath)))
     if config is not None:
-        breakpoint()
-        for key, value in config:
+        for key, value in config.items():
             jt_args.extend(("--config", f"{key}={value}"))
     jt.args = jt_args
     jt.jobEnvironment = {
