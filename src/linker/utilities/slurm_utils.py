@@ -100,6 +100,7 @@ def submit_spark_cluster_job(
     max_runtime: int,
     num_workers: int,
     cpus_per_task: int,
+    preserve_logs: bool = False,
 ) -> Path:
     """Submits a job to launch a Spark cluster.
 
@@ -112,6 +113,7 @@ def submit_spark_cluster_job(
         max_runtime: Maximum runtime in hours.
         num_workers: Number of workers.
         cpus_per_task: Number of CPUs per task.
+        preserve_logs: Whether to preserve logs.
 
     Returns:
         Path to stderr log, which contains the Spark master URL.
@@ -120,8 +122,8 @@ def submit_spark_cluster_job(
     jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.workingDirectory = os.getcwd()
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A.stdout')}"
-    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A.stderr')}"
+    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stdout')}"
+    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stderr')}"
     jt.remoteCommand = shutil.which("/bin/bash")
     jt.args = [launcher.name]
     jt.jobEnvironment = {
@@ -133,35 +135,42 @@ def submit_spark_cluster_job(
         f"--partition={partition} "
         f"--mem-per-cpu={memory_per_cpu * 1024} "
         f"--time={max_runtime}:00:00 "
-        f"--nodes={num_workers + 1} "
+        f"--nodes=1 "
         f"--cpus-per-task={cpus_per_task} "
         "--ntasks-per-node=1"
     )
-    job_id = session.runJob(jt)
-
-    # Save path to error log, which will contain the Spark master URL
-    error_log = Path(jt.workingDirectory) / f"{job_id}.stderr"
-    output_log = Path(jt.workingDirectory) / f"{job_id}.stdout"
+    jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
+    error_logs = [Path(jt.workingDirectory) / f"{job}.stderr" for job in jobs]
+    output_logs = [Path(jt.workingDirectory) / f"{job}.stdout" for job in jobs]
+    master_error_log = error_logs[0]
 
     logger.info(
         f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
-        f"Job submitted with jobid '{job_id}' to execute script '{launcher.name}'\n"
-        f"Output log: {output_log}\n"
-        f"Error log: {error_log}"
+        f"Job submitted with jobids '{jobs}' to execute script '{launcher.name}'\n"
+        f"Master error log: {master_error_log}"
+    )
+    logger.debug(
+        f"Output logs: {[str(o) for o in output_logs]}\n"
+        f"Error logs: {[str(e) for e in error_logs]}"
     )
 
-    atexit.register(lambda: os.remove(output_log))
-    atexit.register(lambda: os.remove(error_log))
+    if not preserve_logs:
+        for output_log in output_logs:
+            atexit.register(lambda: os.remove(output_log))
+        for error_log in error_logs:
+            atexit.register(lambda: os.remove(error_log))
 
     # Wait for job to start running
     drmaa = get_slurm_drmaa()
-    job_status = session.jobStatus(job_id)
-    while job_status != drmaa.JobState.RUNNING:
+    job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
+    while not all(job_statuses):
         sleep(5)
-        logger.debug("Waiting for job to start running...")
-        job_status = session.jobStatus(job_id)
-    logger.info(f"Job {job_id} started running")
+        logger.debug("Waiting for jobs to start running...")
+        job_statuses = [
+            session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs
+        ]
+    logger.info(f"Jobs {jobs} are running")
 
     session.deleteJobTemplate(jt)
     session.exit()
-    return error_log
+    return master_error_log
