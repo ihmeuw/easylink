@@ -141,7 +141,7 @@ def run_slurm_job(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     # Put the implementation_config back to a dictionary
-    config = {key:value for (key,value) in [item.split("=") for item in config]}
+    config = {key: value for (key, value) in [item.split("=") for item in config]}
     main(
         container_engine=container_engine,
         input_data=[Path(x) for x in input_data],
