@@ -141,12 +141,7 @@ def run_slurm_job(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     # Put the implementation_config back to a dictionary
-    reformatted_config = {}
-    if config:
-        for item in config:
-            key, value = item.split("=")
-            reformatted_config[key.strip()] = value.strip()
-
+    config = {key:value for (key,value) in [item.split("=") for item in config]}
     main(
         container_engine=container_engine,
         input_data=[Path(x) for x in input_data],
@@ -155,7 +150,7 @@ def run_slurm_job(
         step_name=step_name,
         implementation_name=implementation_name,
         container_full_stem=container_full_stem,
-        config=reformatted_config,
+        config=config,
     )
 
     logger.info("*** FINISHED ***")
