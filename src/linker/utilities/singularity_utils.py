@@ -41,7 +41,7 @@ def _run_cmd(diagnostics_dir: Path, cmd: str, config: Optional[Dict[str, str]]) 
     env_vars = os.environ.copy()
     if config:
         # NOTE: singularity < 3.6 does not support --env argument but supports variables
-        #   prepended with 'SINGULARITYENV'
+        #   prepended with 'SINGULARITYENV_'
         env_config = {f"SINGULARITYENV_{key}": value for (key, value) in config.items()}
         env_vars.update(env_config)
     process = subprocess.run(
