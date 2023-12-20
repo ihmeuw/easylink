@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -120,7 +121,7 @@ def run(
 @click.argument("implementation_name")
 @click.argument("container_full_stem")
 @click.option("--input-data", multiple=True)
-@click.option("--config", multiple=True)
+@click.option("--config")
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
     container_engine: str,
@@ -130,7 +131,7 @@ def run_slurm_job(
     implementation_name: str,
     container_full_stem: str,
     input_data: Tuple[str],
-    config: Tuple[str],
+    config: str,
     verbose: int,
 ) -> None:
     """Runs a job on Slurm. The standard use case is this would be kicked off
@@ -141,7 +142,7 @@ def run_slurm_job(
         func=runner.run_container, exceptions_logger=logger, with_debugger=False
     )
     # Put the implementation_config back to a dictionary
-    config = {key: value for (key, value) in [item.split("=") for item in config]}
+    config = json.loads(config) if config else None
     main(
         container_engine=container_engine,
         input_data=[Path(x) for x in input_data],

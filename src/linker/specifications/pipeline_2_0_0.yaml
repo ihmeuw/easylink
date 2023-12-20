@@ -1,11 +1,13 @@
 steps:
   step_1:
-    implementation: step_1_python_pandas
-    # implementation_configuration:
-    #   DUMMY_CONTAINER_BROKEN: true
-    #   DUMMY_CONTAINER_INCREMENT: 111
+    implementation:
+      name: step_1_python_pandas
+      configuration:
+        # DUMMY_CONTAINER_BROKEN: true
+        DUMMY_CONTAINER_INCREMENT: 111
   step_2:
-    implementation: step_2_python_pandas
-    # implementation_configuration:
-    #   DUMMY_CONTAINER_BROKEN: true
-    #   DUMMY_CONTAINER_INCREMENT: 222
+    implementation:
+      name: step_2_python_pandas
+      configuration:
+        DUMMY_CONTAINER_BROKEN: true
+        DUMMY_CONTAINER_INCREMENT: 222

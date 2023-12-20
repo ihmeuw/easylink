@@ -57,7 +57,17 @@ class Implementation:
 
     def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
         # Singularity requires env variables be strings
-        return {key: str(val) for key, val in config.items()} if config else None
+        def _stringify_keys_values(
+            config: Optional[Dict[str, Any]]
+        ) -> Optional[Dict[str, str]]:
+            if isinstance(config, Dict):
+                return {
+                    str(key): _stringify_keys_values(value) for key, value in config.items()
+                }
+            else:
+                return str(config)
+
+        return _stringify_keys_values(config) if config else None
 
     def _load_metadata(self) -> Dict[str, str]:
         metadata_path = Path(__file__).parent / "implementation_metadata.yaml"

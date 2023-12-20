@@ -77,9 +77,9 @@ class Pipeline:
         return tuple(
             Implementation(
                 step.name,
-                self.config.pipeline["steps"][step.name]["implementation"],
-                self.config.pipeline["steps"][step.name].get(
-                    "implementation_configuration", None
+                self.config.pipeline["steps"][step.name]["implementation"]["name"],
+                self.config.pipeline["steps"][step.name]["implementation"].get(
+                    "configuration", None
                 ),
                 self.config.container_engine,
             )

@@ -41,12 +41,12 @@ def _run_cmd(diagnostics_dir: Path, cmd: str, config: Optional[Dict[str, str]]) 
     logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
     env_vars = os.environ.copy()
-    singularity_config = {}
+    # Deal with env variables
     if config:
-        for key, val in config.items():
-            # NOTE: singularity < 3.6 does not support --env argument
-            singularity_config[f"SINGULARITYENV_{key}"] = val
-    env_vars.update(singularity_config)
+        # NOTE: singularity < 3.6 does not support --env argument but supports variables
+        #   prepended with 'SINGULARITYENV'
+        env_config = {f"SINGULARITYENV_{key}": value for (key, value) in config.items()}
+        env_vars.update(env_config)
     process = subprocess.run(
         cmd,
         shell=True,

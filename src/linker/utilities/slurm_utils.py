@@ -1,11 +1,12 @@
 import atexit
+import json
 import os
 import shutil
 import types
 from datetime import datetime
 from pathlib import Path
 from time import sleep
-from typing import Any, Dict, List, Optional, TextIO
+from typing import Dict, List, Optional, TextIO
 
 from loguru import logger
 
@@ -52,9 +53,7 @@ def launch_slurm_job(
     ]
     for filepath in input_data:
         jt_args.extend(("--input-data", str(filepath)))
-    if config is not None:
-        for key, value in config.items():
-            jt_args.extend(("--config", f"{key}={value}"))
+    jt_args.extend(("--config", str(json.dumps(config)))) if config else None
     jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",
@@ -71,6 +70,7 @@ def launch_slurm_job(
 
     # Run the job
     job_id = session.runJob(jt)
+    logger.debug("linker " + " ".join(jt.args))
     logger.info(
         f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
         f"Job submitted with jobid '{job_id}'\n"
