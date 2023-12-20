@@ -16,14 +16,18 @@ PIPELINE_CONFIG_DICT = {
     "good": {
         "steps": {
             "pvs_like_case_study": {
-                "implementation": "pvs_like_python",
+                "implementation": {
+                    "name": "pvs_like_python",
+                },
             },
         },
     },
     "bad_step": {
         "steps": {
             "foo": {  # Not a supported step
-                "implementation": "bar",
+                "implementation": {
+                    "name": "bar",
+                },
             },
         },
     },
