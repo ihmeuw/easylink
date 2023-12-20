@@ -68,10 +68,6 @@ def _run_container(
         str(results_dir): {"bind": "/results", "mode": "rw"},
         str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},
     }
-    # Deal with env variables
-    env_config = None
-    if config and "environment" in config:
-        env_config = config["environment"]
     try:
         container = client.containers.run(
             image_id,
@@ -79,7 +75,7 @@ def _run_container(
             detach=True,
             auto_remove=True,
             tty=True,
-            environment=env_config,
+            environment=config,
         )
         logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
         with open(diagnostics_dir / f"docker.o", "wb") as output_file:
