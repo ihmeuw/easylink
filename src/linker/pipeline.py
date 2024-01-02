@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
 from loguru import logger
 

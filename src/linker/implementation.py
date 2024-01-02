@@ -56,16 +56,17 @@ class Implementation:
     ##################
 
     def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
+        return self._stringify_keys_values(config) if config else None
+
+    def _stringify_keys_values(self, config: Dict[str, Any]) -> Dict[str, str]:
         # Singularity requires env variables be strings
-        def _stringify_keys_values(
-            config: Optional[Dict[str, Any]]
-        ) -> Optional[Dict[str, str]]:
-            if isinstance(config, Dict):
-                return {
-                    str(key): _stringify_keys_values(value) for key, value in config.items()
-                }
-            else:
-                return str(config)
+        if isinstance(config, Dict):
+            return {
+                str(key): self._stringify_keys_values(value) for key, value in config.items()
+            }
+        else:
+            # The last step of the recursion is not a dict but the leaf node's value
+            return str(config)
 
         return _stringify_keys_values(config) if config else None
 
