@@ -68,8 +68,6 @@ class Implementation:
             # The last step of the recursion is not a dict but the leaf node's value
             return str(config)
 
-        return _stringify_keys_values(config) if config else None
-
     def _load_metadata(self) -> Dict[str, str]:
         metadata_path = Path(__file__).parent / "implementation_metadata.yaml"
         metadata = load_yaml(metadata_path)
