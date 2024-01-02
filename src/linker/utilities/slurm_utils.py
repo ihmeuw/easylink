@@ -53,7 +53,8 @@ def launch_slurm_job(
     ]
     for filepath in input_data:
         jt_args.extend(("--input-data", str(filepath)))
-    jt_args.extend(("--config", str(json.dumps(config)))) if config else None
+    if config:
+        jt_args.extend(("--config", str(json.dumps(config))))
     jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",
