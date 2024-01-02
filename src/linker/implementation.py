@@ -58,7 +58,7 @@ class Implementation:
     def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
         return self._stringify_keys_values(config) if config else None
 
-    def _stringify_keys_values(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _stringify_keys_values(self, config: Any) -> Dict[str, str]:
         # Singularity requires env variables be strings
         if isinstance(config, Dict):
             return {
