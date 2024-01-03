@@ -58,7 +58,8 @@ class Implementation:
     def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
         return self._stringify_keys_values(config) if config else None
 
-    StringifiedDictionary = Dict[str, Union[str, 'StringifiedDictionary']]
+    StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
+
     def _stringify_keys_values(self, config: Any) -> StringifiedDictionary:
         # Singularity requires env variables be strings
         if isinstance(config, Dict):
