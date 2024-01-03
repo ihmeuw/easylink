@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, Tuple
 
 from loguru import logger
 
@@ -77,7 +77,10 @@ class Pipeline:
         return tuple(
             Implementation(
                 step.name,
-                self.config.pipeline["steps"][step.name]["implementation"],
+                self.config.pipeline["steps"][step.name]["implementation"]["name"],
+                self.config.pipeline["steps"][step.name]["implementation"].get(
+                    "configuration", None
+                ),
                 self.config.container_engine,
             )
             for step in self.steps

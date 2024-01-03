@@ -18,10 +18,14 @@ def test__get_steps(config, mocker):
     config.pipeline = {
         "steps": {
             "step1": {
-                "implementation": "implementation1",
+                "implementation": {
+                    "name": "implementation1",
+                },
             },
             "step2": {
-                "implementation": "implementation2",
+                "implementation": {
+                    "name": "implementation2",
+                },
             },
         },
     }

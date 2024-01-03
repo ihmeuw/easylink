@@ -1,14 +1,20 @@
-import types
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from linker.utilities.general_utils import load_yaml
 
 
 class Implementation:
-    def __init__(self, step_name: str, implementation_name: str, container_engine: str):
+    def __init__(
+        self,
+        step_name: str,
+        implementation_name: str,
+        implementation_config: Optional[Dict[str, Any]],
+        container_engine: str,
+    ):
         self._pipeline_step_name = step_name
         self.name = implementation_name
+        self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
@@ -33,6 +39,7 @@ class Implementation:
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
+            config=self.config,
         )
 
     def validate(self) -> List[Optional[str]]:
@@ -47,6 +54,21 @@ class Implementation:
     ##################
     # Helper methods #
     ##################
+
+    def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
+        return self._stringify_keys_values(config) if config else None
+
+    StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
+
+    def _stringify_keys_values(self, config: Any) -> StringifiedDictionary:
+        # Singularity requires env variables be strings
+        if isinstance(config, Dict):
+            return {
+                str(key): self._stringify_keys_values(value) for key, value in config.items()
+            }
+        else:
+            # The last step of the recursion is not a dict but the leaf node's value
+            return str(config)
 
     def _load_metadata(self) -> Dict[str, str]:
         metadata_path = Path(__file__).parent / "implementation_metadata.yaml"

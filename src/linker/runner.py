@@ -2,7 +2,7 @@ import shutil
 import socket
 from functools import partial
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -59,6 +59,7 @@ def run_container(
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
+    config: Optional[Dict[str, str]],
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
@@ -69,6 +70,7 @@ def run_container(
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
             container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
+            config=config,
         )
     elif container_engine == "singularity":
         run_with_singularity(
@@ -76,6 +78,7 @@ def run_container(
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
             container_path=Path(f"{container_full_stem}.sif").resolve(),
+            config=config,
         )
     else:
         if container_engine and container_engine != "undefined":
@@ -95,6 +98,7 @@ def run_container(
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
                 container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
+                config=config,
             )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
@@ -104,6 +108,7 @@ def run_container(
                     results_dir=results_dir,
                     diagnostics_dir=diagnostics_dir,
                     container_path=Path(f"{container_full_stem}.sif").resolve(),
+                    config=config,
                 )
             except Exception as e_singularity:
                 raise RuntimeError(

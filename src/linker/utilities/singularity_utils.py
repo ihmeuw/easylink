@@ -1,6 +1,7 @@
+import os
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -10,9 +11,10 @@ def run_with_singularity(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
+    config: Optional[Dict[str, str]],
 ) -> None:
     logger.info("Running container with singularity")
-    _run_container(input_data, results_dir, diagnostics_dir, container_path)
+    _run_container(input_data, results_dir, diagnostics_dir, container_path, config)
     _clean(results_dir, container_path)
 
 
@@ -21,25 +23,33 @@ def _run_container(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
+    config: Optional[Dict[str, str]],
 ) -> None:
     cmd = (
         "singularity run --containall --no-home --bind /tmp:/tmp "
         f"--bind {results_dir}:/results --bind {diagnostics_dir}:/diagnostics "
     )
     for filepath in input_data:
-        cmd += f"--bind {str(filepath)}:/input_data/{str(filepath.name)} "
+        cmd += f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
     cmd += f"{container_path}"
-    _run_cmd(diagnostics_dir, cmd)
+    _run_cmd(diagnostics_dir, cmd, config)
 
 
-def _run_cmd(diagnostics_dir: Path, cmd: str) -> None:
+def _run_cmd(diagnostics_dir: Path, cmd: str, config: Optional[Dict[str, str]]) -> None:
     logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
+    env_vars = os.environ.copy()
+    if config:
+        # NOTE: singularity < 3.6 does not support --env argument but supports variables
+        #   prepended with 'SINGULARITYENV_'
+        env_config = {f"SINGULARITYENV_{key}": value for (key, value) in config.items()}
+        env_vars.update(env_config)
     process = subprocess.run(
         cmd,
         shell=True,
         capture_output=True,
         text=True,
+        env=env_vars,
     )
     if process.returncode != 0:
         raise RuntimeError(f"Error running command '{cmd}'\n" f"Error: {process.stderr}")
