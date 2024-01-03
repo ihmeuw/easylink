@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from linker.utilities.general_utils import load_yaml
 
@@ -58,7 +58,8 @@ class Implementation:
     def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
         return self._stringify_keys_values(config) if config else None
 
-    def _stringify_keys_values(self, config: Any) -> Any:
+    StringifiedDictionary = Dict[str, Union[str, 'StringifiedDictionary']]
+    def _stringify_keys_values(self, config: Any) -> StringifiedDictionary:
         # Singularity requires env variables be strings
         if isinstance(config, Dict):
             return {
