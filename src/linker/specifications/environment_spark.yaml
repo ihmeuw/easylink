@@ -5,8 +5,8 @@ slurm:
   partition: all.q
 # TODO: Move implementation resources (pipeline.yaml? input spec?)
 implementation_resources:
-  memory: 10  # GB
-  cpus: 2
+  memory: 1  # GB
+  cpus: 1
   time_limit: 1  # hours
 spark:
   workers:
@@ -14,4 +14,3 @@ spark:
     cpus_per_task: 5
     mem_per_cpu: 8  # GB
     time_limit: 1  # hours
-
