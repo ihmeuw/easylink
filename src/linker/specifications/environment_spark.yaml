@@ -11,6 +11,6 @@ implementation_resources:
 spark:
   workers:
     num_workers: 2  # num_workers + 1 nodes will be requested
-    cpus_per_task: 5
-    mem_per_cpu: 8  # GB
+    cpus_per_node: 1
+    mem_per_node: 1  # GB
     time_limit: 1  # hours

@@ -157,7 +157,7 @@ def run_slurm_job(
     logger.info("*** FINISHED ***")
 
 
-@linker.command()
+@linker.command(hidden=True)
 @click.option(
     "-e",
     "--computing-environment",
@@ -185,6 +185,7 @@ def run_slurm_job(
     is_flag=True,
     help="Preserve logs in the current directory, useful for debugging",
     default=False,
+    show_default=True,
 )
 def build_spark_cluster(
     computing_environment: str,

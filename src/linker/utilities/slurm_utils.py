@@ -97,27 +97,29 @@ def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_thr
 
 
 def submit_spark_cluster_job(
+    drmaa: types.ModuleType("drmaa"),
     session: types.ModuleType("drmaa.Session"),
     launcher: TextIO,
     account: str,
     partition: str,
-    memory_per_cpu: int,
+    memory_per_node: int,
     max_runtime: int,
     num_workers: int,
-    cpus_per_task: int,
+    cpus_per_node: int,
     preserve_logs: bool = False,
 ) -> Path:
     """Submits a job to launch a Spark cluster.
 
     Args:
+        drmaa: DRMAA module.
         session: DRMAA session.
         launcher: Launcher script.
         account: Account to charge.
         partition: Partition to run on.
-        memory_per_cpu: Memory per node in GB.
+        memory_per_node: Memory per node in GB.
         max_runtime: Maximum runtime in hours.
         num_workers: Number of workers.
-        cpus_per_task: Number of CPUs per task.
+        cpus_per_node: Number of CPUs per node.
         preserve_logs: Whether to preserve logs.
 
     Returns:
@@ -138,11 +140,9 @@ def submit_spark_cluster_job(
     jt.nativeSpecification = (
         f"--account={account} "
         f"--partition={partition} "
-        f"--mem-per-cpu={memory_per_cpu * 1024} "
+        f"--mem={memory_per_node * 1024} "
         f"--time={max_runtime}:00:00 "
-        f"--nodes=1 "
-        f"--cpus-per-task={cpus_per_task} "
-        "--ntasks-per-node=1"
+        f"--cpus-per-task={cpus_per_node}"
     )
     jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
     error_logs = [Path(jt.workingDirectory) / f"{job}.stderr" for job in jobs]
@@ -161,12 +161,11 @@ def submit_spark_cluster_job(
 
     if not preserve_logs:
         for output_log in output_logs:
-            atexit.register(lambda: os.remove(output_log))
+            atexit.register(os.remove, output_log)
         for error_log in error_logs:
-            atexit.register(lambda: os.remove(error_log))
+            atexit.register(os.remove, error_log)
 
     # Wait for job to start running
-    drmaa = get_slurm_drmaa()
     job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
     while not all(job_statuses):
         sleep(5)
