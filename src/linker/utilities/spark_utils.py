@@ -3,16 +3,23 @@ import os
 import tempfile
 from pathlib import Path
 from time import sleep
-from typing import TextIO
+from typing import List, TextIO
 
 from loguru import logger
+from numpy import diag
 
 from linker.configuration import Config
 from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
 
 
-def build_cluster(config: Config, preserve_logs: bool = False) -> str:
+def build_cluster(
+    config: Config,
+    results_dir: Path,
+    diagnostics_dir: Path,
+    input_data: List[Path],
+    preserve_logs: bool = False,
+) -> str:
     """Builds a Spark cluster. Main function for the `build-spark-cluster` command.
 
     Args:
@@ -27,7 +34,11 @@ def build_cluster(config: Config, preserve_logs: bool = False) -> str:
     session.initialize()
 
     # call build_launch_script
-    launcher = build_cluster_launch_script()
+    launcher = build_cluster_launch_script(
+        results_dir=results_dir,
+        diagnostics_dir=diagnostics_dir,
+        input_data=input_data,
+    )
     if not preserve_logs:
         atexit.register(lambda: os.remove(launcher.name))
 
@@ -51,7 +62,9 @@ def build_cluster(config: Config, preserve_logs: bool = False) -> str:
     return spark_master_url
 
 
-def build_cluster_launch_script() -> TextIO:
+def build_cluster_launch_script(
+    results_dir: Path, diagnostics_dir: Path, input_data: List[Path]
+) -> TextIO:
     """Generates a shell file that, on execution, spins up a Spark cluster.
 
     Returns:
@@ -65,6 +78,14 @@ def build_cluster_launch_script() -> TextIO:
         delete=False,
     )
 
+    # need to bind required files/dirs to worker nodes
+    worker_bindings = (
+        f"--bind {results_dir}:/results " f"--bind {diagnostics_dir}:/diagnostics "
+    )
+    for filepath in input_data:
+        worker_bindings += (
+            f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
+        )
     # TODO: MIC-4744: Add support for varying SPARK_MASTER_PORT and SPARK_MASTER_WEBUI_PORT
     launcher.write(
         f"""
@@ -100,10 +121,9 @@ else
     mkdir -p "/tmp/spark_cluster_$USER"
     mkdir -p "/tmp/singularity_spark_$USER/spark_work"
 
-    env 
-
     singularity exec \
         -B /mnt:/mnt,"/tmp/spark_cluster_$USER":/tmp \
+        {worker_bindings} \
         "$SINGULARITY_IMG" \
         $CONDA_PATH run --no-capture-output -n $CONDA_ENV \
         $SPARK_ROOT/bin/spark-class org.apache.spark.deploy.worker.Worker \

@@ -158,6 +158,15 @@ def run_slurm_job(
 
 
 @linker.command(hidden=True)
+@click.argument(
+    "results_dir",
+    type=click.Path(exists=True, resolve_path=True),
+)
+@click.argument(
+    "diagnostics_dir",
+    type=click.Path(exists=True, resolve_path=True),
+)
+@click.option("--input-data", multiple=True)
 @click.option(
     "-e",
     "--computing-environment",
@@ -188,6 +197,9 @@ def run_slurm_job(
     show_default=True,
 )
 def build_spark_cluster(
+    results_dir: str,
+    diagnostics_dir: str,
+    input_data: Tuple[str],
     computing_environment: str,
     verbose: int,
     with_debugger: bool,
@@ -200,8 +212,16 @@ def build_spark_cluster(
         computing_environment=computing_environment,
         input_data=None,
     )
+    results_dir = Path(results_dir)
+    diagnostics_dir = Path(diagnostics_dir)
     main = handle_exceptions(
         func=build_cluster, exceptions_logger=logger, with_debugger=with_debugger
     )
-    main(config, preserve_logs)
+    main(
+        config=config,
+        results_dir=results_dir,
+        diagnostics_dir=diagnostics_dir,
+        input_data=[Path(x) for x in input_data],
+        preserve_logs=preserve_logs,
+    )
     logger.info("*** FINISHED ***")
