@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-input_file_dir = Path("../../../../sample_data/pvs_like_case_study")
+input_file_dir = Path("/input_data")
 reference_file = pd.read_parquet(input_file_dir / "reference_file_sample.parquet")
 census_2030 = pd.read_parquet(input_file_dir / "census_2030_sample.parquet")
 
@@ -451,7 +451,7 @@ confused_for = (
 )
 errors[common_cols].compare(confused_for[common_cols], keep_shape=True, keep_equal=True)
 
-census_2030.to_parquet("census_2030_with_piks_sample.parquet")
+census_2030.to_parquet("/results/census_2030_with_piks_sample.parquet")
 
 # Convert this notebook to a Python script
 # ! ./convert_notebook.sh pvs_like_case_study_sample_data_spark

@@ -1,15 +1,15 @@
 # spark_cluster container
-NOTE: Use of `linker build-spark-cluster` currently requires building an image.sif from this directory.
+NOTE: Use of `linker build-spark-cluster` currently requires building an image from this directory.
 
-This is done by running the following command from the `linker` this directory:
+This is done by running the following commands from this directory:
 
 ```
 # build the image
 $ sudo docker build -t linker:sparkbuilder .
 # save as compressed tarball
-$ sudo docker save linker:sparkbuilder | gzip > image.tar.gz
+$ sudo docker save linker:sparkbuilder | gzip > spark_cluster.tar.gz
 # remove the image
 $ sudo docker rmi linker:sparkbuilder
 # convert the image from the docker image
-$ singularity build --force image.sif docker-archive://$(pwd)/image.tar.gz
+$ singularity build --force spark_cluster.sif docker-archive://$(pwd)/spark_cluster.tar.gz
 ```

@@ -12,13 +12,13 @@ class Config:
 
     def __init__(
         self,
-        pipeline_specification: Path,
-        input_data: Path,
+        pipeline_specification: Optional[Path],
+        input_data: Optional[Path],
         computing_environment: Optional[str],
     ):
         self.pipeline_path = pipeline_specification
-        self.pipeline = load_yaml(self.pipeline_path)
-        self.input_data = self._load_input_data_paths(input_data)
+        self.pipeline = load_yaml(self.pipeline_path) if pipeline_specification else {}
+        self.input_data = self._load_input_data_paths(input_data) if input_data else []
         self.computing_environment_path = (
             Path(computing_environment) if computing_environment else None
         )

@@ -48,6 +48,13 @@ $ # remove the image
 $ sudo docker rmi linker:<IMAGE-NAME>
 ```
 
+You can use the `-f` option to build a dockerfile from a different location
+(including a different filename than 'Dockerfile'):
+
+```
+sudo docker build -t linker:<IMAGE-NAME> <PATH-TO-DOCKERFILE>
+```
+
 You should now have an image file named `<IMAGE-NAME>.tar.gz` alongside the Dockerfile which can be used to spin up the container.
 
 Note that it may be occasionally required to clean up unused data to make room for building
