@@ -26,6 +26,7 @@ class Config:
 
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
+        self.spark = self.environment.get("spark", None)
         self._validate()
 
     def get_resources(self) -> Dict[str, str]:

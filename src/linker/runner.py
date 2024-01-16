@@ -29,6 +29,13 @@ def main(
     # Set up computing environment
     if config.computing_environment == "local":
         session = None
+        # TODO: launch a local spark cluster instead of relying on implementation
+        if config.spark:
+            logger.warning(
+                "Running a local pipeline with requested Spark resources is currently not supported. "
+                "The Spark resource requests will be ignored and the implementation "
+                "itself will be responsible for launching a Spark cluster locally."
+            )
         runner = run_container
     elif config.computing_environment == "slurm":
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
