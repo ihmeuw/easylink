@@ -49,6 +49,7 @@ class Implementation:
         logs = []
         logs = self._validate_expected_step(logs)
         logs = self._validate_container_exists(logs)
+        logs = self._validate_input_data(logs)
         return logs
 
     ##################
@@ -108,4 +109,7 @@ class Implementation:
             and not Path(f"{self._container_full_stem}.sif").exists()
         ):
             logs.append(err_str)
+        return logs
+    
+    def _validate_input_data(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         return logs
