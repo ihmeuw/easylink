@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Optional, TextIO
 import yaml
 from loguru import logger
 from pyarrow import parquet as pq
+import pandas as pd
 
 
 def handle_exceptions(
@@ -108,8 +109,16 @@ def load_yaml(filepath: Path) -> Dict:
 
 
 def dummy_output_validator(filepath: Path) -> None:
-    output_schema = pq.ParquetFile(filepath).schema
-    output_columns = {field.name for field in output_schema}
+    extension = filepath.suffix
+    if extension == '.parquet':
+        output_columns = set(pq.ParquetFile(filepath).schema.names)
+    elif extension == '.csv':
+        output_columns = set(pd.read_csv(filepath).columns)
+    else:
+        raise NotImplementedError(
+            f"Data file type {extension} is not compatible. Convert to Parquet or CSV instead"
+        )
+        
     required_columns = {"foo", "bar", "counter"}
     missing_columns = required_columns - output_columns
     if missing_columns:
