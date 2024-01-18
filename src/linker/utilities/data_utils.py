@@ -1,14 +1,12 @@
-import os
 import csv
+import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
+
 import pandas as pd
 import yaml
-
 from pyarrow import parquet as pq
-
-
 
 
 def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
@@ -28,6 +26,7 @@ def load_yaml(filepath: Path) -> Dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
+
 
 def write_csv(filepath: str, rows: List) -> None:
     with open(filepath, "w") as file:

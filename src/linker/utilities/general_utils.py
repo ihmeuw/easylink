@@ -1,8 +1,7 @@
 import functools
 import sys
 from bdb import BdbQuit
-from typing import Any, Callable, TextIO,
-
+from typing import Any, Callable, TextIO
 
 from loguru import logger
 
@@ -82,4 +81,3 @@ def _add_logging_sink(
             format=message_format,
             serialize=serialize,
         )
-        
