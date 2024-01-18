@@ -35,9 +35,6 @@ class Config:
             **self.environment[self.environment["computing_environment"]],
         }
 
-    def get_spark_resources(self) -> Dict[str, str]:
-        return {**self.environment["spark"]}
-
     #################
     # Setup Methods #
     #################
@@ -48,6 +45,12 @@ class Config:
         if not self.container_engine in ["docker", "singularity", "undefined"]:
             raise NotImplementedError(
                 f"Container engine '{self.container_engine}' is not supported."
+            )
+        if self.spark and self.computing_environment == "local":
+            raise NotImplementedError(
+                "Spark resource requests are not supported in a local computing environment; "
+                "please implement a spark cluster spin-up in the actual implementation. "
+                f"Spark resources requested: {self.spark}"
             )
 
     @staticmethod
