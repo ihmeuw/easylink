@@ -32,6 +32,7 @@ class Implementation:
 
     def run(
         self,
+        computing_environment: str,
         session: Optional["drmaa.Session"],
         runner: Callable,
         container_engine: str,
@@ -41,7 +42,7 @@ class Implementation:
         diagnostics_dir: Path,
     ) -> None:
         logger.info(f"Running pipeline step ID {step_id}")
-        if self.requires_spark:
+        if self.requires_spark and computing_environment != "local":
             drmaa = get_slurm_drmaa()
             spark_master_url, job_id = build_cluster(
                 session=session,
@@ -70,7 +71,7 @@ class Implementation:
             config=self.config,
         )
 
-        if self.requires_spark:
+        if self.requires_spark and computing_environment != "local":
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
 

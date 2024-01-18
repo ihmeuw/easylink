@@ -53,6 +53,7 @@ class Pipeline:
                     ).glob("*.parquet")
                 ]
             implementation.run(
+                computing_environment=self.config.computing_environment,
                 session=session,
                 runner=runner,
                 container_engine=self.config.container_engine,
