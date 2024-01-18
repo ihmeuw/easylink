@@ -76,7 +76,7 @@ class Pipeline:
     def _get_implementations(self) -> Tuple[Implementation, ...]:
         return tuple(
             Implementation(
-                step.name,
+                step,
                 self.config.pipeline["steps"][step.name]["implementation"]["name"],
                 self.config.pipeline["steps"][step.name]["implementation"].get(
                     "configuration", None
