@@ -20,6 +20,7 @@ if __name__ == "__main__":
         "drmaa",
         "loguru",
         "numpy",
+        "pandas",
         "pyyaml",
         "pyarrow",
     ]
