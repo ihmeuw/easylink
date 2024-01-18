@@ -1,3 +1,5 @@
+import csv
+
 import pytest
 import yaml
 
@@ -33,6 +35,11 @@ PIPELINE_CONFIG_DICT = {
     },
 }
 
+INPUT_DATA_FORMAT_DICT = {
+    "good": [["foo", "bar", "counter"], [1, 2, 3]],
+    "bad": [["wrong", "column", "names"], [1, 2, 3]],
+}
+
 
 @pytest.fixture(scope="session")
 def test_dir(tmpdir_factory) -> str:
@@ -53,16 +60,25 @@ def test_dir(tmpdir_factory) -> str:
     # input file structure
     input_dir1 = tmp_path.mkdir("input_data1")
     input_dir2 = tmp_path.mkdir("input_data2")
-    with open(f"{str(input_dir1)}/file1", "w") as file:
-        file.write("")
-    with open(f"{str(input_dir2)}/file2", "w") as file:
-        file.write("")
+    with open(f"{str(input_dir1)}/file1.csv", "w") as file:
+        writer = csv.writer(file)
+        writer.writerows(INPUT_DATA_FORMAT_DICT["good"])
+    with open(f"{str(input_dir2)}/file2.csv", "w") as file:
+        writer = csv.writer(file)
+        writer.writerows(INPUT_DATA_FORMAT_DICT["good"])
+    # Write broken CSV files
+    with open(f"{str(input_dir1)}/broken_file1.csv", "w") as file:
+        writer = csv.writer(file)
+        writer.writerows(INPUT_DATA_FORMAT_DICT["bad"])
+    with open(f"{str(input_dir2)}/broken_file2.csv", "w") as file:
+        writer = csv.writer(file)
+        writer.writerows(INPUT_DATA_FORMAT_DICT["bad"])
     # good input_data.yaml
     with open(f"{tmp_path}/input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "file1"),
-                "bar": str(input_dir2 / "file2"),
+                "foo": str(input_dir1 / "file1.csv"),
+                "bar": str(input_dir2 / "file2.csv"),
             },
             file,
             sort_keys=False,
@@ -73,6 +89,16 @@ def test_dir(tmpdir_factory) -> str:
             {
                 "foo": str(input_dir1 / "non-existent-file1"),
                 "bar": str(input_dir2 / "non-existent-file2"),
+            },
+            file,
+            sort_keys=False,
+        )
+        # input directs to files without sensible data
+    with open(f"{tmp_path}/bad_columns_input_data.yaml", "w") as file:
+        yaml.dump(
+            {
+                "foo": str(input_dir1 / "broken_file1.csv"),
+                "bar": str(input_dir2 / "broken_file2.csv"),
             },
             file,
             sort_keys=False,
