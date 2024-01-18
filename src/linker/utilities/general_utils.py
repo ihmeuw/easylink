@@ -5,10 +5,10 @@ from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, TextIO
-from pyarrow import parquet as pq
 
 import yaml
 from loguru import logger
+from pyarrow import parquet as pq
 
 
 def handle_exceptions(
@@ -106,6 +106,7 @@ def load_yaml(filepath: Path) -> Dict:
         data = yaml.safe_load(file)
     return data
 
+
 def dummy_output_validator(filepath: Path) -> None:
     output_schema = pq.ParquetFile(filepath).schema
     output_columns = {field.name for field in output_schema}
@@ -116,7 +117,7 @@ def dummy_output_validator(filepath: Path) -> None:
             f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
 
+
 def input_file_validator(filepath: Path) -> None:
     "Wrap the output file validator for now, since it is the same"
     return dummy_output_validator(filepath)
-

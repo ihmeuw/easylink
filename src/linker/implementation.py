@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from linker.utilities.general_utils import load_yaml
 from linker.step import Step
+from linker.utilities.general_utils import load_yaml
 
 
 class Implementation:
@@ -43,7 +43,7 @@ class Implementation:
             container_full_stem=self._container_full_stem,
             config=self.config,
         )
-        
+
         for results_file in results_dir.glob("*.parquet"):
             self.step.output_validator(results_file)
 
