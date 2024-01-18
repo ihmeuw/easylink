@@ -61,11 +61,9 @@ def test_dir(tmpdir_factory) -> str:
     input_dir2 = tmp_path.mkdir("input_data2")
     for input_dir in [input_dir1, input_dir2]:
         for base_file in ["file1", "file2"]:
-            write_csv(
-                str(input_dir / f"{base_file}.csv"), INPUT_DATA_FORMAT_DICT["correct_cols"]
+            write_csv(input_dir / f"{base_file}.csv", INPUT_DATA_FORMAT_DICT["correct_cols"]
             )
-            write_csv(
-                str(input_dir / f"broken_{base_file}.csv"),
+            write_csv(input_dir / f"broken_{base_file}.csv",
                 INPUT_DATA_FORMAT_DICT["wrong_cols"],
             )
 

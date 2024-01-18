@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from linker.utilities.general_utils import input_file_validator, load_yaml
+from linker.utilities.data_utils import input_file_validator, load_yaml
 
 
 class Config:
