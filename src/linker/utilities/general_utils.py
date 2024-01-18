@@ -113,6 +113,10 @@ def dummy_output_validator(filepath: Path) -> None:
     missing_columns = required_columns - output_columns
     if missing_columns:
         raise RuntimeError(
-            f"Output data file {filepath} is missing required column(s) {missing_columns}"
+            f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
+
+def input_file_validator(filepath: Path) -> None:
+    "Wrap the output file validator for now, since it is the same"
+    return dummy_output_validator(filepath)
 
