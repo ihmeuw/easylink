@@ -2,7 +2,7 @@ import shutil
 import socket
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -29,7 +29,7 @@ def main(
     # Set up computing environment
     if config.computing_environment == "local":
         session = None
-        # TODO: launch a local spark cluster instead of relying on implementation
+        # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
         if config.spark:
             logger.warning(
                 "Running a local pipeline with requested Spark resources is currently not supported. "
@@ -38,6 +38,7 @@ def main(
             )
         runner = run_container
     elif config.computing_environment == "slurm":
+        # Set up a single drmaa.session that is persistent for the duration of the pipeline
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
         if "slurm" not in hostname:

@@ -100,6 +100,7 @@ def submit_spark_cluster_job(
     drmaa: types.ModuleType("drmaa"),
     session: types.ModuleType("drmaa.Session"),
     launcher: TextIO,
+    step_id: str,
     account: str,
     partition: str,
     memory_per_node: int,
@@ -114,6 +115,7 @@ def submit_spark_cluster_job(
         drmaa: DRMAA module.
         session: DRMAA session.
         launcher: Launcher script.
+        step_id: Step ID used for naming the job.
         account: Account to charge.
         partition: Partition to run on.
         memory_per_node: Memory per node in GB.
@@ -124,9 +126,10 @@ def submit_spark_cluster_job(
 
     Returns:
         Path to stderr log, which contains the Spark master URL.
+        Main job ID of the spark cluster.
     """
     jt = session.createJobTemplate()
-    jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    jt.jobName = f"spark_cluster_{step_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.workingDirectory = os.getcwd()
     jt.joinFiles = False  # keeps stdout separate from stderr
     jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stdout')}"
@@ -176,5 +179,4 @@ def submit_spark_cluster_job(
     logger.info(f"Jobs {jobs} are running")
 
     session.deleteJobTemplate(jt)
-    session.exit()
-    return master_error_log
+    return master_error_log, jobs[0].split("_")[0]

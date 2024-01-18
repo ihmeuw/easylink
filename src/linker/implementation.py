@@ -1,7 +1,11 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from loguru import logger
+
 from linker.utilities.general_utils import load_yaml
+from linker.utilities.slurm_utils import get_slurm_drmaa
+from linker.utilities.spark_utils import build_cluster
 
 
 class Implementation:
@@ -11,13 +15,16 @@ class Implementation:
         implementation_name: str,
         implementation_config: Optional[Dict[str, Any]],
         container_engine: str,
+        environment: Dict[str, Any],
     ):
         self._pipeline_step_name = step_name
         self.name = implementation_name
         self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
+        self._environment = environment
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
+        self.requires_spark = self._metadata[self.name].get("requires_spark", False)
         self._container_full_stem = self._get_container_full_stem()
 
     def __repr__(self) -> str:
@@ -25,12 +32,33 @@ class Implementation:
 
     def run(
         self,
+        session: Optional["drmaa.Session"],
         runner: Callable,
         container_engine: str,
+        step_id: str,
         input_data: List[Path],
         results_dir: Path,
         diagnostics_dir: Path,
     ) -> None:
+        logger.info(f"Running pipeline step ID {step_id}")
+        if self.requires_spark:
+            drmaa = get_slurm_drmaa()
+            spark_master_url, job_id = build_cluster(
+                session=session,
+                environment=self._environment,
+                step_id=step_id,
+                results_dir=results_dir,
+                diagnostics_dir=diagnostics_dir,
+                input_data=input_data,
+                preserve_logs=False,
+            )
+            # Add the spark master url to implementation config
+            if not self.config:
+                self.config = {}
+            self.config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
+        else:
+            spark_master_url = None
+
         runner(
             container_engine=container_engine,
             input_data=input_data,
@@ -41,6 +69,10 @@ class Implementation:
             container_full_stem=self._container_full_stem,
             config=self.config,
         )
+
+        if self.requires_spark:
+            logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
+            session.control(job_id, drmaa.JobControlAction.TERMINATE)
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be

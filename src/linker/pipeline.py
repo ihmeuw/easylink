@@ -1,14 +1,11 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 from loguru import logger
 
 from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.step import Step
-
-if TYPE_CHECKING:
-    import drmaa
 
 
 class Pipeline:
@@ -32,9 +29,8 @@ class Pipeline:
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(number_of_steps_digit_length)
             previous_step_number = str(idx).zfill(number_of_steps_digit_length)
-            diagnostics_dir = (
-                results_dir / "diagnostics" / f"{step_number}_{implementation.step_name}"
-            )
+            step_id = f"{step_number}_{implementation.step_name}"
+            diagnostics_dir = results_dir / "diagnostics" / step_id
             diagnostics_dir.mkdir(parents=True, exist_ok=True)
             output_dir = (
                 results_dir
@@ -57,12 +53,15 @@ class Pipeline:
                     ).glob("*.parquet")
                 ]
             implementation.run(
+                session=session,
                 runner=runner,
                 container_engine=self.config.container_engine,
+                step_id=step_id,
                 input_data=input_data,
                 results_dir=output_dir,
                 diagnostics_dir=diagnostics_dir,
             )
+        # Close the drmaa session (if one exists) once the pipeline is finished
         if session:
             session.exit()
 
@@ -76,15 +75,21 @@ class Pipeline:
     def _get_implementations(self) -> Tuple[Implementation, ...]:
         return tuple(
             Implementation(
-                step.name,
-                self.config.pipeline["steps"][step.name]["implementation"]["name"],
-                self.config.pipeline["steps"][step.name]["implementation"].get(
-                    "configuration", None
-                ),
-                self.config.container_engine,
+                step_name=step.name,
+                implementation_name=self.config.pipeline["steps"][step.name][
+                    "implementation"
+                ]["name"],
+                implementation_config=self.config.pipeline["steps"][step.name][
+                    "implementation"
+                ].get("configuration", None),
+                container_engine=self.config.container_engine,
+                environment=self.config.environment,
             )
             for step in self.steps
         )
+
+    def _check_if_requires_spark(self) -> bool:
+        return any(implementation.requires_spark for implementation in self.implementations)
 
     def _validate(self) -> None:
         import errno

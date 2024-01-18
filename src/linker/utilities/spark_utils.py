@@ -3,24 +3,24 @@ import os
 import tempfile
 from pathlib import Path
 from time import sleep
-from typing import List, TextIO
+from typing import Any, Dict, List, Optional, TextIO
 
 from loguru import logger
-from numpy import diag
 
-from linker.configuration import Config
 from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
 
 
 def build_cluster(
-    config: Config,
+    session: Optional["drmaa.Session"],
+    environment: Dict[str, Any],
+    step_id: str,
     results_dir: Path,
     diagnostics_dir: Path,
     input_data: List[Path],
     preserve_logs: bool = False,
 ) -> str:
-    """Builds a Spark cluster. Main function for the `build-spark-cluster` command.
+    """Builds a Spark cluster.
 
     Args:
         config: Config object.
@@ -30,8 +30,12 @@ def build_cluster(
         spark_master_url: Spark master URL.
     """
     drmaa = get_slurm_drmaa()
-    session = drmaa.Session()
-    session.initialize()
+    if not session:
+        stop_session = True
+        session = drmaa.Session()
+        session.initialize()
+    else:
+        stop_session = False
 
     # call build_launch_script
     launcher = build_cluster_launch_script(
@@ -43,23 +47,27 @@ def build_cluster(
         atexit.register(lambda: os.remove(launcher.name))
 
     # submit job, get logfile for master node
-    logfile = submit_spark_cluster_job(
+    logfile, job_id = submit_spark_cluster_job(
         drmaa=drmaa,
         session=session,
         launcher=launcher,
-        account=config.environment["slurm"]["account"],
-        partition=config.environment["slurm"]["partition"],
-        memory_per_node=config.environment["spark"]["workers"]["mem_per_node"],
-        max_runtime=config.environment["spark"]["workers"]["time_limit"],
-        num_workers=config.environment["spark"]["workers"]["num_workers"],
-        cpus_per_node=config.environment["spark"]["workers"]["cpus_per_node"],
+        step_id=step_id,
+        account=environment["slurm"]["account"],
+        partition=environment["slurm"]["partition"],
+        memory_per_node=environment["spark"]["workers"]["mem_per_node"],
+        max_runtime=environment["spark"]["workers"]["time_limit"],
+        num_workers=environment["spark"]["workers"]["num_workers"],
+        cpus_per_node=environment["spark"]["workers"]["cpus_per_node"],
         preserve_logs=preserve_logs,
     )
+
+    if stop_session:
+        session.exit()
 
     spark_master_url = find_spark_master_url(logfile)
     webui_url = spark_master_url.replace("spark://", "http://").replace(":28508", ":28509")
     logger.info(f"Spark master URL: {spark_master_url})\n" f"Spark web UI URL: {webui_url}")
-    return spark_master_url
+    return spark_master_url, job_id
 
 
 def build_cluster_launch_script(
@@ -151,8 +159,17 @@ def find_spark_master_url(logfile: Path) -> str:
     spark_master_url = ""
     while spark_master_url == "":
         sleep(5)
-        with open(logfile, "r") as f:
-            for line in f:
-                if "Starting Spark master at" in line:
-                    spark_master_url = line.split(" ")[-1:]
+        try:
+            with open(logfile, "r") as f:
+                for line in f:
+                    if "Starting Spark master at" in line:
+                        spark_master_url = line.split(" ")[-1:]
+        except FileNotFoundError:
+            logger.warning(f"Logfile {logfile} not found. Waiting 5 seconds and retrying...")
+            sleep(5)
+            with open(logfile, "r") as f:
+                for line in f:
+                    if "Starting Spark master at" in line:
+                        spark_master_url = line.split(" ")[-1:]
+
     return spark_master_url[0].strip()
