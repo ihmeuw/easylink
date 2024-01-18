@@ -7,9 +7,9 @@ from loguru import logger
 
 from linker import runner
 from linker.configuration import Config
+from linker.utilities.data_utils import create_results_directory
 from linker.utilities.general_utils import (
     configure_logging_to_terminal,
-    create_results_directory,
     handle_exceptions,
 )
 from linker.utilities.spark_utils import build_cluster
