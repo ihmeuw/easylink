@@ -5,6 +5,7 @@ from bdb import BdbQuit
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, TextIO
+from pyarrow import parquet as pq
 
 import yaml
 from loguru import logger
@@ -104,3 +105,14 @@ def load_yaml(filepath: Path) -> Dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
+
+def dummy_output_validator(filepath: Path) -> None:
+    output_schema = pq.ParquetFile(filepath).schema
+    output_columns = {field.name for field in output_schema}
+    required_columns = {"foo", "bar", "counter"}
+    missing_columns = required_columns - output_columns
+    if missing_columns:
+        raise RuntimeError(
+            f"Output data file {filepath} is missing required column(s) {missing_columns}"
+        )
+

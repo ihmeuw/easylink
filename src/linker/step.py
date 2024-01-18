@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from typing import Callable
+from linker.utilities.general_utils import dummy_output_validator
 
 
 @dataclass
@@ -6,7 +8,4 @@ class Step:
     """A convenience container in the event we ever want to add step-level functionality"""
 
     name: str
-    
-    def validate_output(self, results_file):
-        print("Output is OK")
-        return True
+    output_validator: Callable = dummy_output_validator
