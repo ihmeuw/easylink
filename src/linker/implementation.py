@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from linker.step import Step
-from linker.utilities.general_utils import load_yaml
+from linker.utilities.data_utils import load_yaml
 
 
 class Implementation:

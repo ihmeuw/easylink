@@ -3,6 +3,7 @@ import pytest
 import yaml
 
 from linker.configuration import Config
+from linker.utilities.data_utils import write_csv
 
 ENV_CONFIG_DICT = {
     "computing_environment": "foo",
