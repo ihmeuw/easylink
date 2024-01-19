@@ -45,7 +45,7 @@ class Implementation:
         )
 
         for results_file in results_dir.glob("result.parquet"):
-            self.step.output_validator(results_file)
+            self.step.validate_output(results_file)
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be

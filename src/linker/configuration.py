@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from linker.utilities.data_utils import input_file_validator, load_yaml
+from linker.utilities.data_utils import load_yaml, validate_input
 
 
 class Config:
@@ -51,7 +51,7 @@ class Config:
 
         # Validate input data against constraints
         for input_file in self.input_data:
-            input_file_validator(input_file)
+            validate_input(input_file)
 
     @staticmethod
     def _load_computing_environment(
