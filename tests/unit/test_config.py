@@ -22,7 +22,7 @@ def test__load_input_data_paths(test_dir, input_data):
         paths = Config._load_input_data_paths(f"{test_dir}/input_data.yaml")
         assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
     if input_data == "bad":
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match=r"Cannot find input data: .*"):
             Config._load_input_data_paths(f"{test_dir}/bad_input_data.yaml")
 
 
@@ -52,5 +52,7 @@ def test_default_container_engine(test_dir):
 
 
 def test_broken_input_files(test_dir):
-    with pytest.raises(RuntimeError):
+    with pytest.raises(
+        RuntimeError, match=r"^Data file .* is missing required column\(s\) .*"
+    ):
         Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/bad_columns_input_data.yaml", None)
