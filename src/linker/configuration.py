@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from loguru import logger
+
 from linker.utilities.general_utils import load_yaml
 
 
@@ -47,10 +49,12 @@ class Config:
                 f"Container engine '{self.container_engine}' is not supported."
             )
         if self.spark and self.computing_environment == "local":
-            raise NotImplementedError(
-                "Spark resource requests are not supported in a local computing environment; "
-                "please implement a spark cluster spin-up in the actual implementation. "
-                f"Spark resources requested: {self.spark}"
+            logger.warning(
+                "Spark resource requests are not supported in a "
+                "local computing environment; these requests will be ignored. The "
+                "implementation itself is responsible for spinning up a spark cluster "
+                "inside of the relevant container.\n"
+                f"Ignored spark cluster requests: {self.spark}"
             )
 
     @staticmethod
