@@ -44,7 +44,7 @@ class Implementation:
             config=self.config,
         )
 
-        for results_file in results_dir.glob("*.parquet"):
+        for results_file in results_dir.glob("result.parquet"):
             self.step.output_validator(results_file)
 
     def validate(self) -> List[Optional[str]]:
