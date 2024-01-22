@@ -53,6 +53,6 @@ def test_default_container_engine(test_dir):
 
 def test_broken_input_files(test_dir):
     with pytest.raises(
-        RuntimeError, match=r"^Data file .* is missing required column\(s\) .*"
+        LookupError, match=r"^Data file .* is missing required column\(s\) .*"
     ):
         Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/bad_columns_input_data.yaml", None)
