@@ -48,6 +48,6 @@ def validate_dummy_output(filepath: Path) -> None:
     required_columns = {"foo", "bar", "counter"}
     missing_columns = required_columns - output_columns
     if missing_columns:
-        raise RuntimeError(
+        raise LookupError(
             f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
