@@ -1,18 +1,20 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from linker.utilities.general_utils import load_yaml
+from linker.step import Step
+from linker.utilities.data_utils import load_yaml
 
 
 class Implementation:
     def __init__(
         self,
-        step_name: str,
+        step: Step,
         implementation_name: str,
         implementation_config: Optional[Dict[str, Any]],
         container_engine: str,
     ):
-        self._pipeline_step_name = step_name
+        self.step = step
+        self._pipeline_step_name = step.name
         self.name = implementation_name
         self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
@@ -41,6 +43,9 @@ class Implementation:
             container_full_stem=self._container_full_stem,
             config=self.config,
         )
+
+        for results_file in results_dir.glob("result.parquet"):
+            self.step.validate_output(results_file)
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be

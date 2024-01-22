@@ -6,7 +6,6 @@ from time import sleep
 from typing import List, TextIO
 
 from loguru import logger
-from numpy import diag
 
 from linker.configuration import Config
 from linker.utilities.paths import CONTAINER_DIR

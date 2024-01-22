@@ -19,7 +19,9 @@ if __name__ == "__main__":
         "docker",
         "drmaa",
         "loguru",
+        "pandas",
         "pyyaml",
+        "pyarrow",
     ]
 
     setup_requires = ["setuptools_scm"]

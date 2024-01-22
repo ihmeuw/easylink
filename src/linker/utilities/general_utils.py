@@ -1,12 +1,8 @@
 import functools
-import os
 import sys
 from bdb import BdbQuit
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Callable, Dict, Optional, TextIO
+from typing import Any, Callable, TextIO
 
-import yaml
 from loguru import logger
 
 
@@ -85,22 +81,3 @@ def _add_logging_sink(
             format=message_format,
             serialize=serialize,
         )
-
-
-def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
-    results_dir = Path("results" if output_dir is None else output_dir).resolve()
-    if timestamp:
-        launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        results_dir = results_dir / launch_time
-    _ = os.umask(0o002)
-    results_dir.mkdir(parents=True, exist_ok=True)
-    (results_dir / "intermediate").mkdir(exist_ok=True)
-    (results_dir / "diagnostics").mkdir(exist_ok=True)
-
-    return results_dir
-
-
-def load_yaml(filepath: Path) -> Dict:
-    with open(filepath, "r") as file:
-        data = yaml.safe_load(file)
-    return data

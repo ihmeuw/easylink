@@ -1,6 +1,7 @@
 import pytest
 
 from linker.implementation import Implementation
+from linker.step import Step
 
 
 def test_implementation_is_missing_from_metadata():
@@ -9,7 +10,7 @@ def test_implementation_is_missing_from_metadata():
         match="Implementation 'some-other-implementation' is not defined in implementation_metadata.yaml",
     ):
         Implementation(
-            step_name="some-step",
+            step=Step("some-step"),
             implementation_name="some-other-implementation",
             container_engine="undefined",
             implementation_config=None,

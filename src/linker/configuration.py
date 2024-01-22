@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from linker.utilities.general_utils import load_yaml
+from linker.pipeline_schema import PipelineSchema
+from linker.utilities.data_utils import load_yaml
 
 
 class Config:
@@ -48,6 +49,10 @@ class Config:
             raise NotImplementedError(
                 f"Container engine '{self.container_engine}' is not supported."
             )
+
+        # Validate input data against constraints
+        for input_file in self.input_data:
+            PipelineSchema.validate_input(input_file)
 
     @staticmethod
     def _load_computing_environment(

@@ -10,7 +10,7 @@ def test_config_instantiation(test_dir, config):
     assert config.pipeline == PIPELINE_CONFIG_DICT["good"]
     assert config.environment == ENV_CONFIG_DICT
     assert config.input_data == [
-        Path(x) for x in [f"{test_dir}/input_data{n}/file{n}" for n in [1, 2]]
+        Path(x) for x in [f"{test_dir}/input_data{n}/file{n}.csv" for n in [1, 2]]
     ]
     assert config.computing_environment == ENV_CONFIG_DICT["computing_environment"]
     assert config.container_engine == ENV_CONFIG_DICT["container_engine"]
@@ -20,9 +20,9 @@ def test_config_instantiation(test_dir, config):
 def test__load_input_data_paths(test_dir, input_data):
     if input_data == "good":
         paths = Config._load_input_data_paths(f"{test_dir}/input_data.yaml")
-        assert paths == [Path(f"{test_dir}/input_data{n}/file{n}") for n in [1, 2]]
+        assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
     if input_data == "bad":
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match=r"Cannot find input data: .*"):
             Config._load_input_data_paths(f"{test_dir}/bad_input_data.yaml")
 
 
@@ -49,3 +49,10 @@ def test_default_container_engine(test_dir):
     """The container engine value should default to 'undefined'"""
     config = Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/input_data.yaml", None)
     assert config.container_engine == "undefined"
+
+
+def test_broken_input_files(test_dir):
+    with pytest.raises(
+        LookupError, match=r"^Data file .* is missing required column\(s\) .*"
+    ):
+        Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/bad_columns_input_data.yaml", None)

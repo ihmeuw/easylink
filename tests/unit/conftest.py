@@ -2,6 +2,7 @@ import pytest
 import yaml
 
 from linker.configuration import Config
+from linker.utilities.data_utils import write_csv
 
 ENV_CONFIG_DICT = {
     "computing_environment": "foo",
@@ -33,6 +34,11 @@ PIPELINE_CONFIG_DICT = {
     },
 }
 
+INPUT_DATA_FORMAT_DICT = {
+    "correct_cols": [["foo", "bar", "counter"], [1, 2, 3]],
+    "wrong_cols": [["wrong", "column", "names"], [1, 2, 3]],
+}
+
 
 @pytest.fixture(scope="session")
 def test_dir(tmpdir_factory) -> str:
@@ -53,16 +59,20 @@ def test_dir(tmpdir_factory) -> str:
     # input file structure
     input_dir1 = tmp_path.mkdir("input_data1")
     input_dir2 = tmp_path.mkdir("input_data2")
-    with open(f"{str(input_dir1)}/file1", "w") as file:
-        file.write("")
-    with open(f"{str(input_dir2)}/file2", "w") as file:
-        file.write("")
+    for input_dir in [input_dir1, input_dir2]:
+        for base_file in ["file1", "file2"]:
+            write_csv(input_dir / f"{base_file}.csv", INPUT_DATA_FORMAT_DICT["correct_cols"])
+            write_csv(
+                input_dir / f"broken_{base_file}.csv",
+                INPUT_DATA_FORMAT_DICT["wrong_cols"],
+            )
+
     # good input_data.yaml
     with open(f"{tmp_path}/input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "file1"),
-                "bar": str(input_dir2 / "file2"),
+                "foo": str(input_dir1 / "file1.csv"),
+                "bar": str(input_dir2 / "file2.csv"),
             },
             file,
             sort_keys=False,
@@ -73,6 +83,16 @@ def test_dir(tmpdir_factory) -> str:
             {
                 "foo": str(input_dir1 / "non-existent-file1"),
                 "bar": str(input_dir2 / "non-existent-file2"),
+            },
+            file,
+            sort_keys=False,
+        )
+        # input directs to files without sensible data
+    with open(f"{tmp_path}/bad_columns_input_data.yaml", "w") as file:
+        yaml.dump(
+            {
+                "foo": str(input_dir1 / "broken_file1.csv"),
+                "bar": str(input_dir2 / "broken_file2.csv"),
             },
             file,
             sort_keys=False,
