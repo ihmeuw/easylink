@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from linker.utilities.data_utils import load_yaml, validate_input
+from linker.utilities.data_utils import load_yaml
+from linker.pipeline_schema import PipelineSchema
 
 
 class Config:
@@ -51,7 +52,7 @@ class Config:
 
         # Validate input data against constraints
         for input_file in self.input_data:
-            validate_input(input_file)
+            PipelineSchema.validate_input(input_file)
 
     @staticmethod
     def _load_computing_environment(

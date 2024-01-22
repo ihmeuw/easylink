@@ -51,8 +51,3 @@ def validate_dummy_output(filepath: Path) -> None:
         raise RuntimeError(
             f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
-
-
-def validate_input(filepath: Path) -> None:
-    "Wrap the output file validator for now, since it is the same"
-    return validate_dummy_output(filepath)
