@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from linker.utilities.data_utils import load_yaml
 from linker.pipeline_schema import PipelineSchema
+from linker.utilities.data_utils import load_yaml
 
 
 class Config:

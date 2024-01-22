@@ -50,7 +50,7 @@ class PipelineSchema:
         for step in steps:
             schema._add_step(step)
         return schema
-    
+
     @classmethod
     def validate_input(cls, filepath: Path):
         "Wrap the output file validator for now, since it is the same"
