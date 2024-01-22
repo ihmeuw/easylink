@@ -19,7 +19,6 @@ if __name__ == "__main__":
         "docker",
         "drmaa",
         "loguru",
-        "numpy",
         "pandas",
         "pyyaml",
         "pyarrow",
