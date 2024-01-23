@@ -166,7 +166,7 @@ def test_batch_validation():
 def check_expected_validation_exit(config, caplog, error_no, expected_msg):
     with pytest.raises(SystemExit) as e:
         Pipeline(config)
-        
+
     assert e.value.code == error_no
     # We should only have one record
     assert len(caplog.record_tuples) == 1
