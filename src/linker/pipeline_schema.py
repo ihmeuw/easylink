@@ -54,7 +54,10 @@ class PipelineSchema:
     @classmethod
     def validate_input(cls, filepath: Path):
         "Wrap the output file validator for now, since it is the same"
-        return validate_dummy_output(filepath)
+        try:
+            validate_dummy_output(filepath)
+        except Exception as e:
+            return e.args[0]
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()

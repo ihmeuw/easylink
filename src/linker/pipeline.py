@@ -5,6 +5,7 @@ from loguru import logger
 
 from linker.configuration import Config
 from linker.implementation import Implementation
+from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.step import Step
 
 if TYPE_CHECKING:
@@ -95,6 +96,7 @@ class Pipeline:
         for validation in [
             self._validate_pipeline,
             self._validate_implementations,
+            self._validate_input_data,
         ]:
             validations.append(validation())
         if not all(validations):
@@ -110,8 +112,6 @@ class Pipeline:
 
     def _validate_pipeline(self) -> bool:
         """Validates the pipeline against supported schemas."""
-
-        from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 
         errors = {}
         for schema in PIPELINE_SCHEMAS:
@@ -150,6 +150,18 @@ class Pipeline:
                 errors[implementation.name] = implementation_errors
         if errors:
             self._validation_errors["IMPLEMENTATION ERRORS"] = errors
+            return False
+        else:
+            return True
+
+    def _validate_input_data(self) -> bool:
+        errors = {}
+        for input_filepath in self.config.input_data:
+            input_data_errors = PipelineSchema.validate_input(input_filepath)
+            if input_data_errors:
+                errors[str(input_filepath)] = input_data_errors
+        if errors:
+            self._validation_errors["INPUT DATA ERRORS"] = errors
             return False
         else:
             return True
