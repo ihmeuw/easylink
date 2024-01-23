@@ -15,10 +15,11 @@ def run_with_docker(
     input_data: List[Path],
     results_dir: Path,
     diagnostics_dir: Path,
+    step_id: str,
     container_path: Path,
     config: Optional[Dict[str, str]],
 ) -> None:
-    logger.info("Running container with docker")
+    logger.info(f"Running step {step_id} container with docker")
     client = get_docker_client()
     image_id = _load_image(client, container_path)
     container = _run_container(

@@ -1,14 +1,11 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 from loguru import logger
 
 from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.step import Step
-
-if TYPE_CHECKING:
-    import drmaa
 
 
 class Pipeline:
@@ -32,9 +29,8 @@ class Pipeline:
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(number_of_steps_digit_length)
             previous_step_number = str(idx).zfill(number_of_steps_digit_length)
-            diagnostics_dir = (
-                results_dir / "diagnostics" / f"{step_number}_{implementation.step_name}"
-            )
+            step_id = f"{step_number}_{implementation.step_name}"
+            diagnostics_dir = results_dir / "diagnostics" / step_id
             diagnostics_dir.mkdir(parents=True, exist_ok=True)
             output_dir = (
                 results_dir
@@ -57,12 +53,15 @@ class Pipeline:
                     ).glob("*.parquet")
                 ]
             implementation.run(
+                session=session,
                 runner=runner,
                 container_engine=self.config.container_engine,
+                step_id=step_id,
                 input_data=input_data,
                 results_dir=output_dir,
                 diagnostics_dir=diagnostics_dir,
             )
+        # Close the drmaa session (if one exists) once the pipeline is finished
         if session:
             session.exit()
 
@@ -74,14 +73,14 @@ class Pipeline:
         return tuple(Step(step) for step in self.config.pipeline["steps"])
 
     def _get_implementations(self) -> Tuple[Implementation, ...]:
+        resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
         return tuple(
             Implementation(
-                step,
-                self.config.pipeline["steps"][step.name]["implementation"]["name"],
-                self.config.pipeline["steps"][step.name]["implementation"].get(
-                    "configuration", None
-                ),
-                self.config.container_engine,
+                step=step,
+                implementation_name=self.config.get_implementation_name(step.name),
+                implementation_config=self.config.get_implementation_config(step.name),
+                container_engine=self.config.container_engine,
+                resources=resources,
             )
             for step in self.steps
         )

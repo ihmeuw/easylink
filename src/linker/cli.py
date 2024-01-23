@@ -12,7 +12,6 @@ from linker.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
 )
-from linker.utilities.spark_utils import build_cluster
 
 
 @click.group()
@@ -117,6 +116,7 @@ def run(
     "diagnostics_dir",
     type=click.Path(exists=True, resolve_path=True),
 )
+@click.argument("step_id")
 @click.argument("step_name")
 @click.argument("implementation_name")
 @click.argument("container_full_stem")
@@ -127,6 +127,7 @@ def run_slurm_job(
     container_engine: str,
     results_dir: str,
     diagnostics_dir: str,
+    step_id: str,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -148,80 +149,11 @@ def run_slurm_job(
         input_data=[Path(x) for x in input_data],
         results_dir=Path(results_dir),
         diagnostics_dir=Path(diagnostics_dir),
+        step_id=step_id,
         step_name=step_name,
         implementation_name=implementation_name,
         container_full_stem=container_full_stem,
         config=config,
     )
 
-    logger.info("*** FINISHED ***")
-
-
-@linker.command(hidden=True)
-@click.argument(
-    "results_dir",
-    type=click.Path(exists=True, resolve_path=True),
-)
-@click.argument(
-    "diagnostics_dir",
-    type=click.Path(exists=True, resolve_path=True),
-)
-@click.option("--input-data", multiple=True)
-@click.option(
-    "-e",
-    "--computing-environment",
-    default=None,
-    show_default=True,
-    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    help="Path to a computing environment yaml file describing Spark configuration.",
-)
-@click.option(
-    "-v",
-    "verbose",
-    count=True,
-    help="Configure logging verbosity.",
-)
-@click.option(
-    "--pdb",
-    "with_debugger",
-    is_flag=True,
-    help="Drop into python debugger if an error occurs.",
-    default=False,
-)
-@click.option(
-    "--preserve-logs",
-    "preserve_logs",
-    is_flag=True,
-    help="Preserve logs in the current directory, useful for debugging",
-    default=False,
-    show_default=True,
-)
-def build_spark_cluster(
-    results_dir: str,
-    diagnostics_dir: str,
-    input_data: Tuple[str],
-    computing_environment: str,
-    verbose: int,
-    with_debugger: bool,
-    preserve_logs: bool,
-) -> None:
-    """Submit a Slurm job to build a Spark cluster."""
-    configure_logging_to_terminal(verbose)
-    config = Config(
-        pipeline_specification=None,
-        computing_environment=computing_environment,
-        input_data=None,
-    )
-    results_dir = Path(results_dir)
-    diagnostics_dir = Path(diagnostics_dir)
-    main = handle_exceptions(
-        func=build_cluster, exceptions_logger=logger, with_debugger=with_debugger
-    )
-    main(
-        config=config,
-        results_dir=results_dir,
-        diagnostics_dir=diagnostics_dir,
-        input_data=[Path(x) for x in input_data],
-        preserve_logs=preserve_logs,
-    )
     logger.info("*** FINISHED ***")

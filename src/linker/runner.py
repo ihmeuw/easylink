@@ -2,7 +2,7 @@ import shutil
 import socket
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 from loguru import logger
 
@@ -29,8 +29,10 @@ def main(
     # Set up computing environment
     if config.computing_environment == "local":
         session = None
+        # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
         runner = run_container
     elif config.computing_environment == "slurm":
+        # Set up a single drmaa.session that is persistent for the duration of the pipeline
         # TODO [MIC-4468]: Check for slurm in a more meaningful way
         hostname = socket.gethostname()
         if "slurm" not in hostname:
@@ -56,6 +58,7 @@ def run_container(
     input_data: List[Path],
     results_dir: Path,
     diagnostics_dir: Path,
+    step_id: str,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -63,22 +66,23 @@ def run_container(
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
+    kwargs = {
+        "input_data": input_data,
+        "results_dir": results_dir,
+        "diagnostics_dir": diagnostics_dir,
+        "step_id": step_id,
+        "config": config,
+    }
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":
         run_with_docker(
-            input_data=input_data,
-            results_dir=results_dir,
-            diagnostics_dir=diagnostics_dir,
             container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
-            config=config,
+            **kwargs,
         )
     elif container_engine == "singularity":
         run_with_singularity(
-            input_data=input_data,
-            results_dir=results_dir,
-            diagnostics_dir=diagnostics_dir,
             container_path=Path(f"{container_full_stem}.sif").resolve(),
-            config=config,
+            **kwargs,
         )
     else:
         if container_engine and container_engine != "undefined":
@@ -94,21 +98,15 @@ def run_container(
             )
         try:
             run_with_docker(
-                input_data=input_data,
-                results_dir=results_dir,
-                diagnostics_dir=diagnostics_dir,
                 container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
-                config=config,
+                **kwargs,
             )
         except Exception as e_docker:
             logger.warning(f"Docker failed with error: '{e_docker}'")
             try:
                 run_with_singularity(
-                    input_data=input_data,
-                    results_dir=results_dir,
-                    diagnostics_dir=diagnostics_dir,
                     container_path=Path(f"{container_full_stem}.sif").resolve(),
-                    config=config,
+                    **kwargs,
                 )
             except Exception as e_singularity:
                 raise RuntimeError(

@@ -1,4 +1,3 @@
-import atexit
 import json
 import os
 import shutil
@@ -6,7 +5,7 @@ import types
 from datetime import datetime
 from pathlib import Path
 from time import sleep
-from typing import Dict, List, Optional, TextIO
+from typing import Dict, List, Optional, TextIO, Tuple
 
 from loguru import logger
 
@@ -30,6 +29,7 @@ def launch_slurm_job(
     input_data: List[str],
     results_dir: Path,
     diagnostics_dir: Path,
+    step_id: str,
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
@@ -46,6 +46,7 @@ def launch_slurm_job(
         container_engine,
         str(results_dir),
         str(diagnostics_dir),
+        step_id,
         step_name,
         implementation_name,
         container_full_stem,
@@ -100,37 +101,40 @@ def submit_spark_cluster_job(
     drmaa: types.ModuleType("drmaa"),
     session: types.ModuleType("drmaa.Session"),
     launcher: TextIO,
+    diagnostics_dir: Path,
+    step_id: str,
     account: str,
     partition: str,
     memory_per_node: int,
     max_runtime: int,
     num_workers: int,
     cpus_per_node: int,
-    preserve_logs: bool = False,
-) -> Path:
+) -> Tuple[Path, str]:
     """Submits a job to launch a Spark cluster.
 
     Args:
         drmaa: DRMAA module.
         session: DRMAA session.
         launcher: Launcher script.
+        diagnostics_dir: Diagnostics directory.
+        step_id: Step ID used for naming the job.
         account: Account to charge.
         partition: Partition to run on.
         memory_per_node: Memory per node in GB.
         max_runtime: Maximum runtime in hours.
         num_workers: Number of workers.
         cpus_per_node: Number of CPUs per node.
-        preserve_logs: Whether to preserve logs.
 
     Returns:
         Path to stderr log, which contains the Spark master URL.
+        Main job ID of the spark cluster.
     """
     jt = session.createJobTemplate()
-    jt.jobName = f"spark_cluster_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    jt.workingDirectory = os.getcwd()
+    jt.jobName = f"spark_cluster_{step_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    jt.workingDirectory = str(diagnostics_dir)
     jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stdout')}"
-    jt.errorPath = f":{str(Path(jt.workingDirectory) / '%A_%a.stderr')}"
+    jt.outputPath = f":{str(Path(jt.workingDirectory) / 'spark_cluster_%A_%a.stdout')}"
+    jt.errorPath = f":{str(Path(jt.workingDirectory) / 'spark_cluster_%A_%a.stderr')}"
     jt.remoteCommand = shutil.which("/bin/bash")
     jt.args = [launcher.name]
     jt.jobEnvironment = {
@@ -145,8 +149,8 @@ def submit_spark_cluster_job(
         f"--cpus-per-task={cpus_per_node}"
     )
     jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
-    error_logs = [Path(jt.workingDirectory) / f"{job}.stderr" for job in jobs]
-    output_logs = [Path(jt.workingDirectory) / f"{job}.stdout" for job in jobs]
+    error_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stderr" for job in jobs]
+    output_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stdout" for job in jobs]
     master_error_log = error_logs[0]
 
     logger.info(
@@ -159,12 +163,6 @@ def submit_spark_cluster_job(
         f"Error logs: {[str(e) for e in error_logs]}"
     )
 
-    if not preserve_logs:
-        for output_log in output_logs:
-            atexit.register(os.remove, output_log)
-        for error_log in error_logs:
-            atexit.register(os.remove, error_log)
-
     # Wait for job to start running
     job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
     while not all(job_statuses):
@@ -176,5 +174,4 @@ def submit_spark_cluster_job(
     logger.info(f"Jobs {jobs} are running")
 
     session.deleteJobTemplate(jt)
-    session.exit()
-    return master_error_log
+    return master_error_log, jobs[0].split("_")[0]

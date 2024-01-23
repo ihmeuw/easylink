@@ -1,36 +1,37 @@
-import atexit
-import os
 import tempfile
 from pathlib import Path
 from time import sleep
-from typing import List, TextIO
+from typing import Any, Dict, List, TextIO, Tuple
 
 from loguru import logger
 
-from linker.configuration import Config
 from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
 
 
 def build_cluster(
-    config: Config,
+    drmaa: "drmaa",
+    session: "drmaa.Session",
+    resources: Dict[str, Any],
+    step_id: str,
     results_dir: Path,
     diagnostics_dir: Path,
     input_data: List[Path],
-    preserve_logs: bool = False,
-) -> str:
-    """Builds a Spark cluster. Main function for the `build-spark-cluster` command.
+) -> Tuple[str, str]:
+    """Builds a Spark cluster.
 
     Args:
-        config: Config object.
-        preserve_logs: Whether to preserve logs.
+        drmaa: DRMAA module.
+        session: DRMAA session.
+        resources: Resources for the Spark cluster.
+        step_id: Step ID for naming jobs.
+        results_dir: Results directory.
+        diagnostics_dir: Diagnostics directory.
+        input_data: Input data.
 
     Returns:
         spark_master_url: Spark master URL.
     """
-    drmaa = get_slurm_drmaa()
-    session = drmaa.Session()
-    session.initialize()
 
     # call build_launch_script
     launcher = build_cluster_launch_script(
@@ -38,27 +39,26 @@ def build_cluster(
         diagnostics_dir=diagnostics_dir,
         input_data=input_data,
     )
-    if not preserve_logs:
-        atexit.register(lambda: os.remove(launcher.name))
 
     # submit job, get logfile for master node
-    logfile = submit_spark_cluster_job(
+    logfile, job_id = submit_spark_cluster_job(
         drmaa=drmaa,
         session=session,
         launcher=launcher,
-        account=config.environment["slurm"]["account"],
-        partition=config.environment["slurm"]["partition"],
-        memory_per_node=config.environment["spark"]["workers"]["mem_per_node"],
-        max_runtime=config.environment["spark"]["workers"]["time_limit"],
-        num_workers=config.environment["spark"]["workers"]["num_workers"],
-        cpus_per_node=config.environment["spark"]["workers"]["cpus_per_node"],
-        preserve_logs=preserve_logs,
+        diagnostics_dir=diagnostics_dir,
+        step_id=step_id,
+        account=resources["slurm"]["account"],
+        partition=resources["slurm"]["partition"],
+        memory_per_node=resources["spark"]["workers"]["mem_per_node"],
+        max_runtime=resources["spark"]["workers"]["time_limit"],
+        num_workers=resources["spark"]["workers"]["num_workers"],
+        cpus_per_node=resources["spark"]["workers"]["cpus_per_node"],
     )
 
     spark_master_url = find_spark_master_url(logfile)
     webui_url = spark_master_url.replace("spark://", "http://").replace(":28508", ":28509")
     logger.info(f"Spark master URL: {spark_master_url})\n" f"Spark web UI URL: {webui_url}")
-    return spark_master_url
+    return spark_master_url, job_id
 
 
 def build_cluster_launch_script(
@@ -71,7 +71,7 @@ def build_cluster_launch_script(
     """
     launcher = tempfile.NamedTemporaryFile(
         mode="w",
-        dir=".",
+        dir=diagnostics_dir,
         prefix="spark_cluster_launcher_",
         suffix=".sh",
         delete=False,
@@ -137,7 +137,7 @@ fi
     return launcher
 
 
-def find_spark_master_url(logfile: Path) -> str:
+def find_spark_master_url(logfile: Path, attempt_sleep_time: int = 10) -> str:
     """Finds the Spark master URL in the logfile.
 
     Args:
@@ -148,10 +148,31 @@ def find_spark_master_url(logfile: Path) -> str:
     """
     logger.debug(f"Searching for Spark master URL in {logfile}")
     spark_master_url = ""
-    while spark_master_url == "":
-        sleep(5)
-        with open(logfile, "r") as f:
-            for line in f:
-                if "Starting Spark master at" in line:
-                    spark_master_url = line.split(" ")[-1:]
+    read_logfile_attempt = 0
+    while spark_master_url == "" and read_logfile_attempt < 10:
+        read_logfile_attempt += 1
+        sleep(attempt_sleep_time)
+        try:
+            with open(logfile, "r") as f:
+                for line in f:
+                    if "Starting Spark master at" in line:
+                        spark_master_url = line.split(" ")[-1:]
+                if spark_master_url == "":
+                    logger.warning(
+                        f"Unable to find Spark master URL in logfile. Waiting {attempt_sleep_time} seconds and retrying...\n"
+                        f"(attempt {read_logfile_attempt}/10)"
+                    )
+        except FileNotFoundError:
+            logger.warning(
+                f"Logfile {logfile} not found. Waiting {attempt_sleep_time} seconds and retrying...\n"
+                f"(attempt {read_logfile_attempt}/10)"
+            )
+            continue
+
+    if spark_master_url == "":
+        raise FileNotFoundError(
+            f"Could not find expected logfile {logfile} and so could not extract "
+            "the spark cluster master URL."
+        )
+
     return spark_master_url[0].strip()
