@@ -1,5 +1,5 @@
 # spark_cluster container
-NOTE: Use of `linker build-spark-cluster` currently requires building an image from this directory.
+NOTE: Spinning up a spark cluster using `linker` currently requires building an image from this directory.
 
 This is done by running the following commands from this directory:
 

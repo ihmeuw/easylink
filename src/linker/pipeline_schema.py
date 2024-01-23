@@ -1,14 +1,12 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from linker.step import Step
 from linker.utilities.data_utils import validate_dummy_output
 
 
 class PipelineSchema:
-    """Defines the allowable schema for the pipeline and maintains the
-    pipeline validation methods.
-    """
+    """Defines the allowable schema(s) for the pipeline."""
 
     def __init__(self, name) -> None:
         self.name = name

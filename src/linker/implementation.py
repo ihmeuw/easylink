@@ -1,8 +1,12 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
+from loguru import logger
+
 from linker.step import Step
 from linker.utilities.data_utils import load_yaml
+from linker.utilities.slurm_utils import get_slurm_drmaa
+from linker.utilities.spark_utils import build_cluster
 
 
 class Implementation:
@@ -12,14 +16,17 @@ class Implementation:
         implementation_name: str,
         implementation_config: Optional[Dict[str, Any]],
         container_engine: str,
+        resources: Dict[str, Any],
     ):
         self.step = step
         self._pipeline_step_name = step.name
         self.name = implementation_name
         self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
+        self._resources = resources
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
+        self.requires_spark = self._metadata[self.name].get("requires_spark", False)
         self._container_full_stem = self._get_container_full_stem()
 
     def __repr__(self) -> str:
@@ -27,22 +34,49 @@ class Implementation:
 
     def run(
         self,
+        session: Optional["drmaa.Session"],
         runner: Callable,
         container_engine: str,
+        step_id: str,
         input_data: List[Path],
         results_dir: Path,
         diagnostics_dir: Path,
     ) -> None:
+        logger.info(f"Running pipeline step ID {step_id}")
+        if self.requires_spark and session:
+            # having an active drmaa session implies we are running on a slurm cluster
+            # (i.e. not 'local' computing environment) and so need to spin up a spark
+            # cluster instead of relying on the implementation to do it in a container
+            drmaa = get_slurm_drmaa()
+            spark_master_url, job_id = build_cluster(
+                drmaa=drmaa,
+                session=session,
+                resources=self._resources,
+                step_id=step_id,
+                results_dir=results_dir,
+                diagnostics_dir=diagnostics_dir,
+                input_data=input_data,
+            )
+            # Add the spark master url to implementation config
+            if not self.config:
+                self.config = {}
+            self.config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
+
         runner(
             container_engine=container_engine,
             input_data=input_data,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
+            step_id=step_id,
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
             config=self.config,
         )
+
+        if self.requires_spark and session:
+            logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
+            session.control(job_id, drmaa.JobControlAction.TERMINATE)
 
         for results_file in results_dir.glob("result.parquet"):
             self.step.validate_output(results_file)

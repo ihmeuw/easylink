@@ -10,10 +10,11 @@ def run_with_singularity(
     input_data: List[Path],
     results_dir: Path,
     diagnostics_dir: Path,
+    step_id: str,
     container_path: Path,
     config: Optional[Dict[str, str]],
 ) -> None:
-    logger.info("Running container with singularity")
+    logger.info(f"Running step {step_id} container with singularity")
     _run_container(input_data, results_dir, diagnostics_dir, container_path, config)
     _clean(results_dir, container_path)
 

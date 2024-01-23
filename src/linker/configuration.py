@@ -1,5 +1,7 @@
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
+
+from loguru import logger
 
 from linker.utilities.data_utils import load_yaml
 
@@ -26,6 +28,7 @@ class Config:
 
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
+        self.spark = self.environment.get("spark", None)
         self._validate()
 
     def get_resources(self) -> Dict[str, str]:
@@ -34,8 +37,11 @@ class Config:
             **self.environment[self.environment["computing_environment"]],
         }
 
-    def get_spark_resources(self) -> Dict[str, str]:
-        return {**self.environment["spark"]}
+    def get_implementation_name(self, step_name: str) -> str:
+        return self.pipeline["steps"][step_name]["implementation"]["name"]
+
+    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
+        return self.pipeline["steps"][step_name]["implementation"].get("configuration", None)
 
     #################
     # Setup Methods #
@@ -47,6 +53,14 @@ class Config:
         if not self.container_engine in ["docker", "singularity", "undefined"]:
             raise NotImplementedError(
                 f"Container engine '{self.container_engine}' is not supported."
+            )
+        if self.spark and self.computing_environment == "local":
+            logger.warning(
+                "Spark resource requests are not supported in a "
+                "local computing environment; these requests will be ignored. The "
+                "implementation itself is responsible for spinning up a spark cluster "
+                "inside of the relevant container.\n"
+                f"Ignored spark cluster requests: {self.spark}"
             )
 
     @staticmethod

@@ -12,6 +12,7 @@ def test_implementation_is_missing_from_metadata():
         Implementation(
             step=Step("some-step"),
             implementation_name="some-other-implementation",
-            container_engine="undefined",
             implementation_config=None,
+            container_engine="undefined",
+            resources={"foo": "bar"},
         )
