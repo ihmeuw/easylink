@@ -136,8 +136,12 @@ def test_bad_input_data(test_dir, caplog, mocker):
         error_no=errno.EINVAL,
         expected_msg={
             "INPUT DATA ERRORS": {
-                ".*/broken_file1.csv": ["- Data file .* is missing required column\\(s\\) .*"],
-                ".*/broken_file2.csv": ["- Data file .* is missing required column\\(s\\) .*"],
+                ".*/broken_file1.csv": [
+                    "- Data file .* is missing required column\\(s\\) .*"
+                ],
+                ".*/broken_file2.csv": [
+                    "- Data file .* is missing required column\\(s\\) .*"
+                ],
             }
         },
     )
