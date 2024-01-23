@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from linker.step import Step
-from linker.utilities.data_utils import load_yaml
 from loguru import logger
 
+from linker.step import Step
+from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import get_slurm_drmaa
 from linker.utilities.spark_utils import build_cluster
 
@@ -77,10 +77,9 @@ class Implementation:
         if self.requires_spark and session:
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
-        
+
         for results_file in results_dir.glob("result.parquet"):
             self.step.validate_output(results_file)
-        
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
