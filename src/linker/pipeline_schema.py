@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from linker.step import Step
 from linker.utilities.data_utils import validate_dummy_output
