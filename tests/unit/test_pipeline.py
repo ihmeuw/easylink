@@ -166,6 +166,7 @@ def test_batch_validation():
 def check_expected_validation_exit(config, caplog, error_no, expected_msg):
     with pytest.raises(SystemExit) as e:
         Pipeline(config)
+        
     assert e.value.code == error_no
     # We should only have one record
     assert len(caplog.record_tuples) == 1
@@ -176,6 +177,7 @@ def check_expected_validation_exit(config, caplog, error_no, expected_msg):
     msg = re.sub("\n+", " ", msg)
     msg = re.sub(" +", " ", msg).strip()
     msg = re.sub("''", "'", msg)
+    all_matches = []
     for error_type, schemas in expected_msg.items():
         expected_pattern = [error_type + ":"]
         for schema, messages in schemas.items():
@@ -184,4 +186,9 @@ def check_expected_validation_exit(config, caplog, error_no, expected_msg):
                 expected_pattern.append(" " + message)
         pattern = re.compile("".join(expected_pattern))
         # regex_patterns.append(pattern)
-        assert pattern.search(msg)
+        match = pattern.search(msg)
+        assert match
+        all_matches.append(match)
+
+    covered_text = "".join(match.group(0) for match in all_matches)
+    assert len(covered_text) == len(msg)
