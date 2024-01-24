@@ -92,13 +92,11 @@ class Pipeline:
 
         import yaml
 
-        errors = {}
-        for validation in [
-            self._validate_pipeline,
-            self._validate_implementations,
-            self._validate_input_data,
-        ]:
-            errors.update(validation())
+        errors = {
+            **self._validate_pipeline(),
+            **self._validate_implementations(),
+            **self._validate_input_data(),
+            }
         if errors:
             yaml_str = yaml.dump(errors)
             logger.error(
