@@ -28,7 +28,7 @@ class Config:
 
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
-        self.spark = self.environment.get("spark", None)
+        self.spark = self._get_spark_requests(self.environment)
         self._validate()
 
     def get_resources(self) -> Dict[str, str]:
@@ -85,3 +85,12 @@ class Config:
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list
+
+    @staticmethod
+    def _get_spark_requests(
+        environment: Dict[str, Union[Dict, str]]
+    ) -> Optional[Dict[str, Any]]:
+        spark = environment.get("spark", None)
+        if not "keep_alive" in spark:
+            spark["keep_alive"] = False
+        return spark
