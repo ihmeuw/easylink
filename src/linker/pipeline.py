@@ -17,7 +17,7 @@ class Pipeline:
         self.config = config
         self.steps = self._get_steps()
         self.implementations = self._get_implementations()
-        self._validation_errors = {}
+        self.schema = None
         self._validate()
 
     def run(
@@ -134,6 +134,7 @@ class Pipeline:
                 errors["PIPELINE ERRORS"][schema.name] = logs
                 pass  # try the next schema
             else:
+                self.schema = schema
                 return {}  # we have a winner
         # No schemas were validated
         return errors
@@ -150,7 +151,7 @@ class Pipeline:
     def _validate_input_data(self) -> Dict:
         errors = defaultdict(dict)
         for input_filepath in self.config.input_data:
-            input_data_errors = PipelineSchema.validate_input(input_filepath)
+            input_data_errors = self.schema.validate_input(input_filepath) if self.schema else None
             if input_data_errors:
                 errors["INPUT DATA ERRORS"][str(input_filepath)] = input_data_errors
         return errors
