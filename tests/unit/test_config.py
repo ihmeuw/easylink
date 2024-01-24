@@ -49,10 +49,3 @@ def test_default_container_engine(test_dir):
     """The container engine value should default to 'undefined'"""
     config = Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/input_data.yaml", None)
     assert config.container_engine == "undefined"
-
-
-def test_broken_input_files(test_dir):
-    with pytest.raises(
-        LookupError, match=r"^Data file .* is missing required column\(s\) .*"
-    ):
-        Config(f"{test_dir}/pipeline.yaml", f"{test_dir}/bad_columns_input_data.yaml", None)

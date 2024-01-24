@@ -3,7 +3,6 @@ from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from linker.pipeline_schema import PipelineSchema
 from linker.utilities.data_utils import load_yaml
 
 
@@ -63,10 +62,6 @@ class Config:
                 "inside of the relevant container.\n"
                 f"Ignored spark cluster requests: {self.spark}"
             )
-
-        # Validate input data against constraints
-        for input_file in self.input_data:
-            PipelineSchema.validate_input(input_file)
 
     @staticmethod
     def _load_computing_environment(

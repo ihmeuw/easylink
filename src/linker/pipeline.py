@@ -1,10 +1,12 @@
+from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
 from loguru import logger
 
 from linker.configuration import Config
 from linker.implementation import Implementation
+from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.step import Step
 
 
@@ -90,14 +92,13 @@ class Pipeline:
 
         import yaml
 
-        validations = []
-        for validation in [
-            self._validate_pipeline,
-            self._validate_implementations,
-        ]:
-            validations.append(validation())
-        if not all(validations):
-            yaml_str = yaml.dump(self._validation_errors)
+        errors = {
+            **self._validate_pipeline(),
+            **self._validate_implementations(),
+            **self._validate_input_data(),
+        }
+        if errors:
+            yaml_str = yaml.dump(errors)
             logger.error(
                 "\n\n=========================================="
                 "\nValidation errors found. Please see below."
@@ -107,12 +108,10 @@ class Pipeline:
             )
             exit(errno.EINVAL)
 
-    def _validate_pipeline(self) -> bool:
+    def _validate_pipeline(self) -> Dict:
         """Validates the pipeline against supported schemas."""
 
-        from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-
-        errors = {}
+        errors = defaultdict(dict)
         for schema in PIPELINE_SCHEMAS:
             logs = []
             # Check that number of schema steps matches number of implementations
@@ -132,23 +131,26 @@ class Pipeline:
                             "Check step order and spelling in the pipeline configuration yaml."
                         )
             if logs:
-                errors[schema.name] = logs
+                errors["PIPELINE ERRORS"][schema.name] = logs
                 pass  # try the next schema
             else:
-                return True  # we have a winner
+                return {}  # we have a winner
         # No schemas were validated
-        self._validation_errors["PIPELINE ERRORS"] = errors
-        return False
+        return errors
 
-    def _validate_implementations(self) -> bool:
+    def _validate_implementations(self) -> Dict:
         """Validates each individual Implementation instance."""
-        errors = {}
+        errors = defaultdict(dict)
         for implementation in self.implementations:
             implementation_errors = implementation.validate()
             if implementation_errors:
-                errors[implementation.name] = implementation_errors
-        if errors:
-            self._validation_errors["IMPLEMENTATION ERRORS"] = errors
-            return False
-        else:
-            return True
+                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
+        return errors
+
+    def _validate_input_data(self) -> Dict:
+        errors = defaultdict(dict)
+        for input_filepath in self.config.input_data:
+            input_data_errors = PipelineSchema.validate_input(input_filepath)
+            if input_data_errors:
+                errors["INPUT DATA ERRORS"][str(input_filepath)] = input_data_errors
+        return errors
