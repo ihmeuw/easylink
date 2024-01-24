@@ -96,7 +96,7 @@ class Pipeline:
             **self._validate_pipeline(),
             **self._validate_implementations(),
             **self._validate_input_data(),
-            }
+        }
         if errors:
             yaml_str = yaml.dump(errors)
             logger.error(
