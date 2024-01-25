@@ -1,5 +1,4 @@
 import errno
-import re
 from pathlib import Path
 
 import pytest
