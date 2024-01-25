@@ -91,6 +91,6 @@ class Config:
         environment: Dict[str, Union[Dict, str]]
     ) -> Optional[Dict[str, Any]]:
         spark = environment.get("spark", None)
-        if not "keep_alive" in spark:
+        if spark and not "keep_alive" in spark:
             spark["keep_alive"] = False
         return spark
