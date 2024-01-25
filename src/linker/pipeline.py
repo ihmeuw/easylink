@@ -9,7 +9,7 @@ class Pipeline:
 
     def __init__(self, config: Config):
         self.config = config
-        self.implementations = self.config.implementations
+        self.implementations = config.implementations
 
     def run(
         self,
