@@ -1,10 +1,9 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
-from linker.implementation import Implementation
 from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
@@ -34,7 +33,6 @@ class Config:
         self.container_engine = self.environment.get("container_engine", "undefined")
         self.spark = self.environment.get("spark", None)
         self.schema = self._get_schema()
-        self.implementations = self._get_implementations()
         self._validate()
 
     def get_resources(self) -> Dict[str, str]:
@@ -42,12 +40,6 @@ class Config:
             **self.environment["implementation_resources"],
             **self.environment[self.environment["computing_environment"]],
         }
-
-    def get_implementation_name(self, step_name: str) -> str:
-        return self.pipeline["steps"][step_name]["implementation"]["name"]
-
-    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
-        return self.pipeline["steps"][step_name]["implementation"].get("configuration", None)
 
     #################
     # Setup Methods #
@@ -83,23 +75,9 @@ class Config:
         # No schemas were validated
         exit_with_validation_error(dict(errors))
 
-    def _get_implementations(self) -> Tuple[Implementation, ...]:
-        resources = {key: self.environment.get(key) for key in ["slurm", "spark"]}
-        return tuple(
-            Implementation(
-                step=step,
-                implementation_name=self.get_implementation_name(step.name),
-                implementation_config=self.get_implementation_config(step.name),
-                container_engine=self.container_engine,
-                resources=resources,
-            )
-            for step in self.schema.steps
-        )
-
     def _validate(self) -> None:
         errors = {
             **self._validate_files(),
-            **self._validate_implementations(),
             **self._validate_input_data(),
         }
         if errors:

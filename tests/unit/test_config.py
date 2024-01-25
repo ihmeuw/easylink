@@ -6,7 +6,11 @@ import pytest
 
 from linker.configuration import Config
 from linker.step import Step
-from tests.unit.conftest import ENV_CONFIG_DICT, PIPELINE_CONFIG_DICT
+from tests.unit.conftest import (
+    ENV_CONFIG_DICT,
+    PIPELINE_CONFIG_DICT,
+    check_expected_validation_exit,
+)
 
 
 def test_config_instantiation(test_dir, default_config):
@@ -22,13 +26,6 @@ def test_config_instantiation(test_dir, default_config):
 def test__get_schema(default_config):
     """Test that the schema is correctly loaded from the pipeline.yaml"""
     assert default_config.schema.steps == [Step("pvs_like_case_study")]
-
-
-def test__get_implementations(default_config):
-    implementation_names = [
-        implementation.name for implementation in default_config.implementations
-    ]
-    assert implementation_names == ["pvs_like_python"]
 
 
 @pytest.mark.parametrize("input_data", ["good", "bad"])
@@ -109,74 +106,6 @@ def test_unsupported_step(test_dir, caplog, dummy_config, mocker):
     )
 
 
-def test_no_container(test_dir, caplog, mocker):
-    mocker.patch(
-        "linker.implementation.Implementation._get_container_full_stem",
-        return_value=Path("some/path/with/no/container"),
-    )
-    mocker.PropertyMock(
-        "linker.implementation.Implementation._container_engine", return_value="unknown"
-    )
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
-    }
-
-    with pytest.raises(SystemExit) as e:
-        Config(**config_params)
-
-    check_expected_validation_exit(
-        error=e,
-        caplog=caplog,
-        error_no=errno.EINVAL,
-        expected_msg={
-            "IMPLEMENTATION ERRORS": {
-                "pvs_like_python": [
-                    "- Container 'some/path/with/no/container' does not exist.",
-                ],
-            },
-        },
-    )
-
-
-def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
-    mocker.patch(
-        "linker.implementation.Implementation._load_metadata",
-        return_value={
-            "pvs_like_python": {
-                "step": "step-1",
-                "path": "/some/path",
-                "name": "some-name",
-            },
-        },
-    )
-    mocker.patch(
-        "linker.implementation.Implementation._validate_container_exists",
-        side_effect=lambda x: x,
-    )
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
-    }
-    with pytest.raises(SystemExit) as e:
-        Config(**config_params)
-
-    check_expected_validation_exit(
-        error=e,
-        caplog=caplog,
-        error_no=errno.EINVAL,
-        expected_msg={
-            "IMPLEMENTATION ERRORS": {
-                "pvs_like_python": [
-                    "- Implementaton metadata step 'step-1' does not match pipeline configuration step 'pvs_like_case_study'"
-                ]
-            },
-        },
-    )
-
-
 def test_bad_input_data(test_dir, dummy_config, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
@@ -202,36 +131,3 @@ def test_bad_input_data(test_dir, dummy_config, caplog):
             }
         },
     )
-
-
-####################
-# HELPER FUNCTIONS #
-####################
-
-
-def check_expected_validation_exit(error, caplog, error_no, expected_msg):
-    assert error.value.code == error_no
-    # We should only have one record
-    assert len(caplog.record_tuples) == 1
-    # Extract error message
-    msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
-        "Validation errors found. Please see above."
-    )[0]
-    msg = re.sub("\n+", " ", msg)
-    msg = re.sub(" +", " ", msg).strip()
-    msg = re.sub("''", "'", msg)
-    all_matches = []
-    for error_type, schemas in expected_msg.items():
-        expected_pattern = [error_type + ":"]
-        for schema, messages in schemas.items():
-            expected_pattern.append(" " + schema + ":")
-            for message in messages:
-                expected_pattern.append(" " + message)
-        pattern = re.compile("".join(expected_pattern))
-        # regex_patterns.append(pattern)
-        match = pattern.search(msg)
-        assert match
-        all_matches.append(match)
-
-    covered_text = "".join(match.group(0) for match in all_matches)
-    assert len(covered_text) == len(msg)

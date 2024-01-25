@@ -1,3 +1,4 @@
+import re
 from typing import Dict
 
 import pytest
@@ -147,3 +148,36 @@ def dummy_config(mocker) -> Config:
 def default_config(dummy_config, default_config_params) -> Config:
     """A good/known Config object"""
     return dummy_config(default_config_params)
+
+
+####################
+# HELPER FUNCTIONS #
+####################
+
+
+def check_expected_validation_exit(error, caplog, error_no, expected_msg):
+    assert error.value.code == error_no
+    # We should only have one record
+    assert len(caplog.record_tuples) == 1
+    # Extract error message
+    msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
+        "Validation errors found. Please see above."
+    )[0]
+    msg = re.sub("\n+", " ", msg)
+    msg = re.sub(" +", " ", msg).strip()
+    msg = re.sub("''", "'", msg)
+    all_matches = []
+    for error_type, schemas in expected_msg.items():
+        expected_pattern = [error_type + ":"]
+        for schema, messages in schemas.items():
+            expected_pattern.append(" " + schema + ":")
+            for message in messages:
+                expected_pattern.append(" " + message)
+        pattern = re.compile("".join(expected_pattern))
+        # regex_patterns.append(pattern)
+        match = pattern.search(msg)
+        assert match
+        all_matches.append(match)
+
+    covered_text = "".join(match.group(0) for match in all_matches)
+    assert len(covered_text) == len(msg)
