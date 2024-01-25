@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
 from linker.configuration import Config
 from linker.implementation import Implementation
@@ -20,8 +20,8 @@ class Pipeline:
         return tuple(
             Implementation(
                 step=step,
-                implementation_name=self.get_implementation_name(step.name),
-                implementation_config=self.get_implementation_config(step.name),
+                implementation_name=self.config.get_implementation_name(step.name),
+                implementation_config=self.config.get_implementation_config(step.name),
                 container_engine=self.config.container_engine,
                 resources=resources,
             )

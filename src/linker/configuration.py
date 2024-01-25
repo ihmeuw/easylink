@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -141,3 +141,9 @@ class Config:
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list
+
+    def get_implementation_name(self, step_name: str) -> str:
+        return self.pipeline["steps"][step_name]["implementation"]["name"]
+
+    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
+        return self.pipeline["steps"][step_name]["implementation"].get("configuration", None)
