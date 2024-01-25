@@ -1,3 +1,5 @@
+from typing import Dict
+
 import pytest
 import yaml
 
@@ -118,11 +120,30 @@ def test_dir(tmpdir_factory) -> str:
     return str(tmp_path)
 
 
-@pytest.fixture(scope="session")
-def config(test_dir) -> Config:
-    """A good/known Config object"""
-    return Config(
-        f"{test_dir}/pipeline.yaml",
-        f"{test_dir}/input_data.yaml",
-        f"{test_dir}/environment.yaml",
+@pytest.fixture()
+def default_config_params(test_dir) -> Dict[str, str]:
+    return {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/input_data.yaml",
+        "computing_environment": f"{test_dir}/environment.yaml",
+    }
+
+
+@pytest.fixture()
+def dummy_config(mocker) -> Config:
+    """Instantiate a Config that skips Implementation validation"""
+    mocker.patch(
+        "linker.implementation.Implementation._validate_container_exists",
+        side_effect=lambda x: x,
     )
+
+    def _make_dummy_config(config_params: Dict[str, str]):
+        return Config(**config_params)
+
+    return _make_dummy_config
+
+
+@pytest.fixture()
+def default_config(dummy_config, default_config_params) -> Config:
+    """A good/known Config object"""
+    return dummy_config(default_config_params)
