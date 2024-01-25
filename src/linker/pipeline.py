@@ -15,14 +15,6 @@ class Pipeline:
         self.implementations = self._get_implementations()
         self._validate()
 
-    def get_implementation_name(self, step_name: str) -> str:
-        return self.config.pipeline["steps"][step_name]["implementation"]["name"]
-
-    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
-        return self.config.pipeline["steps"][step_name]["implementation"].get(
-            "configuration", None
-        )
-
     def _get_implementations(self) -> Tuple[Implementation, ...]:
         resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
         return tuple(
