@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Callable
+from typing import Callable, List, Optional
 
 from linker.step import Step
 from linker.utilities.data_utils import validate_dummy_output
@@ -49,6 +49,7 @@ class PipelineSchema:
         for step in steps:
             schema._add_step(step)
         return schema
+
 
 def validate_dummy_input(filepath: Path) -> Optional[List[str]]:
     "Wrap the output file validator for now, since it is the same"

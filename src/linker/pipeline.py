@@ -1,13 +1,7 @@
-from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Dict, Optional, Tuple
-
-from loguru import logger
+from typing import Callable, Optional
 
 from linker.configuration import Config
-from linker.implementation import Implementation
-from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-from linker.step import Step
 
 
 class Pipeline:
@@ -15,10 +9,7 @@ class Pipeline:
 
     def __init__(self, config: Config):
         self.config = config
-        self.steps = self._get_steps()
-        self.implementations = self._get_implementations()
-        self.schema = None
-        self._validate()
+        self.implementations = self.config.implementations
 
     def run(
         self,
@@ -66,92 +57,3 @@ class Pipeline:
         # Close the drmaa session (if one exists) once the pipeline is finished
         if session:
             session.exit()
-
-    #################
-    # Setup methods #
-    #################
-
-    def _get_steps(self) -> Tuple[Step, ...]:
-        return tuple(Step(step) for step in self.config.pipeline["steps"])
-
-    def _get_implementations(self) -> Tuple[Implementation, ...]:
-        resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
-        return tuple(
-            Implementation(
-                step=step,
-                implementation_name=self.config.get_implementation_name(step.name),
-                implementation_config=self.config.get_implementation_config(step.name),
-                container_engine=self.config.container_engine,
-                resources=resources,
-            )
-            for step in self.steps
-        )
-
-    def _validate(self) -> None:
-        import errno
-
-        import yaml
-
-        errors = {
-            **self._validate_pipeline(),
-            **self._validate_implementations(),
-            **self._validate_input_data(),
-        }
-        if errors:
-            yaml_str = yaml.dump(errors)
-            logger.error(
-                "\n\n=========================================="
-                "\nValidation errors found. Please see below."
-                f"\n\n{yaml_str}"
-                "\nValidation errors found. Please see above."
-                "\n==========================================\n"
-            )
-            exit(errno.EINVAL)
-
-    def _validate_pipeline(self) -> Dict:
-        """Validates the pipeline against supported schemas."""
-
-        errors = defaultdict(dict)
-        for schema in PIPELINE_SCHEMAS:
-            logs = []
-            # Check that number of schema steps matches number of implementations
-            if len(schema.steps) != len(self.implementations):
-                logs.append(
-                    f"Expected {len(schema.steps)} steps but found {len(self.implementations)} implementations."
-                )
-            else:
-                for idx, implementation in enumerate(self.implementations):
-                    # Check that all steps are accounted for and in the correct order
-                    schema_step = schema.steps[idx].name
-                    pipeline_step = implementation._pipeline_step_name
-                    if pipeline_step != schema_step:
-                        logs.append(
-                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
-                            f"but the provided pipeline specifies '{pipeline_step}'. "
-                            "Check step order and spelling in the pipeline configuration yaml."
-                        )
-            if logs:
-                errors["PIPELINE ERRORS"][schema.name] = logs
-                pass  # try the next schema
-            else:
-                self.schema = schema
-                return {}  # we have a winner
-        # No schemas were validated
-        return errors
-
-    def _validate_implementations(self) -> Dict:
-        """Validates each individual Implementation instance."""
-        errors = defaultdict(dict)
-        for implementation in self.implementations:
-            implementation_errors = implementation.validate()
-            if implementation_errors:
-                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
-        return errors
-
-    def _validate_input_data(self) -> Dict:
-        errors = defaultdict(dict)
-        for input_filepath in self.config.input_data:
-            input_data_errors = self.schema.validate_input(input_filepath) if self.schema else None
-            if input_data_errors:
-                errors["INPUT DATA ERRORS"][str(input_filepath)] = input_data_errors
-        return errors

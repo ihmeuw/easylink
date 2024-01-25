@@ -1,9 +1,13 @@
+from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from loguru import logger
 
+from linker.implementation import Implementation
+from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities.data_utils import load_yaml
+from linker.utilities.general_utils import exit_with_validation_error
 
 
 class Config:
@@ -29,6 +33,8 @@ class Config:
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
         self.spark = self.environment.get("spark", None)
+        self.schema = self._get_schema()
+        self.implementations = self._get_implementations()
         self._validate()
 
     def get_resources(self) -> Dict[str, str]:
@@ -47,13 +53,66 @@ class Config:
     # Setup Methods #
     #################
 
-    def _validate(self) -> None:
-        # TODO [MIC-4723]: validate configuration files
+    def _get_schema(self) -> Optional[PipelineSchema]:
+        """Validates the pipeline against supported schemas."""
 
-        if not self.container_engine in ["docker", "singularity", "undefined"]:
-            raise NotImplementedError(
-                f"Container engine '{self.container_engine}' is not supported."
+        errors = defaultdict(dict)
+        for schema in PIPELINE_SCHEMAS:
+            logs = []
+            config_steps = self.pipeline["steps"].keys()
+            # Check that number of schema steps matches number of implementations
+            if len(schema.steps) != len(config_steps):
+                logs.append(
+                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations."
+                )
+            else:
+                for idx, config_step in enumerate(config_steps):
+                    # Check that all steps are accounted for and in the correct order
+                    schema_step = schema.steps[idx].name
+                    if config_step != schema_step:
+                        logs.append(
+                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
+                            f"but the provided pipeline specifies '{config_step}'. "
+                            "Check step order and spelling in the pipeline configuration yaml."
+                        )
+            if logs:
+                errors["PIPELINE ERRORS"][schema.name] = logs
+                pass  # try the next schema
+            else:
+                return schema
+        # No schemas were validated
+        exit_with_validation_error(dict(errors))
+
+    def _get_implementations(self) -> Tuple[Implementation, ...]:
+        resources = {key: self.environment.get(key) for key in ["slurm", "spark"]}
+        return tuple(
+            Implementation(
+                step=step,
+                implementation_name=self.get_implementation_name(step.name),
+                implementation_config=self.get_implementation_config(step.name),
+                container_engine=self.container_engine,
+                resources=resources,
             )
+            for step in self.schema.steps
+        )
+
+    def _validate(self) -> None:
+        errors = {
+            **self._validate_files(),
+            **self._validate_implementations(),
+            **self._validate_input_data(),
+        }
+        if errors:
+            exit_with_validation_error(errors)
+
+    def _validate_files(self) -> Dict:
+        # TODO [MIC-4723]: validate configuration files
+        errors = defaultdict(dict)
+        if not self.container_engine in ["docker", "singularity", "undefined"]:
+            errors["CONFIGURATION ERRORS"][
+                self.computing_environment
+            ] = f"Container engine '{self.container_engine}' is not supported."
+
         if self.spark and self.computing_environment == "local":
             logger.warning(
                 "Spark resource requests are not supported in a "
@@ -62,6 +121,25 @@ class Config:
                 "inside of the relevant container.\n"
                 f"Ignored spark cluster requests: {self.spark}"
             )
+
+        return errors
+
+    def _validate_implementations(self) -> Dict:
+        """Validates each individual Implementation instance."""
+        errors = defaultdict(dict)
+        for implementation in self.implementations:
+            implementation_errors = implementation.validate()
+            if implementation_errors:
+                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
+        return errors
+
+    def _validate_input_data(self) -> Dict:
+        errors = defaultdict(dict)
+        for input_filepath in self.input_data:
+            input_data_errors = self.schema.validate_input(input_filepath)
+            if input_data_errors:
+                errors["INPUT DATA ERRORS"][str(input_filepath)] = input_data_errors
+        return errors
 
     @staticmethod
     def _load_computing_environment(

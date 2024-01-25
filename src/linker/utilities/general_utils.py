@@ -1,8 +1,10 @@
+import errno
 import functools
 import sys
 from bdb import BdbQuit
-from typing import Any, Callable, TextIO
+from typing import Any, Callable, Dict, TextIO
 
+import yaml
 from loguru import logger
 
 
@@ -81,3 +83,23 @@ def _add_logging_sink(
             format=message_format,
             serialize=serialize,
         )
+
+
+def exit_with_validation_error(error_msg: Dict) -> None:
+    """Exits the program with a validation error.
+
+    Parameters
+    ----------
+    error_msg
+        The error message to print to the user.
+
+    """
+
+    logger.error(
+        "\n\n=========================================="
+        "\nValidation errors found. Please see below."
+        f"\n\n{yaml.dump(error_msg)}"
+        "\nValidation errors found. Please see above."
+        "\n==========================================\n"
+    )
+    exit(errno.EINVAL)
