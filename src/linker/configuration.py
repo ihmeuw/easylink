@@ -40,7 +40,7 @@ class Config:
             **self.environment["implementation_resources"],
             **self.environment[self.environment["computing_environment"]],
         }
-    
+
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
 
