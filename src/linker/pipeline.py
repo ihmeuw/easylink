@@ -15,36 +15,6 @@ class Pipeline:
         self.implementations = self._get_implementations()
         self._validate()
 
-    def _get_implementations(self) -> Tuple[Implementation, ...]:
-        resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
-        return tuple(
-            Implementation(
-                step=step,
-                implementation_name=self.config.get_implementation_name(step.name),
-                implementation_config=self.config.get_implementation_config(step.name),
-                container_engine=self.config.container_engine,
-                resources=resources,
-            )
-            for step in self.config.schema.steps
-        )
-
-    def _validate(self) -> None:
-        """Validates the pipeline."""
-
-        errors = {**self._validate_implementations()}
-
-        if errors:
-            exit_with_validation_error(errors)
-
-    def _validate_implementations(self) -> Dict:
-        """Validates each individual Implementation instance."""
-        errors = defaultdict(dict)
-        for implementation in self.implementations:
-            implementation_errors = implementation.validate()
-            if implementation_errors:
-                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
-        return errors
-
     def run(
         self,
         runner: Callable,
@@ -90,3 +60,33 @@ class Pipeline:
         # Close the drmaa session (if one exists) once the pipeline is finished
         if session:
             session.exit()
+            
+    def _get_implementations(self) -> Tuple[Implementation, ...]:
+        resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
+        return tuple(
+            Implementation(
+                step=step,
+                implementation_name=self.config.get_implementation_name(step.name),
+                implementation_config=self.config.get_implementation_config(step.name),
+                container_engine=self.config.container_engine,
+                resources=resources,
+            )
+            for step in self.config.schema.steps
+        )
+
+    def _validate(self) -> None:
+        """Validates the pipeline."""
+
+        errors = {**self._validate_implementations()}
+
+        if errors:
+            exit_with_validation_error(errors)
+
+    def _validate_implementations(self) -> Dict:
+        """Validates each individual Implementation instance."""
+        errors = defaultdict(dict)
+        for implementation in self.implementations:
+            implementation_errors = implementation.validate()
+            if implementation_errors:
+                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
+        return errors
