@@ -23,10 +23,10 @@ class Implementation:
         self.name = implementation_name
         self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
-        self._resources = resources
+        self.resources = resources
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
-        self.requires_spark = self._metadata[self.name].get("requires_spark", False)
+        self._requires_spark = self._metadata[self.name].get("requires_spark", False)
         self._container_full_stem = self._get_container_full_stem()
 
     def __repr__(self) -> str:
@@ -42,7 +42,7 @@ class Implementation:
         diagnostics_dir: Path,
     ) -> None:
         logger.info(f"Running pipeline step ID {step_id}")
-        if self.requires_spark and session:
+        if self._requires_spark and session:
             # having an active drmaa session implies we are running on a slurm cluster
             # (i.e. not 'local' computing environment) and so need to spin up a spark
             # cluster instead of relying on the implementation to do it in a container
@@ -50,7 +50,7 @@ class Implementation:
             spark_master_url, job_id = build_cluster(
                 drmaa=drmaa,
                 session=session,
-                resources=self._resources,
+                resources=self.resources,
                 step_id=step_id,
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
@@ -73,7 +73,7 @@ class Implementation:
             config=self.config,
         )
 
-        if self.requires_spark and session:
+        if self._requires_spark and session and not self.resources["spark"]["keep_alive"]:
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
 

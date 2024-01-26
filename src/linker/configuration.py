@@ -31,7 +31,7 @@ class Config:
 
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
-        self.spark = self.environment.get("spark", None)
+        self.spark = self._get_spark_requests(self.environment)
         self.schema = self._get_schema()
         self._validate()
 
@@ -40,6 +40,12 @@ class Config:
             **self.environment["implementation_resources"],
             **self.environment[self.environment["computing_environment"]],
         }
+    
+    def get_implementation_name(self, step_name: str) -> str:
+        return self.pipeline["steps"][step_name]["implementation"]["name"]
+
+    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
+        return self.pipeline["steps"][step_name]["implementation"].get("configuration", None)
 
     #################
     # Setup Methods #
@@ -133,8 +139,11 @@ class Config:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list
 
-    def get_implementation_name(self, step_name: str) -> str:
-        return self.pipeline["steps"][step_name]["implementation"]["name"]
-
-    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
-        return self.pipeline["steps"][step_name]["implementation"].get("configuration", None)
+    @staticmethod
+    def _get_spark_requests(
+        environment: Dict[str, Union[Dict, str]]
+    ) -> Optional[Dict[str, Any]]:
+        spark = environment.get("spark", None)
+        if spark and not "keep_alive" in spark:
+            spark["keep_alive"] = False
+        return spark
