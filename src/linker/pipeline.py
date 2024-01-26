@@ -82,7 +82,6 @@ class Pipeline:
             implementation.run(
                 session=session,
                 runner=runner,
-                container_engine=self.config.container_engine,
                 step_id=step_id,
                 input_data=input_data,
                 results_dir=output_dir,
