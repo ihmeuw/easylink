@@ -45,9 +45,7 @@ def test__load_input_data_paths(test_dir, input_data):
         Path("another/bad/path"),
     ],
 )
-def test_bad_computing_environment_fails(
-    default_config_params, computing_environment
-):
+def test_bad_computing_environment_fails(default_config_params, computing_environment):
     config_params = default_config_params
     config_params.update(
         {"input_data": "foo", "computing_environment": computing_environment}
@@ -73,7 +71,7 @@ def test_default_container_engine(default_config_params):
     assert config.container_engine == "undefined"
 
 
-def test_unsupported_step(test_dir, caplog,  mocker):
+def test_unsupported_step(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
     mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])

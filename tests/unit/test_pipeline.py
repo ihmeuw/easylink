@@ -23,7 +23,8 @@ def test_batch_validation():
     pass
 
 
-def test__get_implementations(default_config):
+def test__get_implementations(default_config, mocker):
+    mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     implementation_names = [
         implementation.name for implementation in pipeline.implementations

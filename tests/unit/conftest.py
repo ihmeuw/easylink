@@ -129,6 +129,7 @@ def default_config_params(test_dir) -> Dict[str, str]:
         "computing_environment": f"{test_dir}/environment.yaml",
     }
 
+
 @pytest.fixture()
 def default_config(default_config_params) -> Config:
     """A good/known Config object"""
