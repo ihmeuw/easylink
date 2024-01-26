@@ -60,7 +60,7 @@ class Pipeline:
         # Close the drmaa session (if one exists) once the pipeline is finished
         if session:
             session.exit()
-            
+
     def _get_implementations(self) -> Tuple[Implementation, ...]:
         resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
         return tuple(
