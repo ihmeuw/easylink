@@ -23,7 +23,7 @@ def build_cluster(
     Args:
         drmaa: DRMAA module.
         session: DRMAA session.
-        resources: Resources for the Spark cluster.
+        resources: Slurm and spark cluster resource requests.
         step_id: Step ID for naming jobs.
         results_dir: Results directory.
         diagnostics_dir: Diagnostics directory.

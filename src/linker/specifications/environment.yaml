@@ -14,3 +14,4 @@ spark:
     cpus_per_node: 1
     mem_per_node: 1  # GB
     time_limit: 1  # hours
+  # keep_alive: true  # default will be false if not included
