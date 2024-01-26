@@ -129,25 +129,10 @@ def default_config_params(test_dir) -> Dict[str, str]:
         "computing_environment": f"{test_dir}/environment.yaml",
     }
 
-
 @pytest.fixture()
-def dummy_config(mocker) -> Config:
-    """Instantiate a Config that skips Implementation validation"""
-    mocker.patch(
-        "linker.implementation.Implementation._validate_container_exists",
-        side_effect=lambda x: x,
-    )
-
-    def _make_dummy_config(config_params: Dict[str, str]):
-        return Config(**config_params)
-
-    return _make_dummy_config
-
-
-@pytest.fixture()
-def default_config(dummy_config, default_config_params) -> Config:
+def default_config(default_config_params) -> Config:
     """A good/known Config object"""
-    return dummy_config(default_config_params)
+    return Config(**default_config_params)
 
 
 ####################

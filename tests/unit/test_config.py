@@ -46,7 +46,7 @@ def test__load_input_data_paths(test_dir, input_data):
     ],
 )
 def test_bad_computing_environment_fails(
-    default_config_params, dummy_config, computing_environment
+    default_config_params, computing_environment
 ):
     config_params = default_config_params
     config_params.update(
@@ -54,26 +54,26 @@ def test_bad_computing_environment_fails(
     )
 
     with pytest.raises(FileNotFoundError):
-        dummy_config(config_params)
+        Config(**config_params)
 
 
-def test_default_computing_environment(default_config_params, dummy_config):
+def test_default_computing_environment(default_config_params):
     """The computing environment value should default to 'local'"""
     config_params = default_config_params
     config_params.update({"computing_environment": None})
-    config = dummy_config(config_params)
+    config = Config(**config_params)
     assert config.computing_environment == "local"
 
 
-def test_default_container_engine(default_config_params, dummy_config):
+def test_default_container_engine(default_config_params):
     """The container engine value should default to 'undefined'"""
     config_params = default_config_params
     config_params.update({"computing_environment": None})
-    config = dummy_config(config_params)
+    config = Config(**config_params)
     assert config.container_engine == "undefined"
 
 
-def test_unsupported_step(test_dir, caplog, dummy_config, mocker):
+def test_unsupported_step(test_dir, caplog,  mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
     mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
@@ -84,7 +84,7 @@ def test_unsupported_step(test_dir, caplog, dummy_config, mocker):
     }
 
     with pytest.raises(SystemExit) as e:
-        dummy_config(config_params)
+        Config(**config_params)
 
     check_expected_validation_exit(
         error=e,
@@ -105,7 +105,7 @@ def test_unsupported_step(test_dir, caplog, dummy_config, mocker):
     )
 
 
-def test_bad_input_data(test_dir, dummy_config, caplog):
+def test_bad_input_data(test_dir, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
         "input_data": f"{test_dir}/bad_columns_input_data.yaml",
@@ -113,7 +113,7 @@ def test_bad_input_data(test_dir, dummy_config, caplog):
     }
 
     with pytest.raises(SystemExit) as e:
-        dummy_config(config_params)
+        Config(**config_params)
 
     check_expected_validation_exit(
         error=e,
