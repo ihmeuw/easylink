@@ -158,12 +158,12 @@ def find_spark_master_url(logfile: Path, attempt_sleep_time: int = 10) -> str:
                     if "Starting Spark master at" in line:
                         spark_master_url = line.split(" ")[-1:]
                 if spark_master_url == "":
-                    logger.warning(
+                    logger.debug(
                         f"Unable to find Spark master URL in logfile. Waiting {attempt_sleep_time} seconds and retrying...\n"
                         f"(attempt {read_logfile_attempt}/10)"
                     )
         except FileNotFoundError:
-            logger.warning(
+            logger.debug(
                 f"Logfile {logfile} not found. Waiting {attempt_sleep_time} seconds and retrying...\n"
                 f"(attempt {read_logfile_attempt}/10)"
             )
