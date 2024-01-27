@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, List, Optional
 
 from linker.step import Step
 from linker.utilities.data_utils import validate_dummy_output
@@ -8,8 +8,9 @@ from linker.utilities.data_utils import validate_dummy_output
 class PipelineSchema:
     """Defines the allowable schema(s) for the pipeline."""
 
-    def __init__(self, name) -> None:
+    def __init__(self, name, validate_input) -> None:
         self.name = name
+        self.validate_input: Callable = validate_input
         self.steps = []
 
     def __repr__(self) -> str:
@@ -24,6 +25,9 @@ class PipelineSchema:
         schemas.append(
             PipelineSchema._generate_schema(
                 "pvs_like_case_study",
+                # TODO: Make a real validator for
+                # pvs_like_case_study and/or remove this hack
+                validate_dummy_input,
                 Step("pvs_like_case_study"),
             )
         )
@@ -32,6 +36,7 @@ class PipelineSchema:
         schemas.append(
             PipelineSchema._generate_schema(
                 "development",
+                validate_dummy_input,
                 Step("step_1"),
                 Step("step_2"),
             )
@@ -43,19 +48,19 @@ class PipelineSchema:
         self.steps.append(step)
 
     @classmethod
-    def _generate_schema(cls, name: str, *steps: Step) -> None:
-        schema = cls(name)
+    def _generate_schema(cls, name: str, validate_input: Callable, *steps: Step) -> None:
+        schema = cls(name, validate_input)
         for step in steps:
             schema._add_step(step)
         return schema
 
-    @classmethod
-    def validate_input(cls, filepath: Path) -> Optional[List[str]]:
-        "Wrap the output file validator for now, since it is the same"
-        try:
-            validate_dummy_output(filepath)
-        except Exception as e:
-            return [e.args[0]]
+
+def validate_dummy_input(filepath: Path) -> Optional[List[str]]:
+    "Wrap the output file validator for now, since it is the same"
+    try:
+        validate_dummy_output(filepath)
+    except Exception as e:
+        return [e.args[0]]
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()

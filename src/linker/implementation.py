@@ -36,7 +36,6 @@ class Implementation:
         self,
         session: Optional["drmaa.Session"],
         runner: Callable,
-        container_engine: str,
         step_id: str,
         input_data: List[Path],
         results_dir: Path,
@@ -63,7 +62,7 @@ class Implementation:
             self.config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
 
         runner(
-            container_engine=container_engine,
+            container_engine=self._container_engine,
             input_data=input_data,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,

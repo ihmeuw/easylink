@@ -1,3 +1,6 @@
+import re
+from typing import Dict
+
 import pytest
 import yaml
 
@@ -118,11 +121,49 @@ def test_dir(tmpdir_factory) -> str:
     return str(tmp_path)
 
 
-@pytest.fixture(scope="session")
-def config(test_dir) -> Config:
+@pytest.fixture()
+def default_config_params(test_dir) -> Dict[str, str]:
+    return {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/input_data.yaml",
+        "computing_environment": f"{test_dir}/environment.yaml",
+    }
+
+
+@pytest.fixture()
+def default_config(default_config_params) -> Config:
     """A good/known Config object"""
-    return Config(
-        f"{test_dir}/pipeline.yaml",
-        f"{test_dir}/input_data.yaml",
-        f"{test_dir}/environment.yaml",
-    )
+    return Config(**default_config_params)
+
+
+####################
+# HELPER FUNCTIONS #
+####################
+
+
+def check_expected_validation_exit(error, caplog, error_no, expected_msg):
+    assert error.value.code == error_no
+    # We should only have one record
+    assert len(caplog.record_tuples) == 1
+    # Extract error message
+    msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
+        "Validation errors found. Please see above."
+    )[0]
+    msg = re.sub("\n+", " ", msg)
+    msg = re.sub(" +", " ", msg).strip()
+    msg = re.sub("''", "'", msg)
+    all_matches = []
+    for error_type, schemas in expected_msg.items():
+        expected_pattern = [error_type + ":"]
+        for schema, messages in schemas.items():
+            expected_pattern.append(" " + schema + ":")
+            for message in messages:
+                expected_pattern.append(" " + message)
+        pattern = re.compile("".join(expected_pattern))
+        # regex_patterns.append(pattern)
+        match = pattern.search(msg)
+        assert match
+        all_matches.append(match)
+
+    covered_text = "".join(match.group(0) for match in all_matches)
+    assert len(covered_text) == len(msg)

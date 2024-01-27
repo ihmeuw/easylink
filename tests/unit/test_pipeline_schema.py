@@ -14,7 +14,7 @@ def test_get_schemas():
 
 
 def test__add_step():
-    schema = PipelineSchema("bad-schema")
+    schema = PipelineSchema("bad-schema", lambda *_: None)
     assert schema.steps == []
     schema._add_step("foo")
     assert schema.steps == ["foo"]
