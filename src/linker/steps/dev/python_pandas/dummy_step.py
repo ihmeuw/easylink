@@ -27,7 +27,7 @@ diagnostics = {}
 if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
     main_input_file_paths = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")
 else:
-    main_input_file_paths = glob.glob("/input_data/main_input*")
+    main_input_file_paths = glob.glob("/input_data/main_input/*")
 
 logging.info("Loading main input")
 diagnostics["num_main_input_files"] = len(main_input_file_paths)
@@ -42,7 +42,7 @@ if "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" in os.environ:
         "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
     ].split(",")
 else:
-    secondary_input_file_paths = glob.glob("/input_data/secondary_input*")
+    secondary_input_file_paths = glob.glob("/input_data/secondary_input/*")
 
 diagnostics["num_secondary_input_files"] = len(secondary_input_file_paths)
 

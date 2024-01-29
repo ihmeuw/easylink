@@ -83,7 +83,7 @@ def build_cluster_launch_script(
     )
     for filepath in input_data:
         worker_bindings += (
-            f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
+            f"--bind {str(filepath)}:/input_data/main_input/{str(filepath.name)} "
         )
     # TODO: MIC-4744: Add support for varying SPARK_MASTER_PORT and SPARK_MASTER_WEBUI_PORT
     launcher.write(

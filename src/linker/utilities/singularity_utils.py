@@ -31,7 +31,7 @@ def _run_container(
         f"--bind {results_dir}:/results --bind {diagnostics_dir}:/diagnostics "
     )
     for filepath in input_data:
-        cmd += f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
+        cmd += f"--bind {str(filepath)}:/input_data/main_input/{str(filepath.name)} "
     cmd += f"{container_path}"
     _run_cmd(diagnostics_dir, cmd, config)
 
