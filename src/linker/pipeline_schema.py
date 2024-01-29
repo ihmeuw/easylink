@@ -27,7 +27,7 @@ class PipelineSchema:
                 "pvs_like_case_study",
                 # TODO: Make a real validator for
                 # pvs_like_case_study and/or remove this hack
-                validate_dummy_input,
+                lambda x: None,
                 Step("pvs_like_case_study"),
             )
         )

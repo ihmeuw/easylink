@@ -24,7 +24,7 @@ def test_config_instantiation(test_dir, default_config):
 
 def test__get_schema(default_config):
     """Test that the schema is correctly loaded from the pipeline.yaml"""
-    assert default_config.schema.steps == [Step("pvs_like_case_study")]
+    assert default_config.schema.steps == [Step("step_1"), Step("step_2")]
 
 
 @pytest.mark.parametrize("input_data", ["good", "bad"])
