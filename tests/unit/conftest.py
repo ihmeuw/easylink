@@ -19,9 +19,14 @@ ENV_CONFIG_DICT = {
 PIPELINE_CONFIG_DICT = {
     "good": {
         "steps": {
-            "pvs_like_case_study": {
+            "step_1": {
                 "implementation": {
-                    "name": "pvs_like_python",
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
                 },
             },
         },

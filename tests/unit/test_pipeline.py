@@ -29,7 +29,7 @@ def test__get_implementations(default_config, mocker):
     implementation_names = [
         implementation.name for implementation in pipeline.implementations
     ]
-    assert implementation_names == ["pvs_like_python"]
+    assert implementation_names == ["step_1_python_pandas", "step_2_python_pandas"]
 
 
 def test_no_container(test_dir, caplog, mocker):
@@ -55,7 +55,10 @@ def test_no_container(test_dir, caplog, mocker):
         error_no=errno.EINVAL,
         expected_msg={
             "IMPLEMENTATION ERRORS": {
-                "pvs_like_python": [
+                "step_1_python_pandas": [
+                    "- Container 'some/path/with/no/container' does not exist.",
+                ],
+                "step_2_python_pandas": [
                     "- Container 'some/path/with/no/container' does not exist.",
                 ],
             },
@@ -67,8 +70,13 @@ def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
     mocker.patch(
         "linker.implementation.Implementation._load_metadata",
         return_value={
-            "pvs_like_python": {
-                "step": "step-1",
+            "step_1_python_pandas": {
+                "step": "not-the-step-1-name",
+                "path": "/some/path",
+                "name": "some-name",
+            },
+            "step_2_python_pandas": {
+                "step": "not-the-step-2-name",
                 "path": "/some/path",
                 "name": "some-name",
             },
@@ -93,9 +101,12 @@ def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
         error_no=errno.EINVAL,
         expected_msg={
             "IMPLEMENTATION ERRORS": {
-                "pvs_like_python": [
-                    "- Implementaton metadata step 'step-1' does not match pipeline configuration step 'pvs_like_case_study'"
-                ]
+                "step_1_python_pandas": [
+                    "- Implementaton metadata step 'not-the-step-1-name' does not match pipeline configuration step 'step_1'"
+                ],
+                "step_2_python_pandas": [
+                    "- Implementaton metadata step 'not-the-step-2-name' does not match pipeline configuration step 'step_2'"
+                ],
             },
         },
     )

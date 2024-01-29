@@ -21,17 +21,6 @@ class PipelineSchema:
         """Creates the allowable schema for the pipeline."""
         schemas = []
 
-        # pvs-like case study
-        schemas.append(
-            PipelineSchema._generate_schema(
-                "pvs_like_case_study",
-                # TODO: Make a real validator for
-                # pvs_like_case_study and/or remove this hack
-                validate_dummy_input,
-                Step("pvs_like_case_study"),
-            )
-        )
-
         # development dummy
         schemas.append(
             PipelineSchema._generate_schema(
