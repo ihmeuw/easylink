@@ -147,6 +147,7 @@ FULLY_DEFINED_ENV_CONFIG = {
     },
 }
 
+
 @pytest.mark.parametrize(
     "environment_config, expected_config",
     [
