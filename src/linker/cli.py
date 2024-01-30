@@ -82,16 +82,20 @@ def run(
     """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
-    pipeline_specification = Path(pipeline_specification)
-    input_data = Path(input_data)
     results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
-    # TODO [MIC-4493]: Add configuration validation
+
+    pipeline_specification = Path(pipeline_specification).resolve()
+    input_data = Path(input_data).resolve()
+    if computing_environment:
+        computing_environment = Path(computing_environment).resolve()
+
     config = Config(
         pipeline_specification=pipeline_specification,
         input_data=input_data,
         computing_environment=computing_environment,
     )
+
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
@@ -99,6 +103,7 @@ def run(
         config=config,
         results_dir=results_dir,
     )
+
     logger.info(f"Results directory: {str(results_dir)}")
     logger.info("*** FINISHED ***")
 

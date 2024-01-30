@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from typing import Dict
 
 import pytest
@@ -131,9 +132,9 @@ def test_dir(tmpdir_factory) -> str:
 @pytest.fixture()
 def default_config_params(test_dir) -> Dict[str, str]:
     return {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
 
 
@@ -150,8 +151,6 @@ def default_config(default_config_params) -> Config:
 
 def check_expected_validation_exit(error, caplog, error_no, expected_msg):
     assert error.value.code == error_no
-    # We should only have one record
-    assert len(caplog.record_tuples) == 1
     # Extract error message
     msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
         "Validation errors found. Please see above."

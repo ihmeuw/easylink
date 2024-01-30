@@ -22,9 +22,10 @@ def main(
     pipeline = Pipeline(config)
 
     # Copy config files to results
-    shutil.copy(config.pipeline_path, results_dir)
-    if config.computing_environment_path:
-        shutil.copy(config.computing_environment_path, results_dir)
+    shutil.copy(config.pipeline_specification_path, results_dir)
+    shutil.copy(config.input_data_specification_path, results_dir)
+    if config.computing_environment_specificaton_path:
+        shutil.copy(config.computing_environment_specificaton_path, results_dir)
 
     # Set up computing environment
     if config.computing_environment == "local":
@@ -42,7 +43,7 @@ def main(
         drmaa = get_slurm_drmaa()
         session = drmaa.Session()
         session.initialize()
-        resources = config.get_resources()
+        resources = config.get_slurm_resources()
         runner = partial(launch_slurm_job, session, resources)
     else:
         raise NotImplementedError(

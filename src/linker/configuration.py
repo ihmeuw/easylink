@@ -8,34 +8,54 @@ from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
 
+DEFAULT_ENVIRONMENT_VALUES = load_yaml(Path(__file__).parent / "default_environment.yaml")
+
 
 class Config:
     """A container for configuration information where each value is exposed
-    as an attribute.
-
+    as an attribute. This class combines the pipeline, input data, and computing
+    environment specifications into a single object. It is also responsible for
+    validating these specifications.
     """
 
     def __init__(
         self,
-        pipeline_specification: Optional[Path],
-        input_data: Optional[Path],
-        computing_environment: Optional[str],
+        pipeline_specification: Path,
+        input_data: Path,
+        computing_environment: Optional[Path],
     ):
-        self.pipeline_path = pipeline_specification
-        self.pipeline = load_yaml(self.pipeline_path) if pipeline_specification else {}
-        self.input_data = self._load_input_data_paths(input_data) if input_data else []
-        self.computing_environment_path = (
-            Path(computing_environment) if computing_environment else None
+        # Handle pipeline specification
+        self.pipeline_specification_path = pipeline_specification
+        self.pipeline = load_yaml(pipeline_specification)
+        # Handle input data specification
+        self.input_data_specification_path = input_data
+        self.input_data = self._load_input_data_paths(input_data)
+        # Handle computing environment specification
+        self.computing_environment_specificaton_path = computing_environment
+        self.environment = (
+            self._load_computing_environment(computing_environment)
+            if computing_environment
+            else {}
         )
-        self.environment = self._load_computing_environment(self.computing_environment_path)
+        self.implementation_resources_requested = (
+            "implementation_resources" in self.environment
+        )
+        self.slurm_requested = "slurm" in self.environment
+        self.spark_requested = "spark" in self.environment
+        self.environment = self._assign_default_environment(
+            self.environment, DEFAULT_ENVIRONMENT_VALUES
+        )
+        self.computing_environment = self.environment.get("computing_environment", {})
+        self.container_engine = self.environment.get("container_engine", {})
+        self.slurm = self.environment.get("slurm", {})
+        self.implementation_resources = self.environment.get("implementation_resources", {})
+        self.spark = self.environment.get("spark", {})
 
-        self.computing_environment = self.environment["computing_environment"]
-        self.container_engine = self.environment.get("container_engine", "undefined")
-        self.spark = self._get_spark_requests(self.environment)
         self.schema = self._get_schema()
         self._validate()
 
-    def get_resources(self) -> Dict[str, str]:
+    def get_slurm_resources(self) -> Dict[str, str]:
+        breakpoint()
         return {
             **self.environment["implementation_resources"],
             **self.environment[self.environment["computing_environment"]],
@@ -118,11 +138,9 @@ class Config:
 
     @staticmethod
     def _load_computing_environment(
-        computing_environment_path: Optional[Path],
+        computing_environment_path: Path,
     ) -> Dict[str, Union[Dict, str]]:
         """Load the computing environment yaml file and return the contents as a dict."""
-        if computing_environment_path is None:
-            return {"computing_environment": "local", "container_engine": "undefined"}
         filepath = computing_environment_path.resolve()
         if not filepath.is_file():
             raise FileNotFoundError(
@@ -140,10 +158,30 @@ class Config:
         return file_list
 
     @staticmethod
-    def _get_spark_requests(
-        environment: Dict[str, Union[Dict, str]]
-    ) -> Optional[Dict[str, Any]]:
-        spark = environment.get("spark", None)
-        if spark and not "keep_alive" in spark:
-            spark["keep_alive"] = False
-        return spark
+    def _assign_default_environment(
+        subenv: Dict[str, Any], defaults: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Recursively fill in missing values with defaults."""
+        required_keys = ["computing_environment", "container_engine"]
+        outer_keys = DEFAULT_ENVIRONMENT_VALUES.keys()
+        for key, default_value in defaults.items():
+            if key in required_keys and key not in subenv:
+                # Add missing required items
+                logger.info(f"Assigning default value '{default_value}' to '{key}'")
+                subenv[key] = default_value
+            if key not in required_keys and key in subenv:
+                # Update if outer key is present
+                if isinstance(default_value, dict) and isinstance(subenv[key], dict):
+                    # Update inner keys
+                    subenv[key] = Config._assign_default_environment(
+                        subenv[key], default_value
+                    )
+                else:
+                    if key not in subenv:
+                        logger.info(f"Assigning default value '{default_value}' to '{key}'")
+                        subenv[key] = default_value
+            if key not in required_keys and key not in subenv and key not in outer_keys:
+                # Add missing optional items
+                logger.info(f"Assigning default value '{default_value}' to '{key}'")
+                subenv[key] = default_value
+        return subenv

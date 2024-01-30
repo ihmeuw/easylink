@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from linker.configuration import Config
+from linker.configuration import DEFAULT_ENVIRONMENT_VALUES, Config
 from linker.step import Step
 from tests.unit.conftest import (
     ENV_CONFIG_DICT,
@@ -76,9 +76,9 @@ def test_unsupported_step(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     config_params = {
-        "pipeline_specification": f"{test_dir}/bad_step_pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
 
     with pytest.raises(SystemExit) as e:
@@ -128,3 +128,92 @@ def test_bad_input_data(test_dir, caplog):
             }
         },
     )
+
+
+FULLY_DEFINED_ENV_CONFIG = {
+    "computing_environment": "foo-env",
+    "container_engine": "foo-container",
+    "slurm": {
+        "account": "foo-account",
+        "partition": "foo-partition",
+    },
+    "spark": {
+        "workers": {
+            "cpus_per_node": "foo-cpus",
+            "mem_per_node": "foo-mem",
+            "time_limit": "foo-time",
+        },
+        "keep_alive": "foo-keep-alive",
+    },
+}
+
+@pytest.mark.parametrize(
+    "environment_config, expected_config",
+    [
+        (
+            # should result in minimum default environment
+            {},
+            {
+                key: value
+                for key, value in DEFAULT_ENVIRONMENT_VALUES.items()
+                if key in ["computing_environment", "container_engine"]
+            },
+        ),
+        (
+            # check nested value: should add the missing slurm 'partition'
+            {
+                "slurm": {"account": DEFAULT_ENVIRONMENT_VALUES["slurm"]["account"]},
+            },
+            {
+                key: value
+                for key, value in DEFAULT_ENVIRONMENT_VALUES.items()
+                if key in ["computing_environment", "container_engine", "slurm"]
+            },
+        ),
+        (
+            # check a double-nested value: should add the missing 'spark: workers: num_workers' and 'spark: keep_alive: True'
+            {
+                "spark": {
+                    "workers": {
+                        key: value
+                        for key, value in DEFAULT_ENVIRONMENT_VALUES["spark"][
+                            "workers"
+                        ].items()
+                        if key in ["cpus_per_node", "mem_per_node", "time_limit"]
+                    },
+                },
+            },
+            {
+                key: value
+                for key, value in DEFAULT_ENVIRONMENT_VALUES.items()
+                if key in ["computing_environment", "container_engine", "spark"]
+            },
+        ),
+        (
+            # check that nothing is overwritten if fully defined
+            FULLY_DEFINED_ENV_CONFIG,
+            FULLY_DEFINED_ENV_CONFIG,
+        ),
+    ],
+)
+def test__assign_defaults(default_config_params, environment_config, expected_config, mocker):
+    config_params = default_config_params.copy()
+    config_params.update({"computing_environment": environment_config})
+    # mock out the _load_computing_environment method to return the dict directly
+    mocker.patch.object(
+        Config,
+        "_load_computing_environment",
+        return_value=config_params["computing_environment"],
+    )
+    mocker.patch.object(
+        Config,
+        "_validate",
+        return_value=[],
+    )
+    config = Config(**config_params)
+
+    assert config.environment == expected_config
+
+    # Check that values got assigned to attributes
+    for key, value in expected_config.items():
+        assert getattr(config, key) == value
