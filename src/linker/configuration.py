@@ -37,11 +37,6 @@ class Config:
             if computing_environment
             else {}
         )
-        self.implementation_resources_requested = (
-            "implementation_resources" in self.environment
-        )
-        self.slurm_requested = "slurm" in self.environment
-        self.spark_requested = "spark" in self.environment
         self.environment = self._assign_default_environment(
             self.environment, DEFAULT_ENVIRONMENT_VALUES
         )
