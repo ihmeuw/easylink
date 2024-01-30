@@ -62,7 +62,7 @@ class Pipeline:
             session.exit()
 
     def _get_implementations(self) -> Tuple[Implementation, ...]:
-        resources = {key: self.config.environment.get(key) for key in ["slurm", "spark"]}
+        resources = {key: self.config.environment.get(key, {}) for key in ["slurm", "spark"]}
         return tuple(
             Implementation(
                 step=step,
@@ -77,6 +77,7 @@ class Pipeline:
     def _validate(self) -> None:
         """Validates the pipeline."""
 
+        # TODO: validate that spark and slurm resources are requested if needed
         errors = {**self._validate_implementations()}
 
         if errors:
