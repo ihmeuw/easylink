@@ -50,7 +50,6 @@ class Config:
         self._validate()
 
     def get_slurm_resources(self) -> Dict[str, str]:
-        breakpoint()
         return {
             **self.environment["implementation_resources"],
             **self.environment[self.environment["computing_environment"]],
@@ -98,6 +97,7 @@ class Config:
 
     def _validate(self) -> None:
         errors = {
+            # TODO: [MIC-4723] Add config validation
             **self._validate_files(),
             **self._validate_input_data(),
         }
@@ -142,7 +142,8 @@ class Config:
                 "Computing environment is expected to be a path to an existing"
                 f" yaml file. Input was: '{computing_environment_path}'"
             )
-        return load_yaml(filepath)
+        environment = load_yaml(filepath)  # handles empty environment.yaml
+        return environment if environment else {}
 
     @staticmethod
     def _load_input_data_paths(input_data: Path) -> List[Path]:
