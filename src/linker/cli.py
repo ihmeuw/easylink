@@ -85,10 +85,10 @@ def run(
     results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
 
-    pipeline_specification = Path(pipeline_specification).resolve()
-    input_data = Path(input_data).resolve()
+    pipeline_specification = Path(pipeline_specification)
+    input_data = Path(input_data)
     if computing_environment:
-        computing_environment = Path(computing_environment).resolve()
+        computing_environment = Path(computing_environment)
 
     config = Config(
         pipeline_specification=pipeline_specification,
