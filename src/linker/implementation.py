@@ -150,18 +150,31 @@ class Implementation:
         ):
             logs.append(err_str)
         return logs
-    
-    def _validate_implementation_config(self, logs: List[Optional[str]]) -> List[Optional[str]]:
+
+    def _validate_implementation_config(
+        self, logs: List[Optional[str]]
+    ) -> List[Optional[str]]:
         """Validate the implementation config against the schema."""
         if self.config:
-            for input_path_type in ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"]:
+            for input_path_type in [
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            ]:
                 if input_path_type in self.config:
-                    if not isinstance(self.config[input_path_type], list) or not all(isinstance(path, str) for path in self.config[input_path_type]):
-                        logs.append(f"Implementation config error: {input_path_type} must be a non-empty list of input files if configured")
+                    if not isinstance(self.config[input_path_type], list) or not all(
+                        isinstance(path, str) for path in self.config[input_path_type]
+                    ):
+                        logs.append(
+                            f"Implementation config error: {input_path_type} must be a non-empty list of input files if configured"
+                        )
                     else:
                         for path in self.config[input_path_type]:
-                            if not path.startswith("/input_data/original_input_data") or path.startswith("/input_data/original_input_data"):
-                                logs.append(f"Implementation config error: {input_path_type} file {path} must derive from pipeline input data or intermediate data from previous implementation")
+                            if not path.startswith(
+                                "/input_data/original_input_data"
+                            ) or path.startswith("/input_data/original_input_data"):
+                                logs.append(
+                                    f"Implementation config error: {input_path_type} file {path} must derive from pipeline input data or intermediate data from previous implementation"
+                                )
         return logs
 
     def get_input_bindings(
