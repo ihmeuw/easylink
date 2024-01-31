@@ -12,7 +12,7 @@ DOCKER_TIMEOUT = 360  # seconds
 
 
 def run_with_docker(
-    input_data: List[Path],
+    input_data_bindings: Dict[Path, Path],
     results_dir: Path,
     diagnostics_dir: Path,
     step_id: str,
@@ -23,7 +23,7 @@ def run_with_docker(
     client = get_docker_client()
     image_id = _load_image(client, container_path)
     container = _run_container(
-        client, image_id, input_data, results_dir, diagnostics_dir, config
+        client, image_id, input_data_bindings, results_dir, diagnostics_dir, config
     )
     _clean(client, image_id, container)
 
@@ -55,7 +55,7 @@ def _load_image(client: DockerClient, image_path: Path) -> str:
 def _run_container(
     client: DockerClient,
     image_id: str,
-    input_data: List[Path],
+    input_data_bindings: Dict[Path, Path],
     results_dir: Path,
     diagnostics_dir: Path,
     config: Optional[Dict[str, str]],
@@ -63,8 +63,8 @@ def _run_container(
     logger.info(f"Running the container from image {image_id}")
     volumes = {
         **{
-            str(dataset): {"bind": f"/input_data/main_input/{dataset.name}", "mode": "ro"}
-            for dataset in input_data
+            outside_path: {"bind": f"{inside_path}", "mode": "ro"}
+            for inside_path, outside_path in input_data_bindings.items()
         },
         str(results_dir): {"bind": "/results", "mode": "rw"},
         str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},

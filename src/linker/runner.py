@@ -55,7 +55,7 @@ def main(
 
 def run_container(
     container_engine: str,
-    input_data: List[Path],
+    input_data_bindings: Dict[str, Path],
     results_dir: Path,
     diagnostics_dir: Path,
     step_id: str,
@@ -67,7 +67,7 @@ def run_container(
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
     kwargs = {
-        "input_data": input_data,
+        "input_data_bindings": input_data_bindings,
         "results_dir": results_dir,
         "diagnostics_dir": diagnostics_dir,
         "step_id": step_id,

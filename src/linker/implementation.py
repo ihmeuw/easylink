@@ -38,10 +38,12 @@ class Implementation:
         runner: Callable,
         step_id: str,
         input_data: List[Path],
+        intermediate_data: List[Path],
         results_dir: Path,
         diagnostics_dir: Path,
     ) -> None:
         logger.info(f"Running pipeline step ID {step_id}")
+        input_data_bindings = self.get_input_bindings(step_id, input_data, intermediate_data)
         if self._requires_spark and session:
             # having an active drmaa session implies we are running on a slurm cluster
             # (i.e. not 'local' computing environment) and so need to spin up a spark
@@ -54,7 +56,7 @@ class Implementation:
                 step_id=step_id,
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
-                input_data=input_data,
+                input_data_bindings=input_data_bindings,
             )
             # Add the spark master url to implementation config
             if not self.config:
@@ -63,7 +65,7 @@ class Implementation:
 
         runner(
             container_engine=self._container_engine,
-            input_data=input_data,
+            input_data_bindings=input_data_bindings,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
             step_id=step_id,
@@ -147,3 +149,20 @@ class Implementation:
         ):
             logs.append(err_str)
         return logs
+    
+    def get_input_bindings(self, idx, input_data: List[Path], intermediate_data: List[Path]) -> Dict[str, str]:
+        bindings = {}
+        config_main_input = self.config.get("DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", None) if self.config else None
+        config_secondary_input = self.config.get("DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS", None) if self.config else None
+        if config_main_input is None:
+            if idx == 0:
+                bindings.update( **{f"/input_data/main_input/{file.name}": str(file)  for file in intermediate_data})
+            else:
+                bindings.update( **{f"/input_data/main_input/{file.name}": str(file)  for file in input_data})
+        if config_main_input or config_secondary_input:
+            bindings.update(**{f"/input_data/original_input_data/{file.name}": str(file)  for file in input_data})
+            bindings.update(**{f"/input_data/intermediate_data/{file.name}": str(file)  for file in intermediate_data})
+        
+        return bindings
+            
+        

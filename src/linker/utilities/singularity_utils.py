@@ -7,7 +7,7 @@ from loguru import logger
 
 
 def run_with_singularity(
-    input_data: List[Path],
+    input_data_bindings: Dict[Path, Path],
     results_dir: Path,
     diagnostics_dir: Path,
     step_id: str,
@@ -15,12 +15,12 @@ def run_with_singularity(
     config: Optional[Dict[str, str]],
 ) -> None:
     logger.info(f"Running step {step_id} container with singularity")
-    _run_container(input_data, results_dir, diagnostics_dir, container_path, config)
+    _run_container(input_data_bindings, results_dir, diagnostics_dir, container_path, config)
     _clean(results_dir, container_path)
 
 
 def _run_container(
-    input_data: List[Path],
+    input_data_bindings: Dict[Path, Path],
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
@@ -30,8 +30,8 @@ def _run_container(
         "singularity run --containall --no-home --bind /tmp:/tmp "
         f"--bind {results_dir}:/results --bind {diagnostics_dir}:/diagnostics "
     )
-    for filepath in input_data:
-        cmd += f"--bind {str(filepath)}:/input_data/main_input/{str(filepath.name)} "
+    for inside_path, outside_path in input_data_bindings.items():
+        cmd += f"--bind {outside_path}:{inside_path} "
     cmd += f"{container_path}"
     _run_cmd(diagnostics_dir, cmd, config)
 
