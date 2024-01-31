@@ -10,6 +10,8 @@ from linker.utilities.general_utils import exit_with_validation_error
 
 DEFAULT_ENVIRONMENT_VALUES = load_yaml(Path(__file__).parent / "default_environment.yaml")
 
+REQUIRED_KEYS = ["computing_environment", "container_engine"]
+
 
 class Config:
     """A container for configuration information where each value is exposed
@@ -158,25 +160,32 @@ class Config:
         subenv: Dict[str, Any], defaults: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Recursively fill in missing values with defaults."""
-        required_keys = ["computing_environment", "container_engine"]
         outer_keys = DEFAULT_ENVIRONMENT_VALUES.keys()
         for key, default_value in defaults.items():
-            if key in required_keys and key not in subenv:
-                # Add missing required items
+            if key in REQUIRED_KEYS and key not in subenv:
+                # Add missing required item
                 logger.info(f"Assigning default value '{default_value}' to '{key}'")
                 subenv[key] = default_value
-            if key not in required_keys and key in subenv:
-                # Update if outer key is present
+            if key not in REQUIRED_KEYS and key in subenv:
+                # If user defined some key, look for missing sub-keys and update
                 if isinstance(default_value, dict) and isinstance(subenv[key], dict):
-                    # Update inner keys
+                    # Recursively traverse dictionaries and update as needed
                     subenv[key] = Config._assign_default_environment(
                         subenv[key], default_value
                     )
+                elif (
+                    isinstance(default_value, dict) and not isinstance(subenv[key], dict)
+                ) or (not isinstance(default_value, dict) and isinstance(subenv[key], dict)):
+                    # If the default value and the user defined value are not the same type
+                    # then the user defined value is incorrect
+                    # TODO: [MIC-4723] move this to config validation
+                    raise TypeError(
+                        f"Expected '{key}' to be of type '{type(default_value).__name__}' but found '{type(subenv[key]).__name__}'"
+                    )
                 else:
-                    if key not in subenv:
-                        logger.info(f"Assigning default value '{default_value}' to '{key}'")
-                        subenv[key] = default_value
-            if key not in required_keys and key not in subenv and key not in outer_keys:
+                    # The value is already defined; keep it
+                    pass
+            if key not in REQUIRED_KEYS and key not in subenv and key not in outer_keys:
                 # Add missing optional items
                 logger.info(f"Assigning default value '{default_value}' to '{key}'")
                 subenv[key] = default_value

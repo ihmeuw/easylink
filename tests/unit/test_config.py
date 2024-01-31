@@ -133,10 +133,7 @@ def test_bad_input_data(test_dir, caplog):
 FULLY_DEFINED_ENV_CONFIG = {
     "computing_environment": "foo-env",
     "container_engine": "foo-container",
-    "slurm": {
-        "account": "foo-account",
-        "partition": "foo-partition",
-    },
+    # NOTE: "slurm" does not have default values and so is not included here
     "spark": {
         "workers": {
             "cpus_per_node": "foo-cpus",
@@ -209,3 +206,19 @@ def test__assign_environment_defaults(
     # Check that values got assigned to attributes
     for key, value in expected_config.items():
         assert getattr(config, key) == value
+
+
+def test__assign_environment_defaults_bad_type(default_config_params, mocker):
+    config_params = default_config_params.copy()
+    config_params.update({"computing_environment": {"spark": "foo"}})
+    # mock out the _load_computing_environment method to return the dict directly
+    mocker.patch.object(
+        Config,
+        "_load_computing_environment",
+        return_value=config_params["computing_environment"],
+    )
+
+    with pytest.raises(
+        TypeError, match="Expected 'spark' to be of type 'dict' but found 'str'"
+    ):
+        Config(**config_params)
