@@ -21,7 +21,7 @@ class Implementation:
         self.step = step
         self._pipeline_step_name = step.name
         self.name = implementation_name
-        self.config = self._format_config(implementation_config)
+        self.config = implementation_config
         self._container_engine = container_engine
         self.resources = resources
         self._metadata = self._load_metadata()
@@ -72,7 +72,7 @@ class Implementation:
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
-            config=self.config,
+            config=self._formatted_config(self.config),
         )
 
         if self._requires_spark and session and not self.resources["spark"]["keep_alive"]:
@@ -89,14 +89,15 @@ class Implementation:
         logs = []
         logs = self._validate_expected_step(logs)
         logs = self._validate_container_exists(logs)
+        logs = self._validate_implementation_config(logs)
         return logs
 
     ##################
     # Helper methods #
     ##################
 
-    def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
-        return self._stringify_keys_values(config) if config else None
+    def _formatted_config(self) -> Optional[Dict[str, str]]:
+        return self._stringify_keys_values(self.config) if self.config else None
 
     StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
 
@@ -148,6 +149,19 @@ class Implementation:
             and not Path(f"{self._container_full_stem}.sif").exists()
         ):
             logs.append(err_str)
+        return logs
+    
+    def _validate_implementation_config(self, logs: List[Optional[str]]) -> List[Optional[str]]:
+        """Validate the implementation config against the schema."""
+        if self.config:
+            for input_path_type in ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"]:
+                if input_path_type in self.config:
+                    if not isinstance(self.config[input_path_type], list) or not all(isinstance(path, str) for path in self.config[input_path_type]):
+                        logs.append(f"Implementation config error: {input_path_type} must be a non-empty list of input files if configured")
+                    else:
+                        for path in self.config[input_path_type]:
+                            if not path.startswith("/input_data/original_input_data") or path.startswith("/input_data/original_input_data"):
+                                logs.append(f"Implementation config error: {input_path_type} file {path} must derive from pipeline input data or intermediate data from previous implementation")
         return logs
 
     def get_input_bindings(
