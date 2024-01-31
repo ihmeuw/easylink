@@ -1,9 +1,6 @@
 # Default values used as necessary
 computing_environment: local
 container_engine: undefined
-slurm:
-  account: proj_simscience
-  partition: all.q
 implementation_resources:
   memory: 1  # GB
   cpus: 1

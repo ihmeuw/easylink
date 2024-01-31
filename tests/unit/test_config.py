@@ -161,18 +161,7 @@ FULLY_DEFINED_ENV_CONFIG = {
             },
         ),
         (
-            # check nested value: should add the missing slurm 'partition'
-            {
-                "slurm": {"account": DEFAULT_ENVIRONMENT_VALUES["slurm"]["account"]},
-            },
-            {
-                key: value
-                for key, value in DEFAULT_ENVIRONMENT_VALUES.items()
-                if key in ["computing_environment", "container_engine", "slurm"]
-            },
-        ),
-        (
-            # check a double-nested value: should add the missing 'spark: workers: num_workers' and 'spark: keep_alive: True'
+            # check nested values: should add the missing 'spark: keep_alive: True' and 'spark: workers: num_workers'
             {
                 "spark": {
                     "workers": {
