@@ -149,20 +149,48 @@ class Implementation:
         ):
             logs.append(err_str)
         return logs
-    
-    def get_input_bindings(self, idx, input_data: List[Path], intermediate_data: List[Path]) -> Dict[str, str]:
+
+    def get_input_bindings(
+        self, idx, input_data: List[Path], intermediate_data: List[Path]
+    ) -> Dict[str, str]:
         bindings = {}
-        config_main_input = self.config.get("DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", None) if self.config else None
-        config_secondary_input = self.config.get("DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS", None) if self.config else None
+        config_main_input = (
+            self.config.get("DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", None)
+            if self.config
+            else None
+        )
+        config_secondary_input = (
+            self.config.get("DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS", None)
+            if self.config
+            else None
+        )
         if config_main_input is None:
             if idx == 0:
-                bindings.update( **{f"/input_data/main_input/{file.name}": str(file)  for file in intermediate_data})
+                bindings.update(
+                    **{
+                        f"/input_data/main_input/{file.name}": str(file)
+                        for file in intermediate_data
+                    }
+                )
             else:
-                bindings.update( **{f"/input_data/main_input/{file.name}": str(file)  for file in input_data})
+                bindings.update(
+                    **{
+                        f"/input_data/main_input/{file.name}": str(file)
+                        for file in input_data
+                    }
+                )
         if config_main_input or config_secondary_input:
-            bindings.update(**{f"/input_data/original_input_data/{file.name}": str(file)  for file in input_data})
-            bindings.update(**{f"/input_data/intermediate_data/{file.name}": str(file)  for file in intermediate_data})
-        
+            bindings.update(
+                **{
+                    f"/input_data/original_input_data/{file.name}": str(file)
+                    for file in input_data
+                }
+            )
+            bindings.update(
+                **{
+                    f"/input_data/intermediate_data/{file.name}": str(file)
+                    for file in intermediate_data
+                }
+            )
+
         return bindings
-            
-        

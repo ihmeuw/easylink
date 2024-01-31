@@ -39,14 +39,18 @@ class Pipeline:
             input_data = self.config.input_data
             if idx <= number_of_steps - 1:
                 output_dir.mkdir(exist_ok=True)
-            intermediate_data = [
+            intermediate_data = (
+                [
                     file
                     for file in (
                         output_dir
                         / "intermediate"
                         / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
                     ).glob("*.parquet")
-                ] if idx > 0 else []
+                ]
+                if idx > 0
+                else []
+            )
             implementation.run(
                 session=session,
                 runner=runner,

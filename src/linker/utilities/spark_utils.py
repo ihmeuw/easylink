@@ -82,9 +82,7 @@ def build_cluster_launch_script(
         f"--bind {results_dir}:/results " f"--bind {diagnostics_dir}:/diagnostics "
     )
     for inside_path, outside_path in input_data_bindings.items():
-        worker_bindings += (
-            f"--bind {outside_path}:{inside_path} "
-        )
+        worker_bindings += f"--bind {outside_path}:{inside_path} "
     # TODO: MIC-4744: Add support for varying SPARK_MASTER_PORT and SPARK_MASTER_WEBUI_PORT
     launcher.write(
         f"""
