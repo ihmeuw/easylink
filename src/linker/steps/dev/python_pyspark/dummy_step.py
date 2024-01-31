@@ -1,3 +1,4 @@
+import ast
 import glob
 import logging
 import os
@@ -36,9 +37,9 @@ def load_file(file_path, file_format=None):
 diagnostics = {}
 
 if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
-    main_input_file_paths = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")
+    main_input_file_paths = ast.literal_eval(os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"])
 else:
-    main_input_file_paths = glob.glob("/input_data/main_input*")
+    main_input_file_paths = glob.glob("/input_data/main_input/*")
 
 logging.info("Loading main input")
 diagnostics["num_main_input_files"] = len(main_input_file_paths)
@@ -49,11 +50,11 @@ for path in main_input_file_paths[1:]:
     df = df.unionByName(load_file(path), allowMissingColumns=True).fillna(0)
 
 if "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" in os.environ:
-    secondary_input_file_paths = os.environ[
+    secondary_input_file_paths = ast.literal_eval(os.environ[
         "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
-    ].split(",")
+    ])
 else:
-    secondary_input_file_paths = glob.glob("/input_data/secondary_input*")
+    secondary_input_file_paths = glob.glob("/input_data/secondary_input/*")
 
 diagnostics["num_secondary_input_files"] = len(secondary_input_file_paths)
 
