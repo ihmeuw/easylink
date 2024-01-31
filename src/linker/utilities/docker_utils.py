@@ -1,7 +1,5 @@
-from os import strerror
 from pathlib import Path
-from time import strftime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import docker
 from docker import DockerClient

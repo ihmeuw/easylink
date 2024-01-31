@@ -16,14 +16,14 @@ class Implementation:
         implementation_name: str,
         implementation_config: Optional[Dict[str, Any]],
         container_engine: str,
-        resources: Dict[str, Any],
+        spark_resources: Dict[str, Any],
     ):
         self.step = step
         self._pipeline_step_name = step.name
         self.name = implementation_name
         self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
-        self.resources = resources
+        self.spark_resources = spark_resources
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
         self._requires_spark = self._metadata[self.name].get("requires_spark", False)
@@ -50,7 +50,7 @@ class Implementation:
             spark_master_url, job_id = build_cluster(
                 drmaa=drmaa,
                 session=session,
-                resources=self.resources,
+                resources=self.spark_resources,
                 step_id=step_id,
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
@@ -73,7 +73,11 @@ class Implementation:
             config=self.config,
         )
 
-        if self._requires_spark and session and not self.resources["spark"]["keep_alive"]:
+        if (
+            self._requires_spark
+            and session
+            and not self.spark_resources["spark"]["keep_alive"]
+        ):
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
 

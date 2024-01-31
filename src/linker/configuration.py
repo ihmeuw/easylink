@@ -28,10 +28,10 @@ class Config:
             Path(computing_environment) if computing_environment else None
         )
         self.environment = self._load_computing_environment(self.computing_environment_path)
-
         self.computing_environment = self.environment["computing_environment"]
         self.container_engine = self.environment.get("container_engine", "undefined")
         self.spark = self._get_spark_requests(self.environment)
+        self.spark_resources = {key: getattr(self, key) for key in ["slurm", "spark"]}
         self.schema = self._get_schema()
         self._validate()
 

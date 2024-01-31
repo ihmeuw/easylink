@@ -14,5 +14,5 @@ def test_implementation_is_missing_from_metadata():
             implementation_name="some-other-implementation",
             implementation_config=None,
             container_engine="undefined",
-            resources={"foo": "bar"},
+            spark_resources={"foo": "bar"},
         )
