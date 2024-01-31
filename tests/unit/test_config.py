@@ -197,7 +197,7 @@ FULLY_DEFINED_ENV_CONFIG = {
         ),
     ],
 )
-def test__assign_defaults(default_config_params, environment_config, expected_config, mocker):
+def test__assign_environment_defaults(default_config_params, environment_config, expected_config, mocker):
     config_params = default_config_params.copy()
     config_params.update({"computing_environment": environment_config})
     # mock out the _load_computing_environment method to return the dict directly
