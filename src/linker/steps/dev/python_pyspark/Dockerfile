@@ -8,8 +8,6 @@ RUN pip3 install pandas==2.1.2 pyarrow pyyaml
 # I looked in /opt/spark/bin/pyspark to find this
 ENV PYTHONPATH="${SPARK_HOME}/python/:${SPARK_HOME}/python/lib/py4j-0.10.9.7-src.zip:${PYTHONPATH}"
 RUN mkdir -p /input_data
-RUN mkdir -p /input_data/main_input
-RUN mkdir -p /input_data/secondary_input
 RUN mkdir -p /results
 RUN mkdir -p /diagnostics
 RUN mkdir -p /workdir
