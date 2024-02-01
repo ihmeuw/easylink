@@ -36,7 +36,6 @@ class Pipeline:
                 / "intermediate"
                 / f"{step_number}_{implementation.step_name}"
             )
-            input_data = self.config.input_data
             if idx <= number_of_steps - 1:
                 output_dir.mkdir(exist_ok=True)
             intermediate_data = (
@@ -51,12 +50,11 @@ class Pipeline:
                 if idx > 0
                 else []
             )
+            implementation.step.add_bindings_from_prev(intermediate_data)
             implementation.run(
                 session=session,
                 runner=runner,
                 step_id=step_id,
-                input_data=input_data,
-                intermediate_data=intermediate_data,
                 results_dir=output_dir,
                 diagnostics_dir=diagnostics_dir,
             )

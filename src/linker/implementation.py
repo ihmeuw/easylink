@@ -21,7 +21,7 @@ class Implementation:
         self.step = step
         self._pipeline_step_name = step.name
         self.name = implementation_name
-        self.config = implementation_config
+        self.config = self._format_config(implementation_config)
         self._container_engine = container_engine
         self.resources = resources
         self._metadata = self._load_metadata()
@@ -37,13 +37,10 @@ class Implementation:
         session: Optional["drmaa.Session"],
         runner: Callable,
         step_id: str,
-        input_data: List[Path],
-        intermediate_data: List[Path],
         results_dir: Path,
         diagnostics_dir: Path,
     ) -> None:
         logger.info(f"Running pipeline step ID {step_id}")
-        input_data_bindings = self.get_input_bindings(step_id, input_data, intermediate_data)
         if self._requires_spark and session:
             # having an active drmaa session implies we are running on a slurm cluster
             # (i.e. not 'local' computing environment) and so need to spin up a spark
@@ -56,7 +53,7 @@ class Implementation:
                 step_id=step_id,
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
-                input_data_bindings=input_data_bindings,
+                input_data_bindings=self.step.input_data_bindings,
             )
             # Add the spark master url to implementation config
             if not self.config:
@@ -65,14 +62,14 @@ class Implementation:
 
         runner(
             container_engine=self._container_engine,
-            input_data_bindings=input_data_bindings,
+            input_data_bindings=self.step.input_data_bindings,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
             step_id=step_id,
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
-            config=self._formatted_config(self.config),
+            config=self.config,
         )
 
         if self._requires_spark and session and not self.resources["spark"]["keep_alive"]:
@@ -89,15 +86,14 @@ class Implementation:
         logs = []
         logs = self._validate_expected_step(logs)
         logs = self._validate_container_exists(logs)
-        logs = self._validate_implementation_config(logs)
         return logs
 
     ##################
     # Helper methods #
     ##################
 
-    def _formatted_config(self) -> Optional[Dict[str, str]]:
-        return self._stringify_keys_values(self.config) if self.config else None
+    def _format_config(self, config) -> Optional[Dict[str, str]]:
+        return self._stringify_keys_values(config) if config else None
 
     StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
 
@@ -150,74 +146,3 @@ class Implementation:
         ):
             logs.append(err_str)
         return logs
-
-    def _validate_implementation_config(
-        self, logs: List[Optional[str]]
-    ) -> List[Optional[str]]:
-        """Validate the implementation config against the schema."""
-        if self.config:
-            for input_path_type in [
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-            ]:
-                if input_path_type in self.config:
-                    if not isinstance(self.config[input_path_type], list) or not all(
-                        isinstance(path, str) for path in self.config[input_path_type]
-                    ):
-                        logs.append(
-                            f"Implementation config error: {input_path_type} must be a non-empty list of input files if configured"
-                        )
-                    else:
-                        for path in self.config[input_path_type]:
-                            if not path.startswith(
-                                "/input_data/original_input_data"
-                            ) or path.startswith("/input_data/original_input_data"):
-                                logs.append(
-                                    f"Implementation config error: {input_path_type} file {path} must derive from pipeline input data or intermediate data from previous implementation"
-                                )
-        return logs
-
-    def get_input_bindings(
-        self, idx, input_data: List[Path], intermediate_data: List[Path]
-    ) -> Dict[str, str]:
-        bindings = {}
-        config_main_input = (
-            self.config.get("DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", None)
-            if self.config
-            else None
-        )
-        config_secondary_input = (
-            self.config.get("DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS", None)
-            if self.config
-            else None
-        )
-        if config_main_input is None:
-            if idx == 0:
-                bindings.update(
-                    **{
-                        f"/input_data/main_input/{file.name}": str(file)
-                        for file in intermediate_data
-                    }
-                )
-            else:
-                bindings.update(
-                    **{
-                        f"/input_data/main_input/{file.name}": str(file)
-                        for file in input_data
-                    }
-                )
-        if config_main_input or config_secondary_input:
-            bindings.update(
-                **{
-                    f"/input_data/original_input_data/{file.name}": str(file)
-                    for file in input_data
-                }
-            )
-            bindings.update(
-                **{
-                    f"/input_data/intermediate_data/{file.name}": str(file)
-                    for file in intermediate_data
-                }
-            )
-
-        return bindings

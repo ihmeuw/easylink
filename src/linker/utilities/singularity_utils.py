@@ -30,7 +30,7 @@ def _run_container(
         "singularity run --containall --no-home --bind /tmp:/tmp "
         f"--bind {results_dir}:/results --bind {diagnostics_dir}:/diagnostics "
     )
-    for inside_path, outside_path in input_data_bindings.items():
+    for outside_path, inside_path in input_data_bindings.items():
         cmd += f"--bind {outside_path}:{inside_path} "
     cmd += f"{container_path}"
     _run_cmd(diagnostics_dir, cmd, config)

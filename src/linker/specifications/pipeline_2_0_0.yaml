@@ -7,10 +7,6 @@ steps:
       configuration:
         # DUMMY_CONTAINER_BROKEN: true
         DUMMY_CONTAINER_INCREMENT: 111
-        # DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS:
-        #   - "/input_data/original_input_data/input_file_1.parquet"
-        # DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS: 
-        #   - "/input_data/original_input_data/input_file_1.parquet"
   step_2:
     implementation:
       name: step_2_python_pandas
@@ -18,7 +14,3 @@ steps:
       configuration:
         # DUMMY_CONTAINER_BROKEN: true
         DUMMY_CONTAINER_INCREMENT: 222
-        # DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS:
-        #   - "/input_data/original_input_data/input_file_1.parquet"
-        # DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS: 
-        #   - "/input_data/original_input_data/input_file_1.parquet"

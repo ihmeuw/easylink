@@ -28,7 +28,7 @@ class PipelineSchema:
                 # TODO: Make a real validator for
                 # pvs_like_case_study and/or remove this hack
                 lambda x: None,
-                Step("pvs_like_case_study"),
+                Step("pvs_like_case_study", validate_dummy_output),
             )
         )
 
@@ -37,8 +37,37 @@ class PipelineSchema:
             PipelineSchema._generate_schema(
                 "development",
                 validate_dummy_input,
-                Step("step_1"),
-                Step("step_2"),
+                Step(
+                    "step_1",
+                    validate_dummy_output,
+                    input_slots={
+                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
+                            "dir_name": "/input_data/main_input",
+                            "filepaths": [
+                                "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
+                            ],
+                            "prev_output": False,
+                        }
+                    },
+                ),
+                Step(
+                    "step_2",
+                    validate_dummy_output,
+                    input_slots={
+                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
+                            "dir_name": "/input_data/main_input",
+                            "filepaths": [],
+                            "prev_output": True,
+                        },
+                        "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": {
+                            "dir_name": "/input_data/secondary_input",
+                            "filepaths": [
+                                "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
+                            ],
+                            "prev_output": False,
+                        },
+                    },
+                ),
             )
         )
 
