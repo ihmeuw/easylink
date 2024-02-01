@@ -6,7 +6,7 @@ from loguru import logger
 from linker.step import Step
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import get_slurm_drmaa
-from linker.utilities.spark_utils import build_cluster
+from linker.utilities.spark_utils import build_spark_cluster
 
 
 class Implementation:
@@ -47,7 +47,7 @@ class Implementation:
             # (i.e. not 'local' computing environment) and so need to spin up a spark
             # cluster instead of relying on the implementation to do it in a container
             drmaa = get_slurm_drmaa()
-            spark_master_url, job_id = build_cluster(
+            spark_master_url, job_id = build_spark_cluster(
                 drmaa=drmaa,
                 session=session,
                 resources=self.spark_resources,
