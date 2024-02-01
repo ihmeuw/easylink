@@ -8,8 +8,7 @@ dummy_step.py .
 # https://hub.docker.com/layers/library/python/3.10/images/sha256-1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899?context=explore
 mkdir -p /input_data
 mkdir -p /input_data/main_input
-mkdir -p /input_data/original_input
-mkdir -p /input_data/intermediate_input
+mkdir -p /input_data/secondary_input
 mkdir -p /extra_implementation_specific_input_data
 mkdir -p /results
 mkdir -p /diagnostics
