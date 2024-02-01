@@ -1,5 +1,5 @@
-import ast
 import glob
+import json
 import logging
 import os
 
@@ -26,9 +26,7 @@ def load_file(file_path, file_format=None):
 diagnostics = {}
 
 if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
-    main_input_file_paths = ast.literal_eval(
-        os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"]
-    )
+    main_input_file_paths = json.loads(os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"])
 else:
     main_input_file_paths = glob.glob("/input_data/main_input/*")
 
@@ -41,7 +39,7 @@ for path in main_input_file_paths[1:]:
     df = pd.concat([df, load_file(path)], ignore_index=True).fillna(0)
 
 if "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" in os.environ:
-    secondary_input_file_paths = ast.literal_eval(
+    secondary_input_file_paths = json.loads(
         os.environ["DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"]
     )
 else:
