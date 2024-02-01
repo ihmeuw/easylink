@@ -7,6 +7,7 @@ import docker
 from docker import DockerClient
 from docker.models.containers import Container
 from loguru import logger
+
 from linker.step import StepInput
 
 DOCKER_TIMEOUT = 360  # seconds
@@ -66,10 +67,12 @@ def _run_container(
     for step_input in step_inputs:
         for outside_path, inside_path in step_input.bindings.items():
             volumes[outside_path] = {"bind": f"{inside_path}", "mode": "ro"}
-    volumes.update(**{        
-        str(results_dir): {"bind": "/results", "mode": "rw"},
-        str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},
-    })
+    volumes.update(
+        **{
+            str(results_dir): {"bind": "/results", "mode": "rw"},
+            str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},
+        }
+    )
     environment = {}
     environment.update(**config)
     environment.update(**{input.env_var: input.container_paths for input in step_inputs})
