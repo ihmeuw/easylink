@@ -16,7 +16,7 @@ def build_cluster(
     step_id: str,
     results_dir: Path,
     diagnostics_dir: Path,
-    input_data_bindings: Dict[str, Path],
+    input_data_bindings: Dict[str, str],
 ) -> Tuple[str, str]:
     """Builds a Spark cluster.
 
@@ -81,7 +81,7 @@ def build_cluster_launch_script(
     worker_bindings = (
         f"--bind {results_dir}:/results " f"--bind {diagnostics_dir}:/diagnostics "
     )
-    for inside_path, outside_path in input_data_bindings.items():
+    for outside_path, inside_path in input_data_bindings.items():
         worker_bindings += f"--bind {outside_path}:{inside_path} "
     # TODO: MIC-4744: Add support for varying SPARK_MASTER_PORT and SPARK_MASTER_WEBUI_PORT
     launcher.write(

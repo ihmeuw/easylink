@@ -50,6 +50,7 @@ class Pipeline:
                 if idx > 0
                 else []
             )
+            #TODO: Ideally we would already have these bindings ahead of time
             implementation.step.add_bindings_from_prev(intermediate_data)
             implementation.run(
                 session=session,
