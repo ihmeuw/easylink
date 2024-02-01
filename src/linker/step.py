@@ -32,9 +32,6 @@ class Step:
             all_bindings.update(slot.bindings)
         return all_bindings
     
-    def add_bindings(self, input_slot_name: str, paths: List[Path]):
-        self.input_slots[input_slot_name].add_bindings(paths)
-    
     def add_bindings_from_prev(self, paths: List[Path]):
         prev_slots = [slot for slot in self.input_slots.values() if slot.prev_output]
         for slot in prev_slots:
