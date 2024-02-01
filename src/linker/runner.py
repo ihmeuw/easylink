@@ -8,6 +8,7 @@ from loguru import logger
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
+from linker.step import StepInput
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
@@ -55,7 +56,7 @@ def main(
 
 def run_container(
     container_engine: str,
-    input_data_bindings: Dict[str, Path],
+    step_inputs: List[StepInput],
     results_dir: Path,
     diagnostics_dir: Path,
     step_id: str,
@@ -67,7 +68,7 @@ def run_container(
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
     kwargs = {
-        "input_data_bindings": input_data_bindings,
+        "step_inputs": step_inputs,
         "results_dir": results_dir,
         "diagnostics_dir": diagnostics_dir,
         "step_id": step_id,

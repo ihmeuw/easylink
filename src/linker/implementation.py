@@ -62,7 +62,7 @@ class Implementation:
 
         runner(
             container_engine=self._container_engine,
-            input_data_bindings=self.step.input_data_bindings,
+            step_inputs=self.step.inputs,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
             step_id=step_id,
@@ -92,7 +92,7 @@ class Implementation:
     # Helper methods #
     ##################
 
-    def _format_config(self, config) -> Optional[Dict[str, str]]:
+    def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
         return self._stringify_keys_values(config) if config else None
 
     StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]

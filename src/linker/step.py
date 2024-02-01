@@ -4,15 +4,19 @@ from pathlib import Path
 
 
 @dataclass    
-class InputSlot:
-    env_name: str
+class StepInput:
+    env_var: str
     dir_name: str
     filepaths: List[str]
     prev_output: bool
     
     @property
+    def container_paths(self):
+        return [str(Path(self.dir_name) / Path(path).name) for path in self.filepaths]
+    
+    @property
     def bindings(self):
-        return {path: Path(self.dir_name) / Path(path).name for path in self.filepaths}
+        return {path: container_path for path, container_path in zip(self.filepaths, self.container_paths)}
     
     def add_bindings(self, paths: List[Path]):
         self.filepaths.extend(paths)
@@ -20,20 +24,13 @@ class InputSlot:
 class Step:
     """Steps contain information about the purpose of the interoperable elements of the sequence called a *Pipeline* and how those elements relate to one another.
     In turn, steps are implemented by Implementations. In a sense, steps contain metadata about the implementations to which they relate."""
-    def __init__(self, name: str, validate_output: Callable, input_slots: Dict = {}):
+    def __init__(self, name: str, validate_output: Callable, inputs: Dict = {}):
         self.name = name
         self.validate_output = validate_output
-        self.input_slots = {input_slot_name: InputSlot(input_slot_name, **slot_params) for input_slot_name, slot_params in input_slots.items()}
-    
-    @property
-    def input_data_bindings(self):
-        all_bindings = {}
-        for slot in self.input_slots.values():
-            all_bindings.update(slot.bindings)
-        return all_bindings
+        self.inputs = [StepInput(env_var, **input_params) for env_var, input_params in inputs.items()]
     
     def add_bindings_from_prev(self, paths: List[Path]):
-        prev_slots = [slot for slot in self.input_slots.values() if slot.prev_output]
-        for slot in prev_slots:
-            slot.add_bindings(paths)
+        input_from_prev = [input for input in self.inputs if input.prev_output]
+        for input in input_from_prev:
+            input.add_bindings(paths)
         

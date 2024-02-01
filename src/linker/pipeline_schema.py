@@ -40,7 +40,7 @@ class PipelineSchema:
                 Step(
                     "step_1",
                     validate_dummy_output,
-                    input_slots={
+                    inputs={
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                             "dir_name": "/input_data/main_input",
                             "filepaths": [
@@ -53,7 +53,7 @@ class PipelineSchema:
                 Step(
                     "step_2",
                     validate_dummy_output,
-                    input_slots={
+                    inputs={
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                             "dir_name": "/input_data/main_input",
                             "filepaths": [],

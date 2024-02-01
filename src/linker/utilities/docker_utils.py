@@ -7,12 +7,13 @@ import docker
 from docker import DockerClient
 from docker.models.containers import Container
 from loguru import logger
+from linker.step import StepInput
 
 DOCKER_TIMEOUT = 360  # seconds
 
 
 def run_with_docker(
-    input_data_bindings: Dict[Path, Path],
+    step_inputs: List[StepInput],
     results_dir: Path,
     diagnostics_dir: Path,
     step_id: str,
@@ -23,7 +24,7 @@ def run_with_docker(
     client = get_docker_client()
     image_id = _load_image(client, container_path)
     container = _run_container(
-        client, image_id, input_data_bindings, results_dir, diagnostics_dir, config
+        client, image_id, step_inputs, results_dir, diagnostics_dir, config
     )
     _clean(client, image_id, container)
 
@@ -55,20 +56,23 @@ def _load_image(client: DockerClient, image_path: Path) -> str:
 def _run_container(
     client: DockerClient,
     image_id: str,
-    input_data_bindings: Dict[Path, Path],
+    step_inputs: List[StepInput],
     results_dir: Path,
     diagnostics_dir: Path,
     config: Optional[Dict[str, str]],
 ):
     logger.info(f"Running the container from image {image_id}")
-    volumes = {
-        **{
-            outside_path: {"bind": f"{inside_path}", "mode": "ro"}
-            for inside_path, outside_path in input_data_bindings.items()
-        },
+    volumes = {}
+    for step_input in step_inputs:
+        for outside_path, inside_path in step_input.bindings.items():
+            volumes[outside_path] = {"bind": f"{inside_path}", "mode": "ro"}
+    volumes.update(**{        
         str(results_dir): {"bind": "/results", "mode": "rw"},
         str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},
-    }
+    })
+    environment = {}
+    environment.update(**config)
+    environment.update(**{input.env_var: input.container_paths for input in step_inputs})
     try:
         container = client.containers.run(
             image_id,
