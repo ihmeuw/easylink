@@ -5,6 +5,8 @@ from typing import Any, Callable, Dict, List
 
 @dataclass
 class StepInput:
+    """StepInput contains information about the input data for a step in a pipeline. It is used to bind input data to the container environment."""
+
     env_var: str
     dir_name: str
     filepaths: List[str]

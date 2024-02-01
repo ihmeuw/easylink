@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from linker.configuration import Config
+from linker.pipeline_schema import PIPELINE_SCHEMAS
 from linker.step import Step
 from tests.unit.conftest import (
     ENV_CONFIG_DICT,
@@ -24,7 +25,7 @@ def test_config_instantiation(test_dir, default_config):
 
 def test__get_schema(default_config):
     """Test that the schema is correctly loaded from the pipeline.yaml"""
-    assert default_config.schema.steps == [Step("step_1"), Step("step_2")]
+    assert default_config.schema == PIPELINE_SCHEMAS[1]
 
 
 @pytest.mark.parametrize("input_data", ["good", "bad"])
