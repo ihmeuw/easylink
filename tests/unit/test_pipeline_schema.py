@@ -11,12 +11,3 @@ def test_get_schemas():
         assert schema.name
         assert type(schema.steps) == list
         assert schema.steps
-
-
-def test__add_step():
-    schema = PipelineSchema("bad-schema", lambda *_: None)
-    assert schema.steps == []
-    schema._add_step("foo")
-    assert schema.steps == ["foo"]
-    schema._add_step("bar")
-    assert schema.steps == ["foo", "bar"]

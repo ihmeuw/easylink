@@ -8,23 +8,26 @@ class StepInput:
     """StepInput contains information about the input data for a step in a pipeline. It is used to bind input data to the container environment."""
 
     env_var: str
-    dir_name: str
-    filepaths: List[str]
+    container_dir_name: str
+    host_filepaths: List[str]
     prev_output: bool
 
     @property
     def container_paths(self) -> List[str]:
-        return [str(Path(self.dir_name) / Path(path).name) for path in self.filepaths]
+        return [
+            str(Path(self.container_dir_name) / Path(path).name)
+            for path in self.host_filepaths
+        ]
 
     @property
     def bindings(self) -> Dict[str, str]:
         return {
             path: container_path
-            for path, container_path in zip(self.filepaths, self.container_paths)
+            for path, container_path in zip(self.host_filepaths, self.container_paths)
         }
 
     def add_bindings(self, paths: List[Path]) -> None:
-        self.filepaths.extend(paths)
+        self.host_filepaths.extend(paths)
 
 
 class Step:

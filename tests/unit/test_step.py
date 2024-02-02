@@ -11,8 +11,8 @@ def test_step_instantiation():
 def test_step_input():
     input_params = {
         "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-        "dir_name": "/input_data/main_input",
-        "filepaths": [
+        "container_dir_name": "/input_data/main_input",
+        "host_filepaths": [
             "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
         ],
         "prev_output": False,
@@ -24,7 +24,7 @@ def test_step_input():
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet": "/input_data/main_input/input_file_1.parquet"
     }
     step_input.add_bindings(["/foo/bar"])
-    assert step_input.filepaths == [
+    assert step_input.host_filepaths == [
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet",
         "/foo/bar",
     ]
@@ -44,8 +44,8 @@ def test_add_bindings_from_prev():
         validate_output=lambda x: x,
         inputs={
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
-                "dir_name": "/input_data/main_input",
-                "filepaths": [
+                "container_dir_name": "/input_data/main_input",
+                "host_filepaths": [
                     "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
                 ],
                 "prev_output": True,
@@ -53,7 +53,7 @@ def test_add_bindings_from_prev():
         },
     )
     step.add_bindings_from_prev(["/foo/bar"])
-    assert set(step.inputs[0].filepaths) == {
+    assert set(step.inputs[0].host_filepaths) == {
         "/foo/bar",
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet",
     }

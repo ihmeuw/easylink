@@ -1,8 +1,7 @@
-from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List
 
+from linker.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from linker.step import Step
-from linker.utilities.data_utils import validate_dummy_output
 
 
 class PipelineSchema:
@@ -20,76 +19,13 @@ class PipelineSchema:
     def _get_schemas(cls) -> List["PipelineSchema"]:
         """Creates the allowable schema for the pipeline."""
         schemas = []
-
-        # pvs-like case study
-        schemas.append(
-            PipelineSchema._generate_schema(
-                "pvs_like_case_study",
-                # TODO: Make a real validator for
-                # pvs_like_case_study and/or remove this hack
-                lambda x: None,
-                Step("pvs_like_case_study", validate_dummy_output),
-            )
-        )
-
-        # development dummy
-        schemas.append(
-            PipelineSchema._generate_schema(
-                "development",
-                validate_dummy_input,
-                Step(
-                    "step_1",
-                    validate_dummy_output,
-                    inputs={
-                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
-                            "dir_name": "/input_data/main_input",
-                            "filepaths": [
-                                "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
-                            ],
-                            "prev_output": False,
-                        }
-                    },
-                ),
-                Step(
-                    "step_2",
-                    validate_dummy_output,
-                    inputs={
-                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
-                            "dir_name": "/input_data/main_input",
-                            "filepaths": [],
-                            "prev_output": True,
-                        },
-                        "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": {
-                            "dir_name": "/input_data/secondary_input",
-                            "filepaths": [
-                                "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
-                            ],
-                            "prev_output": False,
-                        },
-                    },
-                ),
-            )
-        )
+        for schema_name, schema_params in ALLOWED_SCHEMA_PARAMS.items():
+            schema = cls(schema_name, schema_params["validate_input"])
+            for step_name, step_params in schema_params["steps"].items():
+                schema.steps.append(Step(step_name, **step_params))
+            schemas.append(schema)
 
         return schemas
-
-    def _add_step(self, step: Step) -> None:
-        self.steps.append(step)
-
-    @classmethod
-    def _generate_schema(cls, name: str, validate_input: Callable, *steps: Step) -> None:
-        schema = cls(name, validate_input)
-        for step in steps:
-            schema._add_step(step)
-        return schema
-
-
-def validate_dummy_input(filepath: Path) -> Optional[List[str]]:
-    "Wrap the output file validator for now, since it is the same"
-    try:
-        validate_dummy_output(filepath)
-    except Exception as e:
-        return [e.args[0]]
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()
