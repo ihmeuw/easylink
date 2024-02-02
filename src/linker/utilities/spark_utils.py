@@ -62,7 +62,7 @@ def build_cluster(
 
 
 def build_cluster_launch_script(
-    results_dir: Path, diagnostics_dir: Path, input_data_bindings: Dict[str, Path]
+    results_dir: Path, diagnostics_dir: Path, input_data_bindings: Dict[str, str]
 ) -> TextIO:
     """Generates a shell file that, on execution, spins up a Spark cluster.
 
