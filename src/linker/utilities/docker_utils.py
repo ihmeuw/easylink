@@ -1,3 +1,4 @@
+import json
 from os import strerror
 from pathlib import Path
 from time import strftime
@@ -73,9 +74,11 @@ def _run_container(
             str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},
         }
     )
-    environment = {}
-    environment.update(**config)
-    environment.update(**{input.env_var: input.container_paths for input in step_inputs})
+    input_env_vars = {
+        input.env_var: json.dumps(input.container_paths) for input in step_inputs
+    }
+    environment = {**config, **input_env_vars}
+
     try:
         container = client.containers.run(
             image_id,
@@ -83,7 +86,7 @@ def _run_container(
             detach=True,
             auto_remove=True,
             tty=True,
-            environment=config,
+            environment=environment,
         )
         logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
         with open(diagnostics_dir / f"docker.o", "wb") as output_file:
