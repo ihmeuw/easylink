@@ -9,8 +9,7 @@ ALLOWED_SCHEMA_PARAMS = {
                 "inputs": {
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/main_input",
-                        "input_filenames": [
-                            "file1"],
+                        "input_filenames": ["file1"],
                         "prev_output": False,
                     }
                 },
@@ -25,8 +24,7 @@ ALLOWED_SCHEMA_PARAMS = {
                 "inputs": {
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/main_input",
-                        "input_filenames": [
-                            "file1"],
+                        "input_filenames": ["file1"],
                         "prev_output": False,
                     }
                 },
@@ -41,9 +39,7 @@ ALLOWED_SCHEMA_PARAMS = {
                     },
                     "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/secondary_input",
-                        "input_filenames": [
-                            "file1"
-                        ],
+                        "input_filenames": ["file1"],
                         "prev_output": False,
                     },
                 },

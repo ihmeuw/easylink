@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List
 
+
 class StepInput:
     """StepInput contains information about the input data for a step in a pipeline. It is used to bind input data to the container environment."""
 

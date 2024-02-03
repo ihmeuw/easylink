@@ -32,7 +32,9 @@ def test__get_schema(default_config):
 def test__load_input_data_paths(test_dir, input_data):
     if input_data == "good":
         paths = Config._load_input_data_paths(f"{test_dir}/input_data.yaml")
-        assert list(paths.values()) == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
+        assert list(paths.values()) == [
+            Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]
+        ]
     if input_data == "bad":
         with pytest.raises(RuntimeError, match=r"Cannot find input data: .*"):
             Config._load_input_data_paths(f"{test_dir}/bad_input_data.yaml")

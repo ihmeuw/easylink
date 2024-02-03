@@ -135,7 +135,10 @@ class Config:
 
     @staticmethod
     def _load_input_data_paths(input_data: Path) -> List[Path]:
-        file_list = {filename: Path(filepath).resolve() for filename, filepath in load_yaml(input_data).items()}
+        file_list = {
+            filename: Path(filepath).resolve()
+            for filename, filepath in load_yaml(input_data).items()
+        }
         missing = [str(file) for file in file_list.values() if not file.exists()]
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")

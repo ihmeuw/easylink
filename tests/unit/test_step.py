@@ -39,7 +39,8 @@ def test_add_bindings_from_prev():
     assert step.inputs[0].bindings == {
         "/previous_step/eggs.parquet": "/bar/eggs.parquet",
     }
-    
+
+
 def test_add_input_filename_bindings():
     input_params = {
         "foo": {
@@ -50,7 +51,7 @@ def test_add_input_filename_bindings():
         }
     }
     step = Step("step1", validate_output=lambda x: x, inputs=input_params)
-    step.add_input_filename_bindings({"foo":"/baz/spam.csv"})
+    step.add_input_filename_bindings({"foo": "/baz/spam.csv"})
     assert step.inputs[0].host_filepaths == ["/baz/spam.csv"]
     assert step.inputs[0].container_paths == ["/bar/spam.csv"]
     assert step.inputs[0].bindings == {
