@@ -9,9 +9,8 @@ ALLOWED_SCHEMA_PARAMS = {
                 "inputs": {
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/main_input",
-                        "host_filepaths": [
-                            "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
-                        ],
+                        "input_filenames": [
+                            "file1"],
                         "prev_output": False,
                     }
                 },
@@ -26,9 +25,8 @@ ALLOWED_SCHEMA_PARAMS = {
                 "inputs": {
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/main_input",
-                        "host_filepaths": [
-                            "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
-                        ],
+                        "input_filenames": [
+                            "file1"],
                         "prev_output": False,
                     }
                 },
@@ -38,13 +36,13 @@ ALLOWED_SCHEMA_PARAMS = {
                 "inputs": {
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/main_input",
-                        "host_filepaths": [],
+                        "input_filenames": [],
                         "prev_output": True,
                     },
                     "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": {
                         "container_dir_name": "/input_data/secondary_input",
-                        "host_filepaths": [
-                            "/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet"
+                        "input_filenames": [
+                            "file1"
                         ],
                         "prev_output": False,
                     },
