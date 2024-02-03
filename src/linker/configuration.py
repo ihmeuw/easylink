@@ -23,8 +23,7 @@ class Config:
     ):
         self.pipeline_path = pipeline_specification
         self.pipeline = load_yaml(self.pipeline_path) if pipeline_specification else {}
-        self.full_input_data = self._load_input_data(input_data) if input_data else []
-        self.input_data = list(self.full_input_data.values())
+        self.input_data = self._load_input_data_paths(input_data) if input_data else []
         self.computing_environment_path = (
             Path(computing_environment) if computing_environment else None
         )
@@ -54,15 +53,30 @@ class Config:
 
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas."""
-        config_steps = list(self.pipeline["steps"].keys())
+
         errors = defaultdict(dict)
         for schema in PIPELINE_SCHEMAS:
-            pipeline_errors = self._validate_schema(schema, config_steps)
-            if pipeline_errors:
-                errors["PIPELINE ERRORS"][schema.name] = pipeline_errors
-
+            logs = []
+            config_steps = self.pipeline["steps"].keys()
+            # Check that number of schema steps matches number of implementations
+            if len(schema.steps) != len(config_steps):
+                logs.append(
+                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations."
+                )
             else:
-                schema.add_input_filename_bindings(self.full_input_data)
+                for idx, config_step in enumerate(config_steps):
+                    # Check that all steps are accounted for and in the correct order
+                    schema_step = schema.steps[idx].name
+                    if config_step != schema_step:
+                        logs.append(
+                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
+                            f"but the provided pipeline specifies '{config_step}'. "
+                            "Check step order and spelling in the pipeline configuration yaml."
+                        )
+            if logs:
+                errors["PIPELINE ERRORS"][schema.name] = logs
+                pass  # try the next schema
+            else:
                 return schema
         # No schemas were validated
         exit_with_validation_error(dict(errors))
@@ -102,39 +116,6 @@ class Config:
                 errors["INPUT DATA ERRORS"][str(input_filepath)] = input_data_errors
         return errors
 
-    
-    def _validate_schema(self, schema, config_steps) -> Optional[str]:
-        errors = {}
-        errors.update(self._validate_schema_length(schema, config_steps))
-        for idx, schema_step in enumerate(schema.steps):
-            step_errors = self._validate_step(schema_step, config_steps[idx])
-            if step_errors:
-                errors[schema_step.name] = step_errors
-        return errors
-    
-    def _validate_step(self, schema_step, config_step) -> Optional[str]:
-            return {**self._validate_step_position(schema_step.name, config_step),
-                      **schema_step.validate_input_filenames(self.full_input_data)}
-        
-    def _validate_schema_length(self, schema, steps) -> Optional[str]:
-        errors = {}
-        if len(schema.steps) != len(steps):
-                errors["STEP NAME ERRORS"] = f"Expected {len(schema.steps)} steps but found {len(steps)} implementations."
-        return errors
-    
-    def _validate_step_position(self, schema_step, config_step) -> Optional[str]:
-        errors = {}
-        if config_step != schema_step:
-            errors["STEP INPUT ERRORS"] =  (
-                            f"The pipeline schema expects step '{schema_step}' "
-                            f"but the provided pipeline specifies '{config_step}'. "
-                            "Check step order and spelling in the pipeline configuration yaml."
-                        )
-        return errors
-        
-    
-    
-
     @staticmethod
     def _load_computing_environment(
         computing_environment_path: Optional[Path],
@@ -151,12 +132,12 @@ class Config:
         return load_yaml(filepath)
 
     @staticmethod
-    def _load_input_data(input_data: Path) -> List[Path]:
-        file_dict = {filename: Path(filepath).resolve() for filename, filepath in load_yaml(input_data).items()}
-        missing = [str(file) for file in file_dict.values() if not file.exists()]
+    def _load_input_data_paths(input_data: Path) -> List[Path]:
+        file_list = [Path(filepath).resolve() for filepath in load_yaml(input_data).values()]
+        missing = [str(file) for file in file_list if not file.exists()]
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
-        return file_dict
+        return file_list
 
     @staticmethod
     def _get_spark_requests(
