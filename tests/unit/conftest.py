@@ -79,7 +79,7 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{tmp_path}/input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "file1.csv"),
+                "file1": str(input_dir1 / "file1.csv"),
                 "bar": str(input_dir2 / "file2.csv"),
             },
             file,
@@ -99,7 +99,7 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{tmp_path}/bad_columns_input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "broken_file1.csv"),
+                "file1": str(input_dir1 / "broken_file1.csv"),
                 "bar": str(input_dir2 / "broken_file2.csv"),
             },
             file,

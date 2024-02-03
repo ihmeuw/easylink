@@ -26,6 +26,10 @@ class PipelineSchema:
             schemas.append(schema)
 
         return schemas
+    
+    def add_input_filename_bindings(self, input_data: dict) -> None:
+        for step in self.steps:
+            step.add_input_filename_bindings(input_data)
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()

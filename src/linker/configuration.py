@@ -23,7 +23,8 @@ class Config:
     ):
         self.pipeline_path = pipeline_specification
         self.pipeline = load_yaml(self.pipeline_path) if pipeline_specification else {}
-        self.input_data = self._load_input_data_paths(input_data) if input_data else []
+        self.full_input_data = self._load_input_data_paths(input_data) if input_data else []
+        self.input_data = list(self.full_input_data.values())
         self.computing_environment_path = (
             Path(computing_environment) if computing_environment else None
         )
@@ -77,6 +78,7 @@ class Config:
                 errors["PIPELINE ERRORS"][schema.name] = logs
                 pass  # try the next schema
             else:
+                schema.add_input_filename_bindings(self.full_input_data)
                 return schema
         # No schemas were validated
         exit_with_validation_error(dict(errors))
@@ -133,8 +135,8 @@ class Config:
 
     @staticmethod
     def _load_input_data_paths(input_data: Path) -> List[Path]:
-        file_list = [Path(filepath).resolve() for filepath in load_yaml(input_data).values()]
-        missing = [str(file) for file in file_list if not file.exists()]
+        file_list = {filename: Path(filepath).resolve() for filename, filepath in load_yaml(input_data).items()}
+        missing = [str(file) for file in file_list.values() if not file.exists()]
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list

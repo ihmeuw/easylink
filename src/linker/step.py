@@ -2,8 +2,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List
 
-
-@dataclass
 class StepInput:
     """StepInput contains information about the input data for a step in a pipeline. It is used to bind input data to the container environment."""
 
@@ -19,7 +17,9 @@ class StepInput:
         self.container_dir_name = container_dir_name
         self.input_filenames = input_filenames
         self.prev_output = prev_output
-        self.host_filepaths = host_filepaths
+        ## WEIRD BUG if I don't specify the if else??
+        self.host_filepaths = host_filepaths if host_filepaths else []
+        self.foo = "foo"
 
     @property
     def container_paths(self) -> List[str]:
@@ -49,7 +49,7 @@ class StepInput:
 
     def add_input_filename_bindings(self, input_data: Dict[str, Any]) -> None:
         for filename in self.input_filenames:
-            self.host_filepaths.append(input_data[filename])
+            self.host_filepaths.append(str(input_data[filename]))
 
 
 class Step:
