@@ -35,6 +35,7 @@ class Config:
         self.spark = self._get_spark_requests(self.environment)
         self.schema = self._get_schema()
         self._validate()
+        self.schema.add_input_filename_bindings(self.full_input_data)
 
     def get_resources(self) -> Dict[str, str]:
         return {
@@ -78,7 +79,6 @@ class Config:
                 errors["PIPELINE ERRORS"][schema.name] = logs
                 pass  # try the next schema
             else:
-                schema.add_input_filename_bindings(self.full_input_data)
                 return schema
         # No schemas were validated
         exit_with_validation_error(dict(errors))
@@ -87,6 +87,7 @@ class Config:
         errors = {
             **self._validate_files(),
             **self._validate_input_data(),
+            **self.schema.validate_input_filenames(self.full_input_data),
         }
         if errors:
             exit_with_validation_error(errors)

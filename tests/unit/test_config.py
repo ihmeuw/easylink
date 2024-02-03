@@ -131,3 +131,6 @@ def test_bad_input_data(test_dir, caplog):
             }
         },
     )
+
+def test_missing_step_input():
+    pass

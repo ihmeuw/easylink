@@ -30,6 +30,14 @@ class PipelineSchema:
     def add_input_filename_bindings(self, input_data: dict) -> None:
         for step in self.steps:
             step.add_input_filename_bindings(input_data)
+    
+    def validate_input_filenames(self, input_data: dict) -> dict:
+        errors = {}
+        for step in self.steps:
+            step_errors = step.validate_input_filenames(input_data)
+            if step_errors:
+                errors["STEP INPUT ERRORS"] = step_errors
+        return errors
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()
