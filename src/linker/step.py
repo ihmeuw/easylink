@@ -36,13 +36,11 @@ class StepInput:
     def add_bindings(self, paths: List[Path]) -> None:
         self.host_filepaths.extend(paths)
 
-    def validate_input_filenames(self, input_data: Dict[str, Any]) -> Dict[str, str]:
-        errors = {}
+    def validate_input_filenames(self, input_data: Dict[str, Any]) -> List[str]:
+        errors = []
         for filename in self.input_filenames:
             if filename not in input_data:
-                errors[
-                    filename
-                ] = f"Step requires input data key {filename} but it was not found in the input data."
+                errors.append(f"Step requires input data key {filename} but it was not found in the input data.")
         return errors
 
     def add_input_filename_bindings(self, input_data: Dict[str, Any]) -> None:
@@ -67,12 +65,12 @@ class Step:
         for input in input_from_prev:
             input.add_bindings(paths)
 
-    def validate_input_filenames(self, input_data: Dict[str, Any]) -> Dict[str, str]:
-        errors = {}
+    def validate_input_filenames(self, input_data: Dict[str, Any]) -> List[str]:
+        errors = []
         for input in self.inputs:
             input_errors = input.validate_input_filenames(input_data)
             if input_errors:
-                errors[input.env_var] = input_errors
+                errors.extend(input_errors)
         return errors
 
     def add_input_filename_bindings(self, input_data: Dict[str, Any]) -> None:

@@ -10,7 +10,7 @@ class PipelineSchema:
     def __init__(self, name, validate_input) -> None:
         self.name = name
         self.validate_input: Callable = validate_input
-        self.steps = []
+        self.steps: List(Step) = []
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
@@ -36,7 +36,7 @@ class PipelineSchema:
         for step in self.steps:
             step_errors = step.validate_input_filenames(input_data)
             if step_errors:
-                errors["STEP INPUT ERRORS"] = step_errors
+                errors["STEP INPUT ERRORS"][step.name] = step_errors
         return errors
 
 
