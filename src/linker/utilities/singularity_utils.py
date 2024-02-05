@@ -56,7 +56,7 @@ def _run_cmd(
         env_config = {f"SINGULARITYENV_{key}": value for (key, value) in config.items()}
         env_vars.update(env_config)
     step_vars = {
-        f"SINGULARITYENV_{env_var}": json.dumps(container_paths)
+        f"SINGULARITYENV_{env_var}": ",".join(container_paths)
         for env_var, container_paths in input_env_vars.items()
     }
     env_vars.update(step_vars)
