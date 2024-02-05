@@ -52,7 +52,6 @@ if "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" in os.environ:
     secondary_input_file_paths = os.environ[
         "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
     ].split(",")
-
 else:
     secondary_input_file_paths = glob.glob("/input_data/secondary_input*")
 
