@@ -4,7 +4,8 @@ from pathlib import Path
 import pytest
 
 from linker.configuration import Config
-from linker.pipeline_schema import PIPELINE_SCHEMAS
+from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+from linker.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from linker.step import Step
 from tests.unit.conftest import (
     ENV_CONFIG_DICT,
@@ -132,5 +133,30 @@ def test_bad_input_data(test_dir, caplog):
         },
     )
 
-def test_missing_step_input():
-    pass
+
+def test_missing_step_input(default_config_params, caplog, mocker):
+    mock_input_dependency = "file2"
+    mock_pipeline_schemas = ALLOWED_SCHEMA_PARAMS
+    mock_pipeline_schemas["development"]["steps"]["step_2"]["inputs"][
+        "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+    ]["input_filenames"] = [mock_input_dependency]
+    mocker.patch("linker.pipeline_schema.ALLOWED_SCHEMA_PARAMS", mock_pipeline_schemas)
+    mocker.patch("linker.configuration.PIPELINE_SCHEMAS", PipelineSchema._get_schemas())
+    config_params = default_config_params
+    config_params.update({"computing_environment": None})
+
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            "STEP INPUT ERRORS": {
+                "step_2": [
+                    f"- Step requires input data key {mock_input_dependency} but it was not found in the input data."
+                ],
+            }
+        },
+    )

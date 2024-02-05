@@ -40,7 +40,9 @@ class StepInput:
         errors = []
         for filename in self.input_filenames:
             if filename not in input_data:
-                errors.append(f"Step requires input data key {filename} but it was not found in the input data.")
+                errors.append(
+                    f"Step requires input data key {filename} but it was not found in the input data."
+                )
         return errors
 
     def add_input_filename_bindings(self, input_data: Dict[str, Any]) -> None:
