@@ -55,7 +55,7 @@ def validate_dummy_output(filepath: Path) -> None:
 
 def validate_dummy_input(filepath: Path) -> Optional[List[str]]:
     "Wrap the output file validator for now, since it is the same"
-    "as the input. The input validation is batched with the other 
+    "as the input. The input validation is batched with the other"
     "config validations, so we need to return the log message"
     "instead of raising an exception directly."
     try:
