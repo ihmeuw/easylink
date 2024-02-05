@@ -12,15 +12,12 @@ class StepInput:
         container_dir_name: str,
         input_filenames: List[str],
         prev_output: bool,
-        host_filepaths: List[str] = [],
     ):
         self.env_var = env_var
         self.container_dir_name = container_dir_name
         self.input_filenames = input_filenames
         self.prev_output = prev_output
-        ## WEIRD BUG if I don't specify the if else??
-        self.host_filepaths = host_filepaths if host_filepaths else []
-        self.foo = "foo"
+        self.host_filepaths = []
 
     @property
     def container_paths(self) -> List[str]:

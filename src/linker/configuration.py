@@ -35,6 +35,7 @@ class Config:
         self.spark = self._get_spark_requests(self.environment)
         self.schema = self._get_schema()
         self._validate()
+        ## TODO: refactor placement of this when we refactor other validation methods
         self.schema.add_input_filename_bindings(self.full_input_data)
 
     def get_resources(self) -> Dict[str, str]:

@@ -46,7 +46,6 @@ def test_add_input_filename_bindings():
         "foo": {
             "container_dir_name": "/bar",
             "input_filenames": ["foo"],
-            "host_filepaths": [],
             "prev_output": True,
         }
     }
