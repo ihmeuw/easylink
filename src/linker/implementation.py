@@ -53,7 +53,7 @@ class Implementation:
                 step_id=step_id,
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
-                input_data_bindings=self.step.input_data_bindings,
+                input_bindings=self.step.input_bindings,
             )
             # Add the spark master url to implementation config
             if not self.config:
@@ -62,7 +62,8 @@ class Implementation:
 
         runner(
             container_engine=self._container_engine,
-            step_inputs=self.step.inputs,
+            input_bindings=self.step.input_bindings,
+            input_env_vars=self.step.input_env_vars,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
             step_id=step_id,

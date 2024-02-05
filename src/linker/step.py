@@ -1,6 +1,7 @@
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List
+
+from linker.utilities.general_utils import merge_dicts
 
 
 class StepInput:
@@ -29,7 +30,7 @@ class StepInput:
     @property
     def bindings(self) -> Dict[str, str]:
         return {
-            path: container_path
+            str(path): str(container_path)
             for path, container_path in zip(self.host_filepaths, self.container_paths)
         }
 
@@ -61,6 +62,14 @@ class Step:
         self.inputs = [
             StepInput(env_var, **input_params) for env_var, input_params in inputs.items()
         ]
+
+    @property
+    def input_bindings(self) -> Dict[str, str]:
+        return merge_dicts([input.bindings for input in self.inputs])
+
+    @property
+    def input_env_vars(self) -> Dict[str, List[str]]:
+        return {input.env_var: input.container_paths for input in self.inputs}
 
     def add_bindings_from_prev(self, paths: List[Path]):
         input_from_prev = [input for input in self.inputs if input.prev_output]

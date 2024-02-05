@@ -26,7 +26,8 @@ def launch_slurm_job(
     session: types.ModuleType("drmaa.Session"),
     resources: Dict[str, str],
     container_engine: str,
-    input_data: List[str],
+    input_bindings: List[str],
+    input_env_vars: Dict[str, str],
     results_dir: Path,
     diagnostics_dir: Path,
     step_id: str,
@@ -52,10 +53,12 @@ def launch_slurm_job(
         container_full_stem,
         "-vvv",
     ]
-    for filepath in input_data:
-        jt_args.extend(("--input-data", str(filepath)))
     if config:
         jt_args.extend(("--config", str(json.dumps(config))))
+    if input_bindings:
+        jt_args.extend(("--input-bindings", str(json.dumps(input_bindings))))
+    if input_env_vars:
+        jt_args.extend(("--input-env-vars", str(json.dumps(input_env_vars))))
     jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",

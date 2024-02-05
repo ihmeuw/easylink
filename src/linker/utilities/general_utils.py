@@ -103,3 +103,10 @@ def exit_with_validation_error(error_msg: Dict) -> None:
         "\n==========================================\n"
     )
     exit(errno.EINVAL)
+
+
+def merge_dicts(dicts):
+    final_dict = {}
+    for dictionary in dicts:
+        final_dict.update(dictionary)
+    return final_dict

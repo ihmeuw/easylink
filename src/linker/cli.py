@@ -120,7 +120,8 @@ def run(
 @click.argument("step_name")
 @click.argument("implementation_name")
 @click.argument("container_full_stem")
-@click.option("--input-data", multiple=True)
+@click.option("--input-bindings")
+@click.option("--input-env-vars")
 @click.option("--config")
 @click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
 def run_slurm_job(
@@ -131,7 +132,8 @@ def run_slurm_job(
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
-    input_data: Tuple[str],
+    input_bindings: str,
+    input_env_vars: str,
     config: str,
     verbose: int,
 ) -> None:
@@ -144,9 +146,13 @@ def run_slurm_job(
     )
     # Put the implementation_config back to a dictionary
     config = json.loads(config) if config else None
+    # Same with the input data
+    input_bindings = json.loads(input_bindings) if input_bindings else None
+    input_env_vars = json.loads(input_env_vars) if input_env_vars else None
     main(
         container_engine=container_engine,
-        input_data=[Path(x) for x in input_data],
+        input_bindings=input_bindings,
+        input_env_vars=input_env_vars,
         results_dir=Path(results_dir),
         diagnostics_dir=Path(diagnostics_dir),
         step_id=step_id,
