@@ -17,29 +17,31 @@ class Config:
 
     def __init__(
         self,
-        pipeline_specification: Optional[Path],
-        input_data: Optional[Path],
-        computing_environment: Optional[str],
+        pipeline_specification: Path,
+        input_data: Path,
+        computing_environment: Optional[Path],
     ):
-        self.pipeline_path = pipeline_specification
-        self.pipeline = load_yaml(self.pipeline_path) if pipeline_specification else {}
-        self.input_data = self._load_input_data_paths(input_data) if input_data else []
-        self.computing_environment_path = (
-            Path(computing_environment) if computing_environment else None
+        # Handle pipeline specification
+        self.pipeline_specification_path = pipeline_specification
+        self.pipeline = load_yaml(self.pipeline_specification_path)
+        # Handle input data specification
+        self.input_data_specification_path = input_data
+        self.input_data = self._load_input_data_paths(self.input_data_specification_path)
+        # Handle environment specification
+        self.computing_environment_specification_path = computing_environment
+        self.environment = self._load_computing_environment(
+            self.computing_environment_specification_path
         )
-        self.environment = self._load_computing_environment(self.computing_environment_path)
-
         self.computing_environment = self.environment["computing_environment"]
-        self.container_engine = self.environment.get("container_engine", "undefined")
+        self.container_engine = self.environment["container_engine"]
+        self.implementation_resources = self.environment.get("implementation_resources", {})
+        self.slurm = self.environment.get("slurm", {})
+        self.slurm_resources = self._get_slurm_resources()
         self.spark = self._get_spark_requests(self.environment)
+        self.spark_resources = {key: getattr(self, key) for key in ["slurm", "spark"]}
+
         self.schema = self._get_schema()
         self._validate()
-
-    def get_resources(self) -> Dict[str, str]:
-        return {
-            **self.environment["implementation_resources"],
-            **self.environment[self.environment["computing_environment"]],
-        }
 
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
@@ -132,18 +134,25 @@ class Config:
         return load_yaml(filepath)
 
     @staticmethod
-    def _load_input_data_paths(input_data: Path) -> List[Path]:
-        file_list = [Path(filepath).resolve() for filepath in load_yaml(input_data).values()]
+    def _load_input_data_paths(input_data_specification_path: Path) -> List[Path]:
+        file_list = [
+            Path(filepath).resolve()
+            for filepath in load_yaml(input_data_specification_path).values()
+        ]
         missing = [str(file) for file in file_list if not file.exists()]
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list
 
+    def _get_slurm_resources(self) -> Dict[str, str]:
+        return {
+            **self.implementation_resources,
+            **self.slurm,
+        }
+
     @staticmethod
-    def _get_spark_requests(
-        environment: Dict[str, Union[Dict, str]]
-    ) -> Optional[Dict[str, Any]]:
-        spark = environment.get("spark", None)
+    def _get_spark_requests(environment: Dict[str, Union[Dict, str]]) -> Dict[str, Any]:
+        spark = environment.get("spark", {})
         if spark and not "keep_alive" in spark:
             spark["keep_alive"] = False
         return spark

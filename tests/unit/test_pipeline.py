@@ -41,9 +41,9 @@ def test_no_container(test_dir, caplog, mocker):
         "linker.implementation.Implementation._container_engine", return_value="unknown"
     )
     config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
     config = Config(**config_params)
     with pytest.raises(SystemExit) as e:
@@ -87,9 +87,9 @@ def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
         side_effect=lambda x: x,
     )
     config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
     config = Config(**config_params)
     with pytest.raises(SystemExit) as e:

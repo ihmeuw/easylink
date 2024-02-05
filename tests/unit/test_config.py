@@ -76,9 +76,9 @@ def test_unsupported_step(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     config_params = {
-        "pipeline_specification": f"{test_dir}/bad_step_pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
 
     with pytest.raises(SystemExit) as e:

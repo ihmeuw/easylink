@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from typing import Dict
 
 import pytest
@@ -129,9 +130,9 @@ def test_dir(tmpdir_factory) -> str:
 @pytest.fixture()
 def default_config_params(test_dir) -> Dict[str, str]:
     return {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
 
 

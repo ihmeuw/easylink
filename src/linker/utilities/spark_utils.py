@@ -6,10 +6,10 @@ from typing import Any, Dict, List, TextIO, Tuple
 from loguru import logger
 
 from linker.utilities.paths import CONTAINER_DIR
-from linker.utilities.slurm_utils import get_slurm_drmaa, submit_spark_cluster_job
+from linker.utilities.slurm_utils import submit_spark_cluster_job
 
 
-def build_cluster(
+def build_spark_cluster(
     drmaa: "drmaa",
     session: "drmaa.Session",
     resources: Dict[str, Any],

@@ -84,6 +84,8 @@ def run(
     logger.info("Running pipeline")
     pipeline_specification = Path(pipeline_specification)
     input_data = Path(input_data)
+    if computing_environment:
+        computing_environment = Path(computing_environment)
     results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
     # TODO [MIC-4493]: Add configuration validation
