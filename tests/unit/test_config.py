@@ -17,7 +17,7 @@ from tests.unit.conftest import (
 def test_config_instantiation(test_dir, default_config):
     assert default_config.pipeline == PIPELINE_CONFIG_DICT["good"]
     assert default_config.environment == ENV_CONFIG_DICT
-    assert default_config.input_data == [
+    assert list(default_config.input_data.values()) == [
         Path(x) for x in [f"{test_dir}/input_data{n}/file{n}.csv" for n in [1, 2]]
     ]
     assert default_config.computing_environment == ENV_CONFIG_DICT["computing_environment"]
