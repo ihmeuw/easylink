@@ -9,12 +9,8 @@ from linker.configuration import Config
 from linker.utilities.data_utils import write_csv
 
 ENV_CONFIG_DICT = {
-    "computing_environment": "foo",
+    "computing_environment": "local",
     "container_engine": "undefined",
-    "baz": {
-        "qux",
-        "quux",
-    },
 }
 
 PIPELINE_CONFIG_DICT = {

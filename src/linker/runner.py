@@ -43,7 +43,7 @@ def main(
         drmaa = get_slurm_drmaa()
         session = drmaa.Session()
         session.initialize()
-        runner = partial(launch_slurm_job, session, config.slurm_resources)
+        runner = partial(launch_slurm_job, session, config)
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
@@ -62,7 +62,7 @@ def run_container(
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
-    config: Optional[Dict[str, str]],
+    implementation_config: Optional[Dict[str, str]] = None,
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
@@ -71,7 +71,7 @@ def run_container(
         "results_dir": results_dir,
         "diagnostics_dir": diagnostics_dir,
         "step_id": step_id,
-        "config": config,
+        "implementation_config": implementation_config,
     }
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":

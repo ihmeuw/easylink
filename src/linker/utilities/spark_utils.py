@@ -1,10 +1,11 @@
 import tempfile
 from pathlib import Path
 from time import sleep
-from typing import Any, Dict, List, TextIO, Tuple
+from typing import List, TextIO, Tuple
 
 from loguru import logger
 
+from linker.configuration import Config
 from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.slurm_utils import submit_spark_cluster_job
 
@@ -12,7 +13,7 @@ from linker.utilities.slurm_utils import submit_spark_cluster_job
 def build_spark_cluster(
     drmaa: "drmaa",
     session: "drmaa.Session",
-    resources: Dict[str, Any],
+    config: Config,
     step_id: str,
     results_dir: Path,
     diagnostics_dir: Path,
@@ -23,7 +24,7 @@ def build_spark_cluster(
     Args:
         drmaa: DRMAA module.
         session: DRMAA session.
-        resources: Slurm and spark cluster resource requests.
+        config: Config object.
         step_id: Step ID for naming jobs.
         results_dir: Results directory.
         diagnostics_dir: Diagnostics directory.
@@ -44,15 +45,10 @@ def build_spark_cluster(
     logfile, job_id = submit_spark_cluster_job(
         drmaa=drmaa,
         session=session,
+        config=config,
         launcher=launcher,
         diagnostics_dir=diagnostics_dir,
         step_id=step_id,
-        account=resources["slurm"]["account"],
-        partition=resources["slurm"]["partition"],
-        memory_per_node=resources["spark"]["workers"]["mem_per_node"],
-        max_runtime=resources["spark"]["workers"]["time_limit"],
-        num_workers=resources["spark"]["workers"]["num_workers"],
-        cpus_per_node=resources["spark"]["workers"]["cpus_per_node"],
     )
 
     spark_master_url = find_spark_master_url(logfile)

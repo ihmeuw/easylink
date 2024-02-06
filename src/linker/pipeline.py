@@ -64,11 +64,8 @@ class Pipeline:
     def _get_implementations(self) -> Tuple[Implementation, ...]:
         return tuple(
             Implementation(
+                config=self.config,
                 step=step,
-                implementation_name=self.config.get_implementation_name(step.name),
-                implementation_config=self.config.get_implementation_config(step.name),
-                container_engine=self.config.container_engine,
-                spark_resources=self.config.spark_resources,
             )
             for step in self.config.schema.steps
         )

@@ -36,12 +36,23 @@ class Config:
         self.container_engine = self.environment["container_engine"]
         self.implementation_resources = self.environment.get("implementation_resources", {})
         self.slurm = self.environment.get("slurm", {})
-        self.slurm_resources = self._get_slurm_resources()
         self.spark = self._get_spark_requests(self.environment)
-        self.spark_resources = {key: getattr(self, key) for key in ["slurm", "spark"]}
 
         self.schema = self._get_schema()
         self._validate()
+
+    @property
+    def slurm_resources(self) -> Dict[str, str]:
+        return {**self.implementation_resources, **self.slurm}
+
+    @property
+    def spark_resources(self) -> Dict[str, Any]:
+        """Return the spark resources as a flat dictionary"""
+        return {
+            **self.slurm,
+            **self.spark["workers"],
+            **{k: v for k, v in self.spark.items() if k != "workers"},
+        }
 
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
@@ -143,12 +154,6 @@ class Config:
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
         return file_list
-
-    def _get_slurm_resources(self) -> Dict[str, str]:
-        return {
-            **self.implementation_resources,
-            **self.slurm,
-        }
 
     @staticmethod
     def _get_spark_requests(environment: Dict[str, Union[Dict, str]]) -> Dict[str, Any]:

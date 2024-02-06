@@ -3,6 +3,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
 
+from linker.configuration import Config
 from linker.step import Step
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import get_slurm_drmaa
@@ -12,18 +13,14 @@ from linker.utilities.spark_utils import build_spark_cluster
 class Implementation:
     def __init__(
         self,
+        config: Config,
         step: Step,
-        implementation_name: str,
-        implementation_config: Optional[Dict[str, Any]],
-        container_engine: str,
-        spark_resources: Dict[str, Any],
     ):
         self.step = step
+        self.config = config
         self._pipeline_step_name = step.name
-        self.name = implementation_name
-        self.config = self._format_config(implementation_config)
-        self._container_engine = container_engine
-        self.spark_resources = spark_resources
+        self.name = config.get_implementation_name(step.name)
+        self.implementation_config = self._get_implementation_config()
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
         self._requires_spark = self._metadata[self.name].get("requires_spark", False)
@@ -47,22 +44,23 @@ class Implementation:
             # (i.e. not 'local' computing environment) and so need to spin up a spark
             # cluster instead of relying on the implementation to do it in a container
             drmaa = get_slurm_drmaa()
+            spark_resources = self.config.spark_resources
             spark_master_url, job_id = build_spark_cluster(
                 drmaa=drmaa,
                 session=session,
-                resources=self.spark_resources,
+                config=self.config,
                 step_id=step_id,
                 results_dir=results_dir,
                 diagnostics_dir=diagnostics_dir,
                 input_data=input_data,
             )
             # Add the spark master url to implementation config
-            if not self.config:
-                self.config = {}
-            self.config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
+            if not self.implementation_config:
+                self.implementation_config = {}
+            self.implementation_config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
 
         runner(
-            container_engine=self._container_engine,
+            container_engine=self.config.container_engine,
             input_data=input_data,
             results_dir=results_dir,
             diagnostics_dir=diagnostics_dir,
@@ -70,14 +68,10 @@ class Implementation:
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
-            config=self.config,
+            implementation_config=self.implementation_config,
         )
 
-        if (
-            self._requires_spark
-            and session
-            and not self.spark_resources["spark"]["keep_alive"]
-        ):
+        if self._requires_spark and session and not spark_resources["keep_alive"]:
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
 
@@ -96,7 +90,9 @@ class Implementation:
     # Helper methods #
     ##################
 
-    def _format_config(self, config: Optional[Dict[str, Any]]) -> Optional[Dict[str, str]]:
+    def _get_implementation_config(self) -> Optional[Dict[str, str]]:
+        """Extracts and formats the implementation specific config from the pipeline config"""
+        config = self.config.get_implementation_config(self._pipeline_step_name)
         return self._stringify_keys_values(config) if config else None
 
     StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
@@ -134,17 +130,17 @@ class Implementation:
     def _validate_container_exists(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         err_str = f"Container '{self._container_full_stem}' does not exist."
         if (
-            self._container_engine == "docker"
+            self.config.container_engine == "docker"
             and not Path(f"{self._container_full_stem}.tar.gz").exists()
         ):
             logs.append(err_str)
         if (
-            self._container_engine == "singularity"
+            self.config.container_engine == "singularity"
             and not Path(f"{self._container_full_stem}.sif").exists()
         ):
             logs.append(err_str)
         if (
-            self._container_engine == "undefined"
+            self.config.container_engine == "undefined"
             and not Path(f"{self._container_full_stem}.tar.gz").exists()
             and not Path(f"{self._container_full_stem}.sif").exists()
         ):
