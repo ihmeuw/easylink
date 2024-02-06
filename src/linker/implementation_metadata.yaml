@@ -34,3 +34,13 @@ step_2_python_pyspark_distributed:
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
   name: python_pyspark_distributed
   requires_spark: true
+step_1_r:
+  step: step_1
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
+  name: r
+  requires_spark: false
+step_2_r:
+  step: step_2
+  path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
+  name: r
+  requires_spark: false
