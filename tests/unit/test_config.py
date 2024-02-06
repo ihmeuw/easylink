@@ -1,5 +1,6 @@
 import errno
 from pathlib import Path
+from unittest.mock import DEFAULT
 
 import pytest
 
