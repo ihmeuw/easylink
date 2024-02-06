@@ -32,7 +32,7 @@ def test__get_implementations(default_config, mocker):
     assert implementation_names == ["step_1_python_pandas", "step_2_python_pandas"]
 
 
-def test_no_container(test_dir, caplog, mocker):
+def test_no_container(default_config, caplog, mocker):
     mocker.patch(
         "linker.implementation.Implementation._get_container_full_stem",
         return_value=Path("some/path/with/no/container"),
@@ -40,14 +40,8 @@ def test_no_container(test_dir, caplog, mocker):
     mocker.PropertyMock(
         "linker.implementation.Implementation._container_engine", return_value="unknown"
     )
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/environment.yaml"),
-    }
-    config = Config(**config_params)
     with pytest.raises(SystemExit) as e:
-        Pipeline(config)
+        Pipeline(default_config)
 
     check_expected_validation_exit(
         error=e,

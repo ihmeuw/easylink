@@ -1,4 +1,3 @@
-import shutil
 import socket
 from functools import partial
 from pathlib import Path
@@ -21,11 +20,8 @@ def main(
 
     pipeline = Pipeline(config)
 
-    # Copy config files to results
-    shutil.copy(config.pipeline_specification_path, results_dir)
-    shutil.copy(config.input_data_specification_path, results_dir)
-    if config.computing_environment_specification_path:
-        shutil.copy(config.computing_environment_specification_path, results_dir)
+    # Now that all validation is done, copy the configuration files to the results directory
+    config.copy_configuration_files_to_results_directory(results_dir)
 
     # Set up computing environment
     if config.computing_environment == "local":

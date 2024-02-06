@@ -124,7 +124,7 @@ def test_dir(tmpdir_factory) -> str:
 
 
 @pytest.fixture()
-def default_config_params(test_dir) -> Dict[str, str]:
+def default_config_params(test_dir) -> Dict[str, Path]:
     return {
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
