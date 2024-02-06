@@ -1,3 +1,4 @@
+import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -8,11 +9,31 @@ from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
 
+DEFAULT_ENVIRONMENT = {
+    "computing_environment": "local",
+    "container_engine": "undefined",
+    "implementation_resources": {
+        "memory": 1,  # GB
+        "cpus": 1,
+        "time_limit": 1,  # hours
+    },
+    "spark": {
+        "workers": {
+            "num_workers": 2,  # num_workers + 1 nodes will be requested
+            "cpus_per_node": 1,
+            "mem_per_node": 1,  # GB
+            "time_limit": 1,  # hours
+        },
+        "keep_alive": False,
+    },
+}
+
 
 class Config:
     """A container for configuration information where each value is exposed
-    as an attribute.
-
+    as an attribute. This class combines the pipeline, input data, and computing
+    environment specifications into a single object. It is also responsible for
+    validating these specifications.
     """
 
     def __init__(
@@ -23,20 +44,23 @@ class Config:
     ):
         # Handle pipeline specification
         self.pipeline_specification_path = pipeline_specification
-        self.pipeline = load_yaml(self.pipeline_specification_path)
+
+        self.pipeline = load_yaml(pipeline_specification)
         # Handle input data specification
         self.input_data_specification_path = input_data
-        self.input_data = self._load_input_data_paths(self.input_data_specification_path)
+        self.input_data = self._load_input_data_paths(input_data)
         # Handle environment specification
         self.computing_environment_specification_path = computing_environment
-        self.environment = self._load_computing_environment(
-            self.computing_environment_specification_path
+        self.environment = self._load_computing_environment(computing_environment)
+
+        # Extract environment attributes and assign defaults as necessary
+        self.computing_environment = self._get_computing_environment(self.environment)
+        self.container_engine = self._get_container_engine(self.environment)
+        self.slurm = self.environment.get("slurm", {})  # no defaults for slurm
+        self.implementation_resources = self._get_requests(
+            self.environment, "implementation_resources"
         )
-        self.computing_environment = self.environment["computing_environment"]
-        self.container_engine = self.environment["container_engine"]
-        self.implementation_resources = self.environment.get("implementation_resources", {})
-        self.slurm = self.environment.get("slurm", {})
-        self.spark = self._get_spark_requests(self.environment)
+        self.spark = self._get_requests(self.environment, "spark")
 
         self.schema = self._get_schema()
         self._validate()
@@ -53,6 +77,12 @@ class Config:
             **self.spark["workers"],
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
+
+    def copy_configuration_files_to_results_directory(self, results_dir: Path) -> None:
+        shutil.copy(self.pipeline_specification_path, results_dir)
+        shutil.copy(self.input_data_specification_path, results_dir)
+        if self.computing_environment_specification_path:
+            shutil.copy(self.computing_environment_specification_path, results_dir)
 
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
@@ -132,17 +162,18 @@ class Config:
     @staticmethod
     def _load_computing_environment(
         computing_environment_path: Optional[Path],
-    ) -> Dict[str, Union[Dict, str]]:
+    ) -> Dict[Any, Any]:
         """Load the computing environment yaml file and return the contents as a dict."""
-        if computing_environment_path is None:
-            return {"computing_environment": "local", "container_engine": "undefined"}
-        filepath = computing_environment_path.resolve()
-        if not filepath.is_file():
-            raise FileNotFoundError(
-                "Computing environment is expected to be a path to an existing"
-                f" yaml file. Input was: '{computing_environment_path}'"
-            )
-        return load_yaml(filepath)
+        if computing_environment_path:
+            if not computing_environment_path.is_file():
+                raise FileNotFoundError(
+                    "Computing environment is expected to be a path to an existing"
+                    f" yaml file. Input was: '{computing_environment_path}'"
+                )
+            environment = load_yaml(computing_environment_path)
+        else:
+            environment = {}  # handles empty environment.yaml
+        return environment
 
     @staticmethod
     def _load_input_data_paths(input_data_specification_path: Path) -> List[Path]:
@@ -156,8 +187,43 @@ class Config:
         return file_list
 
     @staticmethod
-    def _get_spark_requests(environment: Dict[str, Union[Dict, str]]) -> Dict[str, Any]:
-        spark = environment.get("spark", {})
-        if spark and not "keep_alive" in spark:
-            spark["keep_alive"] = False
-        return spark
+    def _get_computing_environment(environment: Dict[Any, Any]) -> str:
+        if not "computing_environment" in environment:
+            value = DEFAULT_ENVIRONMENT["computing_environment"]
+            logger.info(f"Assigning default value for computing_environment: '{value}'")
+        else:
+            value = environment["computing_environment"]
+        return value
+
+    @staticmethod
+    def _get_container_engine(environment: Dict[Any, Any]) -> str:
+        if not "container_engine" in environment:
+            value = DEFAULT_ENVIRONMENT["container_engine"]
+            logger.info(f"Assigning default value for container_engine: '{value}'")
+        else:
+            value = environment["container_engine"]
+        return value
+
+    @staticmethod
+    def _get_requests(environment: Dict[Any, Any], key: str) -> Dict[Any, Any]:
+        """Extracts the requests from the environment and assigns default values if they are not present."""
+        if not key in environment:
+            # This is not strictly a required field so just return an empty dict
+            return {}
+        # Manually walk through the keys and assign default values if they are not present
+        requests = environment[key]
+        # HACK: special case spark workers since it's a nested dict
+        if key == "spark" and not "workers" in requests:
+            # Assign the entire default workers dict
+            requests["workers"] = DEFAULT_ENVIRONMENT["spark"]["workers"]
+            logger.info(
+                f"Assigning default values for spark workers: '{requests['workers']}'"
+            )
+        else:
+            for default_key, default_value in DEFAULT_ENVIRONMENT[key].items():
+                if not default_key in requests:
+                    requests[default_key] = default_value
+                    logger.info(
+                        f"Assigning default value for {key} {default_key}: '{default_value}'"
+                    )
+        return requests

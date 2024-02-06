@@ -1,9 +1,10 @@
 import errno
 from pathlib import Path
+from unittest.mock import DEFAULT
 
 import pytest
 
-from linker.configuration import Config
+from linker.configuration import DEFAULT_ENVIRONMENT, Config
 from linker.step import Step
 from tests.unit.conftest import (
     ENV_CONFIG_DICT,
@@ -128,3 +129,71 @@ def test_bad_input_data(test_dir, caplog):
             }
         },
     )
+
+
+@pytest.mark.parametrize("input", ["local", "slurm", None])
+def test__get_computing_environment(input):
+    env_dict = {"computing_environment": input} if input else {}
+    computing_environment = Config._get_computing_environment(env_dict)
+    expected = DEFAULT_ENVIRONMENT.copy()
+    expected.update(env_dict)
+    assert computing_environment == expected["computing_environment"]
+
+
+@pytest.mark.parametrize("input", ["docker", "singularity", "undefined", None])
+def test__get_container_engine(input):
+    env_dict = {"container_engine": input} if input else {}
+    container_engine = Config._get_container_engine(env_dict)
+    expected = DEFAULT_ENVIRONMENT.copy()
+    expected.update(env_dict)
+    assert container_engine == expected["container_engine"]
+
+
+@pytest.mark.parametrize(
+    "key, input",
+    [
+        # missing
+        ("implementation_resources", None),
+        # partially defined
+        ("implementation_resources", {"memory": 100}),
+        # fully defined
+        ("implementation_resources", {"memory": 100, "cpus": 200, "time_limit": 300}),
+        # missing
+        ("spark", None),
+        # partially defined (missing entire workers)
+        ("spark", {"keep_alive": "idk"}),
+        # partially defined (missing keep_alive and num_workers)
+        (
+            "spark",
+            {
+                "workers": {
+                    "cpus_per_node": 200,
+                    "mem_per_node": 300,
+                    "time_limit": 400,
+                }
+            },
+        ),
+        # fully defined
+        (
+            "spark",
+            {
+                "workers": {
+                    "num_workers": 100,
+                    "cpus_per_node": 200,
+                    "mem_per_node": 300,
+                    "time_limit": 400,
+                },
+                "keep_alive": "idk",
+            },
+        ),
+    ],
+)
+def test__get_requests(key, input):
+    env_dict = {key: input.copy()} if input else {}
+    retrieved = Config._get_requests(env_dict, key)
+    if input:
+        expected = DEFAULT_ENVIRONMENT[key].copy()
+        expected.update(env_dict[key])
+    else:
+        expected = {}
+    assert retrieved == expected
