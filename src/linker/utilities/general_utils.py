@@ -2,7 +2,7 @@ import errno
 import functools
 import sys
 from bdb import BdbQuit
-from typing import Any, Callable, Dict, TextIO
+from typing import Any, Callable, Dict, List, TextIO
 
 import yaml
 from loguru import logger
@@ -105,8 +105,5 @@ def exit_with_validation_error(error_msg: Dict) -> None:
     exit(errno.EINVAL)
 
 
-def merge_dicts(dicts):
-    final_dict = {}
-    for dictionary in dicts:
-        final_dict.update(dictionary)
-    return final_dict
+def merge_dicts(dicts: List[Dict]):
+    return {key: val for dict in dicts for key, val in dict.items()}

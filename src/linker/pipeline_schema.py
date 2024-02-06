@@ -11,7 +11,7 @@ class PipelineSchema:
     def __init__(self, name, validate_input) -> None:
         self.name = name
         self.validate_input: Callable = validate_input
-        self.steps: List(Step) = []
+        self.steps: List[Step] = []
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
