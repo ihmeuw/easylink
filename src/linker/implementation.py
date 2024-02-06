@@ -1,4 +1,5 @@
 from pathlib import Path
+from re import M
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from loguru import logger
@@ -77,8 +78,15 @@ class Implementation:
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
 
-        for results_file in results_dir.glob("result.parquet"):
-            self.step.validate_output(results_file)
+        results_files = [file for file in results_dir.glob("result.parquet")]
+        if results_files:
+            for results_file in results_files:
+                self.step.validate_output(results_file)
+        else:
+            raise RuntimeError(
+                f"No results found for pipeline step ID {step_id} in results "
+                f"directory '{results_dir}'"
+            )
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
