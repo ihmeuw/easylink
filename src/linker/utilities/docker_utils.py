@@ -1,7 +1,5 @@
-from os import strerror
 from pathlib import Path
-from time import strftime
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import docker
 from docker import DockerClient
@@ -17,13 +15,13 @@ def run_with_docker(
     diagnostics_dir: Path,
     step_id: str,
     container_path: Path,
-    config: Optional[Dict[str, str]],
+    implementation_config: Optional[Dict[str, str]],
 ) -> None:
     logger.info(f"Running step {step_id} container with docker")
     client = get_docker_client()
     image_id = _load_image(client, container_path)
     container = _run_container(
-        client, image_id, input_data, results_dir, diagnostics_dir, config
+        client, image_id, input_data, results_dir, diagnostics_dir, implementation_config
     )
     _clean(client, image_id, container)
 
@@ -58,7 +56,7 @@ def _run_container(
     input_data: List[Path],
     results_dir: Path,
     diagnostics_dir: Path,
-    config: Optional[Dict[str, str]],
+    implementation_config: Optional[Dict[str, str]],
 ):
     logger.info(f"Running the container from image {image_id}")
     volumes = {
@@ -76,7 +74,7 @@ def _run_container(
             detach=True,
             auto_remove=True,
             tty=True,
-            environment=config,
+            environment=implementation_config,
         )
         logs = container.logs(stream=True, follow=True, stdout=True, stderr=True)
         with open(diagnostics_dir / f"docker.o", "wb") as output_file:

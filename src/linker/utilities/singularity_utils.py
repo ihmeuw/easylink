@@ -12,10 +12,12 @@ def run_with_singularity(
     diagnostics_dir: Path,
     step_id: str,
     container_path: Path,
-    config: Optional[Dict[str, str]],
+    implementation_config: Optional[Dict[str, str]],
 ) -> None:
     logger.info(f"Running step {step_id} container with singularity")
-    _run_container(input_data, results_dir, diagnostics_dir, container_path, config)
+    _run_container(
+        input_data, results_dir, diagnostics_dir, container_path, implementation_config
+    )
     _clean(results_dir, container_path)
 
 
@@ -24,7 +26,7 @@ def _run_container(
     results_dir: Path,
     diagnostics_dir: Path,
     container_path: Path,
-    config: Optional[Dict[str, str]],
+    implementation_config: Optional[Dict[str, str]],
 ) -> None:
     cmd = (
         "singularity run --containall --no-home --bind /tmp:/tmp "
@@ -33,17 +35,21 @@ def _run_container(
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
     cmd += f"{container_path}"
-    _run_cmd(diagnostics_dir, cmd, config)
+    _run_cmd(diagnostics_dir, cmd, implementation_config)
 
 
-def _run_cmd(diagnostics_dir: Path, cmd: str, config: Optional[Dict[str, str]]) -> None:
+def _run_cmd(
+    diagnostics_dir: Path, cmd: str, implementation_config: Optional[Dict[str, str]]
+) -> None:
     logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
     env_vars = os.environ.copy()
-    if config:
+    if implementation_config:
         # NOTE: singularity < 3.6 does not support --env argument but supports variables
         #   prepended with 'SINGULARITYENV_'
-        env_config = {f"SINGULARITYENV_{key}": value for (key, value) in config.items()}
+        env_config = {
+            f"SINGULARITYENV_{key}": value for (key, value) in implementation_config.items()
+        }
         env_vars.update(env_config)
     process = subprocess.run(
         cmd,

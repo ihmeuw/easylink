@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from typing import Dict
 
 import pytest
@@ -8,12 +9,8 @@ from linker.configuration import Config
 from linker.utilities.data_utils import write_csv
 
 ENV_CONFIG_DICT = {
-    "computing_environment": "foo",
+    "computing_environment": "local",
     "container_engine": "undefined",
-    "baz": {
-        "qux",
-        "quux",
-    },
 }
 
 PIPELINE_CONFIG_DICT = {
@@ -127,11 +124,11 @@ def test_dir(tmpdir_factory) -> str:
 
 
 @pytest.fixture()
-def default_config_params(test_dir) -> Dict[str, str]:
+def default_config_params(test_dir) -> Dict[str, Path]:
     return {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": f"{test_dir}/environment.yaml",
+        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
     }
 
 
