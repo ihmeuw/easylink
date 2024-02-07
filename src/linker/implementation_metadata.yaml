@@ -37,10 +37,10 @@ step_2_python_pyspark_distributed:
 step_1_r:
   step: step_1
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
-  name: r
+  name: r-image
   requires_spark: false
 step_2_r:
   step: step_2
   path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
-  name: r
+  name: r-image
   requires_spark: false
