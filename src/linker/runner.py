@@ -7,6 +7,7 @@ from loguru import logger
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
+from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
@@ -21,7 +22,7 @@ def main(
     pipeline = Pipeline(config)
 
     # Now that all validation is done, copy the configuration files to the results directory
-    config.copy_configuration_files_to_results_directory(results_dir)
+    copy_configuration_files_to_results_directory(config, results_dir)
 
     # Set up computing environment
     if config.computing_environment == "local":

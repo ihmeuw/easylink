@@ -55,8 +55,6 @@ class Implementation:
                 input_data=input_data,
             )
             # Add the spark master url to implementation config
-            if not self.implementation_config:
-                self.implementation_config = {}
             self.implementation_config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
 
         runner(
@@ -90,10 +88,10 @@ class Implementation:
     # Helper methods #
     ##################
 
-    def _get_implementation_config(self) -> Optional[Dict[str, str]]:
+    def _get_implementation_config(self) -> Dict[Any, Any]:
         """Extracts and formats the implementation specific config from the pipeline config"""
         config = self.config.get_implementation_config(self._pipeline_step_name)
-        return self._stringify_keys_values(config) if config else None
+        return self._stringify_keys_values(config) if config else {}
 
     StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
 
