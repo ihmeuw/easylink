@@ -34,7 +34,7 @@ def write_csv(filepath: str, rows: List) -> None:
         writer.writerows(rows)
 
 
-def validate_dummy_output(filepath: Path) -> None:
+def validate_dummy_file(filepath: Path) -> None:
     extension = filepath.suffix
     if extension == ".parquet":
         output_columns = set(pq.ParquetFile(filepath).schema.names)
