@@ -77,8 +77,7 @@ class Implementation:
             logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
             session.control(job_id, drmaa.JobControlAction.TERMINATE)
 
-        for results_file in results_dir.glob("result.parquet"):
-            self.step.validate_output(results_file)
+        self.step.validate_output(step_id, results_dir)
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
