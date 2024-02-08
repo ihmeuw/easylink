@@ -66,6 +66,8 @@ def _run_container(
         },
         str(results_dir): {"bind": "/results", "mode": "rw"},
         str(diagnostics_dir): {"bind": "/diagnostics", "mode": "rw"},
+        # Untested
+        "/tmp": {"bind": "/tmp", "mode": "rw"},
     }
     try:
         container = client.containers.run(
