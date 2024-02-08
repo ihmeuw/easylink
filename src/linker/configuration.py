@@ -61,9 +61,7 @@ class Config:
             self.environment, "container_engine"
         )
         self.slurm = self.environment.get("slurm", {})  # no defaults for slurm
-        self.implementation_resources = self._get_requests(
-            self.environment, "implementation_resources"
-        )
+        self.implementation_resources = self._get_requests(self.environment, "implementation_resources")
         self.spark = self._get_requests(self.environment, "spark")
 
         self.schema = self._get_schema()
