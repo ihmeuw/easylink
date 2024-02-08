@@ -1,9 +1,10 @@
 import errno
 from pathlib import Path
+from unittest.mock import DEFAULT
 
 import pytest
 
-from linker.configuration import Config
+from linker.configuration import DEFAULT_ENVIRONMENT, Config
 from linker.step import Step
 from tests.unit.conftest import (
     ENV_CONFIG_DICT,
@@ -128,3 +129,73 @@ def test_bad_input_data(test_dir, caplog):
             }
         },
     )
+
+
+@pytest.mark.parametrize(
+    "key, input",
+    [
+        ("computing_environment", None),
+        ("computing_environment", "local"),
+        ("computing_environment", "slurm"),
+        ("container_engine", None),
+        ("container_engine", "docker"),
+        ("container_engine", "singularity"),
+        ("container_engine", "undefined"),
+    ],
+)
+def test__get_computing_environment(key, input):
+    env_dict = {key: input} if input else {}
+    retrieved = Config._get_required_attribute(env_dict, key)
+    expected = DEFAULT_ENVIRONMENT.copy()
+    expected.update(env_dict)
+    assert retrieved == expected[key]
+
+
+@pytest.mark.parametrize(
+    "key, input",
+    [
+        # missing
+        ("implementation_resources", None),
+        # partially defined
+        ("implementation_resources", {"memory": 100}),
+        # fully defined
+        ("implementation_resources", {"memory": 100, "cpus": 200, "time_limit": 300}),
+        # missing
+        ("spark", None),
+        # partially defined (missing entire workers)
+        ("spark", {"keep_alive": "idk"}),
+        # partially defined (missing keep_alive and num_workers)
+        (
+            "spark",
+            {
+                "workers": {
+                    "cpus_per_node": 200,
+                    "mem_per_node": 300,
+                    "time_limit": 400,
+                }
+            },
+        ),
+        # fully defined
+        (
+            "spark",
+            {
+                "workers": {
+                    "num_workers": 100,
+                    "cpus_per_node": 200,
+                    "mem_per_node": 300,
+                    "time_limit": 400,
+                },
+                "keep_alive": "idk",
+            },
+        ),
+    ],
+)
+def test__get_requests(key, input):
+    env_dict = {key: input.copy()} if input else {}
+    retrieved = Config._get_requests(env_dict, key)
+    if input:
+        expected = DEFAULT_ENVIRONMENT[key].copy()
+        expected.update(env_dict[key])
+    else:
+        expected = {}
+    assert retrieved == expected

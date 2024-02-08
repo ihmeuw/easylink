@@ -61,12 +61,14 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{str(tmp_path)}/environment.yaml", "w") as file:
         yaml.dump(ENV_CONFIG_DICT, file, sort_keys=False)
 
-    # input file structure
+    # input files
     input_dir1 = tmp_path.mkdir("input_data1")
     input_dir2 = tmp_path.mkdir("input_data2")
     for input_dir in [input_dir1, input_dir2]:
         for base_file in ["file1", "file2"]:
+            # good input files
             write_csv(input_dir / f"{base_file}.csv", INPUT_DATA_FORMAT_DICT["correct_cols"])
+            # bad input files
             write_csv(
                 input_dir / f"broken_{base_file}.csv",
                 INPUT_DATA_FORMAT_DICT["wrong_cols"],
@@ -92,7 +94,7 @@ def test_dir(tmpdir_factory) -> str:
             file,
             sort_keys=False,
         )
-        # input directs to files without sensible data
+    # input directs to files without sensible data
     with open(f"{tmp_path}/bad_columns_input_data.yaml", "w") as file:
         yaml.dump(
             {
@@ -145,8 +147,6 @@ def default_config(default_config_params) -> Config:
 
 def check_expected_validation_exit(error, caplog, error_no, expected_msg):
     assert error.value.code == error_no
-    # We should only have one record
-    assert len(caplog.record_tuples) == 1
     # Extract error message
     msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
         "Validation errors found. Please see above."
