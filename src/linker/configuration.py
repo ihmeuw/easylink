@@ -1,5 +1,6 @@
 import shutil
 from collections import defaultdict
+from curses import keyname
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -54,8 +55,12 @@ class Config:
         self.environment = self._load_computing_environment(computing_environment)
 
         # Extract environment attributes and assign defaults as necessary
-        self.computing_environment = self._get_computing_environment(self.environment)
-        self.container_engine = self._get_container_engine(self.environment)
+        self.computing_environment = self._get_required_attribute(
+            self.environment, "computing_environment"
+        )
+        self.container_engine = self._get_required_attribute(
+            self.environment, "container_engine"
+        )
         self.slurm = self.environment.get("slurm", {})  # no defaults for slurm
         self.implementation_resources = self._get_requests(
             self.environment, "implementation_resources"
@@ -187,26 +192,22 @@ class Config:
         return file_list
 
     @staticmethod
-    def _get_computing_environment(environment: Dict[Any, Any]) -> str:
-        if not "computing_environment" in environment:
-            value = DEFAULT_ENVIRONMENT["computing_environment"]
-            logger.info(f"Assigning default value for computing_environment: '{value}'")
+    def _get_required_attribute(environment: Dict[Any, Any], key: str) -> str:
+        """Extracts the required-to-run (non-dict) values from the environment
+        and assigns default values if they are not present.
+        """
+        if not key in environment:
+            value = DEFAULT_ENVIRONMENT[key]
+            logger.info(f"Assigning default value for {key}: '{value}'")
         else:
-            value = environment["computing_environment"]
-        return value
-
-    @staticmethod
-    def _get_container_engine(environment: Dict[Any, Any]) -> str:
-        if not "container_engine" in environment:
-            value = DEFAULT_ENVIRONMENT["container_engine"]
-            logger.info(f"Assigning default value for container_engine: '{value}'")
-        else:
-            value = environment["container_engine"]
+            value = environment[key]
         return value
 
     @staticmethod
     def _get_requests(environment: Dict[Any, Any], key: str) -> Dict[Any, Any]:
-        """Extracts the requests from the environment and assigns default values if they are not present."""
+        """Extracts the requests from the environment and assigns default values
+        if they are not present.
+        """
         if not key in environment:
             # This is not strictly a required field so just return an empty dict
             return {}

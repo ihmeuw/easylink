@@ -131,22 +131,24 @@ def test_bad_input_data(test_dir, caplog):
     )
 
 
-@pytest.mark.parametrize("input", ["local", "slurm", None])
-def test__get_computing_environment(input):
-    env_dict = {"computing_environment": input} if input else {}
-    computing_environment = Config._get_computing_environment(env_dict)
+@pytest.mark.parametrize(
+    "key, input",
+    [
+        ("computing_environment", None),
+        ("computing_environment", "local"),
+        ("computing_environment", "slurm"),
+        ("container_engine", None),
+        ("container_engine", "docker"),
+        ("container_engine", "singularity"),
+        ("container_engine", "undefined"),
+    ],
+)
+def test__get_computing_environment(key, input):
+    env_dict = {key: input} if input else {}
+    retrieved = Config._get_required_attribute(env_dict, key)
     expected = DEFAULT_ENVIRONMENT.copy()
     expected.update(env_dict)
-    assert computing_environment == expected["computing_environment"]
-
-
-@pytest.mark.parametrize("input", ["docker", "singularity", "undefined", None])
-def test__get_container_engine(input):
-    env_dict = {"container_engine": input} if input else {}
-    container_engine = Config._get_container_engine(env_dict)
-    expected = DEFAULT_ENVIRONMENT.copy()
-    expected.update(env_dict)
-    assert container_engine == expected["container_engine"]
+    assert retrieved == expected[key]
 
 
 @pytest.mark.parametrize(
