@@ -13,7 +13,7 @@ def test_implementation_is_missing_from_metadata(default_config, mocker):
         return_value="some-step-implementation",
     )
     mocker.patch(
-        "linker.configuration.Config.get_implementation_config",
+        "linker.configuration.Config.get_implementation_specific_configuration",
         return_value=None,
     )
     with pytest.raises(
