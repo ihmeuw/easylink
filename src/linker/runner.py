@@ -1,4 +1,3 @@
-import shutil
 import socket
 from functools import partial
 from pathlib import Path
@@ -8,6 +7,7 @@ from loguru import logger
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
+from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
@@ -21,10 +21,8 @@ def main(
 
     pipeline = Pipeline(config)
 
-    # Copy config files to results
-    shutil.copy(config.pipeline_path, results_dir)
-    if config.computing_environment_path:
-        shutil.copy(config.computing_environment_path, results_dir)
+    # Now that all validation is done, copy the configuration files to the results directory
+    copy_configuration_files_to_results_directory(config, results_dir)
 
     # Set up computing environment
     if config.computing_environment == "local":
@@ -42,8 +40,7 @@ def main(
         drmaa = get_slurm_drmaa()
         session = drmaa.Session()
         session.initialize()
-        resources = config.get_resources()
-        runner = partial(launch_slurm_job, session, resources)
+        runner = partial(launch_slurm_job, session, config)
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
@@ -62,7 +59,7 @@ def run_container(
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
-    config: Optional[Dict[str, str]],
+    implementation_config: Optional[Dict[str, str]] = None,
 ) -> None:
     # TODO: send error to stdout in the event the step script fails
     #   (currently it's only logged in the .o file)
@@ -71,7 +68,7 @@ def run_container(
         "results_dir": results_dir,
         "diagnostics_dir": diagnostics_dir,
         "step_id": step_id,
-        "config": config,
+        "implementation_config": implementation_config,
     }
     logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
     if container_engine == "docker":

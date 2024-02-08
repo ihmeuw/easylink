@@ -5,9 +5,11 @@ import types
 from datetime import datetime
 from pathlib import Path
 from time import sleep
-from typing import Dict, List, Optional, TextIO, Tuple
+from typing import Any, Dict, List, Optional, TextIO, Tuple
 
 from loguru import logger
+
+from linker.configuration import Config
 
 
 def get_slurm_drmaa() -> types.ModuleType("drmaa"):
@@ -24,7 +26,7 @@ def get_slurm_drmaa() -> types.ModuleType("drmaa"):
 
 def launch_slurm_job(
     session: types.ModuleType("drmaa.Session"),
-    resources: Dict[str, str],
+    config: Config,
     container_engine: str,
     input_data: List[str],
     results_dir: Path,
@@ -33,8 +35,11 @@ def launch_slurm_job(
     step_name: str,
     implementation_name: str,
     container_full_stem: str,
-    config: Optional[Dict[str, str]] = None,
+    implementation_config: Optional[Dict[str, str]] = None,
 ) -> None:
+    """Runs a container as a job on a slurm cluster. The job is submitted via the
+    `linker run-slurm-job` command line interface.
+    """
     jt = session.createJobTemplate()
     jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
@@ -54,13 +59,14 @@ def launch_slurm_job(
     ]
     for filepath in input_data:
         jt_args.extend(("--input-data", str(filepath)))
-    if config:
-        jt_args.extend(("--config", str(json.dumps(config))))
+    if implementation_config:
+        jt_args.extend(("--implementation-config", str(json.dumps(implementation_config))))
     jt.args = jt_args
     jt.jobEnvironment = {
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",
     }
+    resources = config.slurm_resources
     jt.nativeSpecification = get_cli_args(
         job_name=jt.jobName,
         account=resources["account"],
@@ -98,32 +104,22 @@ def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_thr
 
 
 def submit_spark_cluster_job(
-    drmaa: types.ModuleType("drmaa"),
-    session: types.ModuleType("drmaa.Session"),
+    drmaa: "drmaa",
+    session: "drmaa.Session",
+    config: Config,
     launcher: TextIO,
     diagnostics_dir: Path,
     step_id: str,
-    account: str,
-    partition: str,
-    memory_per_node: int,
-    max_runtime: int,
-    num_workers: int,
-    cpus_per_node: int,
 ) -> Tuple[Path, str]:
     """Submits a job to launch a Spark cluster.
 
     Args:
         drmaa: DRMAA module.
         session: DRMAA session.
+        config: Config object.
         launcher: Launcher script.
         diagnostics_dir: Diagnostics directory.
         step_id: Step ID used for naming the job.
-        account: Account to charge.
-        partition: Partition to run on.
-        memory_per_node: Memory per node in GB.
-        max_runtime: Maximum runtime in hours.
-        num_workers: Number of workers.
-        cpus_per_node: Number of CPUs per node.
 
     Returns:
         Path to stderr log, which contains the Spark master URL.
@@ -141,14 +137,15 @@ def submit_spark_cluster_job(
         "LC_ALL": "en_US.UTF-8",
         "LANG": "en_US.UTF-8",
     }
+    resources = config.spark_resources
     jt.nativeSpecification = (
-        f"--account={account} "
-        f"--partition={partition} "
-        f"--mem={memory_per_node * 1024} "
-        f"--time={max_runtime}:00:00 "
-        f"--cpus-per-task={cpus_per_node}"
+        f"--account={resources['account']} "
+        f"--partition={resources['partition']} "
+        f"--mem={resources['mem_per_node'] * 1024} "
+        f"--time={resources['time_limit']}:00:00 "
+        f"--cpus-per-task={resources['cpus_per_node']}"
     )
-    jobs = session.runBulkJobs(jt, 1, num_workers + 1, 1)
+    jobs = session.runBulkJobs(jt, 1, resources["num_workers"] + 1, 1)
     error_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stderr" for job in jobs]
     output_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stdout" for job in jobs]
     master_error_log = error_logs[0]

@@ -1,5 +1,6 @@
 import csv
 import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -20,6 +21,15 @@ def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path
     (results_dir / "diagnostics").mkdir(exist_ok=True)
 
     return results_dir
+
+
+def copy_configuration_files_to_results_directory(
+    config: "Config", results_dir: Path
+) -> None:
+    shutil.copy(config.pipeline_specification_path, results_dir)
+    shutil.copy(config.input_data_specification_path, results_dir)
+    if config.computing_environment_specification_path:
+        shutil.copy(config.computing_environment_specification_path, results_dir)
 
 
 def load_yaml(filepath: Path) -> Dict:
