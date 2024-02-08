@@ -98,12 +98,6 @@ class Config:
         config = self.pipeline["steps"][step_name]["implementation"].get("configuration", {})
         return _stringify_keys_values(config)
 
-    def copy_configuration_files_to_results_directory(self, results_dir: Path) -> None:
-        shutil.copy(self.pipeline_specification_path, results_dir)
-        shutil.copy(self.input_data_specification_path, results_dir)
-        if self.computing_environment_specification_path:
-            shutil.copy(self.computing_environment_specification_path, results_dir)
-
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
 
