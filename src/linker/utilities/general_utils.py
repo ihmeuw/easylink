@@ -2,6 +2,7 @@ import errno
 import functools
 import sys
 from bdb import BdbQuit
+from collections import ChainMap
 from typing import Any, Callable, Dict, List, TextIO
 
 import yaml
@@ -106,4 +107,4 @@ def exit_with_validation_error(error_msg: Dict) -> None:
 
 
 def merge_dicts(dicts: List[Dict]):
-    return {key: val for dict in dicts for key, val in dict.items()}
+    return dict(ChainMap(*dicts))

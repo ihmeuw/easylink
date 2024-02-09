@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Callable, List
+from pathlib import Path
+from typing import Callable, List, Optional
 
 from linker.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from linker.step import Step
@@ -8,20 +9,23 @@ from linker.step import Step
 class PipelineSchema:
     """Defines the allowable schema(s) for the pipeline."""
 
-    def __init__(self, name, validate_input) -> None:
+    def __init__(self, name, input_validator) -> None:
         self.name = name
-        self.validate_input: Callable = validate_input
+        self._input_validator: Callable = input_validator
         self.steps: List[Step] = []
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
+
+    def validate_input(self, filepath: Path) -> Optional[List[str]]:
+        return self._input_validator(filepath)
 
     @classmethod
     def _get_schemas(cls) -> List["PipelineSchema"]:
         """Creates the allowable schema for the pipeline."""
         schemas = []
         for schema_name, schema_params in ALLOWED_SCHEMA_PARAMS.items():
-            schema = cls(schema_name, schema_params["validate_input"])
+            schema = cls(schema_name, schema_params["input_validator"])
             for step_name, step_params in schema_params["steps"].items():
                 schema.steps.append(Step(step_name, **step_params))
             schemas.append(schema)

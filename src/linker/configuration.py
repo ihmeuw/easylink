@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from loguru import logger
 
@@ -135,15 +135,15 @@ class Config:
         return load_yaml(filepath)
 
     @staticmethod
-    def _load_input_data_paths(input_data: Path) -> List[Path]:
-        file_list = {
+    def _load_input_data_paths(input_data: Path) -> Dict[str, Path]:
+        filepath_dict = {
             filename: Path(filepath).resolve()
             for filename, filepath in load_yaml(input_data).items()
         }
-        missing = [str(file) for file in file_list.values() if not file.exists()]
+        missing = [str(file) for file in filepath_dict.values() if not file.exists()]
         if missing:
             raise RuntimeError(f"Cannot find input data: {missing}")
-        return file_list
+        return filepath_dict
 
     @staticmethod
     def _get_spark_requests(

@@ -2,7 +2,7 @@ from linker.utilities.data_utils import validate_dummy_input, validate_dummy_out
 
 ALLOWED_SCHEMA_PARAMS = {
     "pvs_like_case_study": {
-        "validate_input": lambda *_: None,
+        "input_validator": lambda *_: None,
         "steps": {
             "pvs_like_case_study": {
                 "validate_output": lambda *_: None,
@@ -17,7 +17,7 @@ ALLOWED_SCHEMA_PARAMS = {
         },
     },
     "development": {
-        "validate_input": validate_dummy_input,
+        "input_validator": validate_dummy_input,
         "steps": {
             "step_1": {
                 "validate_output": validate_dummy_output,
