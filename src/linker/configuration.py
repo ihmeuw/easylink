@@ -183,6 +183,8 @@ class Config:
             exit_with_validation_error(dict(errors))
 
         # Check that each of the pipeline steps also contains an implementation
+        metadata_path = Path(__file__).parent / "implementation_metadata.yaml"
+        metadata = load_yaml(metadata_path)
         for step, step_config in self.pipeline["steps"].items():
             if not "implementation" in step_config:
                 errors[error_key][f"step {step}"] = "Does not contain an 'implementation'."
@@ -190,6 +192,10 @@ class Config:
                 errors[error_key][
                     f"step {step}"
                 ] = "The implementation does not contain a 'name'."
+            elif not step_config["implementation"]["name"] in metadata:
+                errors[error_key][
+                    f"step {step}"
+                ] = f"Implementation '{step_config['implementation']['name']}' is not defined in implementation_metadata.yaml."
         if errors:
             exit_with_validation_error(dict(errors))
 

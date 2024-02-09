@@ -93,10 +93,6 @@ class Implementation:
     def _load_metadata(self) -> Dict[str, str]:
         metadata_path = Path(__file__).parent / "implementation_metadata.yaml"
         metadata = load_yaml(metadata_path)
-        if not self.name in metadata:
-            raise RuntimeError(
-                f"Implementation '{self.name}' is not defined in implementation_metadata.yaml"
-            )
         return metadata
 
     def _get_container_full_stem(self) -> str:

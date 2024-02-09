@@ -32,7 +32,7 @@ PIPELINE_CONFIG_DICT = {
         "steps": {
             "foo": {  # Not a supported step
                 "implementation": {
-                    "name": "bar",
+                    "name": "step_1_python_pandas",
                 },
             },
         },
@@ -41,11 +41,6 @@ PIPELINE_CONFIG_DICT = {
         "steps": {
             "step_1": {
                 "foo": "bar",  # Missing implementation key
-            },
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
             },
         },
     },
@@ -56,9 +51,13 @@ PIPELINE_CONFIG_DICT = {
                     "foo": "bar",  # Missing name key
                 },
             },
-            "step_2": {
+        },
+    },
+    "bad_implementation": {
+        "steps": {
+            "step_1": {
                 "implementation": {
-                    "name": "step_2_python_pandas",
+                    "name": "foo",  # Not a supported implementation
                 },
             },
         },
@@ -88,6 +87,8 @@ def test_dir(tmpdir_factory) -> str:
         yaml.dump(PIPELINE_CONFIG_DICT["missing_implementations"], file, sort_keys=False)
     with open(f"{str(tmp_path)}/missing_implementation_name_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["missing_implementation_name"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/bad_implementation_pipeline.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["bad_implementation"], file, sort_keys=False)
 
     # dummy environment.yaml
     with open(f"{str(tmp_path)}/environment.yaml", "w") as file:

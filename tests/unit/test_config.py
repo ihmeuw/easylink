@@ -223,6 +223,33 @@ def test_unsupported_step(test_dir, caplog, mocker):
     )
 
 
+def test_unsupported_implementation(test_dir, caplog, mocker):
+    mocker.patch("linker.implementation.Implementation._load_metadata")
+    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
+    mocker.patch("linker.implementation.Implementation.validate", return_value=[])
+    config_params = {
+        "pipeline_specification": Path(f"{test_dir}/bad_implementation_pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
+    }
+
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            "PIPELINE ERRORS": {
+                "step step_1": [
+                    "Implementation 'foo' is not defined in implementation_metadata.yaml."
+                ]
+            }
+        },
+    )
+
+
 def test_bad_input_data(test_dir, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
@@ -250,7 +277,7 @@ def test_bad_input_data(test_dir, caplog):
     )
 
 
-def test_missing_input_data(test_dir, caplog):
+def test_missing_input_file(test_dir, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
         "input_data": f"{test_dir}/missing_input_data.yaml",
