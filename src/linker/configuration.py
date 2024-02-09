@@ -105,10 +105,13 @@ class Config:
 
     @staticmethod
     def _load_input_data_paths(input_data_specification_path: Path) -> List[Path]:
-        file_list = [
-            Path(filepath).resolve()
-            for filepath in load_yaml(input_data_specification_path).values()
-        ]
+        input_data_paths = load_yaml(input_data_specification_path)
+        if not isinstance(input_data_paths, dict):
+            raise TypeError(
+                "Input data should be submitted like 'key': path/to/file. "
+                f"Input was: '{input_data_paths}'"
+            )
+        file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
         return file_list
 
     @staticmethod

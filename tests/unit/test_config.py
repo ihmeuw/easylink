@@ -18,6 +18,18 @@ def test__load_input_data_paths(test_dir):
     assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
 
 
+def test_input_data_configuration_requires_key_value_pairs(test_dir):
+    config_params = {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/input_data_list.yaml",
+        "computing_environment": None,
+    }
+    with pytest.raises(
+        TypeError, match="Input data should be submitted like 'key': path/to/file."
+    ):
+        Config(**config_params)
+
+
 @pytest.mark.parametrize(
     "computing_environment",
     [

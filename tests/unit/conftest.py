@@ -117,6 +117,16 @@ def test_dir(tmpdir_factory) -> str:
             file,
             sort_keys=False,
         )
+    # input data is just a list (does not have keys)
+    with open(f"{tmp_path}/input_data_list.yaml", "w") as file:
+        yaml.dump(
+            [
+                str(input_dir1 / "file1.csv"),
+                str(input_dir2 / "file2.csv"),
+            ],
+            file,
+            sort_keys=False,
+        )
     # missing input_data.yaml
     with open(f"{tmp_path}/missing_input_data.yaml", "w") as file:
         yaml.dump(
