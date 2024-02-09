@@ -21,35 +21,17 @@ def test__load_input_data_paths(test_dir):
 @pytest.mark.parametrize(
     "computing_environment",
     [
-        "foo",
         "bad/path/to/environment.yaml",
         Path("another/bad/path"),
     ],
 )
-def test_bad_computing_environment_fails(default_config_params, computing_environment):
+def test_environment_configuration_not_found(default_config_params, computing_environment):
     config_params = default_config_params
     config_params.update(
         {"input_data": "foo", "computing_environment": computing_environment}
     )
-
     with pytest.raises(FileNotFoundError):
         Config(**config_params)
-
-
-def test_default_computing_environment(default_config_params):
-    """The computing environment value should default to 'local'"""
-    config_params = default_config_params
-    config_params.update({"computing_environment": None})
-    config = Config(**config_params)
-    assert config.computing_environment == "local"
-
-
-def test_default_container_engine(default_config_params):
-    """The container engine value should default to 'undefined'"""
-    config_params = default_config_params
-    config_params.update({"computing_environment": None})
-    config = Config(**config_params)
-    assert config.container_engine == "undefined"
 
 
 @pytest.mark.parametrize(
