@@ -64,7 +64,7 @@ class Config:
         )
         self.spark = self._get_requests(self.environment, "spark")
 
-        self.schema = self._get_schema()
+        self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
 
     @property
@@ -166,9 +166,34 @@ class Config:
         return requests
 
     def _get_schema(self) -> Optional[PipelineSchema]:
-        """Validates the pipeline against supported schemas."""
+        """Validates the pipeline against supported schemas.
+
+        NOTE: this acts as the pipeline configurat file's validation method since
+        we can only find a matching schema if the file is valid.
+        """
 
         errors = defaultdict(dict)
+        error_key = "PIPELINE ERRORS"
+
+        # Check that the pipeline specification contains a single "steps" outer key
+        if not len(self.pipeline) == 1 or not "steps" in self.pipeline:
+            errors[error_key][
+                "generic"
+            ] = "The pipeline specification should contain a single 'steps' key."
+            exit_with_validation_error(dict(errors))
+
+        # Check that each of the pipeline steps also contains an implementation
+        for step, step_config in self.pipeline["steps"].items():
+            if not "implementation" in step_config:
+                errors[error_key][f"step {step}"] = "Does not contain an 'implementation'."
+            elif not "name" in step_config["implementation"]:
+                errors[error_key][
+                    f"step {step}"
+                ] = "The implementation does not contain a 'name'."
+        if errors:
+            exit_with_validation_error(dict(errors))
+
+        # Try each schema until one is validated
         for schema in PIPELINE_SCHEMAS:
             logs = []
             config_steps = self.pipeline["steps"].keys()
@@ -188,7 +213,7 @@ class Config:
                             "Check step order and spelling in the pipeline configuration yaml."
                         )
             if logs:
-                errors["PIPELINE ERRORS"][schema.name] = logs
+                errors[error_key][schema.name] = logs
                 pass  # try the next schema
             else:
                 return schema
@@ -196,38 +221,39 @@ class Config:
         exit_with_validation_error(dict(errors))
 
     def _validate(self) -> None:
+        # TODO [MIC-4880]: refactor into validation object
         errors = {
-            # **self._validate_pipeline(),
+            # NOTE: pipeline configuration validation happens in '_get_schema()'
             **self._validate_input_data(),
             **self._validate_environment(),
         }
         if errors:
             exit_with_validation_error(errors)
 
-    def _validate_pipeline(self) -> Dict[Any, Any]:
-        pass  # TODO
-
     def _validate_input_data(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
+        error_key = "INPUT DATA ERRORS"
         # Check that input data files exist
         missing = [str(file) for file in self.input_data if not file.exists()]
         for file in missing:
-            errors["INPUT DATA ERRORS"][str(file)] = "File not found."
+            errors[error_key][str(file)] = "File not found."
         # Check that input data files are valid
         for file in [file for file in self.input_data if file.exists()]:
             input_data_errors = self.schema.validate_input(file)
             if input_data_errors:
-                errors["INPUT DATA ERRORS"][str(file)] = input_data_errors
+                errors[error_key][str(file)] = input_data_errors
         return errors
 
     def _validate_environment(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
+        error_key = "ENVIRONMENT ERRORS"
         if not self.container_engine in ["docker", "singularity", "undefined"]:
-            errors["CONFIGURATION ERRORS"][
+            errors[error_key][
                 self.computing_environment
             ] = f"Container engine '{self.container_engine}' is not supported."
 
         if self.spark and self.computing_environment == "local":
+            # Just warn, don't actually fail the validation
             logger.warning(
                 "Spark resource requests are not supported in a "
                 "local computing environment; these requests will be ignored. The "

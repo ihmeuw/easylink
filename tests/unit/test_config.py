@@ -139,6 +139,58 @@ def test__get_requests(key, input):
 ####################
 # validation tests #
 ####################
+
+
+@pytest.mark.parametrize(
+    "pipeline, expected_msg",
+    [
+        # missing 'steps' outer key
+        (
+            "missing_outer_key_pipeline.yaml",
+            {
+                "PIPELINE ERRORS": {
+                    "generic": [
+                        "The pipeline specification should contain a single 'steps' key."
+                    ]
+                },
+            },
+        ),
+        # missing 'implementation' key
+        (
+            "missing_implementation_pipeline.yaml",
+            {
+                "PIPELINE ERRORS": {"step step_1": ["Does not contain an 'implementation'."]},
+            },
+        ),
+        # missing implementation 'name' key
+        (
+            "missing_implementation_name_pipeline.yaml",
+            {
+                "PIPELINE ERRORS": {
+                    "step step_1": ["The implementation does not contain a 'name'."]
+                },
+            },
+        ),
+    ],
+)
+def test_pipeline_validation(pipeline, expected_msg, test_dir, caplog):
+    config_params = {
+        "pipeline_specification": Path(f"{test_dir}/{pipeline}"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
+    }
+
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg=expected_msg,
+    )
+
+
 def test_unsupported_step(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
     mocker.patch("linker.implementation.Implementation._get_container_full_stem")

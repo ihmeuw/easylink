@@ -13,6 +13,7 @@ class Pipeline:
     def __init__(self, config: Config):
         self.config = config
         self.implementations = self._get_implementations()
+        # TODO [MIC-4880]: refactor into validation object
         self._validate()
 
     def run(
