@@ -94,6 +94,8 @@ def run(
         input_data=input_data,
         computing_environment=computing_environment,
     )
+    results_dir = create_results_directory(output_dir, timestamp)
+    logger.info(f"Results directory: {str(results_dir)}")
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
