@@ -2,7 +2,7 @@ steps:
   step_1:
     implementation:
       name: step_1_python_pandas
-      # name: step_1_python_pyspark_distributed
+      # name: step_1_python_pyspark
       # TODO [MIC-4823 OR MIC-4824]: consider adding implementation-specific spark configurations here instead of in environment.yaml
       configuration:
         # DUMMY_CONTAINER_BROKEN: true
@@ -10,7 +10,7 @@ steps:
   step_2:
     implementation:
       # name: step_2_python_pandas
-      name: step_2_python_pyspark_distributed
+      name: step_2_python_pyspark
       configuration:
         # DUMMY_CONTAINER_BROKEN: true
         DUMMY_CONTAINER_INCREMENT: 222
