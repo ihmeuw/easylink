@@ -1,6 +1,5 @@
 import errno
 from pathlib import Path
-from unittest.mock import DEFAULT
 
 import pytest
 
@@ -143,7 +142,7 @@ def test_bad_input_data(test_dir, caplog):
         ("container_engine", "undefined"),
     ],
 )
-def test__get_computing_environment(key, input):
+def test__get_required_attribute(key, input):
     env_dict = {key: input} if input else {}
     retrieved = Config._get_required_attribute(env_dict, key)
     expected = DEFAULT_ENVIRONMENT.copy()
