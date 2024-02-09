@@ -84,12 +84,12 @@ def test_dir(tmpdir_factory) -> str:
             file,
             sort_keys=False,
         )
-    # bad input_data.yaml
-    with open(f"{tmp_path}/bad_input_data.yaml", "w") as file:
+    # missing input_data.yaml
+    with open(f"{tmp_path}/missing_input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "non-existent-file1"),
-                "bar": str(input_dir2 / "non-existent-file2"),
+                "foo": str(input_dir1 / "missing_file1.csv"),
+                "bar": str(input_dir2 / "missing_file2.csv"),
             },
             file,
             sort_keys=False,
@@ -162,7 +162,6 @@ def check_expected_validation_exit(error, caplog, error_no, expected_msg):
             for message in messages:
                 expected_pattern.append(" " + message)
         pattern = re.compile("".join(expected_pattern))
-        # regex_patterns.append(pattern)
         match = pattern.search(msg)
         assert match
         all_matches.append(match)

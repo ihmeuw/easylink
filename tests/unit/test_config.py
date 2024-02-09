@@ -27,14 +27,9 @@ def test__get_schema(default_config):
     assert default_config.schema.steps == [Step("step_1"), Step("step_2")]
 
 
-@pytest.mark.parametrize("input_data", ["good", "bad"])
-def test__load_input_data_paths(test_dir, input_data):
-    if input_data == "good":
-        paths = Config._load_input_data_paths(f"{test_dir}/input_data.yaml")
-        assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
-    if input_data == "bad":
-        with pytest.raises(RuntimeError, match=r"Cannot find input data: .*"):
-            Config._load_input_data_paths(f"{test_dir}/bad_input_data.yaml")
+def test__load_input_data_paths(test_dir):
+    paths = Config._load_input_data_paths(f"{test_dir}/input_data.yaml")
+    assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
 
 
 @pytest.mark.parametrize(
@@ -69,65 +64,6 @@ def test_default_container_engine(default_config_params):
     config_params.update({"computing_environment": None})
     config = Config(**config_params)
     assert config.container_engine == "undefined"
-
-
-def test_unsupported_step(test_dir, caplog, mocker):
-    mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
-    mocker.patch("linker.implementation.Implementation.validate", return_value=[])
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/environment.yaml"),
-    }
-
-    with pytest.raises(SystemExit) as e:
-        Config(**config_params)
-
-    check_expected_validation_exit(
-        error=e,
-        caplog=caplog,
-        error_no=errno.EINVAL,
-        expected_msg={
-            "PIPELINE ERRORS": {
-                "development": [
-                    "- Expected 2 steps but found 1 implementations.",
-                ],
-                "pvs_like_case_study": [
-                    "- 'Step 1: the pipeline schema expects step 'pvs_like_case_study' "
-                    "but the provided pipeline specifies 'foo'. Check step order "
-                    "and spelling in the pipeline configuration yaml.'",
-                ],
-            }
-        },
-    )
-
-
-def test_bad_input_data(test_dir, caplog):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/bad_columns_input_data.yaml",
-        "computing_environment": None,
-    }
-
-    with pytest.raises(SystemExit) as e:
-        Config(**config_params)
-
-    check_expected_validation_exit(
-        error=e,
-        caplog=caplog,
-        error_no=errno.EINVAL,
-        expected_msg={
-            "INPUT DATA ERRORS": {
-                ".*/broken_file1.csv": [
-                    "- Data file .* is missing required column\\(s\\) .*"
-                ],
-                ".*/broken_file2.csv": [
-                    "- Data file .* is missing required column\\(s\\) .*"
-                ],
-            }
-        },
-    )
 
 
 @pytest.mark.parametrize(
@@ -198,3 +134,87 @@ def test__get_requests(key, input):
     else:
         expected = {}
     assert retrieved == expected
+
+
+####################
+# validation tests #
+####################
+def test_unsupported_step(test_dir, caplog, mocker):
+    mocker.patch("linker.implementation.Implementation._load_metadata")
+    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
+    mocker.patch("linker.implementation.Implementation.validate", return_value=[])
+    config_params = {
+        "pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/environment.yaml"),
+    }
+
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            "PIPELINE ERRORS": {
+                "development": [
+                    "- Expected 2 steps but found 1 implementations.",
+                ],
+                "pvs_like_case_study": [
+                    "- 'Step 1: the pipeline schema expects step 'pvs_like_case_study' "
+                    "but the provided pipeline specifies 'foo'. Check step order "
+                    "and spelling in the pipeline configuration yaml.'",
+                ],
+            }
+        },
+    )
+
+
+def test_bad_input_data(test_dir, caplog):
+    config_params = {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/bad_columns_input_data.yaml",
+        "computing_environment": None,
+    }
+
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            "INPUT DATA ERRORS": {
+                ".*/broken_file1.csv": [
+                    "- Data file .* is missing required column\\(s\\) .*"
+                ],
+                ".*/broken_file2.csv": [
+                    "- Data file .* is missing required column\\(s\\) .*"
+                ],
+            }
+        },
+    )
+
+
+def test_missing_input_data(test_dir, caplog):
+    config_params = {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/missing_input_data.yaml",
+        "computing_environment": None,
+    }
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            "INPUT DATA ERRORS": {
+                ".*/missing_file1.csv": ["File not found."],
+                ".*/missing_file2.csv": ["File not found."],
+            },
+        },
+    )

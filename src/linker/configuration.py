@@ -1,8 +1,6 @@
-import shutil
 from collections import defaultdict
-from curses import keyname
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -105,70 +103,13 @@ class Config:
     # Setup Methods #
     #################
 
-    def _get_schema(self) -> Optional[PipelineSchema]:
-        """Validates the pipeline against supported schemas."""
-
-        errors = defaultdict(dict)
-        for schema in PIPELINE_SCHEMAS:
-            logs = []
-            config_steps = self.pipeline["steps"].keys()
-            # Check that number of schema steps matches number of implementations
-            if len(schema.steps) != len(config_steps):
-                logs.append(
-                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations."
-                )
-            else:
-                for idx, config_step in enumerate(config_steps):
-                    # Check that all steps are accounted for and in the correct order
-                    schema_step = schema.steps[idx].name
-                    if config_step != schema_step:
-                        logs.append(
-                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
-                            f"but the provided pipeline specifies '{config_step}'. "
-                            "Check step order and spelling in the pipeline configuration yaml."
-                        )
-            if logs:
-                errors["PIPELINE ERRORS"][schema.name] = logs
-                pass  # try the next schema
-            else:
-                return schema
-        # No schemas were validated
-        exit_with_validation_error(dict(errors))
-
-    def _validate(self) -> None:
-        errors = {
-            **self._validate_files(),
-            **self._validate_input_data(),
-        }
-        if errors:
-            exit_with_validation_error(errors)
-
-    def _validate_files(self) -> Dict:
-        # TODO [MIC-4723]: validate configuration files
-        errors = defaultdict(dict)
-        if not self.container_engine in ["docker", "singularity", "undefined"]:
-            errors["CONFIGURATION ERRORS"][
-                self.computing_environment
-            ] = f"Container engine '{self.container_engine}' is not supported."
-
-        if self.spark and self.computing_environment == "local":
-            logger.warning(
-                "Spark resource requests are not supported in a "
-                "local computing environment; these requests will be ignored. The "
-                "implementation itself is responsible for spinning up a spark cluster "
-                "inside of the relevant container.\n"
-                f"Ignored spark cluster requests: {self.spark}"
-            )
-
-        return errors
-
-    def _validate_input_data(self) -> Dict:
-        errors = defaultdict(dict)
-        for input_filepath in self.input_data:
-            input_data_errors = self.schema.validate_input(input_filepath)
-            if input_data_errors:
-                errors["INPUT DATA ERRORS"][str(input_filepath)] = input_data_errors
-        return errors
+    @staticmethod
+    def _load_input_data_paths(input_data_specification_path: Path) -> List[Path]:
+        file_list = [
+            Path(filepath).resolve()
+            for filepath in load_yaml(input_data_specification_path).values()
+        ]
+        return file_list
 
     @staticmethod
     def _load_computing_environment(
@@ -185,17 +126,6 @@ class Config:
         else:
             environment = {}  # handles empty environment.yaml
         return environment
-
-    @staticmethod
-    def _load_input_data_paths(input_data_specification_path: Path) -> List[Path]:
-        file_list = [
-            Path(filepath).resolve()
-            for filepath in load_yaml(input_data_specification_path).values()
-        ]
-        missing = [str(file) for file in file_list if not file.exists()]
-        if missing:
-            raise RuntimeError(f"Cannot find input data: {missing}")
-        return file_list
 
     @staticmethod
     def _get_required_attribute(environment: Dict[Any, Any], key: str) -> str:
@@ -234,3 +164,76 @@ class Config:
                         f"Assigning default value for {key} {default_key}: '{default_value}'"
                     )
         return requests
+
+    def _get_schema(self) -> Optional[PipelineSchema]:
+        """Validates the pipeline against supported schemas."""
+
+        errors = defaultdict(dict)
+        for schema in PIPELINE_SCHEMAS:
+            logs = []
+            config_steps = self.pipeline["steps"].keys()
+            # Check that number of schema steps matches number of implementations
+            if len(schema.steps) != len(config_steps):
+                logs.append(
+                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations."
+                )
+            else:
+                for idx, config_step in enumerate(config_steps):
+                    # Check that all steps are accounted for and in the correct order
+                    schema_step = schema.steps[idx].name
+                    if config_step != schema_step:
+                        logs.append(
+                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
+                            f"but the provided pipeline specifies '{config_step}'. "
+                            "Check step order and spelling in the pipeline configuration yaml."
+                        )
+            if logs:
+                errors["PIPELINE ERRORS"][schema.name] = logs
+                pass  # try the next schema
+            else:
+                return schema
+        # No schemas were validated
+        exit_with_validation_error(dict(errors))
+
+    def _validate(self) -> None:
+        errors = {
+            # **self._validate_pipeline(),
+            **self._validate_input_data(),
+            **self._validate_environment(),
+        }
+        if errors:
+            exit_with_validation_error(errors)
+
+    def _validate_pipeline(self) -> Dict[Any, Any]:
+        pass  # TODO
+
+    def _validate_input_data(self) -> Dict[Any, Any]:
+        errors = defaultdict(dict)
+        # Check that input data files exist
+        missing = [str(file) for file in self.input_data if not file.exists()]
+        for file in missing:
+            errors["INPUT DATA ERRORS"][str(file)] = "File not found."
+        # Check that input data files are valid
+        for file in [file for file in self.input_data if file.exists()]:
+            input_data_errors = self.schema.validate_input(file)
+            if input_data_errors:
+                errors["INPUT DATA ERRORS"][str(file)] = input_data_errors
+        return errors
+
+    def _validate_environment(self) -> Dict[Any, Any]:
+        errors = defaultdict(dict)
+        if not self.container_engine in ["docker", "singularity", "undefined"]:
+            errors["CONFIGURATION ERRORS"][
+                self.computing_environment
+            ] = f"Container engine '{self.container_engine}' is not supported."
+
+        if self.spark and self.computing_environment == "local":
+            logger.warning(
+                "Spark resource requests are not supported in a "
+                "local computing environment; these requests will be ignored. The "
+                "implementation itself is responsible for spinning up a spark cluster "
+                "inside of the relevant container.\n"
+                f"Ignored spark cluster requests: {self.spark}"
+            )
+
+        return errors
