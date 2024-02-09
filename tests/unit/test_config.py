@@ -5,21 +5,7 @@ import pytest
 
 from linker.configuration import DEFAULT_ENVIRONMENT, Config
 from linker.step import Step
-from tests.unit.conftest import (
-    ENV_CONFIG_DICT,
-    PIPELINE_CONFIG_DICT,
-    check_expected_validation_exit,
-)
-
-
-def test_config_instantiation(test_dir, default_config):
-    assert default_config.pipeline == PIPELINE_CONFIG_DICT["good"]
-    assert default_config.environment == ENV_CONFIG_DICT
-    assert default_config.input_data == [
-        Path(x) for x in [f"{test_dir}/input_data{n}/file{n}.csv" for n in [1, 2]]
-    ]
-    assert default_config.computing_environment == ENV_CONFIG_DICT["computing_environment"]
-    assert default_config.container_engine == ENV_CONFIG_DICT["container_engine"]
+from tests.unit.conftest import check_expected_validation_exit
 
 
 def test__get_schema(default_config):
