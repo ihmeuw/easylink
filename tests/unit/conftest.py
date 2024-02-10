@@ -189,6 +189,7 @@ def default_config(default_config_params) -> Config:
 
 
 def check_expected_validation_exit(error, caplog, error_no, expected_msg):
+    """Check that the validation messages are as expected. It's hacky."""
     assert error.value.code == error_no
     # Extract error message
     msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
@@ -198,10 +199,10 @@ def check_expected_validation_exit(error, caplog, error_no, expected_msg):
     msg = re.sub(" +", " ", msg).strip()
     msg = re.sub("''", "'", msg)
     all_matches = []
-    for error_type, schemas in expected_msg.items():
+    for error_type, context in expected_msg.items():
         expected_pattern = [error_type + ":"]
-        for schema, messages in schemas.items():
-            expected_pattern.append(" " + schema + ":")
+        for item, messages in context.items():
+            expected_pattern.append(" " + item + ":")
             for message in messages:
                 expected_pattern.append(" " + message)
         pattern = re.compile("".join(expected_pattern))

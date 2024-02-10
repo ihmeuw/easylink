@@ -258,8 +258,8 @@ class Config:
         error_key = "ENVIRONMENT ERRORS"
         if not self.container_engine in ["docker", "singularity", "undefined"]:
             errors[error_key][
-                self.computing_environment
-            ] = f"Container engine '{self.container_engine}' is not supported."
+                "container_engine"
+            ] = f"The value '{self.container_engine}' is not supported."
 
         if self.spark and self.computing_environment == "local":
             # Just warn, don't actually fail the validation

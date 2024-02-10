@@ -277,3 +277,29 @@ def test_missing_input_file(test_dir, caplog):
             },
         },
     )
+
+
+def test_unsupported_container_engine(test_dir, caplog, mocker):
+    config_params = {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/input_data.yaml",
+        "computing_environment": None,
+    }
+    mocker.patch(
+        "linker.configuration.Config._get_required_attribute",
+        side_effect=lambda _env, attribute: "foo"
+        if attribute == "container_engine"
+        else None,
+    )
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            "ENVIRONMENT ERRORS": {
+                "container_engine": ["The value 'foo' is not supported."],
+            },
+        },
+    )
