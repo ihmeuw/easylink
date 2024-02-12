@@ -8,6 +8,10 @@ from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
 
+PIPELINE_ERRORS_KEY = "PIPELINE ERRORS"
+INPUT_DATA_ERRORS_KEY = "INPUT DATA ERRORS"
+ENVIRONMENT_ERRORS_KEY = "ENVIRONMENT ERRORS"
+
 DEFAULT_ENVIRONMENT = {
     "computing_environment": "local",
     "container_engine": "undefined",
@@ -174,13 +178,10 @@ class Config:
         NOTE: this acts as the pipeline configurat file's validation method since
         we can only find a matching schema if the file is valid.
         """
-
         errors = defaultdict(dict)
-        error_key = "PIPELINE ERRORS"
-
         # Check that the pipeline specification contains a single "steps" outer key
         if not len(self.pipeline) == 1 or not "steps" in self.pipeline:
-            errors[error_key][
+            errors[PIPELINE_ERRORS_KEY][
                 "generic"
             ] = "The pipeline specification should contain a single 'steps' key."
             exit_with_validation_error(dict(errors))
@@ -190,13 +191,15 @@ class Config:
         metadata = load_yaml(metadata_path)
         for step, step_config in self.pipeline["steps"].items():
             if not "implementation" in step_config:
-                errors[error_key][f"step {step}"] = "Does not contain an 'implementation'."
+                errors[PIPELINE_ERRORS_KEY][
+                    f"step {step}"
+                ] = "Does not contain an 'implementation'."
             elif not "name" in step_config["implementation"]:
-                errors[error_key][
+                errors[PIPELINE_ERRORS_KEY][
                     f"step {step}"
                 ] = "The implementation does not contain a 'name'."
             elif not step_config["implementation"]["name"] in metadata:
-                errors[error_key][
+                errors[PIPELINE_ERRORS_KEY][
                     f"step {step}"
                 ] = f"Implementation '{step_config['implementation']['name']}' is not defined in implementation_metadata.yaml."
         if errors:
@@ -222,7 +225,7 @@ class Config:
                             "Check step order and spelling in the pipeline configuration yaml."
                         )
             if logs:
-                errors[error_key][schema.name] = logs
+                errors[PIPELINE_ERRORS_KEY][schema.name] = logs
                 pass  # try the next schema
             else:
                 return schema
@@ -241,34 +244,28 @@ class Config:
 
     def _validate_input_data(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
-        error_key = "INPUT DATA ERRORS"
         # Check that input data files exist
         missing = [str(file) for file in self.input_data if not file.exists()]
         for file in missing:
-            errors[error_key][str(file)] = "File not found."
+            errors[INPUT_DATA_ERRORS_KEY][str(file)] = "File not found."
         # Check that input data files are valid
         for file in [file for file in self.input_data if file.exists()]:
             input_data_errors = self.schema.validate_input(file)
             if input_data_errors:
-                errors[error_key][str(file)] = input_data_errors
+                errors[INPUT_DATA_ERRORS_KEY][str(file)] = input_data_errors
         return errors
 
     def _validate_environment(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
-        error_key = "ENVIRONMENT ERRORS"
         if not self.container_engine in ["docker", "singularity", "undefined"]:
-            errors[error_key][
+            errors[ENVIRONMENT_ERRORS_KEY][
                 "container_engine"
             ] = f"The value '{self.container_engine}' is not supported."
 
-        if self.spark and self.computing_environment == "local":
-            # Just warn, don't actually fail the validation
-            logger.warning(
-                "Spark resource requests are not supported in a "
-                "local computing environment; these requests will be ignored. The "
-                "implementation itself is responsible for spinning up a spark cluster "
-                "inside of the relevant container.\n"
-                f"Ignored spark cluster requests: {self.spark}"
+        if self.computing_environment == "slurm" and not self.slurm_resources:
+            errors[ENVIRONMENT_ERRORS_KEY]["slurm"] = (
+                "The environment configuration file must include a 'slurm' key "
+                "defining slurm resources if the computing_environment is 'slurm'."
             )
 
         return errors

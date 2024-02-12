@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from linker.configuration import DEFAULT_ENVIRONMENT, Config
+from linker.configuration import (
+    DEFAULT_ENVIRONMENT,
+    ENVIRONMENT_ERRORS_KEY,
+    INPUT_DATA_ERRORS_KEY,
+    PIPELINE_ERRORS_KEY,
+    Config,
+)
 from linker.step import Step
 from tests.unit.conftest import check_expected_validation_exit
 
@@ -121,6 +127,7 @@ def test__get_requests(key, input):
 ####################
 
 
+# Pipeline validations
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
     [
@@ -128,7 +135,7 @@ def test__get_requests(key, input):
         (
             "missing_outer_key_pipeline.yaml",
             {
-                "PIPELINE ERRORS": {
+                PIPELINE_ERRORS_KEY: {
                     "generic": [
                         "The pipeline specification should contain a single 'steps' key."
                     ]
@@ -139,14 +146,16 @@ def test__get_requests(key, input):
         (
             "missing_implementation_pipeline.yaml",
             {
-                "PIPELINE ERRORS": {"step step_1": ["Does not contain an 'implementation'."]},
+                PIPELINE_ERRORS_KEY: {
+                    "step step_1": ["Does not contain an 'implementation'."]
+                },
             },
         ),
         # missing implementation 'name' key
         (
             "missing_implementation_name_pipeline.yaml",
             {
-                "PIPELINE ERRORS": {
+                PIPELINE_ERRORS_KEY: {
                     "step step_1": ["The implementation does not contain a 'name'."]
                 },
             },
@@ -189,7 +198,7 @@ def test_unsupported_step(test_dir, caplog, mocker):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "PIPELINE ERRORS": {
+            PIPELINE_ERRORS_KEY: {
                 "development": [
                     "- Expected 2 steps but found 1 implementations.",
                 ],
@@ -221,7 +230,7 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "PIPELINE ERRORS": {
+            PIPELINE_ERRORS_KEY: {
                 "step step_1": [
                     "Implementation 'foo' is not defined in implementation_metadata.yaml."
                 ]
@@ -230,6 +239,7 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
     )
 
 
+# Input data validations
 def test_bad_input_data(test_dir, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
@@ -245,7 +255,7 @@ def test_bad_input_data(test_dir, caplog):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "INPUT DATA ERRORS": {
+            INPUT_DATA_ERRORS_KEY: {
                 ".*/broken_file1.csv": [
                     "- Data file .* is missing required column\\(s\\) .*"
                 ],
@@ -271,7 +281,7 @@ def test_missing_input_file(test_dir, caplog):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "INPUT DATA ERRORS": {
+            INPUT_DATA_ERRORS_KEY: {
                 ".*/missing_file1.csv": ["File not found."],
                 ".*/missing_file2.csv": ["File not found."],
             },
@@ -279,6 +289,7 @@ def test_missing_input_file(test_dir, caplog):
     )
 
 
+# Environment validations
 def test_unsupported_container_engine(test_dir, caplog, mocker):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
@@ -300,6 +311,35 @@ def test_unsupported_container_engine(test_dir, caplog, mocker):
         expected_msg={
             "ENVIRONMENT ERRORS": {
                 "container_engine": ["The value 'foo' is not supported."],
+            },
+        },
+    )
+
+
+def test_missing_slurm_details(test_dir, caplog, mocker):
+    mocker.patch(
+        "linker.configuration.Config._get_required_attribute",
+        side_effect=lambda _env, attribute: "slurm"
+        if attribute == "computing_environment"
+        else "undefined",
+    )
+    config_params = {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/input_data.yaml",
+        "computing_environment": None,
+    }
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+    check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            ENVIRONMENT_ERRORS_KEY: {
+                "slurm": [
+                    "The environment configuration file must include a 'slurm' key "
+                    "defining slurm resources if the computing_environment is 'slurm'."
+                ],
             },
         },
     )
