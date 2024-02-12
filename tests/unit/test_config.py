@@ -11,7 +11,20 @@ from linker.configuration import (
     Config,
 )
 from linker.step import Step
+from linker.utilities.data_utils import load_yaml
 from tests.unit.conftest import check_expected_validation_exit
+
+
+@pytest.mark.parametrize("requires_spark", [True, False])
+def test__determine_if_spark_is_required(test_dir, requires_spark):
+    pipeline = load_yaml(f"{test_dir}/pipeline.yaml")
+    if requires_spark:
+        # Change step 1's implementation to python_pyspark
+        pipeline["steps"]["step_1"]["implementation"][
+            "name"
+        ] = "step_1_python_pyspark_distributed"
+    is_required = Config._determine_if_spark_is_required(pipeline)
+    assert is_required == requires_spark
 
 
 def test__get_schema(default_config):
@@ -134,6 +147,23 @@ def test__get_requests_spark(input):
         else:
             expected = {}
         assert retrieved == expected
+
+
+@pytest.mark.parametrize("includes_implementation_configuration", [False, True])
+def test_get_implementation_specific_configuration(
+    default_config, includes_implementation_configuration
+):
+    config = default_config
+    step_1_config = {}
+    step_2_config = {}
+    if includes_implementation_configuration:
+        step_2_config = {
+            "SOME-CONFIGURATION": "some-value",
+            "SOME-OTHER-CONFIGURATION": "some-other-value",
+        }
+        config.pipeline["steps"]["step_2"]["implementation"]["configuration"] = step_2_config
+    assert config.get_implementation_specific_configuration("step_1") == step_1_config
+    assert config.get_implementation_specific_configuration("step_2") == step_2_config
 
 
 ####################
