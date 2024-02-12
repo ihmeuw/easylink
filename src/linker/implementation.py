@@ -20,7 +20,6 @@ class Implementation:
         self.config = config
         self._pipeline_step_name = step.name
         self.name = config.get_implementation_name(step.name)
-        self.implementation_config = self._get_implementation_config()
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
         self._requires_spark = self._metadata[self.name].get("requires_spark", False)
@@ -39,6 +38,9 @@ class Implementation:
         diagnostics_dir: Path,
     ) -> None:
         logger.info(f"Running pipeline step ID {step_id}")
+        implementation_config = self.config.get_implementation_specific_configuration(
+            self.step_name
+        )
         if self._requires_spark and session:
             # having an active drmaa session implies we are running on a slurm cluster
             # (i.e. not 'local' computing environment) and so need to spin up a spark
@@ -55,7 +57,7 @@ class Implementation:
                 input_data=input_data,
             )
             # Add the spark master url to implementation config
-            self.implementation_config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
+            implementation_config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
 
         runner(
             container_engine=self.config.container_engine,
@@ -66,7 +68,7 @@ class Implementation:
             step_name=self.step_name,
             implementation_name=self.name,
             container_full_stem=self._container_full_stem,
-            implementation_config=self.implementation_config,
+            implementation_config=implementation_config,
         )
 
         if self._requires_spark and session and not spark_resources["keep_alive"]:
@@ -87,23 +89,6 @@ class Implementation:
     ##################
     # Helper methods #
     ##################
-
-    def _get_implementation_config(self) -> Dict[Any, Any]:
-        """Extracts and formats the implementation specific config from the pipeline config"""
-        config = self.config.get_implementation_config(self._pipeline_step_name)
-        return self._stringify_keys_values(config) if config else {}
-
-    StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
-
-    def _stringify_keys_values(self, config: Any) -> StringifiedDictionary:
-        # Singularity requires env variables be strings
-        if isinstance(config, Dict):
-            return {
-                str(key): self._stringify_keys_values(value) for key, value in config.items()
-            }
-        else:
-            # The last step of the recursion is not a dict but the leaf node's value
-            return str(config)
 
     def _load_metadata(self) -> Dict[str, str]:
         metadata_path = Path(__file__).parent / "implementation_metadata.yaml"

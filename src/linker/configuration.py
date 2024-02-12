@@ -45,7 +45,6 @@ class Config:
     ):
         # Handle pipeline specification
         self.pipeline_specification_path = pipeline_specification
-
         self.pipeline = load_yaml(pipeline_specification)
         # Handle input data specification
         self.input_data_specification_path = input_data
@@ -83,17 +82,24 @@ class Config:
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
 
-    def copy_configuration_files_to_results_directory(self, results_dir: Path) -> None:
-        shutil.copy(self.pipeline_specification_path, results_dir)
-        shutil.copy(self.input_data_specification_path, results_dir)
-        if self.computing_environment_specification_path:
-            shutil.copy(self.computing_environment_specification_path, results_dir)
+    def get_implementation_specific_configuration(self, step_name: str) -> Dict[str, Any]:
+        """Extracts and formats an implementation-specific configuration from the pipeline config"""
+
+        def _stringify_keys_values(config: Any) -> Dict[str, Any]:
+            # Singularity requires env variables be strings
+            if isinstance(config, Dict):
+                return {
+                    str(key): _stringify_keys_values(value) for key, value in config.items()
+                }
+            else:
+                # The last step of the recursion is not a dict but the leaf node's value
+                return str(config)
+
+        config = self.pipeline["steps"][step_name]["implementation"].get("configuration", {})
+        return _stringify_keys_values(config)
 
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
-
-    def get_implementation_config(self, step_name: str) -> Optional[Dict[str, Any]]:
-        return self.pipeline["steps"][step_name]["implementation"].get("configuration", None)
 
     #################
     # Setup Methods #

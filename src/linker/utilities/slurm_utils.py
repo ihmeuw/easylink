@@ -25,7 +25,7 @@ def get_slurm_drmaa() -> types.ModuleType("drmaa"):
 
 
 def launch_slurm_job(
-    session: types.ModuleType("drmaa.Session"),
+    session: "drmaa.Session",
     config: Config,
     container_engine: str,
     input_data: List[str],
