@@ -73,45 +73,18 @@ def test__get_required_attribute(key, input):
 
 
 @pytest.mark.parametrize(
-    "key, input",
+    "input",
     [
         # missing
-        ("implementation_resources", None),
+        None,
         # partially defined
-        ("implementation_resources", {"memory": 100}),
+        {"memory": 100},
         # fully defined
-        ("implementation_resources", {"memory": 100, "cpus": 200, "time_limit": 300}),
-        # missing
-        ("spark", None),
-        # partially defined (missing entire workers)
-        ("spark", {"keep_alive": "idk"}),
-        # partially defined (missing keep_alive and num_workers)
-        (
-            "spark",
-            {
-                "workers": {
-                    "cpus_per_node": 200,
-                    "mem_per_node": 300,
-                    "time_limit": 400,
-                }
-            },
-        ),
-        # fully defined
-        (
-            "spark",
-            {
-                "workers": {
-                    "num_workers": 100,
-                    "cpus_per_node": 200,
-                    "mem_per_node": 300,
-                    "time_limit": 400,
-                },
-                "keep_alive": "idk",
-            },
-        ),
+        {"memory": 100, "cpus": 200, "time_limit": 300},
     ],
 )
-def test__get_requests(key, input):
+def test__get_requests_implementation_resources(input):
+    key = "implementation_resources"
     env_dict = {key: input.copy()} if input else {}
     retrieved = Config._get_requests(env_dict, key)
     if input:
@@ -120,6 +93,47 @@ def test__get_requests(key, input):
     else:
         expected = {}
     assert retrieved == expected
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        # missing
+        None,
+        # partially defined (missing entire workers)
+        {"keep_alive": "idk"},
+        # partially defined (missing keep_alive and num_workers)
+        {
+            "workers": {
+                "cpus_per_node": 200,
+                "mem_per_node": 300,
+                "time_limit": 400,
+            }
+        },
+        # fully defined
+        {
+            "workers": {
+                "num_workers": 100,
+                "cpus_per_node": 200,
+                "mem_per_node": 300,
+                "time_limit": 400,
+            },
+            "keep_alive": "idk",
+        },
+    ],
+)
+def test__get_requests_spark(input):
+    key = "spark"
+    env_dict = {key: input.copy()} if input else {}
+    for requires_spark in [False, True]:
+        retrieved = Config._get_requests(env_dict, key, requires_spark)
+        if requires_spark:
+            expected = DEFAULT_ENVIRONMENT[key].copy()
+            if input:
+                expected.update(env_dict[key])
+        else:
+            expected = {}
+        assert retrieved == expected
 
 
 ####################
@@ -162,7 +176,10 @@ def test__get_requests(key, input):
         ),
     ],
 )
-def test_pipeline_validation(pipeline, expected_msg, test_dir, caplog):
+def test_pipeline_validation(pipeline, expected_msg, test_dir, caplog, mocker):
+    mocker.patch(
+        "linker.configuration.Config._determine_if_spark_is_required", return_value=False
+    )
     config_params = {
         "pipeline_specification": Path(f"{test_dir}/{pipeline}"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
@@ -216,6 +233,9 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
     mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
+    mocker.patch(
+        "linker.configuration.Config._determine_if_spark_is_required", return_value=False
+    )
     config_params = {
         "pipeline_specification": Path(f"{test_dir}/bad_implementation_pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
