@@ -11,6 +11,7 @@ from linker.configuration import (
     Config,
 )
 from linker.step import Step
+from linker.utilities import paths
 from linker.utilities.data_utils import load_yaml
 from tests.unit.conftest import check_expected_validation_exit
 
@@ -264,6 +265,8 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
 
+    implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+
     check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -271,8 +274,8 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
         expected_msg={
             PIPELINE_ERRORS_KEY: {
                 "step step_1": [
-                    "Implementation 'foo' is not defined in implementation_metadata.yaml."
-                ]
+                    f"Implementation 'foo' is not supported. Supported implementations are: {list(implementation_metadata.keys())}."
+                ],
             }
         },
     )

@@ -197,13 +197,18 @@ def check_expected_validation_exit(error, caplog, error_no, expected_msg):
     )[0]
     msg = re.sub("\n+", " ", msg)
     msg = re.sub(" +", " ", msg).strip()
-    msg = re.sub("''", "'", msg)
+    # Remove single quotes from msg and expected b/c they're difficult to handle and not that important
+    msg = re.sub("'+", "", msg)
     all_matches = []
     for error_type, context in expected_msg.items():
         expected_pattern = [error_type + ":"]
         for item, messages in context.items():
             expected_pattern.append(" " + item + ":")
             for message in messages:
+                message = re.sub("'+", "", message)
+                # escape square brackets
+                message = re.sub("\\[", "\\[", message)
+                message = re.sub("\\]", "\\]", message)
                 expected_pattern.append(" " + message)
         pattern = re.compile("".join(expected_pattern))
         match = pattern.search(msg)

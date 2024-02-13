@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 
 from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+from linker.utilities import paths
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
 
@@ -30,8 +31,6 @@ DEFAULT_ENVIRONMENT = {
         "keep_alive": False,
     },
 }
-
-IMPLEMENTATION_METADATA_PATH = Path(__file__).parent / "implementation_metadata.yaml"
 
 
 class Config:
@@ -113,7 +112,7 @@ class Config:
     @staticmethod
     def _determine_if_spark_is_required(pipeline: Dict[str, Any]) -> bool:
         """Check if the pipeline requires spark resources."""
-        implementation_metadata = load_yaml(IMPLEMENTATION_METADATA_PATH)
+        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         try:
             implementations = [
                 step["implementation"]["name"] for step in pipeline["steps"].values()
@@ -238,7 +237,7 @@ class Config:
         errors = defaultdict(dict)
 
         # Check that each of the pipeline steps also contains an implementation
-        metadata = load_yaml(IMPLEMENTATION_METADATA_PATH)
+        metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         for step, step_config in self.pipeline["steps"].items():
             if not "implementation" in step_config:
                 errors[PIPELINE_ERRORS_KEY][
@@ -249,9 +248,10 @@ class Config:
                     f"step {step}"
                 ] = "The implementation does not contain a 'name'."
             elif not step_config["implementation"]["name"] in metadata:
-                errors[PIPELINE_ERRORS_KEY][
-                    f"step {step}"
-                ] = f"Implementation '{step_config['implementation']['name']}' is not defined in implementation_metadata.yaml."
+                errors[PIPELINE_ERRORS_KEY][f"step {step}"] = (
+                    f"Implementation '{step_config['implementation']['name']}' is not supported. "
+                    f"Supported implementations are: {list(metadata.keys())}."
+                )
         if errors:
             exit_with_validation_error(dict(errors))
 
