@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from loguru import logger
+import subprocess
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
@@ -111,3 +112,7 @@ def run_container(
                     f"    Docker error: {e_docker}\n"
                     f"    Singularity error: {str(e_singularity)}"
                 )
+
+def run_with_snakemake(config, results_dir):
+    cmd = ["snakemake", "--cores", "1", "-n"]
+    subprocess.run(cmd, check=True)

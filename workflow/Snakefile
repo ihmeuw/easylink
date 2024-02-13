@@ -1,0 +1,28 @@
+workdir: "src/linker"
+
+
+config = snakemake.workflow.config
+
+
+rule all:
+    input:
+        config["output_file"],
+
+
+rule step1_python_pandas:
+    input:
+        file1=config["input_data"]["file1"],
+    output:
+        step1="scratch/intermediate/step1.parquet",
+    script:
+        "steps/dev/python_pandas/dummy_step_snakemake.py"
+
+
+rule step2_python_pandas:
+    input:
+        step1=rules.step1_python_pandas.output.step1,
+        file1=config["input_data"]["file1"],
+    output:
+        config["output_file"],
+    script:
+        "steps/dev/python_pandas/dummy_step_snakemake.py"

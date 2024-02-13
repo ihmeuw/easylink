@@ -70,6 +70,13 @@ def linker():
     help="Drop into python debugger if an error occurs.",
     hidden=True,
 )
+@click.option(
+    "--use_wfms",
+    "use_wfms",
+    is_flag=True,
+    help="Run using WFMS: Snakemake.",
+    hidden=True,
+)
 def run(
     pipeline_specification: str,
     input_data: str,
@@ -78,6 +85,7 @@ def run(
     computing_environment: Optional[str],
     verbose: int,
     with_debugger: bool,
+    use_wfms: bool,
 ) -> None:
     """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
@@ -96,9 +104,14 @@ def run(
     )
     results_dir = create_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
-    main = handle_exceptions(
-        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
-    )
+    if use_wfms:
+        main = handle_exceptions(
+            func=runner.run_with_snakemake, exceptions_logger=logger, with_debugger=with_debugger
+        )
+    else:
+        main = handle_exceptions(
+            func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
+        )
     main(
         config=config,
         results_dir=results_dir,
@@ -163,3 +176,4 @@ def run_slurm_job(
     )
 
     logger.info("*** FINISHED ***")
+    
