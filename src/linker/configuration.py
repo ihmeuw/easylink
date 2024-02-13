@@ -66,10 +66,10 @@ class Config:
             self.environment, "container_engine"
         )
         self.slurm = self.environment.get("slurm", {})  # no defaults for slurm
-        self.implementation_resources = self._get_requests(
-            self.environment, "implementation_resources"
+        self.implementation_resources = self._get_implementation_resource_requests(
+            self.environment
         )
-        self.spark = self._get_requests(self.environment, "spark", self._requires_spark)
+        self.spark = self._get_spark_requests(self.environment, self._requires_spark)
 
         self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
@@ -168,57 +168,65 @@ class Config:
         return value
 
     @staticmethod
-    def _get_requests(
-        environment: Dict[Any, Any], key: str, requires_spark: bool = False
-    ) -> Dict[Any, Any]:
-        """Extracts the requests from the environment and assigns default values
-        if they are not present.
+    def _get_implementation_resource_requests(environment: Dict[Any, Any]) -> Dict[Any, Any]:
+        """Extracts the implementation_resources requests from the environment
+        and assigns default valuesif they are not present.
         """
-        # TODO: replace this with vivarium's ConfigTree
-        if key != "spark" and not key in environment:
+        key = "implementation_resources"
+        if not key in environment:
             # This is not strictly a required field so just return an empty dict
             return {}
-        if key == "spark":
-            if not requires_spark:
-                # This is not strictly a required field so just return an empty dict
-                return {}
-            elif not key in environment:
-                logger.info(
-                    f"Assigning default values for spark: '{DEFAULT_ENVIRONMENT[key]}'"
-                )
-                return DEFAULT_ENVIRONMENT[key]
+
+        # Manually walk through the keys and assign default values if they are not present
+        requests = environment[key]
+        requests = Config._assign_defaults(key, requests, DEFAULT_ENVIRONMENT[key])
+        return requests
+
+    @staticmethod
+    def _get_spark_requests(
+        environment: Dict[Any, Any], requires_spark: bool = False
+    ) -> Dict[Any, Any]:
+        """Extracts the spark requests from the environment and assigns default
+        values if they are not present.
+        """
+        key = "spark"
+
+        if not requires_spark:
+            # This is not strictly a required field so just return an empty dict
+            return {}
+        elif not key in environment:
+            logger.info(f"Assigning default values for spark: '{DEFAULT_ENVIRONMENT[key]}'")
+            return DEFAULT_ENVIRONMENT[key]
 
         # Manually walk through the keys and assign default values if they are not present
         requests = environment[key]
         # HACK: special case spark workers since it's a nested dict
-        if key == "spark":
-            if not "workers" in requests:
-                # Assign the entire default workers dict
-                requests["workers"] = DEFAULT_ENVIRONMENT["spark"]["workers"]
-                logger.info(
-                    f"Assigning default values for spark workers: '{requests['workers']}'"
-                )
-            else:
-                # Handle workers since it's nested
-                for default_key, default_value in DEFAULT_ENVIRONMENT[key]["workers"].items():
-                    if not default_key in requests["workers"]:
-                        requests["workers"][default_key] = default_value
-                        logger.info(
-                            f"Assigning default value for {key} workers {default_key}: '{default_value}'"
-                        )
-            for default_key, default_value in DEFAULT_ENVIRONMENT[key].items():
-                if not default_key in requests:
-                    requests[default_key] = default_value
-                    logger.info(
-                        f"Assigning default value for {key} {default_key}: '{default_value}'"
-                    )
+        if not "workers" in requests:
+            # Assign the entire default workers dict
+            requests["workers"] = DEFAULT_ENVIRONMENT["spark"]["workers"]
+            logger.info(
+                f"Assigning default values for spark workers: '{requests['workers']}'"
+            )
         else:
-            for default_key, default_value in DEFAULT_ENVIRONMENT[key].items():
-                if not default_key in requests:
-                    requests[default_key] = default_value
-                    logger.info(
-                        f"Assigning default value for {key} {default_key}: '{default_value}'"
-                    )
+            # Handle workers since it's nested
+            requests["workers"] = Config._assign_defaults(
+                f"{key} workers", requests["workers"], DEFAULT_ENVIRONMENT[key]["workers"]
+            )
+        requests = Config._assign_defaults(key, requests, DEFAULT_ENVIRONMENT[key])
+
+        return requests
+
+    @staticmethod
+    def _assign_defaults(key: str, requests: Dict[str, Any], defaults: Dict[str, Any]):
+        """Loop through a single level of dictionary items and replace missing values
+        with defaults.
+        """
+        for default_key, default_value in defaults.items():
+            if not default_key in requests:
+                requests[default_key] = default_value
+                logger.info(
+                    f"Assigning default value for {key} {default_key}: '{default_value}'"
+                )
         return requests
 
     def _get_schema(self) -> Optional[PipelineSchema]:

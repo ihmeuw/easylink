@@ -96,10 +96,10 @@ def test__get_required_attribute(key, input):
         {"memory": 100, "cpus": 200, "time_limit": 300},
     ],
 )
-def test__get_requests_implementation_resources(input):
+def test__get_implementation_resource_requests(input):
     key = "implementation_resources"
     env_dict = {key: input.copy()} if input else {}
-    retrieved = Config._get_requests(env_dict, key)
+    retrieved = Config._get_implementation_resource_requests(env_dict)
     if input:
         expected = DEFAULT_ENVIRONMENT[key].copy()
         expected.update(env_dict[key])
@@ -135,11 +135,11 @@ def test__get_requests_implementation_resources(input):
         },
     ],
 )
-def test__get_requests_spark(input):
+def test__get_spark_requests(input):
     key = "spark"
     env_dict = {key: input.copy()} if input else {}
     for requires_spark in [False, True]:
-        retrieved = Config._get_requests(env_dict, key, requires_spark)
+        retrieved = Config._get_spark_requests(env_dict, requires_spark)
         if requires_spark:
             expected = DEFAULT_ENVIRONMENT[key].copy()
             if input:
