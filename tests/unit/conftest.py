@@ -206,9 +206,6 @@ def check_expected_validation_exit(error, caplog, error_no, expected_msg):
             expected_pattern.append(" " + item + ":")
             for message in messages:
                 message = re.sub("'+", "", message)
-                # escape square brackets
-                message = re.sub("\\[", "\\[", message)
-                message = re.sub("\\]", "\\]", message)
                 expected_pattern.append(" " + message)
         pattern = re.compile("".join(expected_pattern))
         match = pattern.search(msg)

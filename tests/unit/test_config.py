@@ -266,7 +266,9 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
         Config(**config_params)
 
     implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-
+    supported_implementations = (
+        str(list(implementation_metadata.keys())).replace("[", "\\[").replace("]", "\\]")
+    )
     check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -274,7 +276,7 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
         expected_msg={
             PIPELINE_ERRORS_KEY: {
                 "step step_1": [
-                    f"Implementation 'foo' is not supported. Supported implementations are: {list(implementation_metadata.keys())}."
+                    f"Implementation 'foo' is not supported. Supported implementations are: {supported_implementations}."
                 ],
             }
         },
