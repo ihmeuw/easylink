@@ -236,12 +236,6 @@ class Config:
         we can only find a matching schema if the file is valid.
         """
         errors = defaultdict(dict)
-        # Check that the pipeline specification contains a single "steps" outer key
-        if not len(self.pipeline) == 1 or not "steps" in self.pipeline:
-            errors[PIPELINE_ERRORS_KEY][
-                "generic"
-            ] = "The pipeline specification should contain a single 'steps' key."
-            exit_with_validation_error(dict(errors))
 
         # Check that each of the pipeline steps also contains an implementation
         metadata = load_yaml(IMPLEMENTATION_METADATA_PATH)

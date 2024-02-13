@@ -175,17 +175,6 @@ def test_get_implementation_specific_configuration(
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
     [
-        # missing 'steps' outer key
-        (
-            "missing_outer_key_pipeline.yaml",
-            {
-                PIPELINE_ERRORS_KEY: {
-                    "generic": [
-                        "The pipeline specification should contain a single 'steps' key."
-                    ]
-                },
-            },
-        ),
         # missing 'implementation' key
         (
             "missing_implementation_pipeline.yaml",
