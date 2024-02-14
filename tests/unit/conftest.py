@@ -42,6 +42,15 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "missing_step": {
+        "steps": {
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+        },
+    },
     "bad_step": {
         "steps": {
             "foo": {  # Not a supported step
@@ -95,6 +104,8 @@ def test_dir(tmpdir_factory) -> str:
     # bad pipeline.yamls
     with open(f"{str(tmp_path)}/out_of_order_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["out_of_order"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/missing_step_pipeline.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["missing_step"], file, sort_keys=False)
     with open(f"{str(tmp_path)}/bad_step_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["bad_step"], file, sort_keys=False)
     with open(f"{str(tmp_path)}/missing_outer_key_pipeline.yaml", "w") as file:
