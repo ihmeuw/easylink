@@ -8,21 +8,6 @@ from linker.pipeline import Pipeline
 from tests.unit.conftest import check_expected_validation_exit
 
 
-@pytest.mark.skip(reason="TODO when multiple steps are implemented")
-def test_bad_step_order():
-    pass
-
-
-@pytest.mark.skip(reason="TODO when multiple steps are implemented")
-def test_missing_a_step():
-    pass
-
-
-@pytest.mark.skip(reason="TODO [MIC-4735]")
-def test_batch_validation():
-    pass
-
-
 def test__get_implementations(default_config, mocker):
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)

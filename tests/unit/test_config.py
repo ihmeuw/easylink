@@ -172,6 +172,15 @@ def test_get_implementation_specific_configuration(
 ####################
 
 
+@pytest.mark.skip(reason="TODO [MIC-4735]")
+def test_batch_validation():
+    pass
+
+@pytest.mark.skip(reason="TODO when multiple steps are implemented")
+def test_missing_a_step():
+    pass
+
+
 # Pipeline validations
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
@@ -191,6 +200,25 @@ def test_get_implementation_specific_configuration(
             {
                 PIPELINE_ERRORS_KEY: {
                     "step step_1": ["The implementation does not contain a 'name'."]
+                },
+            },
+        ),
+        # steps are out of order
+        (
+            "out_of_order_pipeline.yaml",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": [
+                        (
+                            "- Step 1: the pipeline schema expects step step_1 but "
+                            "the provided pipeline specifies step_2. Check step order "
+                            "and spelling in the pipeline configuration yaml. "
+                            "- Step 2: the pipeline schema expects step step_2 but "
+                            "the provided pipeline specifies step_1. Check step order "
+                            "and spelling in the pipeline configuration yaml. "
+                            "pvs_like_case_study: - Expected 1 steps but found 2 implementations."
+                        )
+                    ],
                 },
             },
         ),
