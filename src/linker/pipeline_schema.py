@@ -8,9 +8,9 @@ from linker.utilities.data_utils import validate_dummy_file
 class PipelineSchema:
     """Defines the allowable schema(s) for the pipeline."""
 
-    def __init__(self, name, validate_input) -> None:
+    def __init__(self, name: str, validate_input: Callable) -> None:
         self.name = name
-        self.validate_input: Callable = validate_input
+        self.validate_input = validate_input
         self.steps = []
 
     def __repr__(self) -> str:

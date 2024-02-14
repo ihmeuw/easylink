@@ -32,7 +32,32 @@ PIPELINE_CONFIG_DICT = {
         "steps": {
             "foo": {  # Not a supported step
                 "implementation": {
-                    "name": "bar",
+                    "name": "step_1_python_pandas",
+                },
+            },
+        },
+    },
+    "missing_implementations": {
+        "steps": {
+            "step_1": {
+                "foo": "bar",  # Missing implementation key
+            },
+        },
+    },
+    "missing_implementation_name": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "foo": "bar",  # Missing name key
+                },
+            },
+        },
+    },
+    "bad_implementation": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "foo",  # Not a supported implementation
                 },
             },
         },
@@ -56,6 +81,14 @@ def test_dir(tmpdir_factory) -> str:
     # bad pipeline.yamls
     with open(f"{str(tmp_path)}/bad_step_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["bad_step"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/missing_outer_key_pipeline.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["good"]["steps"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/missing_implementation_pipeline.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["missing_implementations"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/missing_implementation_name_pipeline.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["missing_implementation_name"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/bad_implementation_pipeline.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["bad_implementation"], file, sort_keys=False)
 
     # dummy environment.yaml
     with open(f"{str(tmp_path)}/environment.yaml", "w") as file:
@@ -84,12 +117,22 @@ def test_dir(tmpdir_factory) -> str:
             file,
             sort_keys=False,
         )
-    # bad input_data.yaml
-    with open(f"{tmp_path}/bad_input_data.yaml", "w") as file:
+    # input data is just a list (does not have keys)
+    with open(f"{tmp_path}/input_data_list.yaml", "w") as file:
+        yaml.dump(
+            [
+                str(input_dir1 / "file1.csv"),
+                str(input_dir2 / "file2.csv"),
+            ],
+            file,
+            sort_keys=False,
+        )
+    # missing input_data.yaml
+    with open(f"{tmp_path}/missing_input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "non-existent-file1"),
-                "bar": str(input_dir2 / "non-existent-file2"),
+                "foo": str(input_dir1 / "missing_file1.csv"),
+                "bar": str(input_dir2 / "missing_file2.csv"),
             },
             file,
             sort_keys=False,
@@ -146,6 +189,7 @@ def default_config(default_config_params) -> Config:
 
 
 def check_expected_validation_exit(error, caplog, error_no, expected_msg):
+    """Check that the validation messages are as expected. It's hacky."""
     assert error.value.code == error_no
     # Extract error message
     msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
@@ -153,16 +197,17 @@ def check_expected_validation_exit(error, caplog, error_no, expected_msg):
     )[0]
     msg = re.sub("\n+", " ", msg)
     msg = re.sub(" +", " ", msg).strip()
-    msg = re.sub("''", "'", msg)
+    # Remove single quotes from msg and expected b/c they're difficult to handle and not that important
+    msg = re.sub("'+", "", msg)
     all_matches = []
-    for error_type, schemas in expected_msg.items():
+    for error_type, context in expected_msg.items():
         expected_pattern = [error_type + ":"]
-        for schema, messages in schemas.items():
-            expected_pattern.append(" " + schema + ":")
+        for item, messages in context.items():
+            expected_pattern.append(" " + item + ":")
             for message in messages:
+                message = re.sub("'+", "", message)
                 expected_pattern.append(" " + message)
         pattern = re.compile("".join(expected_pattern))
-        # regex_patterns.append(pattern)
         match = pattern.search(msg)
         assert match
         all_matches.append(match)
