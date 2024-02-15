@@ -52,12 +52,12 @@ def validate_dummy_file(filepath: Path) -> None:
         output_columns = set(pd.read_csv(filepath).columns)
     else:
         raise NotImplementedError(
-            f"Data file type {extension} is not compatible. Convert to Parquet or CSV instead"
+            f"Data file type {extension} is not supported. Convert to Parquet or CSV instead."
         )
 
     required_columns = {"foo", "bar", "counter"}
     missing_columns = required_columns - output_columns
     if missing_columns:
         raise LookupError(
-            f"Data file {filepath} is missing required column(s) {missing_columns}"
+            f"Data file {filepath} is missing required column(s) {missing_columns}."
         )

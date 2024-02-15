@@ -132,6 +132,11 @@ def test_dir(tmpdir_factory) -> str:
                 input_dir / f"broken_{base_file}.csv",
                 INPUT_DATA_FORMAT_DICT["wrong_cols"],
             )
+            # files with wrong extensions
+            write_csv(
+                input_dir / f"{base_file}.oops",
+                INPUT_DATA_FORMAT_DICT["correct_cols"],
+            )
 
     # good input_data.yaml
     with open(f"{tmp_path}/input_data.yaml", "w") as file:
@@ -169,6 +174,16 @@ def test_dir(tmpdir_factory) -> str:
             {
                 "foo": str(input_dir1 / "broken_file1.csv"),
                 "bar": str(input_dir2 / "broken_file2.csv"),
+            },
+            file,
+            sort_keys=False,
+        )
+    # incorrect file type
+    with open(f"{tmp_path}/bad_type_input_data.yaml", "w") as file:
+        yaml.dump(
+            {
+                "file1": str(input_dir1 / "file1.oops"),
+                "file2": str(input_dir2 / "file2.oops"),
             },
             file,
             sort_keys=False,
