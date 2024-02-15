@@ -29,6 +29,35 @@ def test__load_input_data_paths(test_dir):
     assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
 
 
+@pytest.mark.parametrize(
+    "environment_file, expected",
+    [
+        # good
+        (
+            "environment.yaml",
+            {
+                k: v
+                for k, v in DEFAULT_ENVIRONMENT.items()
+                if k in ["computing_environment", "container_engine"]
+            },
+        ),
+        (None, {}),
+    ],
+)
+def test__load_computing_environment(test_dir, environment_file, expected):
+    filepath = Path(f"{test_dir}/{environment_file}") if environment_file else None
+    env = Config._load_computing_environment(filepath)
+    assert env == expected
+
+
+def test__load_missing_computing_environment_fails():
+    with pytest.raises(
+        FileNotFoundError,
+        match="Computing environment is expected to be a path to an existing yaml file. .*",
+    ):
+        Config._load_computing_environment(Path("some/bogus/path.yaml"))
+
+
 def test_input_data_configuration_requires_key_value_pairs(test_dir):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
