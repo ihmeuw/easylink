@@ -17,13 +17,18 @@ def test__get_implementations(default_config, mocker):
     assert implementation_names == ["step_1_python_pandas", "step_2_python_pandas"]
 
 
+####################
+# validation tests #
+####################
+
+
 def test_no_container(default_config, caplog, mocker):
     mocker.patch(
         "linker.implementation.Implementation._get_container_full_stem",
         return_value=Path("some/path/with/no/container"),
     )
     mocker.PropertyMock(
-        "linker.implementation.Implementation._container_engine", return_value="unknown"
+        "linker.implementation.Implementation._container_engine", return_value="undefined"
     )
     with pytest.raises(SystemExit) as e:
         Pipeline(default_config)
