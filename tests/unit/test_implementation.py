@@ -14,7 +14,10 @@ def test_fails_when_missing_results(default_config, mocker):
     )
     mocker.patch("linker.runner.run_container", return_value=None)
     mocker.patch("linker.runner.run_with_singularity", return_value=None)
-    with pytest.raises(RuntimeError, match="No results found"):
+    with pytest.raises(
+        RuntimeError,
+        match="No results found for pipeline step ID .* in results directory '.*'",
+    ):
         implementation.run(
             session=None,
             runner=run_container,
