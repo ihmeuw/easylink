@@ -1,11 +1,11 @@
+import csv
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import pytest
 import yaml
 
 from linker.configuration import Config
-from linker.utilities.data_utils import write_csv
 
 ENV_CONFIG_DICT = {
     "computing_environment": "local",
@@ -92,6 +92,12 @@ INPUT_DATA_FORMAT_DICT = {
 }
 
 
+def _write_csv(filepath: str, rows: List) -> None:
+    with open(filepath, "w") as file:
+        writer = csv.writer(file)
+        writer.writerows(rows)
+
+
 @pytest.fixture(scope="session")
 def test_dir(tmpdir_factory) -> str:
     """Set up a persistent test directory with some of the specification files"""
@@ -126,14 +132,14 @@ def test_dir(tmpdir_factory) -> str:
     for input_dir in [input_dir1, input_dir2]:
         for base_file in ["file1", "file2"]:
             # good input files
-            write_csv(input_dir / f"{base_file}.csv", INPUT_DATA_FORMAT_DICT["correct_cols"])
+            _write_csv(input_dir / f"{base_file}.csv", INPUT_DATA_FORMAT_DICT["correct_cols"])
             # bad input files
-            write_csv(
+            _write_csv(
                 input_dir / f"broken_{base_file}.csv",
                 INPUT_DATA_FORMAT_DICT["wrong_cols"],
             )
             # files with wrong extensions
-            write_csv(
+            _write_csv(
                 input_dir / f"{base_file}.oops",
                 INPUT_DATA_FORMAT_DICT["correct_cols"],
             )

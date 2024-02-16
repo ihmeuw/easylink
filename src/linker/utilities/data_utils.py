@@ -1,9 +1,8 @@
-import csv
 import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import pandas as pd
 import yaml
@@ -40,12 +39,6 @@ def load_yaml(filepath: Path) -> Dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
-
-
-def write_csv(filepath: str, rows: List) -> None:
-    with open(filepath, "w") as file:
-        writer = csv.writer(file)
-        writer.writerows(rows)
 
 
 def validate_dummy_file(filepath: Path) -> None:
