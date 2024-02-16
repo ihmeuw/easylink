@@ -5,6 +5,9 @@ from typing import Dict, List, Optional
 
 from loguru import logger
 import subprocess
+from snakemake.api import SnakemakeApi
+from snakemake.settings import OutputSettings, StorageSettings, ResourceSettings, ConfigSettings, ExecutionSettings, DeploymentSettings
+from snakemake.cli import main as snake_main
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
@@ -12,6 +15,7 @@ from linker.utilities.data_utils import copy_configuration_files_to_results_dire
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
 from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
+from linker.utilities.snakemake_utils import make_config
 
 
 def main(
@@ -113,6 +117,17 @@ def run_container(
                     f"    Singularity error: {str(e_singularity)}"
                 )
 
-def run_with_snakemake(config, results_dir):
-    cmd = ["snakemake", "--cores", "1", "-n"]
-    subprocess.run(cmd, check=True)
+def run_with_snakemake(pipeline_specification,input_data,computing_environment,results_dir):
+    snake_config = make_config(pipeline_specification, input_data, computing_environment,results_dir)
+    argv = [
+        "--snakefile",
+        "workflow/Snakefile",
+        "--configfile",
+        snake_config,
+        "--use-singularity",
+        "--cores",
+        "1",
+        "--debug"
+    ]
+    logger.info(f"Running Snakemake")
+    snake_main(argv)

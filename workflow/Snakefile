@@ -1,3 +1,8 @@
+from linker.pipeline import Pipeline
+from linker.configuration import Config
+from pathlib import Path
+
+
 workdir: "src/linker"
 
 
@@ -9,20 +14,17 @@ rule all:
         config["output_file"],
 
 
-rule step1_python_pandas:
-    input:
-        file1=config["input_data"]["file1"],
-    output:
-        step1="scratch/intermediate/step1.parquet",
-    script:
-        "steps/dev/python_pandas/dummy_step_snakemake.py"
+pipe_config = Config(Path(config["pipeline_specification"]), Path(config["input_data"]), Path(config["environment"]))
+pipeline = Pipeline(pipe_config)
 
+for implementation in pipeline.implementations:
 
-rule step2_python_pandas:
-    input:
-        step1=rules.step1_python_pandas.output.step1,
-        file1=config["input_data"]["file1"],
-    output:
-        config["output_file"],
-    script:
-        "steps/dev/python_pandas/dummy_step_snakemake.py"
+    rule:
+        name:
+            f"{implementation.name}"
+        input:
+            *implementation.get_input_paths(pipeline, Path(config["results_dir"])),
+        output:
+            *implementation.get_output_paths(pipeline, Path(config["results_dir"])),
+        script:
+            "/mnt/share/homes/pnast/repos/linker/src/linker/steps/dev/python_pandas/dummy_step_smk.py"

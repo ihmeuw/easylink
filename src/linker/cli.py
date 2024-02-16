@@ -108,14 +108,18 @@ def run(
         main = handle_exceptions(
             func=runner.run_with_snakemake, exceptions_logger=logger, with_debugger=with_debugger
         )
+        main(pipeline_specification=pipeline_specification,
+        input_data=input_data,
+        computing_environment=computing_environment,
+        results_dir=results_dir,)
     else:
         main = handle_exceptions(
             func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
         )
-    main(
-        config=config,
-        results_dir=results_dir,
-    )
+        main(
+            config=config,
+            results_dir=results_dir,
+        )
     logger.info(f"Results directory: {str(results_dir)}")
     logger.info("*** FINISHED ***")
 

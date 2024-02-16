@@ -25,30 +25,13 @@ class Pipeline:
         number_of_steps_digit_length = len(str(number_of_steps))
         for idx, implementation in enumerate(self.implementations):
             step_number = str(idx + 1).zfill(number_of_steps_digit_length)
-            previous_step_number = str(idx).zfill(number_of_steps_digit_length)
             step_id = f"{step_number}_{implementation.step_name}"
             diagnostics_dir = results_dir / "diagnostics" / step_id
             diagnostics_dir.mkdir(parents=True, exist_ok=True)
-            output_dir = (
-                results_dir
-                if idx == (number_of_steps - 1)
-                else results_dir
-                / "intermediate"
-                / f"{step_number}_{implementation.step_name}"
-            )
-            input_data = self.config.input_data
+            output_dir = self.get_output_dir(implementation.name, results_dir)
             if idx <= number_of_steps - 1:
                 output_dir.mkdir(exist_ok=True)
-            if idx > 0:
-                # Overwrite the pipeline input data with the results of the previous step
-                input_data = [
-                    file
-                    for file in (
-                        output_dir
-                        / "intermediate"
-                        / f"{previous_step_number}_{self.implementations[idx - 1].step_name}"
-                    ).glob("*.parquet")
-                ]
+            input_data = self.get_input_files(implementation.name, results_dir)
             implementation.run(
                 session=session,
                 runner=runner,
@@ -87,3 +70,26 @@ class Pipeline:
             if implementation_errors:
                 errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
         return errors
+    
+    @property
+    def implementation_indices(self) -> dict:
+        return {implementation.name: idx for idx, implementation in enumerate(self.implementations)}
+    
+    def get_input_files(self, implementation_name: str, results_dir: Path) -> list:
+        idx = self.implementation_indices[implementation_name]
+        if idx == 0:
+            return self.config.input_data
+        else:
+            previous_output_dir = self.get_output_dir(self.implementations[idx - 1].name, results_dir)
+            return [previous_output_dir / "result.parquet"]
+    
+    def get_output_dir(self, implementation_name: str, results_dir: Path) -> Path:
+        idx = self.implementation_indices[implementation_name]
+        num_steps = len(self.implementations)
+        step_number = str(idx + 1).zfill(len(str(len(self.implementations))))
+        if idx == num_steps - 1:
+            return results_dir
+
+        return results_dir / "intermediate" / f"{step_number}_{self.implementations[idx].step_name}"
+    
+    

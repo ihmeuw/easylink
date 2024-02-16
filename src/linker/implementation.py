@@ -8,6 +8,9 @@ from linker.step import Step
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import get_slurm_drmaa
 from linker.utilities.spark_utils import build_spark_cluster
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from linker.pipeline import Pipeline
 
 
 class Implementation:
@@ -144,3 +147,14 @@ class Implementation:
         ):
             logs.append(err_str)
         return logs
+    
+    def get_input_paths(self, pipeline: "Pipeline", results_dir: Path):
+        return pipeline.get_input_files(self.name, results_dir)
+    
+    def get_output_paths(self, pipeline: "Pipeline", results_dir: Path):
+        output_dir = pipeline.get_output_dir(self.name, results_dir)
+        return [output_dir / "result.parquet"]
+    
+    @property
+    def singularity_image_path(self):
+        return self._container_full_stem + ".sif"
