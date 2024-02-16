@@ -14,17 +14,3 @@ rule all:
         config["output_file"],
 
 
-pipe_config = Config(Path(config["pipeline_specification"]), Path(config["input_data"]), Path(config["environment"]))
-pipeline = Pipeline(pipe_config)
-
-for implementation in pipeline.implementations:
-
-    rule:
-        name:
-            f"{implementation.name}"
-        input:
-            *implementation.get_input_paths(pipeline, Path(config["results_dir"])),
-        output:
-            *implementation.get_output_paths(pipeline, Path(config["results_dir"])),
-        script:
-            "/mnt/share/homes/pnast/repos/linker/src/linker/steps/dev/python_pandas/dummy_step_smk.py"
