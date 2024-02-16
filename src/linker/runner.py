@@ -117,13 +117,15 @@ def run_container(
                     f"    Singularity error: {str(e_singularity)}"
                 )
 
-def run_with_snakemake(pipeline_specification,input_data,computing_environment,results_dir):
-    snake_config = make_config(pipeline_specification, input_data, computing_environment,results_dir)
+def run_with_snakemake(config,results_dir):
+    pipeline = Pipeline(config)
+
+    # Now that all validation is done, copy the configuration files to the results directory
+    copy_configuration_files_to_results_directory(config, results_dir)
+    snakefile = pipeline.build_snakefile(results_dir)
     argv = [
         "--snakefile",
-        "workflow/Snakefile",
-        "--configfile",
-        snake_config,
+        str(snakefile),
         "--use-singularity",
         "--cores",
         "1",

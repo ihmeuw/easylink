@@ -1,6 +1,7 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
+import yaml
 
 from linker.configuration import Config
 from linker.implementation import Implementation
@@ -78,10 +79,10 @@ class Pipeline:
     def get_input_files(self, implementation_name: str, results_dir: Path) -> list:
         idx = self.implementation_indices[implementation_name]
         if idx == 0:
-            return self.config.input_data
+            return [str(file) for file in self.config.input_data]
         else:
             previous_output_dir = self.get_output_dir(self.implementations[idx - 1].name, results_dir)
-            return [previous_output_dir / "result.parquet"]
+            return [str(previous_output_dir / "result.parquet")]
     
     def get_output_dir(self, implementation_name: str, results_dir: Path) -> Path:
         idx = self.implementation_indices[implementation_name]
@@ -91,5 +92,27 @@ class Pipeline:
             return results_dir
 
         return results_dir / "intermediate" / f"{step_number}_{self.implementations[idx].step_name}"
+    
+    def build_snakefile(self, results_dir: Path) -> None:
+        def list_representer(dumper, data):
+            return dumper.represent_sequence('tag:yaml.org,2002:seq', data, flow_style=True)
+        def quoted_scalar(dumper, data):
+            if dumper.represented_objects.get(id(data)):  # Check if it's already a key
+                return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+            else:
+                return dumper.represent_scalar('tag:yaml.org,2002:str', data, style="'")
+
+        yaml.add_representer(str, quoted_scalar)
+        yaml.add_representer(list, list_representer)
+        snakefile = results_dir / "Snakefile"
+        sc = {}
+        sc["rule all"] = {"input": f"{results_dir}/result.parquet"}
+        for implementation in self.implementations:
+            input_files = self.get_input_files(implementation.name, results_dir)
+            output_dir = self.get_output_dir(implementation.name, results_dir)
+            sc[f"rule {implementation.name}"] = {"input": input_files, "output": f"{output_dir}/result.parquet", "script": implementation.script}
+        with open(snakefile, "w") as f:
+            yaml.dump(sc, f, indent=4,default_flow_style=False)
+        return snakefile
     
     

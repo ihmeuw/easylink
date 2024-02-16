@@ -153,8 +153,12 @@ class Implementation:
     
     def get_output_paths(self, pipeline: "Pipeline", results_dir: Path):
         output_dir = pipeline.get_output_dir(self.name, results_dir)
-        return [output_dir / "result.parquet"]
+        return [str(output_dir / "result.parquet")]
     
     @property
     def singularity_image_path(self):
         return self._container_full_stem + ".sif"
+    
+    @property
+    def script(self):
+        return "/mnt/share/homes/pnast/repos/linker/src/linker/steps/dev/python_pandas/dummy_step_smk.py"
