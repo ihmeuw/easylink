@@ -13,7 +13,7 @@ from pyarrow import parquet as pq
 def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
     results_dir = Path("results" if output_dir is None else output_dir).resolve()
     if timestamp:
-        launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        launch_time = _get_timestamp()
         results_dir = results_dir / launch_time
     _ = os.umask(0o002)
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -21,6 +21,10 @@ def create_results_directory(output_dir: Optional[str], timestamp: bool) -> Path
     (results_dir / "diagnostics").mkdir(exist_ok=True)
 
     return results_dir
+
+
+def _get_timestamp():
+    return datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
 
 def copy_configuration_files_to_results_directory(
