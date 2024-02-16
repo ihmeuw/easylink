@@ -15,19 +15,14 @@ def run_with_singularity(
     implementation_config: Optional[Dict[str, str]],
 ) -> None:
     logger.info(f"Running step {step_id} container with singularity")
-    _run_container(
-        input_data, results_dir, diagnostics_dir, container_path, implementation_config
-    )
+    cmd = _build_cmd(input_data, results_dir, diagnostics_dir, container_path)
+    _run_cmd(cmd, diagnostics_dir, implementation_config)
     _clean(results_dir, container_path)
 
 
-def _run_container(
-    input_data: List[Path],
-    results_dir: Path,
-    diagnostics_dir: Path,
-    container_path: Path,
-    implementation_config: Optional[Dict[str, str]],
-) -> None:
+def _build_cmd(
+    input_data: List[Path], results_dir: Path, diagnostics_dir: Path, container_path: Path
+) -> str:
     cmd = (
         "singularity run --containall --no-home --bind /tmp:/tmp "
         f"--bind {results_dir}:/results --bind {diagnostics_dir}:/diagnostics "
@@ -35,13 +30,13 @@ def _run_container(
     for filepath in input_data:
         cmd += f"--bind {str(filepath)}:/input_data/main_input_{str(filepath.name)} "
     cmd += f"{container_path}"
-    _run_cmd(diagnostics_dir, cmd, implementation_config)
+    logger.debug(f"Command: {cmd}")
+    return cmd
 
 
 def _run_cmd(
-    diagnostics_dir: Path, cmd: str, implementation_config: Optional[Dict[str, str]]
+    cmd: str, diagnostics_dir: Path, implementation_config: Optional[Dict[str, str]]
 ) -> None:
-    logger.debug(f"Command: {cmd}")
     # TODO: pipe this realtime to stdout (using subprocess.Popen I think)
     env_vars = os.environ.copy()
     if implementation_config:
