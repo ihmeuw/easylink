@@ -67,7 +67,7 @@ def launch_slurm_job(
         "LANG": "en_US.UTF-8",
     }
     resources = config.slurm_resources
-    jt.nativeSpecification = get_cli_args(
+    jt.nativeSpecification = _get_cli_args(
         job_name=jt.jobName,
         account=resources["account"],
         partition=resources["partition"],
@@ -90,17 +90,6 @@ def launch_slurm_job(
     # TODO: clean up if job failed?
     logger.info(f"Job {job_id} finished with status '{job_status}'")
     session.deleteJobTemplate(jt)
-
-
-def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
-    return (
-        f"-J {job_name} "
-        f"-A {account} "
-        f"-p {partition} "
-        f"--mem={peak_memory*1024} "
-        f"-t {max_runtime}:00:00 "
-        f"-c {num_threads}"
-    )
 
 
 def submit_spark_cluster_job(
@@ -172,3 +161,19 @@ def submit_spark_cluster_job(
 
     session.deleteJobTemplate(jt)
     return master_error_log, jobs[0].split("_")[0]
+
+
+####################
+# Helper functions #
+####################
+
+
+def _get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
+    return (
+        f"-J {job_name} "
+        f"-A {account} "
+        f"-p {partition} "
+        f"--mem={peak_memory*1024} "
+        f"-t {max_runtime}:00:00 "
+        f"-c {num_threads}"
+    )
