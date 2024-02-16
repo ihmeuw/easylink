@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from typing import Dict
 
@@ -208,36 +207,3 @@ def default_config_params(test_dir) -> Dict[str, Path]:
 def default_config(default_config_params) -> Config:
     """A good/known Config object"""
     return Config(**default_config_params)
-
-
-####################
-# HELPER FUNCTIONS #
-####################
-
-
-def check_expected_validation_exit(error, caplog, error_no, expected_msg):
-    """Check that the validation messages are as expected. It's hacky."""
-    assert error.value.code == error_no
-    # Extract error message
-    msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
-        "Validation errors found. Please see above."
-    )[0]
-    msg = re.sub("\n+", " ", msg)
-    msg = re.sub(" +", " ", msg).strip()
-    # Remove single quotes from msg and expected b/c they're difficult to handle and not that important
-    msg = re.sub("'+", "", msg)
-    all_matches = []
-    for error_type, context in expected_msg.items():
-        expected_pattern = [error_type + ":"]
-        for item, messages in context.items():
-            expected_pattern.append(" " + item + ":")
-            for message in messages:
-                message = re.sub("'+", "", message)
-                expected_pattern.append(" " + message)
-        pattern = re.compile("".join(expected_pattern))
-        match = pattern.search(msg)
-        assert match
-        all_matches.append(match)
-
-    covered_text = "".join(match.group(0) for match in all_matches)
-    assert len(covered_text) == len(msg)
