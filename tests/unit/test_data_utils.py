@@ -3,7 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from linker.utilities.data_utils import create_results_directory
+from linker.utilities.data_utils import (
+    copy_configuration_files_to_results_directory,
+    create_results_directory,
+)
 
 
 @pytest.mark.parametrize(
@@ -41,3 +44,14 @@ def test_create_results_directory(test_dir, output_dir_provided, timestamp, mock
     assert results_dir.exists()
     assert (results_dir / "intermediate").exists()
     assert (results_dir / "diagnostics").exists()
+
+
+def test_copy_configuration_files_to_results_directory(default_config, test_dir):
+    results_dir = create_results_directory(f"{test_dir}/check_copies/", False)
+    assert not (results_dir / "pipeline.yaml").exists()
+    assert not (results_dir / "input_data.yaml").exists()
+    assert not (results_dir / "environment.yaml").exists()
+    copy_configuration_files_to_results_directory(default_config, results_dir)
+    assert (results_dir / "pipeline.yaml").exists()
+    assert (results_dir / "input_data.yaml").exists()
+    assert (results_dir / "environment.yaml").exists()
