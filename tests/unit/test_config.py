@@ -172,6 +172,11 @@ def test_get_implementation_specific_configuration(
 ####################
 
 
+@pytest.mark.skip(reason="TODO [MIC-4735]")
+def test_batch_validation():
+    pass
+
+
 # Pipeline validations
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
@@ -191,6 +196,45 @@ def test_get_implementation_specific_configuration(
             {
                 PIPELINE_ERRORS_KEY: {
                     "step step_1": ["The implementation does not contain a 'name'."]
+                },
+            },
+        ),
+        # steps are out of order
+        (
+            "out_of_order_pipeline.yaml",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": [
+                        "- Step 1: the pipeline schema expects step step_1 but "
+                        "the provided pipeline specifies step_2. Check step order "
+                        "and spelling in the pipeline configuration yaml. "
+                        "- Step 2: the pipeline schema expects step step_2 but "
+                        "the provided pipeline specifies step_1. Check step order "
+                        "and spelling in the pipeline configuration yaml."
+                    ],
+                    "pvs_like_case_study": [
+                        "- Expected 1 steps but found 2 implementations. Check "
+                        "that all steps are accounted for \\(and there are no extraneous "
+                        "ones\\) in the pipeline configuration yaml."
+                    ],
+                },
+            },
+        ),
+        # missing a step
+        (
+            "missing_step_pipeline.yaml",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": [
+                        "- Expected 2 steps but found 1 implementations. Check that "
+                        "all steps are accounted for \\(and there are no extraneous "
+                        "ones\\) in the pipeline configuration yaml.",
+                    ],
+                    "pvs_like_case_study": [
+                        "- 'Step 1: the pipeline schema expects step 'pvs_like_case_study' "
+                        "but the provided pipeline specifies 'step_2'. Check step order "
+                        "and spelling in the pipeline configuration yaml.'",
+                    ],
                 },
             },
         ),
@@ -237,7 +281,9 @@ def test_unsupported_step(test_dir, caplog, mocker):
         expected_msg={
             PIPELINE_ERRORS_KEY: {
                 "development": [
-                    "- Expected 2 steps but found 1 implementations.",
+                    "- Expected 2 steps but found 1 implementations. Check that "
+                    "all steps are accounted for \\(and there are no extraneous "
+                    "ones\\) in the pipeline configuration yaml.",
                 ],
                 "pvs_like_case_study": [
                     "- 'Step 1: the pipeline schema expects step 'pvs_like_case_study' "

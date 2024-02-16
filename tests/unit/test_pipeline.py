@@ -8,21 +8,6 @@ from linker.pipeline import Pipeline
 from tests.unit.conftest import check_expected_validation_exit
 
 
-@pytest.mark.skip(reason="TODO when multiple steps are implemented")
-def test_bad_step_order():
-    pass
-
-
-@pytest.mark.skip(reason="TODO when multiple steps are implemented")
-def test_missing_a_step():
-    pass
-
-
-@pytest.mark.skip(reason="TODO [MIC-4735]")
-def test_batch_validation():
-    pass
-
-
 def test__get_implementations(default_config, mocker):
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
@@ -32,13 +17,18 @@ def test__get_implementations(default_config, mocker):
     assert implementation_names == ["step_1_python_pandas", "step_2_python_pandas"]
 
 
+####################
+# validation tests #
+####################
+
+
 def test_no_container(default_config, caplog, mocker):
     mocker.patch(
         "linker.implementation.Implementation._get_container_full_stem",
         return_value=Path("some/path/with/no/container"),
     )
     mocker.PropertyMock(
-        "linker.implementation.Implementation._container_engine", return_value="unknown"
+        "linker.implementation.Implementation._container_engine", return_value="undefined"
     )
     with pytest.raises(SystemExit) as e:
         Pipeline(default_config)

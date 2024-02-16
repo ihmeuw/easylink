@@ -262,7 +262,9 @@ class Config:
             # Check that number of schema steps matches number of implementations
             if len(schema.steps) != len(config_steps):
                 logs.append(
-                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations."
+                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations. "
+                    "Check that all steps are accounted for (and there are no "
+                    "extraneous ones) in the pipeline configuration yaml."
                 )
             else:
                 for idx, config_step in enumerate(config_steps):
