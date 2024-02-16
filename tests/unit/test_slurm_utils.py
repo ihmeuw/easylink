@@ -1,4 +1,11 @@
-from src.linker.utilities.slurm_utils import _get_cli_args
+from src.linker.utilities.slurm_utils import _get_cli_args, get_slurm_drmaa
+
+
+def test_get_slurm_drmaa():
+    """Confirm that a drmaa object is indeed returned"""
+    drmaa = get_slurm_drmaa()
+    assert drmaa is not None
+    assert drmaa.__name__ == "drmaa"
 
 
 def test__get_cli_args():
