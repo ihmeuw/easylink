@@ -210,8 +210,30 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
     )
 
 
-# Input data validations
-def test_bad_input_data(test_dir, caplog):
+def test_pipeline_schema_bad_input_data_type(test_dir, caplog):
+    config_params = {
+        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+        "input_data": f"{test_dir}/bad_type_input_data.yaml",
+        "computing_environment": None,
+    }
+
+    with pytest.raises(SystemExit) as e:
+        Config(**config_params)
+
+    _check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            INPUT_DATA_ERRORS_KEY: {
+                ".*/file1.oops": ["- Data file type .oops is not supported. Convert to .*"],
+                ".*/file2.oops": ["- Data file type .oops is not supported. Convert to .*"],
+            },
+        },
+    )
+
+
+def test_pipeline_schema_bad_input_data(test_dir, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
         "input_data": f"{test_dir}/bad_columns_input_data.yaml",
@@ -238,7 +260,7 @@ def test_bad_input_data(test_dir, caplog):
     )
 
 
-def test_missing_input_file(test_dir, caplog):
+def test_pipeline_schema_missing_input_file(test_dir, caplog):
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",
         "input_data": f"{test_dir}/missing_input_data.yaml",
