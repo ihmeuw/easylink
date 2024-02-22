@@ -94,16 +94,6 @@ class Pipeline:
         return results_dir / "intermediate" / f"{step_number}_{self.implementations[idx].step_name}"
     
     def build_snakefile(self, results_dir: Path) -> None:
-        def list_representer(dumper, data):
-            return dumper.represent_sequence('tag:yaml.org,2002:seq', data, flow_style=True)
-        def quoted_scalar(dumper, data):
-            if dumper.represented_objects.get(id(data)):  # Check if it's already a key
-                return dumper.represent_scalar('tag:yaml.org,2002:str', data)
-            else:
-                return dumper.represent_scalar('tag:yaml.org,2002:str', data, style="'")
-
-        yaml.add_representer(str, quoted_scalar)
-        yaml.add_representer(list, list_representer)
         snakefile = results_dir / "Snakefile"
         sc = {}
         sc["rule all"] = {"input": f"{results_dir}/result.parquet"}
@@ -114,5 +104,9 @@ class Pipeline:
         with open(snakefile, "w") as f:
             yaml.dump(sc, f, indent=4,default_flow_style=False)
         return snakefile
+    
+    def write_rule(f, implementation):
+        f.write()
+        
     
     
