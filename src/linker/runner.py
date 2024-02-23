@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 from loguru import logger
 import subprocess
+import os
 from snakemake.api import SnakemakeApi
 from snakemake.settings import OutputSettings, StorageSettings, ResourceSettings, ConfigSettings, ExecutionSettings, DeploymentSettings
 from snakemake.cli import main as snake_main
@@ -14,7 +15,7 @@ from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
-from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
+from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job, get_cli_args
 from linker.utilities.snakemake_utils import make_config
 
 
@@ -117,19 +118,55 @@ def run_container(
                     f"    Singularity error: {str(e_singularity)}"
                 )
 
-def run_with_snakemake(config,results_dir):
+    
+def run_with_snakemake(config ,results_dir):
     pipeline = Pipeline(config)
-
     # Now that all validation is done, copy the configuration files to the results directory
     copy_configuration_files_to_results_directory(config, results_dir)
     snakefile = pipeline.build_snakefile(results_dir)
+    os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
+    cache = Path("/mnt/share/homes/pnast/scratch/linker/snakemake_cache")
+    cache.mkdir(parents=True, exist_ok=True)
+    os.environ["SNAKEMAKE_OUTPUT_CACHE"] = cache.as_posix()
+    diagnostics = results_dir / "diagnostics/"
+    job_name = "snakemake"
+    resources = config.slurm_resources
+    account = resources["account"]
+    partition=resources["partition"]
+    peak_memory=resources["memory"]
+    max_runtime=resources["time_limit"]
+    num_threads=resources["cpus"]
+    drmaa_args = get_cli_args(
+        job_name=job_name,
+        account=account,
+        partition=partition,
+        peak_memory=peak_memory,
+        max_runtime=max_runtime,
+        num_threads=num_threads,
+    )
+    slurm_args = [
+        "--executor",
+        "slurm",
+        "--profile",
+        "/ihme/homes/pnast/repos/linker/.config/snakemake/slurm"
+        ]
+    drmaa = [
+        "--executor",
+        "drmaa",
+        "--drmaa-args",
+        drmaa_args,
+        "--drmaa-log-dir",
+        diagnostics.as_posix(),
+    ]
     argv = [
         "--snakefile",
         str(snakefile),
-        "--use-singularity",
+        "--jobs=2",
+        "--latency-wait=60",
         "--cores",
         "1",
-        "--debug"
+        "--cache",
     ]
+    argv.extend(drmaa)
     logger.info(f"Running Snakemake")
     snake_main(argv)

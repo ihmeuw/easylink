@@ -120,6 +120,7 @@ rule all:
 rule {implementation.name}:
     input: {input_files}           
     output: "{output_dir}/result.parquet"
+    cache: True
     script: "{implementation.script}" 
                 """)
         
