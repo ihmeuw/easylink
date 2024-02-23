@@ -155,8 +155,8 @@ def run_with_snakemake(config ,results_dir):
         "drmaa",
         "--drmaa-args",
         drmaa_args,
-        "--drmaa-log-dir",
-        diagnostics.as_posix(),
+        # "--drmaa-log-dir",
+        # diagnostics.as_posix(),
     ]
     argv = [
         "--snakefile",
