@@ -107,7 +107,9 @@ class Pipeline:
     
     @staticmethod    
     def write_rule_all(f, results_dir):
-        f.write(f"""rule all:
+        f.write(
+            f"""
+rule all:
     input: "{results_dir}/result.parquet"          
                 """)
         
