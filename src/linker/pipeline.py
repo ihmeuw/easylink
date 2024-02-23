@@ -95,18 +95,31 @@ class Pipeline:
     
     def build_snakefile(self, results_dir: Path) -> None:
         snakefile = results_dir / "Snakefile"
-        sc = {}
-        sc["rule all"] = {"input": f"{results_dir}/result.parquet"}
-        for implementation in self.implementations:
-            input_files = self.get_input_files(implementation.name, results_dir)
-            output_dir = self.get_output_dir(implementation.name, results_dir)
-            sc[f"rule {implementation.name}"] = {"input": input_files, "output": f"{output_dir}/result.parquet", "script": implementation.script}
         with open(snakefile, "w") as f:
-            yaml.dump(sc, f, indent=4,default_flow_style=False)
+            self.write_rules(f, results_dir)
         return snakefile
     
-    def write_rule(f, implementation):
-        f.write()
+    
+    def write_rules(self, f, results_dir):
+        self.write_rule_all(f, results_dir)
+        for implementation in self.implementations:
+            self.write_rule(f, implementation, results_dir)
+    
+    @staticmethod    
+    def write_rule_all(f, results_dir):
+        f.write(f"""rule all:
+    input: "{results_dir}/result.parquet"          
+                """)
+        
+    def write_rule(self,f, implementation, results_dir):
+        input_files = self.get_input_files(implementation.name, results_dir)
+        output_dir = self.get_output_dir(implementation.name, results_dir)
+        f.write(f"""
+rule {implementation.name}:
+    input: {input_files}           
+    output: "{output_dir}/result.parquet"
+    script: "{implementation.script}" 
+                """)
         
     
     
