@@ -54,6 +54,10 @@ def test__get_cli_args():
     assert len(cli_args.split(" ")) == 11
 
 
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS,
+    reason="Github Actions does not have access to our file system and so no drmaa.",
+)
 def test__generate_job_template(default_config_params, mocker):
     slurm_kwargs = CLI_KWARGS.copy()
     # Change name from user requests to slurm requests
@@ -134,6 +138,10 @@ def test__generate_job_template(default_config_params, mocker):
     session.exit()
 
 
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS,
+    reason="Github Actions does not have access to our file system and so no drmaa.",
+)
 def test__generate_spark_cluster_jt(test_dir, mocker):
     launcher = tempfile.NamedTemporaryFile(
         mode="w",
