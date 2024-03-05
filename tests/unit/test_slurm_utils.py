@@ -121,6 +121,7 @@ def test__generate_job_template(default_config_params, mocker):
         f"-c {CLI_KWARGS['num_threads']}"
     )
     assert jt.nativeSpecification == expected_native_specification
+    session.exit()
 
 
 def test__generate_spark_cluster_jt(test_dir, mocker):
@@ -179,3 +180,4 @@ def test__generate_spark_cluster_jt(test_dir, mocker):
         f"--cpus-per-task={config.slurm_resources['cpus']}"
     )
     assert jt.nativeSpecification == expected_native_specification
+    session.exit()
