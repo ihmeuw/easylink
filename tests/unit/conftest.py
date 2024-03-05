@@ -8,8 +8,31 @@ import yaml
 from linker.configuration import Config
 
 ENV_CONFIG_DICT = {
-    "computing_environment": "local",
-    "container_engine": "undefined",
+    "minimum": {
+        "computing_environment": "local",
+        "container_engine": "undefined",
+    },
+    "with_spark_and_slurm": {
+        "computing_environment": "slurm",
+        "container_engine": "singularity",
+        "slurm": {
+            "account": "some-account",
+            "partition": "some-partition",
+        },
+        "implementation_resources": {
+            "memory": 42,
+            "cpus": 42,
+            "time_limit": 42,
+        },
+        "spark": {
+            "workers": {
+                "num_working": 42,
+                "cpus_per_node": 42,
+                "mem_per_node": 42,
+                "time_limit": 42,
+            },
+        },
+    },
 }
 
 PIPELINE_CONFIG_DICT = {
@@ -124,7 +147,9 @@ def test_dir(tmpdir_factory) -> str:
 
     # dummy environment.yaml
     with open(f"{str(tmp_path)}/environment.yaml", "w") as file:
-        yaml.dump(ENV_CONFIG_DICT, file, sort_keys=False)
+        yaml.dump(ENV_CONFIG_DICT["minimum"], file, sort_keys=False)
+    with open(f"{str(tmp_path)}/spark_environment.yaml", "w") as file:
+        yaml.dump(ENV_CONFIG_DICT["with_spark_and_slurm"], file, sort_keys=False)
 
     # input files
     input_dir1 = tmp_path.mkdir("input_data1")

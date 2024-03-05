@@ -1,10 +1,12 @@
 import ast
 import re
+import tempfile
 from pathlib import Path
 
 from linker.configuration import Config
 from linker.utilities.slurm_utils import (
     _generate_job_template,
+    _generate_spark_cluster_job_template,
     _get_cli_args,
     get_slurm_drmaa,
 )
@@ -43,17 +45,18 @@ def test__get_cli_args():
 
 
 def test__generate_job_template(default_config_params, mocker):
-    mocked_return_value = CLI_KWARGS.copy()
-    mocked_return_value["memory"] = mocked_return_value.pop("peak_memory")
-    mocked_return_value["time_limit"] = mocked_return_value.pop("max_runtime")
-    mocked_return_value["cpus"] = mocked_return_value.pop("num_threads")
+    slurm_kwargs = CLI_KWARGS.copy()
+    # Change name from user requests to slurm requests
+    slurm_kwargs["memory"] = slurm_kwargs.pop("peak_memory")
+    slurm_kwargs["time_limit"] = slurm_kwargs.pop("max_runtime")
+    slurm_kwargs["cpus"] = slurm_kwargs.pop("num_threads")
     mocker.patch(
         "linker.utilities.slurm_utils.Config.slurm_resources",
-        return_value=mocked_return_value,
+        return_value=slurm_kwargs,
         new_callable=mocker.PropertyMock,
     )
 
-    kwargs = {
+    job_template_kwargs = {
         "container_engine": "singularity",
         "input_data": ["input1", "input2"],
         "results_dir": Path("path/to/results"),
@@ -72,32 +75,36 @@ def test__generate_job_template(default_config_params, mocker):
     jt = _generate_job_template(
         session,
         config,
-        **kwargs,
+        **job_template_kwargs,
     )
 
     # assert jt attributes are as expected
-    assert re.match(rf"{kwargs['implementation_name']}_\d{{14}}$", jt.jobName)
+    assert re.match(rf"{job_template_kwargs['implementation_name']}_\d{{14}}$", jt.jobName)
     assert not jt.joinFiles
-    assert jt.outputPath == f":{kwargs['diagnostics_dir']}/%A.o%a"
-    assert jt.errorPath == f":{kwargs['diagnostics_dir']}/%A.e%a"
+    assert jt.outputPath == f":{job_template_kwargs['diagnostics_dir']}/%A.o%a"
+    assert jt.errorPath == f":{job_template_kwargs['diagnostics_dir']}/%A.e%a"
     assert jt.remoteCommand.split("/")[-1] == "linker"
     actual_args = jt.args
     # NOTE: this is pretty hacky and ordering is hard-coded
     expected_args = [
         "run-slurm-job",
-        kwargs["container_engine"],
-        str(kwargs["results_dir"]),
-        str(kwargs["diagnostics_dir"]),
-        kwargs["step_id"],
-        kwargs["step_name"],
-        kwargs["implementation_name"],
-        kwargs["container_full_stem"],
+        job_template_kwargs["container_engine"],
+        str(job_template_kwargs["results_dir"]),
+        str(job_template_kwargs["diagnostics_dir"]),
+        job_template_kwargs["step_id"],
+        job_template_kwargs["step_name"],
+        job_template_kwargs["implementation_name"],
+        job_template_kwargs["container_full_stem"],
         "-vvv",
     ]
     expected_args.extend(
-        item for filename in kwargs["input_data"] for item in ("--input-data", filename)
+        item
+        for filename in job_template_kwargs["input_data"]
+        for item in ("--input-data", filename)
     )
-    expected_args.extend(["--implementation-config", str(kwargs["implementation_config"])])
+    expected_args.extend(
+        ["--implementation-config", str(job_template_kwargs["implementation_config"])]
+    )
     assert len(jt.args) == len(expected_args)
     # Special-case the implementation config since that's a stringified dict and hard to predict
     actual_config = actual_args.pop()
@@ -105,7 +112,7 @@ def test__generate_job_template(default_config_params, mocker):
     assert ast.literal_eval(actual_config) == ast.literal_eval(expected_config)
     assert actual_args == expected_args
     assert jt.jobEnvironment == {"LC_ALL": "en_US.UTF-8", "LANG": "en_US.UTF-8"}
-    expected_nativeSpecification = (
+    expected_native_specification = (
         f"-J {jt.jobName} "
         f"-A {CLI_KWARGS['account']} "
         f"-p {CLI_KWARGS['partition']} "
@@ -113,4 +120,62 @@ def test__generate_job_template(default_config_params, mocker):
         f"-t {CLI_KWARGS['max_runtime']}:00:00 "
         f"-c {CLI_KWARGS['num_threads']}"
     )
-    assert jt.nativeSpecification == expected_nativeSpecification
+    assert jt.nativeSpecification == expected_native_specification
+
+
+def test__generate_spark_cluster_jt(test_dir, mocker):
+    launcher = tempfile.NamedTemporaryFile(
+        mode="w",
+        dir=Path(test_dir),
+        prefix="spark_cluster_launcher_",
+        suffix=".sh",
+        delete=False,
+    )
+    job_template_kwargs = {
+        "launcher": launcher,
+        "diagnostics_dir": Path("path/to/diagnostics"),
+        "step_id": "some-step-id",
+    }
+    mocker.patch(
+        "linker.configuration.Config._determine_if_spark_is_required", return_value=True
+    )
+    config_params = {
+        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
+        "input_data": Path(f"{test_dir}/input_data.yaml"),
+        "computing_environment": Path(f"{test_dir}/spark_environment.yaml"),
+    }
+    config = Config(**config_params)
+
+    drmaa = get_slurm_drmaa()
+    session = drmaa.Session()
+    session.initialize()
+
+    jt, _resources = _generate_spark_cluster_job_template(
+        session,
+        config,
+        **job_template_kwargs,
+    )
+
+    # assert jt attributes are as expected
+    assert re.match(rf"spark_cluster_{job_template_kwargs['step_id']}_\d{{14}}$", jt.jobName)
+    assert jt.workingDirectory == str(job_template_kwargs["diagnostics_dir"])
+    assert not jt.joinFiles
+    assert (
+        jt.outputPath
+        == f":{job_template_kwargs['diagnostics_dir']}/spark_cluster_%A_%a.stdout"
+    )
+    assert (
+        jt.errorPath
+        == f":{job_template_kwargs['diagnostics_dir']}/spark_cluster_%A_%a.stderr"
+    )
+    assert jt.remoteCommand == "/bin/bash"
+    assert jt.args == [launcher.name]
+    assert jt.jobEnvironment == {"LC_ALL": "en_US.UTF-8", "LANG": "en_US.UTF-8"}
+    expected_native_specification = (
+        f"--account={config.slurm_resources['account']} "
+        f"--partition={config.slurm_resources['partition']} "
+        f"--mem={config.slurm_resources['memory']*1024} "
+        f"--time={config.slurm_resources['time_limit']}:00:00 "
+        f"--cpus-per-task={config.slurm_resources['cpus']}"
+    )
+    assert jt.nativeSpecification == expected_native_specification

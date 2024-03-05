@@ -69,6 +69,76 @@ def launch_slurm_job(
     session.deleteJobTemplate(jt)
 
 
+def submit_spark_cluster_job(
+    drmaa: "drmaa",
+    session: "drmaa.Session",
+    config: Config,
+    launcher: TextIO,
+    diagnostics_dir: Path,
+    step_id: str,
+) -> Tuple[Path, str]:
+    """Submits a job to launch a Spark cluster.
+
+    Args:
+        drmaa: DRMAA module.
+        session: DRMAA session.
+        config: Config object.
+        launcher: Launcher script.
+        diagnostics_dir: Diagnostics directory.
+        step_id: Step ID used for naming the job.
+
+    Returns:
+        Path to stderr log, which contains the Spark master URL.
+        Main job ID of the spark cluster.
+    """
+    jt, resources = _generate_spark_cluster_job_template(
+        session, config, launcher, diagnostics_dir, step_id
+    )
+    jobs = session.runBulkJobs(jt, 1, resources["num_workers"] + 1, 1)
+    error_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stderr" for job in jobs]
+    output_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stdout" for job in jobs]
+    master_error_log = error_logs[0]
+
+    logger.info(
+        f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
+        f"Job submitted with jobids '{jobs}' to execute script '{launcher.name}'\n"
+        f"Master error log: {master_error_log}"
+    )
+    logger.debug(
+        f"Output logs: {[str(o) for o in output_logs]}\n"
+        f"Error logs: {[str(e) for e in error_logs]}"
+    )
+
+    # Wait for job to start running
+    job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
+    while not all(job_statuses):
+        sleep(5)
+        logger.debug("Waiting for jobs to start running...")
+        job_statuses = [
+            session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs
+        ]
+    logger.info(f"Jobs {jobs} are running")
+
+    session.deleteJobTemplate(jt)
+    return master_error_log, jobs[0].split("_")[0]
+
+
+####################
+# Helper functions #
+####################
+
+
+def _get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
+    return (
+        f"-J {job_name} "
+        f"-A {account} "
+        f"-p {partition} "
+        f"--mem={peak_memory*1024} "
+        f"-t {max_runtime}:00:00 "
+        f"-c {num_threads}"
+    )
+
+
 def _generate_job_template(
     session: "drmaa.Session",
     config: Config,
@@ -121,28 +191,13 @@ def _generate_job_template(
     return jt
 
 
-def submit_spark_cluster_job(
-    drmaa: "drmaa",
-    session: "drmaa.Session",
+def _generate_spark_cluster_job_template(
+    session: "drmaa.session",
     config: Config,
     launcher: TextIO,
     diagnostics_dir: Path,
     step_id: str,
-) -> Tuple[Path, str]:
-    """Submits a job to launch a Spark cluster.
-
-    Args:
-        drmaa: DRMAA module.
-        session: DRMAA session.
-        config: Config object.
-        launcher: Launcher script.
-        diagnostics_dir: Diagnostics directory.
-        step_id: Step ID used for naming the job.
-
-    Returns:
-        Path to stderr log, which contains the Spark master URL.
-        Main job ID of the spark cluster.
-    """
+):
     jt = session.createJobTemplate()
     jt.jobName = f"spark_cluster_{step_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.workingDirectory = str(diagnostics_dir)
@@ -163,46 +218,5 @@ def submit_spark_cluster_job(
         f"--time={resources['time_limit']}:00:00 "
         f"--cpus-per-task={resources['cpus_per_node']}"
     )
-    jobs = session.runBulkJobs(jt, 1, resources["num_workers"] + 1, 1)
-    error_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stderr" for job in jobs]
-    output_logs = [Path(jt.workingDirectory) / f"spark_cluster_{job}.stdout" for job in jobs]
-    master_error_log = error_logs[0]
 
-    logger.info(
-        f"Submitting slurm job for launching the Spark cluster: '{jt.jobName}'\n"
-        f"Job submitted with jobids '{jobs}' to execute script '{launcher.name}'\n"
-        f"Master error log: {master_error_log}"
-    )
-    logger.debug(
-        f"Output logs: {[str(o) for o in output_logs]}\n"
-        f"Error logs: {[str(e) for e in error_logs]}"
-    )
-
-    # Wait for job to start running
-    job_statuses = [session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs]
-    while not all(job_statuses):
-        sleep(5)
-        logger.debug("Waiting for jobs to start running...")
-        job_statuses = [
-            session.jobStatus(job_id) == drmaa.JobState.RUNNING for job_id in jobs
-        ]
-    logger.info(f"Jobs {jobs} are running")
-
-    session.deleteJobTemplate(jt)
-    return master_error_log, jobs[0].split("_")[0]
-
-
-####################
-# Helper functions #
-####################
-
-
-def _get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
-    return (
-        f"-J {job_name} "
-        f"-A {account} "
-        f"-p {partition} "
-        f"--mem={peak_memory*1024} "
-        f"-t {max_runtime}:00:00 "
-        f"-c {num_threads}"
-    )
+    return jt, resources
