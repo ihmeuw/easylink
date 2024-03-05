@@ -1,7 +1,10 @@
 import ast
+import os
 import re
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from linker.configuration import Config
 from linker.utilities.slurm_utils import (
@@ -21,6 +24,13 @@ CLI_KWARGS = {
 }
 
 
+IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
+
+
+@pytest.mark.skipif(
+    IN_GITHUB_ACTIONS,
+    reason="Github Actions does not have access to our file system and so no drmaa.",
+)
 def test_get_slurm_drmaa():
     """Confirm that a drmaa object is indeed returned"""
     drmaa = get_slurm_drmaa()
