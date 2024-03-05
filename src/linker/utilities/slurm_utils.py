@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import types
 from datetime import datetime
 from pathlib import Path
 from time import sleep
@@ -12,7 +11,7 @@ from loguru import logger
 from linker.configuration import Config
 
 
-def get_slurm_drmaa() -> types.ModuleType("drmaa"):
+def get_slurm_drmaa() -> "drmaa":
     """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
     try:
         import drmaa
@@ -40,6 +39,49 @@ def launch_slurm_job(
     """Runs a container as a job on a slurm cluster. The job is submitted via the
     `linker run-slurm-job` command line interface.
     """
+    jt = _generate_job_template(
+        session,
+        config,
+        container_engine,
+        input_data,
+        results_dir,
+        diagnostics_dir,
+        step_id,
+        step_name,
+        implementation_name,
+        container_full_stem,
+        implementation_config,
+    )
+
+    # Run the job
+    job_id = session.runJob(jt)
+    logger.debug("linker " + " ".join(jt.args))
+    logger.info(
+        f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
+        f"Job submitted with jobid '{job_id}'\n"
+        f"Output log: {str(diagnostics_dir / f'{job_id}.o*')}\n"
+        f"Error log: {str(diagnostics_dir / f'{job_id}.e*')}"
+    )
+    job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
+
+    # TODO: clean up if job failed?
+    logger.info(f"Job {job_id} finished with status '{job_status}'")
+    session.deleteJobTemplate(jt)
+
+
+def _generate_job_template(
+    session: "drmaa.Session",
+    config: Config,
+    container_engine: str,
+    input_data: List[str],
+    results_dir: Path,
+    diagnostics_dir: Path,
+    step_id: str,
+    step_name: str,
+    implementation_name: str,
+    container_full_stem: str,
+    implementation_config: Optional[Dict[str, str]],
+) -> "drmaa.session.JobTemplate":
     jt = session.createJobTemplate()
     jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
     jt.joinFiles = False  # keeps stdout separate from stderr
@@ -76,20 +118,7 @@ def launch_slurm_job(
         num_threads=resources["cpus"],
     )
 
-    # Run the job
-    job_id = session.runJob(jt)
-    logger.debug("linker " + " ".join(jt.args))
-    logger.info(
-        f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
-        f"Job submitted with jobid '{job_id}'\n"
-        f"Output log: {str(diagnostics_dir / f'{job_id}.o*')}\n"
-        f"Error log: {str(diagnostics_dir / f'{job_id}.e*')}"
-    )
-    job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
-
-    # TODO: clean up if job failed?
-    logger.info(f"Job {job_id} finished with status '{job_status}'")
-    session.deleteJobTemplate(jt)
+    return jt
 
 
 def submit_spark_cluster_job(
