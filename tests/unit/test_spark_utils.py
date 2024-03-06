@@ -48,7 +48,7 @@ def test_find_spark_master_url(test_dir):
 def test_find_spark_master_url_fails_if_no_logfile():
     """Test that there is not an infinite loop if the logfile never gets generated"""
     logfile = Path("foo/bar/logfile")
-    with pytest.raises(FileNotFoundError, match="Could not find expected logfile"):
+    with pytest.raises(FileNotFoundError):
         find_spark_master_url(logfile, attempt_sleep_time=0, num_attempts=2)
 
 

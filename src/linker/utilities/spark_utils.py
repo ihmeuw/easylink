@@ -160,18 +160,13 @@ def find_spark_master_url(
                         f"Unable to find Spark master URL in logfile. Waiting {attempt_sleep_time} seconds and retrying...\n"
                         f"(attempt {read_logfile_attempt}/{num_attempts})"
                     )
-        except FileNotFoundError:
-            if read_logfile_attempt < num_attempts:
-                logger.debug(
-                    f"Logfile {logfile} not found. Waiting {attempt_sleep_time} seconds and retrying...\n"
-                    f"(attempt {read_logfile_attempt}/{num_attempts})"
-                )
-                continue
-            else:
-                raise FileNotFoundError(
-                    f"Could not find expected logfile {logfile} and so could not extract "
-                    "the spark cluster master URL."
-                )
+        except FileNotFoundError as e:
+            logger.debug(
+                f"Logfile {logfile} not found. Waiting {attempt_sleep_time} seconds and retrying...\n"
+                f"(attempt {read_logfile_attempt}/{num_attempts})"
+            )
+            if read_logfile_attempt == num_attempts:
+                raise e
 
     if spark_master_url == "":
         raise ValueError(
