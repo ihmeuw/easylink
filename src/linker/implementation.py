@@ -6,8 +6,10 @@ from loguru import logger
 from linker.configuration import Config
 from linker.step import Step
 from linker.utilities.data_utils import load_yaml
-from linker.utilities.slurm_utils import get_slurm_drmaa
-from linker.utilities.spark_utils import build_spark_cluster
+# from linker.utilities.slurm_utils import get_slurm_drmaa
+# from linker.utilities.spark_utils import build_spark_cluster
+from linker.rule import Rule
+import os
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from linker.pipeline import Pipeline
@@ -32,51 +34,51 @@ class Implementation:
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"
 
-    def run(
-        self,
-        session: Optional["drmaa.Session"],
-        runner: Callable,
-        step_id: str,
-        input_data: List[Path],
-        results_dir: Path,
-        diagnostics_dir: Path,
-    ) -> None:
-        logger.info(f"Running pipeline step ID {step_id}")
-        if self._requires_spark and session:
-            # having an active drmaa session implies we are running on a slurm cluster
-            # (i.e. not 'local' computing environment) and so need to spin up a spark
-            # cluster instead of relying on the implementation to do it in a container
-            drmaa = get_slurm_drmaa()
-            spark_resources = self.config.spark_resources
-            spark_master_url, job_id = build_spark_cluster(
-                drmaa=drmaa,
-                session=session,
-                config=self.config,
-                step_id=step_id,
-                results_dir=results_dir,
-                diagnostics_dir=diagnostics_dir,
-                input_data=input_data,
-            )
-            # Add the spark master url to implementation config
-            self.implementation_config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
+    # def run(
+    #     self,
+    #     session: Optional["drmaa.Session"],
+    #     runner: Callable,
+    #     step_id: str,
+    #     input_data: List[Path],
+    #     results_dir: Path,
+    #     diagnostics_dir: Path,
+    # ) -> None:
+    #     logger.info(f"Running pipeline step ID {step_id}")
+    #     if self._requires_spark and session:
+    #         # having an active drmaa session implies we are running on a slurm cluster
+    #         # (i.e. not 'local' computing environment) and so need to spin up a spark
+    #         # cluster instead of relying on the implementation to do it in a container
+    #         drmaa = get_slurm_drmaa()
+    #         spark_resources = self.config.spark_resources
+    #         spark_master_url, job_id = build_spark_cluster(
+    #             drmaa=drmaa,
+    #             session=session,
+    #             config=self.config,
+    #             step_id=step_id,
+    #             results_dir=results_dir,
+    #             diagnostics_dir=diagnostics_dir,
+    #             input_data=input_data,
+    #         )
+    #         # Add the spark master url to implementation config
+    #         self.implementation_config["DUMMY_CONTAINER_SPARK_MASTER_URL"] = spark_master_url
 
-        runner(
-            container_engine=self.config.container_engine,
-            input_data=input_data,
-            results_dir=results_dir,
-            diagnostics_dir=diagnostics_dir,
-            step_id=step_id,
-            step_name=self.step_name,
-            implementation_name=self.name,
-            container_full_stem=self._container_full_stem,
-            implementation_config=self.implementation_config,
-        )
+    #     runner(
+    #         container_engine=self.config.container_engine,
+    #         input_data=input_data,
+    #         results_dir=results_dir,
+    #         diagnostics_dir=diagnostics_dir,
+    #         step_id=step_id,
+    #         step_name=self.step_name,
+    #         implementation_name=self.name,
+    #         container_full_stem=self._container_full_stem,
+    #         implementation_config=self.implementation_config,
+    #     )
 
-        if self._requires_spark and session and not spark_resources["keep_alive"]:
-            logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
-            session.control(job_id, drmaa.JobControlAction.TERMINATE)
+    #     if self._requires_spark and session and not spark_resources["keep_alive"]:
+    #         logger.info(f"Shutting down spark cluster for pipeline step ID {step_id}")
+    #         session.control(job_id, drmaa.JobControlAction.TERMINATE)
 
-        self.step.validate_output(step_id, results_dir)
+    #     self.step.validate_output(step_id, results_dir)
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
@@ -118,7 +120,10 @@ class Implementation:
         return metadata
 
     def _get_container_full_stem(self) -> str:
-        return f"{self._metadata[self.name]['path']}/{self._metadata[self.name]['name']}"
+        return f"{self._metadata[self.name]['container_path']}/{self._metadata[self.name]['name']}"
+    
+    def _get_script_full_stem(self) -> str:
+        return f"{os.path.dirname(__file__)}/{self._metadata[self.name]['script_path']}"
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         if self.step_name != self._pipeline_step_name:
@@ -148,17 +153,10 @@ class Implementation:
             logs.append(err_str)
         return logs
     
-    def get_input_paths(self, pipeline: "Pipeline", results_dir: Path):
-        return pipeline.get_input_files(self.name, results_dir)
-    
-    def get_output_paths(self, pipeline: "Pipeline", results_dir: Path):
-        output_dir = pipeline.get_output_dir(self.name, results_dir)
-        return [str(output_dir / "result.parquet")]
-    
     @property
     def singularity_image_path(self):
-        return self._container_full_stem + ".sif"
+        return self._get_container_full_stem + ".sif"
     
     @property
     def script(self):
-        return "/mnt/share/homes/pnast/repos/linker/src/linker/steps/dev/python_pandas/dummy_step_smk.py"
+        return self._get_script_full_stem

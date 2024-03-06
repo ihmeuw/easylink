@@ -12,84 +12,84 @@ from loguru import logger
 from linker.configuration import Config
 
 
-def get_slurm_drmaa() -> types.ModuleType("drmaa"):
-    """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
-    try:
-        import drmaa
-    except (RuntimeError, OSError):
-        # TODO [MIC-4469]: make more generic for external users
-        os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
-        import drmaa
+# def get_slurm_drmaa() -> types.ModuleType("drmaa"):
+#     """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
+#     try:
+#         import drmaa
+#     except (RuntimeError, OSError):
+#         # TODO [MIC-4469]: make more generic for external users
+#         os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
+#         import drmaa
 
-    return drmaa
+#     return drmaa
 
 
-def launch_slurm_job(
-    session: types.ModuleType("drmaa.Session"),
-    config: Config,
-    container_engine: str,
-    input_data: List[str],
-    results_dir: Path,
-    diagnostics_dir: Path,
-    step_id: str,
-    step_name: str,
-    implementation_name: str,
-    container_full_stem: str,
-    implementation_config: Optional[Dict[str, str]] = None,
-) -> None:
-    """Runs a container as a job on a slurm cluster. The job is submitted via the
-    `linker run-slurm-job` command line interface.
-    """
-    jt = session.createJobTemplate()
-    jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    jt.joinFiles = False  # keeps stdout separate from stderr
-    jt.outputPath = f":{str(diagnostics_dir / '%A.o%a')}"
-    jt.errorPath = f":{str(diagnostics_dir / '%A.e%a')}"
-    jt.remoteCommand = shutil.which("linker")
-    jt_args = [
-        "run-slurm-job",
-        container_engine,
-        str(results_dir),
-        str(diagnostics_dir),
-        step_id,
-        step_name,
-        implementation_name,
-        container_full_stem,
-        "-vvv",
-    ]
-    for filepath in input_data:
-        jt_args.extend(("--input-data", str(filepath)))
-    if implementation_config:
-        jt_args.extend(("--implementation-config", str(json.dumps(implementation_config))))
-    jt.args = jt_args
-    jt.jobEnvironment = {
-        "LC_ALL": "en_US.UTF-8",
-        "LANG": "en_US.UTF-8",
-    }
-    resources = config.slurm_resources
-    jt.nativeSpecification = get_cli_args(
-        job_name=jt.jobName,
-        account=resources["account"],
-        partition=resources["partition"],
-        peak_memory=resources["memory"],
-        max_runtime=resources["time_limit"],
-        num_threads=resources["cpus"],
-    )
+# def launch_slurm_job(
+#     session: types.ModuleType("drmaa.Session"),
+#     config: Config,
+#     container_engine: str,
+#     input_data: List[str],
+#     results_dir: Path,
+#     diagnostics_dir: Path,
+#     step_id: str,
+#     step_name: str,
+#     implementation_name: str,
+#     container_full_stem: str,
+#     implementation_config: Optional[Dict[str, str]] = None,
+# ) -> None:
+#     """Runs a container as a job on a slurm cluster. The job is submitted via the
+#     `linker run-slurm-job` command line interface.
+#     """
+#     jt = session.createJobTemplate()
+#     jt.jobName = f"{implementation_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+#     jt.joinFiles = False  # keeps stdout separate from stderr
+#     jt.outputPath = f":{str(diagnostics_dir / '%A.o%a')}"
+#     jt.errorPath = f":{str(diagnostics_dir / '%A.e%a')}"
+#     jt.remoteCommand = shutil.which("linker")
+#     jt_args = [
+#         "run-slurm-job",
+#         container_engine,
+#         str(results_dir),
+#         str(diagnostics_dir),
+#         step_id,
+#         step_name,
+#         implementation_name,
+#         container_full_stem,
+#         "-vvv",
+#     ]
+#     for filepath in input_data:
+#         jt_args.extend(("--input-data", str(filepath)))
+#     if implementation_config:
+#         jt_args.extend(("--implementation-config", str(json.dumps(implementation_config))))
+#     jt.args = jt_args
+#     jt.jobEnvironment = {
+#         "LC_ALL": "en_US.UTF-8",
+#         "LANG": "en_US.UTF-8",
+#     }
+#     resources = config.slurm_resources
+#     jt.nativeSpecification = get_cli_args(
+#         job_name=jt.jobName,
+#         account=resources["account"],
+#         partition=resources["partition"],
+#         peak_memory=resources["memory"],
+#         max_runtime=resources["time_limit"],
+#         num_threads=resources["cpus"],
+#     )
 
-    # Run the job
-    job_id = session.runJob(jt)
-    logger.debug("linker " + " ".join(jt.args))
-    logger.info(
-        f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
-        f"Job submitted with jobid '{job_id}'\n"
-        f"Output log: {str(diagnostics_dir / f'{job_id}.o*')}\n"
-        f"Error log: {str(diagnostics_dir / f'{job_id}.e*')}"
-    )
-    job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
+#     # Run the job
+#     job_id = session.runJob(jt)
+#     logger.debug("linker " + " ".join(jt.args))
+#     logger.info(
+#         f"Launching slurm job for step '{step_name}', implementation '{implementation_name}\n"
+#         f"Job submitted with jobid '{job_id}'\n"
+#         f"Output log: {str(diagnostics_dir / f'{job_id}.o*')}\n"
+#         f"Error log: {str(diagnostics_dir / f'{job_id}.e*')}"
+#     )
+#     job_status = session.wait(job_id, session.TIMEOUT_WAIT_FOREVER)
 
-    # TODO: clean up if job failed?
-    logger.info(f"Job {job_id} finished with status '{job_status}'")
-    session.deleteJobTemplate(jt)
+#     # TODO: clean up if job failed?
+#     logger.info(f"Job {job_id} finished with status '{job_status}'")
+#     session.deleteJobTemplate(jt)
 
 
 def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_threads):
