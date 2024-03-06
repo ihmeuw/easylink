@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from linker.utilities.paths import CONTAINER_DIR
 from linker.utilities.spark_utils import (
     build_cluster_launch_script,
     find_spark_master_url,
@@ -25,6 +26,7 @@ def test_build_cluster_launch_script(test_dir):
     with open(Path(test_dir) / launcher.name, "r") as f:
         lines = f.readlines()
         assert lines[1] == "#!/bin/bash\n"
+        assert f"SINGULARITY_IMG={CONTAINER_DIR}/spark_cluster.sif\n" in lines
         assert "SPARK_MASTER_PORT=28508\n" in lines
         assert "SPARK_MASTER_WEBUI_PORT=28509\n" in lines
         assert "SPARK_WORKER_WEBUI_PORT=28510\n" in lines
