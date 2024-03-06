@@ -36,16 +36,26 @@ def test_build_cluster_launch_script(test_dir):
         ) in lines[-2]
 
 
-def test_find_spark_master_url():
-    pass
+def test_find_spark_master_url(test_dir):
+    logfile = Path(test_dir) / "logfile_with_url"
+    url = "spark://some-partition-p1234.cluster.ihme.washington.edu:28508"
+    with open(logfile, "w") as f:
+        f.write("some stuff\n" f"Starting Spark master at {url}\n" "some other stuff\n")
+    spark_master_url = find_spark_master_url(logfile, attempt_sleep_time=0, num_attempts=2)
+    assert spark_master_url == url
 
 
 def test_find_spark_master_url_fails_if_no_logfile():
-    """Test that there is not infinite loop when trying to read the logfile"""
+    """Test that there is not an infinite loop if the logfile never gets generated"""
     logfile = Path("foo/bar/logfile")
     with pytest.raises(FileNotFoundError, match="Could not find expected logfile"):
-        find_spark_master_url(logfile, attempt_sleep_time=0.1)
+        find_spark_master_url(logfile, attempt_sleep_time=0, num_attempts=2)
 
 
-def test_find_spark_master_url_fails_if_no_master_url():
-    pass
+def test_find_spark_master_url_fails_if_no_master_url(test_dir):
+    """Test that there is not an infinite loop if something borks the master URL"""
+    logfile = Path(test_dir) / "logfile_with_url"
+    with open(logfile, "w") as f:
+        f.write("some stuff\n" "this is not a url\n" "some other stuff\n")
+    with pytest.raises(ValueError, match="Could not find a Spark master URL"):
+        find_spark_master_url(logfile, attempt_sleep_time=0, num_attempts=2)
