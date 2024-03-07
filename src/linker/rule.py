@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import Callable
 
 
 class Rule(ABC):
@@ -52,7 +53,7 @@ class ValidationRule(Rule):
     name: str
     input: list[str]
     output: str
-    validator: str
+    validator: Callable
 
     def _build_rule(self) -> str:
         return f"""
@@ -64,5 +65,5 @@ rule:
     message: "Validating {self.name} input"
     run:
         for f in input:
-            {self.validator}(f)
+            {self.validator.__name__}(f)
                 """

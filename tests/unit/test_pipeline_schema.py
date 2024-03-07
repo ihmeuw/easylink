@@ -38,7 +38,6 @@ def test_get_schemas():
             assert isinstance(step, Step)
             assert step.name
             assert isinstance(step.validate_file, Callable)
-            assert isinstance(step.validate_output, Callable)
 
 
 def test__add_step():

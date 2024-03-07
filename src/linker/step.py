@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+from typing import Callable
+
+from linker.utilities.validation_utils import validate_dummy_file
 
 
 @dataclass
@@ -11,4 +14,4 @@ class Step:
     """
 
     name: str
-    validate_file: str = "validate_dummy_file"
+    validate_file: Callable = validate_dummy_file

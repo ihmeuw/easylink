@@ -8,6 +8,7 @@ from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.rule import ImplementedRule, TargetRule, ValidationRule
 from linker.utilities.general_utils import exit_with_validation_error
+from linker.utilities.validation_utils import validate_dummy_file
 
 
 class Pipeline:
@@ -95,7 +96,7 @@ class Pipeline:
             name="validate_results",
             input=final_output,
             output="final_validator",
-            validator="validate_dummy_file",
+            validator=validate_dummy_file,
         )
         target_rule.write_to_snakefile(results_dir)
         final_validation.write_to_snakefile(results_dir)

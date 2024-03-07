@@ -11,6 +11,18 @@ from loguru import logger
 from linker.configuration import Config
 
 
+def get_slurm_drmaa() -> "drmaa":
+    """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
+    try:
+        import drmaa
+    except (RuntimeError, OSError):
+        # TODO [MIC-4469]: make more generic for external users
+        os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
+        import drmaa
+
+    return drmaa
+
+
 def submit_spark_cluster_job(
     drmaa: "drmaa",
     session: "drmaa.Session",
