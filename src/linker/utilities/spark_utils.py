@@ -133,7 +133,9 @@ fi
     return launcher
 
 
-def find_spark_master_url(logfile: Path, attempt_sleep_time: int = 10) -> str:
+def find_spark_master_url(
+    logfile: Path, attempt_sleep_time: int = 10, num_attempts: int = 10
+) -> str:
     """Finds the Spark master URL in the logfile.
 
     Args:
@@ -145,7 +147,7 @@ def find_spark_master_url(logfile: Path, attempt_sleep_time: int = 10) -> str:
     logger.debug(f"Searching for Spark master URL in {logfile}")
     spark_master_url = ""
     read_logfile_attempt = 0
-    while spark_master_url == "" and read_logfile_attempt < 10:
+    while spark_master_url == "" and read_logfile_attempt < num_attempts:
         read_logfile_attempt += 1
         sleep(attempt_sleep_time)
         try:
@@ -156,19 +158,20 @@ def find_spark_master_url(logfile: Path, attempt_sleep_time: int = 10) -> str:
                 if spark_master_url == "":
                     logger.debug(
                         f"Unable to find Spark master URL in logfile. Waiting {attempt_sleep_time} seconds and retrying...\n"
-                        f"(attempt {read_logfile_attempt}/10)"
+                        f"(attempt {read_logfile_attempt}/{num_attempts})"
                     )
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             logger.debug(
                 f"Logfile {logfile} not found. Waiting {attempt_sleep_time} seconds and retrying...\n"
-                f"(attempt {read_logfile_attempt}/10)"
+                f"(attempt {read_logfile_attempt}/{num_attempts})"
             )
-            continue
+            if read_logfile_attempt == num_attempts:
+                raise e
 
     if spark_master_url == "":
-        raise FileNotFoundError(
-            f"Could not find expected logfile {logfile} and so could not extract "
-            "the spark cluster master URL."
+        raise ValueError(
+            f"Could not find a Spark master URL in {logfile}. "
+            "Please check the logfile for errors."
         )
 
     return spark_master_url[0].strip()

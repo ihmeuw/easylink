@@ -16,6 +16,7 @@ class Pipeline:
     def __init__(self, config: Config):
         self.config = config
         self.implementations = self._get_implementations()
+        # TODO [MIC-4880]: refactor into validation object
         self._validate()
 
     def _get_implementations(self) -> Tuple[Implementation, ...]:
@@ -30,7 +31,6 @@ class Pipeline:
     def _validate(self) -> None:
         """Validates the pipeline."""
 
-        # TODO: validate that spark and slurm resources are requested if needed
         errors = {**self._validate_implementations()}
 
         if errors:

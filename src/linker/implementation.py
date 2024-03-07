@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from linker.configuration import Config
 from linker.step import Step
+from linker.utilities import paths
 from linker.utilities.data_utils import load_yaml
 
 
@@ -17,7 +18,6 @@ class Implementation:
         self.config = config
         self._pipeline_step_name = step.name
         self.name = config.get_implementation_name(step.name)
-        self.implementation_config = self._get_implementation_config()
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
         self._requires_spark = self._metadata[self.name].get("requires_spark", False)
@@ -39,30 +39,8 @@ class Implementation:
     # Helper methods #
     ##################
 
-    def _get_implementation_config(self) -> Dict[Any, Any]:
-        """Extracts and formats the implementation specific config from the pipeline config"""
-        config = self.config.get_implementation_config(self._pipeline_step_name)
-        return self._stringify_keys_values(config) if config else {}
-
-    StringifiedDictionary = Dict[str, Union[str, "StringifiedDictionary"]]
-
-    def _stringify_keys_values(self, config: Any) -> StringifiedDictionary:
-        # Singularity requires env variables be strings
-        if isinstance(config, Dict):
-            return {
-                str(key): self._stringify_keys_values(value) for key, value in config.items()
-            }
-        else:
-            # The last step of the recursion is not a dict but the leaf node's value
-            return str(config)
-
     def _load_metadata(self) -> Dict[str, str]:
-        metadata_path = Path(__file__).parent / "implementation_metadata.yaml"
-        metadata = load_yaml(metadata_path)
-        if not self.name in metadata:
-            raise RuntimeError(
-                f"Implementation '{self.name}' is not defined in implementation_metadata.yaml"
-            )
+        metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         return metadata
 
     def _get_container_full_stem(self) -> str:
