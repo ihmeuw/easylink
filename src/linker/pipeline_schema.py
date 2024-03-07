@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 from linker.step import Step
-from linker.utilities.data_utils import validate_dummy_file
+from linker.utilities.validation_utils import validate_dummy_file
 
 
 class PipelineSchema:

@@ -98,12 +98,12 @@ def run(
     logger.info(f"Results directory: {str(results_dir)}")
 
     main = handle_exceptions(
-            func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
-        )
+        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
+    )
     main(
-            config=config,
-            results_dir=results_dir,
-        )
+        config=config,
+        results_dir=results_dir,
+    )
     logger.info(f"Results directory: {str(results_dir)}")
     logger.info("*** FINISHED ***")
 
@@ -164,4 +164,3 @@ def run_slurm_job(
     )
 
     logger.info("*** FINISHED ***")
-    
