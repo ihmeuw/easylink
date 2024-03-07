@@ -9,10 +9,7 @@ from snakemake.cli import main as snake_main
 from linker.configuration import Config
 from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
-# from linker.utilities.docker_utils import run_with_docker
-# from linker.utilities.singularity_utils import run_with_singularity
 from linker.utilities.slurm_utils import get_cli_args
-from linker.utilities.snakemake_utils import make_config
 
 
 def main(
