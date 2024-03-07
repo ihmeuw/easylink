@@ -79,7 +79,7 @@ class Implementation:
 
     @property
     def validation_filename(self):
-        return self.name + "_validator.txt"
+        return self.name + "_validator"
 
     @property
     def singularity_image_path(self):

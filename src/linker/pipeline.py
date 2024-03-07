@@ -1,12 +1,12 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Callable, Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import yaml
 
 from linker.configuration import Config
 from linker.implementation import Implementation
-from linker.rule import ImplementedRule, ValidationRule
+from linker.rule import ImplementedRule, ValidationRule, TargetRule
 from linker.utilities.general_utils import exit_with_validation_error
 
 
@@ -52,6 +52,7 @@ class Pipeline:
             for idx, implementation in enumerate(self.implementations)
         }
 
+    ### Say Why this needs to be in pipeline and not implementation
     def get_input_files(self, implementation_name: str, results_dir: Path) -> list:
         idx = self.implementation_indices[implementation_name]
         if idx == 0:
@@ -76,47 +77,41 @@ class Pipeline:
         )
 
     def build_snakefile(self, results_dir: Path) -> None:
-        self.write_rule_all(results_dir)
+        self.write_target_rules(results_dir)
         for implementation in self.implementations:
-            self.write_rule(implementation, results_dir)
+            self.write_implementation_rules(implementation, results_dir)
         return results_dir / "Snakefile"
 
-    def write_rule_all(self, results_dir):
-        snakefile = results_dir / "Snakefile"
-        validation_files = [
-            (results_dir / implementation.validation_filename).as_posix()
-            for implementation in self.implementations
-        ]
-        with open(snakefile, "a") as f:
-            f.write(
-                f"""
-from linker.utilities.validation_utils import *"""
-            )
-            f.write(
-                f"""
-rule all:
-    input:
-        final_output="{results_dir}/result.parquet",
-        validations={validation_files}
-                """
-            )
-
-    def write_rule(self, implementation, results_dir):
-        input_files = self.get_input_files(implementation.name, results_dir)
-        output_files = [
-            str(self.get_output_dir(implementation.name, results_dir) / "result.parquet")
-        ]
-        rule = ImplementedRule(
-            implementation.name,
-            input_files,
-            output_files,
-            implementation.script(),
-        )
-        validation = ValidationRule(
-            implementation.name,
-            output_files,
-            (results_dir / implementation.validation_filename).as_posix(),
+    def write_target_rules(self, results_dir):
+        final_output = [str(results_dir / "result.parquet")]
+        target_rule = TargetRule(target_files=final_output, validation="final_validator")
+        final_validation = ValidationRule(
+            name="validate_results",
+            input=final_output,
+            output="final_validator",
             validator="validate_dummy_file",
         )
-        rule.write_to_snakefile(results_dir)
-        validation.write_to_snakefile(results_dir)
+        target_rule.write_to_snakefile(results_dir)
+        final_validation.write_to_snakefile(results_dir)
+
+    def write_implementation_rules(self, implementation, results_dir):
+        input_files = self.get_input_files(implementation.name, results_dir)
+        output_files = [
+            str(self.get_output_dir(implementation.name, results_dir) / "result.parquet"),
+        ]
+        validation_file = str(results_dir / implementation.validation_filename)
+        validation_rule = ValidationRule(
+            name=implementation.name,
+            input=input_files,
+            output=validation_file,
+            validator=implementation.step.validate_file,
+        )
+        implementation_rule = ImplementedRule(
+            name=implementation.name,
+            execution_input=input_files,
+            validation=validation_file,
+            output=output_files,
+            script_path=implementation.script(),
+        )
+        validation_rule.write_to_snakefile(results_dir)
+        implementation_rule.write_to_snakefile(results_dir)

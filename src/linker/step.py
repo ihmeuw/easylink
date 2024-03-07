@@ -1,8 +1,4 @@
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Callable
-
-from linker.utilities.validation_utils import validate_dummy_file
 
 
 @dataclass
@@ -15,15 +11,4 @@ class Step:
     """
 
     name: str
-    validate_file: Callable = validate_dummy_file
-
-    def validate_output(self, step_id: str, results_dir: Path) -> None:
-        results_files = list(results_dir.glob("result.parquet"))
-        if results_files:
-            for results_file in results_files:
-                self.validate_file(results_file)
-        else:
-            raise RuntimeError(
-                f"No results found for pipeline step ID {step_id} in results "
-                f"directory '{results_dir}'"
-            )
+    validate_file: str = "validate_dummy_file"

@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
 
 
 class Rule(ABC):
@@ -13,11 +12,25 @@ class Rule(ABC):
     def _build_rule(self) -> str:
         pass
 
+@dataclass
+class TargetRule(Rule):
+    target_files: list[str]
+    validation: str
+    
+    def _build_rule(self) -> str:
+        return f"""
+rule all:
+    input:
+        final_output={self.target_files},
+        validator="{self.validation}"
+                """
+
 
 @dataclass
 class ImplementedRule(Rule):
     name: str
-    input: list[str]
+    execution_input: list[str]
+    validation: str
     output: list[str]
     script_path: str
 
@@ -25,7 +38,9 @@ class ImplementedRule(Rule):
         return f"""
 rule:
     name: "{self.name}"
-    input: {self.input}           
+    input: 
+        implementation_inputs={self.execution_input},
+        validation="{self.validation}"           
     output: {self.output}
     script: "{self.script_path}"
                 """
@@ -43,12 +58,10 @@ class ValidationRule(Rule):
 rule:
     name: "{self.name}_validator"
     input: {self.input}
-    output: touch("{self.output}")
-    priority: 1
-    localrule: True           
+    output: temp(touch("{self.output}"))
+    localrule: True         
+    message: "Validating {self.name} input"
     run:
-        print("Validating {self.name} output")
         for f in input:
             {self.validator}(f)
-        touch(output)
                 """

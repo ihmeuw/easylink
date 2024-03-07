@@ -24,7 +24,7 @@ def load_file(file_path, file_format=None):
 
 diagnostics = {}
 
-main_input_file_paths = snakemake.input
+main_input_file_paths = snakemake.input.implementation_inputs
 
 logging.info("Loading main input")
 diagnostics["num_main_input_files"] = len(main_input_file_paths)
