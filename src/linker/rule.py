@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 
 class Rule(ABC):
-    def write_to_snakefile(self, snakefile_dir):
+    def write_to_snakefile(self, snakefile_dir) -> None:
         snakefile = snakefile_dir / "Snakefile"
         with open(snakefile, "a") as f:
             f.write(self._build_rule())
@@ -12,11 +12,12 @@ class Rule(ABC):
     def _build_rule(self) -> str:
         pass
 
+
 @dataclass
 class TargetRule(Rule):
     target_files: list[str]
     validation: str
-    
+
     def _build_rule(self) -> str:
         return f"""
 rule all:
@@ -53,7 +54,7 @@ class ValidationRule(Rule):
     output: str
     validator: str
 
-    def _build_rule(self):
+    def _build_rule(self) -> str:
         return f"""
 rule:
     name: "{self.name}_validator"

@@ -81,7 +81,6 @@ def get_cli_args(job_name, account, partition, peak_memory, max_runtime, num_thr
     )
 
 
-
 def _generate_spark_cluster_job_template(
     session: "drmaa.session",
     config: Config,

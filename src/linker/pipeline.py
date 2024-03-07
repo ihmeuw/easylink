@@ -6,7 +6,7 @@ import yaml
 
 from linker.configuration import Config
 from linker.implementation import Implementation
-from linker.rule import ImplementedRule, ValidationRule, TargetRule
+from linker.rule import ImplementedRule, TargetRule, ValidationRule
 from linker.utilities.general_utils import exit_with_validation_error
 
 
@@ -77,12 +77,18 @@ class Pipeline:
         )
 
     def build_snakefile(self, results_dir: Path) -> None:
+        self.write_imports(results_dir)
         self.write_target_rules(results_dir)
         for implementation in self.implementations:
             self.write_implementation_rules(implementation, results_dir)
         return results_dir / "Snakefile"
 
-    def write_target_rules(self, results_dir):
+    def write_imports(self, results_dir) -> None:
+        snakefile = results_dir / "Snakefile"
+        with open(snakefile, "a") as f:
+            f.write("from linker.utilities.validation_utils import *")
+
+    def write_target_rules(self, results_dir) -> None:
         final_output = [str(results_dir / "result.parquet")]
         target_rule = TargetRule(target_files=final_output, validation="final_validator")
         final_validation = ValidationRule(
@@ -94,7 +100,7 @@ class Pipeline:
         target_rule.write_to_snakefile(results_dir)
         final_validation.write_to_snakefile(results_dir)
 
-    def write_implementation_rules(self, implementation, results_dir):
+    def write_implementation_rules(self, implementation, results_dir) -> None:
         input_files = self.get_input_files(implementation.name, results_dir)
         output_files = [
             str(self.get_output_dir(implementation.name, results_dir) / "result.parquet"),
