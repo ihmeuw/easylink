@@ -3,8 +3,11 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
-from linker.configuration import Config
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from linker.configuration import Config
+
 import yaml
 
 

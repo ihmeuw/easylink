@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from linker.utilities.data_utils import validate_dummy_file
+from linker.utilities.validation_utils import validate_dummy_file
 
 
 @dataclass

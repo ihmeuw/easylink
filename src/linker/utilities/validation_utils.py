@@ -1,6 +1,7 @@
 from pathlib import Path
-from pyarrow import parquet as pq
+
 import pandas as pd
+from pyarrow import parquet as pq
 
 
 def validate_dummy_file(filepath: str) -> None:
