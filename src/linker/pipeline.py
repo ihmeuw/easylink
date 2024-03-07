@@ -1,12 +1,13 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import Callable, Dict, Optional, Tuple
+
 import yaml
 
 from linker.configuration import Config
 from linker.implementation import Implementation
+from linker.rule import ImplementedRule, ValidationRule
 from linker.utilities.general_utils import exit_with_validation_error
-from linker.rule import Rule
 
 
 class Pipeline:
@@ -80,25 +81,42 @@ class Pipeline:
             self.write_rule(implementation, results_dir)
         return results_dir / "Snakefile"
 
-    @staticmethod
-    def write_rule_all(results_dir):
+    def write_rule_all(self, results_dir):
         snakefile = results_dir / "Snakefile"
+        validation_files = [
+            (results_dir / implementation.validation_filename).as_posix()
+            for implementation in self.implementations
+        ]
         with open(snakefile, "a") as f:
             f.write(
                 f"""
+from linker.utilities.validation_utils import *"""
+            )
+            f.write(
+                f"""
 rule all:
-    input: "{results_dir}/result.parquet"          
+    input:
+        final_output="{results_dir}/result.parquet",
+        validations={validation_files}
                 """
             )
 
     def write_rule(self, implementation, results_dir):
         input_files = self.get_input_files(implementation.name, results_dir)
-        output_dir = self.get_output_dir(implementation.name, results_dir)
-        rule = Rule(
+        output_files = [
+            str(self.get_output_dir(implementation.name, results_dir) / "result.parquet")
+        ]
+        rule = ImplementedRule(
             implementation.name,
             input_files,
-            str(output_dir / "result.parquet"),
+            output_files,
             implementation.script(),
-            results_dir
         )
-        rule.write_to_snakefile()
+        validation = ValidationRule(
+            implementation.name,
+            output_files,
+            (results_dir / implementation.validation_filename).as_posix(),
+            validator="validate_dummy_file",
+        )
+        rule.write_to_snakefile(results_dir)
+        validation.write_to_snakefile(results_dir)
