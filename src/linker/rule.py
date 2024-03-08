@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, List
 
 
 class Rule(ABC):
@@ -16,7 +16,7 @@ class Rule(ABC):
 
 @dataclass
 class TargetRule(Rule):
-    target_files: list[str]
+    target_files: List[str]
     validation: str
 
     def _build_rule(self) -> str:
@@ -31,9 +31,9 @@ rule all:
 @dataclass
 class ImplementedRule(Rule):
     name: str
-    execution_input: list[str]
+    execution_input: List[str]
     validation: str
-    output: list[str]
+    output: List[str]
     envvars: dict
     diagnostics_dir: str
     script_cmd: str
@@ -74,7 +74,7 @@ rule:
 @dataclass
 class ValidationRule(Rule):
     name: str
-    input: list[str]
+    input: List[str]
     output: str
     validator: Callable
 

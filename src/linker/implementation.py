@@ -49,9 +49,6 @@ class Implementation:
     def _get_container_full_stem(self) -> str:
         return f"{self._metadata[self.name]['container_path']}/{self._metadata[self.name]['name']}"
 
-    def _get_script_full_stem(self) -> str:
-        return f"{self._metadata[self.name]['script_cmd']}"
-
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         if self.step_name != self._pipeline_step_name:
             logs.append(
@@ -90,4 +87,4 @@ class Implementation:
 
     @property
     def script_cmd(self):
-        return self._get_script_full_stem
+        return f"{self._metadata[self.name]['script_cmd']}"
