@@ -118,7 +118,8 @@ class Pipeline:
             execution_input=input_files,
             validation=validation_file,
             output=output_files,
-            script_path=implementation.script(),
+            envvars=implementation.environment_variables,
+            script_cmd=implementation.script_cmd(),
         )
         validation_rule.write_to_snakefile(results_dir)
         implementation_rule.write_to_snakefile(results_dir)

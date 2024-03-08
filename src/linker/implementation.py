@@ -18,6 +18,7 @@ class Implementation:
         self.config = config
         self._pipeline_step_name = step.name
         self.name = config.get_implementation_name(step.name)
+        self.environment_variables = config.pipeline["steps"][self.step.name]['implementation'].get("configuration", {})
         self._metadata = self._load_metadata()
         self.step_name = self._metadata[self.name]["step"]
         self._requires_spark = self._metadata[self.name].get("requires_spark", False)
@@ -47,7 +48,7 @@ class Implementation:
         return f"{self._metadata[self.name]['container_path']}/{self._metadata[self.name]['name']}"
 
     def _get_script_full_stem(self) -> str:
-        return f"{os.path.dirname(__file__)}/{self._metadata[self.name]['script_path']}"
+        return f"{self._metadata[self.name]['script_cmd']}"
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         if self.step_name != self._pipeline_step_name:
@@ -86,5 +87,5 @@ class Implementation:
         return self._get_container_full_stem + ".sif"
 
     @property
-    def script(self):
+    def script_cmd(self):
         return self._get_script_full_stem

@@ -34,7 +34,8 @@ class ImplementedRule(Rule):
     execution_input: list[str]
     validation: str
     output: list[str]
-    script_path: str
+    envvars: dict
+    script_cmd: str
 
     def _build_rule(self) -> str:
         return f"""
@@ -44,8 +45,27 @@ rule:
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
-    script: "{self.script_path}"
+                """ \
+                    + \
+        self._build_shell_command()
+
+    def _build_shell_command(self):
+        shell_cmd = f"""
+    shell:
+            '''
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={",".join(self.execution_input)}
+        export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
                 """
+        for var_name, var_value in self.envvars.items():
+            shell_cmd += f"""
+        export {var_name}={var_value}
+            """
+        shell_cmd += f"""
+        {self.script_cmd}
+            '''
+        """
+
+        return shell_cmd
 
 
 @dataclass

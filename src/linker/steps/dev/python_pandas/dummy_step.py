@@ -23,13 +23,13 @@ def load_file(file_path, file_format=None):
 
 
 diagnostics = {}
-
 if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
     main_input_file_paths = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")
 else:
     main_input_file_paths = glob.glob("/input_data/main_input*")
 
 logging.info("Loading main input")
+logging.info(main_input_file_paths[0])
 diagnostics["num_main_input_files"] = len(main_input_file_paths)
 df = load_file(main_input_file_paths[0])
 
