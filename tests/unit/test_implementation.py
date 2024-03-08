@@ -7,8 +7,4 @@ from linker.step import Step
 
 
 def test_fails_when_missing_results(default_config, mocker):
-    implementation = Implementation(
-        config=default_config,
-        step=Step("step_1"),
-    )
     pass
