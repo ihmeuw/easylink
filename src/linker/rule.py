@@ -81,7 +81,7 @@ class ValidationRule(Rule):
 rule:
     name: "{self.name}_validator"
     input: {self.input}
-    output: temp(touch("{self.output}"))
+    output: touch("{self.output}")
     localrule: True         
     message: "Validating {self.name} input"
     run:
