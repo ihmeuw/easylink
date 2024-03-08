@@ -29,22 +29,24 @@ step_2_python_pandas:
 step_1_python_pyspark_distributed:
   step: step_1
   container_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
-  name: python_pyspark
+  script_cmd:
+  name: python_pyspark src/linker/steps/dev/python_pyspark/dummy_step.py
   requires_spark: true
 step_2_python_pyspark_distributed:
   step: step_2
   container_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
-  name: python_pyspark
+  script_cmd: python 
+  name: python_pyspark src/linker/steps/dev/python_pyspark/dummy_step.py
   requires_spark: true
 step_1_r:
   step: step_1
   container_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
-  script_path: steps/dev/r/dummy_step.R
+  script_cmd: R steps/dev/r/dummy_step.R
   name: r-image
   requires_spark: false
 step_2_r:
   step: step_2
   container_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/
-  script_path: steps/dev/r/dummy_step.R
+  script_cmd: R steps/dev/r/dummy_step.R
   name: r-image
   requires_spark: false
