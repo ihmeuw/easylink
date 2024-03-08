@@ -44,40 +44,42 @@ def get_environment_args(config, results_dir) -> List[str]:
 
         # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
     elif config.computing_environment == "slurm":
-        # Set up a single drmaa.session that is persistent for the duration of the pipeline
-        # TODO [MIC-4468]: Check for slurm in a more meaningful way
-        hostname = socket.gethostname()
-        if "slurm" not in hostname:
-            raise RuntimeError(
-                f"Specified a 'slurm' computing-environment but on host {hostname}"
-            )
-        os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
-        diagnostics = results_dir / "diagnostics/"
-        job_name = "snakemake-linker"
-        resources = config.slurm_resources
-        drmaa_args = get_cli_args(
-            job_name=job_name,
-            account=resources["account"],
-            partition=resources["partition"],
-            peak_memory=resources["memory"],
-            max_runtime=resources["time_limit"],
-            num_threads=resources["cpus"],
-        )
-        drmaa_cli_arguments = [
-            "--executor",
-            "drmaa",
-            "--drmaa-args",
-            drmaa_args,
-            "--drmaa-log-dir",
-            diagnostics.as_posix(),
-        ]
-        # slurm_args = [
+        # TODO: Add back slurm support
+        raise NotImplementedError("Slurm support is not yet implemented with snakemake integration")
+        # # Set up a single drmaa.session that is persistent for the duration of the pipeline
+        # # TODO [MIC-4468]: Check for slurm in a more meaningful way
+        # hostname = socket.gethostname()
+        # if "slurm" not in hostname:
+        #     raise RuntimeError(
+        #         f"Specified a 'slurm' computing-environment but on host {hostname}"
+        #     )
+        # os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
+        # diagnostics = results_dir / "diagnostics/"
+        # job_name = "snakemake-linker"
+        # resources = config.slurm_resources
+        # drmaa_args = get_cli_args(
+        #     job_name=job_name,
+        #     account=resources["account"],
+        #     partition=resources["partition"],
+        #     peak_memory=resources["memory"],
+        #     max_runtime=resources["time_limit"],
+        #     num_threads=resources["cpus"],
+        # )
+        # drmaa_cli_arguments = [
         #     "--executor",
-        #     "slurm",
-        #     "--profile",
-        #     "/ihme/homes/pnast/repos/linker/.config/snakemake/slurm"
-        #     ]
-        return drmaa_cli_arguments
+        #     "drmaa",
+        #     "--drmaa-args",
+        #     drmaa_args,
+        #     "--drmaa-log-dir",
+        #     str(diagnostics),
+        # ]
+        # # slurm_args = [
+        # #     "--executor",
+        # #     "slurm",
+        # #     "--profile",
+        # #     "/ihme/homes/pnast/repos/linker/.config/snakemake/slurm"
+        # #     ]
+        # return drmaa_cli_arguments
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
