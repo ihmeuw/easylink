@@ -82,7 +82,7 @@ class Pipeline:
     def get_diagnostics_dir(self, implementation: Implementation, results_dir: Path) -> Path:
         return results_dir / "diagnostics" / self.get_step_id(implementation)
 
-    def build_snakefile(self, results_dir: Path) -> None:
+    def build_snakefile(self, results_dir: Path) -> Path:
         self.write_imports(results_dir)
         self.write_target_rules(results_dir)
         for implementation in self.implementations:

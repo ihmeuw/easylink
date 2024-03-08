@@ -78,13 +78,13 @@ class Implementation:
         return logs
 
     @property
-    def validation_filename(self):
+    def validation_filename(self) -> str:
         return self.name + "_validator"
 
     @property
-    def singularity_image_path(self):
+    def singularity_image_path(self) -> str:
         return self._get_container_full_stem + ".sif"
 
     @property
-    def script_cmd(self):
+    def script_cmd(self) -> str:
         return f"{self._metadata[self.name]['script_cmd']}"

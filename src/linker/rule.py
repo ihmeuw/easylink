@@ -51,7 +51,7 @@ rule:
             + self._build_shell_command()
         )
 
-    def _build_shell_command(self):
+    def _build_shell_command(self) -> str:
         shell_cmd = f"""
     shell:
             '''
