@@ -114,7 +114,9 @@ class Pipeline:
         ]
         diagnostics_dir = self.get_diagnostics_dir(implementation, results_dir)
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
-        validation_file = str(results_dir / "input_validations" / implementation.validation_filename)
+        validation_file = str(
+            results_dir / "input_validations" / implementation.validation_filename
+        )
         validation_rule = ValidationRule(
             name=implementation.name,
             input=input_files,
