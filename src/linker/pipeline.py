@@ -54,28 +54,31 @@ class Pipeline:
         }
 
     ### Say Why this needs to be in pipeline and not implementation
-    def get_input_files(self, implementation_name: str, results_dir: Path) -> list:
-        idx = self.implementation_indices[implementation_name]
+
+    def get_step_id(self, implementation: Implementation) -> str:
+        idx = self.implementation_indices[implementation.name]
+        step_number = str(idx + 1).zfill(len(str(len(self.implementations))))
+        return f"{step_number}_{implementation.step_name}"
+
+    def get_input_files(self, implementation: Implementation, results_dir: Path) -> list:
+        idx = self.implementation_indices[implementation.name]
         if idx == 0:
             return [str(file) for file in self.config.input_data]
         else:
             previous_output_dir = self.get_output_dir(
-                self.implementations[idx - 1].name, results_dir
+                self.implementations[idx - 1], results_dir
             )
             return [str(previous_output_dir / "result.parquet")]
 
-    def get_output_dir(self, implementation_name: str, results_dir: Path) -> Path:
-        idx = self.implementation_indices[implementation_name]
-        num_steps = len(self.implementations)
-        step_number = str(idx + 1).zfill(len(str(len(self.implementations))))
-        if idx == num_steps - 1:
+    def get_output_dir(self, implementation: Implementation, results_dir: Path) -> Path:
+        idx = self.implementation_indices[implementation.name]
+        if idx == len(self.implementations) - 1:
             return results_dir
 
-        return (
-            results_dir
-            / "intermediate"
-            / f"{step_number}_{self.implementations[idx].step_name}"
-        )
+        return results_dir / "intermediate" / self.get_step_id(implementation)
+
+    def get_diagnostics_dir(self, implementation: Implementation, results_dir: Path) -> Path:
+        return results_dir / "diagnostics" / self.get_step_id(implementation)
 
     def build_snakefile(self, results_dir: Path) -> None:
         self.write_imports(results_dir)
@@ -87,25 +90,28 @@ class Pipeline:
     def write_imports(self, results_dir) -> None:
         snakefile = results_dir / "Snakefile"
         with open(snakefile, "a") as f:
-            f.write("from linker.utilities.validation_utils import *")
+            f.write("import linker.utilities.validation_utils as validation_utils")
 
     def write_target_rules(self, results_dir) -> None:
         final_output = [str(results_dir / "result.parquet")]
-        target_rule = TargetRule(target_files=final_output, validation="final_validator")
+        validator_file = str(results_dir / "final_validator")
+        target_rule = TargetRule(target_files=final_output, validation=validator_file)
         final_validation = ValidationRule(
             name="validate_results",
             input=final_output,
-            output="final_validator",
+            output=validator_file,
             validator=validate_dummy_file,
         )
         target_rule.write_to_snakefile(results_dir)
         final_validation.write_to_snakefile(results_dir)
 
     def write_implementation_rules(self, implementation, results_dir) -> None:
-        input_files = self.get_input_files(implementation.name, results_dir)
+        input_files = self.get_input_files(implementation, results_dir)
         output_files = [
-            str(self.get_output_dir(implementation.name, results_dir) / "result.parquet"),
+            str(self.get_output_dir(implementation, results_dir) / "result.parquet"),
         ]
+        diagnostics_dir = self.get_diagnostics_dir(implementation, results_dir)
+        diagnostics_dir.mkdir(parents=True, exist_ok=True)
         validation_file = str(results_dir / implementation.validation_filename)
         validation_rule = ValidationRule(
             name=implementation.name,
@@ -119,6 +125,7 @@ class Pipeline:
             validation=validation_file,
             output=output_files,
             envvars=implementation.environment_variables,
+            diagnostics_dir=str(diagnostics_dir),
             script_cmd=implementation.script_cmd(),
         )
         validation_rule.write_to_snakefile(results_dir)

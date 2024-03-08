@@ -24,6 +24,9 @@ def main(
     copy_configuration_files_to_results_directory(config, results_dir)
     snakefile = pipeline.build_snakefile(results_dir)
     environment_args = get_environment_args(config, results_dir)
+    # We need to set a dummy environment variable to avoid logging a wall of text.
+    # TODO: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
+    os.environ["foo"] = "bar"
     argv = [
         "--snakefile",
         str(snakefile),
@@ -31,6 +34,9 @@ def main(
         "--latency-wait=60",
         "--cores",
         "1",
+        ## See above
+        "--envvars",
+        "foo",
     ]
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")
@@ -45,7 +51,9 @@ def get_environment_args(config, results_dir) -> List[str]:
         # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
     elif config.computing_environment == "slurm":
         # TODO: Add back slurm support
-        raise NotImplementedError("Slurm support is not yet implemented with snakemake integration")
+        raise NotImplementedError(
+            "Slurm support is not yet implemented with snakemake integration"
+        )
         # # Set up a single drmaa.session that is persistent for the duration of the pipeline
         # # TODO [MIC-4468]: Check for slurm in a more meaningful way
         # hostname = socket.gethostname()

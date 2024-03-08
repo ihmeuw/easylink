@@ -40,9 +40,3 @@ def load_yaml(filepath: Path) -> Dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
-
-
-def write_csv(filepath: str, rows: List) -> None:
-    with open(filepath, "w") as file:
-        writer = csv.writer(file)
-        writer.writerows(rows)

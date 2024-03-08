@@ -35,6 +35,7 @@ class ImplementedRule(Rule):
     validation: str
     output: list[str]
     envvars: dict
+    diagnostics_dir: str
     script_cmd: str
 
     def _build_rule(self) -> str:
@@ -56,6 +57,7 @@ rule:
             '''
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={",".join(self.execution_input)}
         export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}
                 """
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
@@ -86,5 +88,5 @@ rule:
     message: "Validating {self.name} input"
     run:
         for f in input:
-            {self.validator.__name__}(f)
+            validation_utils.{self.validator.__name__}(f)
                 """
