@@ -38,16 +38,17 @@ class ImplementedRule(Rule):
     script_cmd: str
 
     def _build_rule(self) -> str:
-        return f"""
+        return (
+            f"""
 rule:
     name: "{self.name}"
     input: 
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
-                """ \
-                    + \
-        self._build_shell_command()
+                """
+            + self._build_shell_command()
+        )
 
     def _build_shell_command(self):
         shell_cmd = f"""
