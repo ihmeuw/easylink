@@ -23,6 +23,7 @@ def load_file(file_path, file_format=None):
 
 
 diagnostics = {}
+
 if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
     main_input_file_paths = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")
 else:
