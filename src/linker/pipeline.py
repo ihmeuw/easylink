@@ -53,7 +53,9 @@ class Pipeline:
             for idx, implementation in enumerate(self.implementations)
         }
 
-    ### Say Why this needs to be in pipeline and not implementation
+    # The following are in Pipeline instead of Implementation because they require
+    # information about the entire pipeline (namely the index number),
+    # not just the individual implementation.
 
     def get_step_id(self, implementation: Implementation) -> str:
         idx = self.implementation_indices[implementation.name]
