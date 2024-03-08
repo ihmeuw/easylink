@@ -96,7 +96,7 @@ class Pipeline:
 
     def write_target_rules(self, results_dir) -> None:
         final_output = [str(results_dir / "result.parquet")]
-        validator_file = str(results_dir / "final_validator")
+        validator_file = str(results_dir / "input_validations" / "final_validator")
         target_rule = TargetRule(target_files=final_output, validation=validator_file)
         final_validation = ValidationRule(
             name="validate_results",
@@ -114,7 +114,7 @@ class Pipeline:
         ]
         diagnostics_dir = self.get_diagnostics_dir(implementation, results_dir)
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
-        validation_file = str(results_dir / implementation.validation_filename)
+        validation_file = str(results_dir / "input_validations" / implementation.validation_filename)
         validation_rule = ValidationRule(
             name=implementation.name,
             input=input_files,
