@@ -12,7 +12,7 @@ def validate_dummy_file(filepath: str) -> None:
         output_columns = set(pd.read_csv(filepath).columns)
     else:
         raise NotImplementedError(
-            f"Data file type {extension} is not compatible. Convert to Parquet or CSV instead"
+            f"Data file type {extension} is not supported. Convert to Parquet or CSV instead"
         )
 
     required_columns = {"foo", "bar", "counter"}
