@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from linker.rule import ImplementedRule, Rule, TargetRule, ValidationRule
+from linker.rule import ImplementedRule, Rule, TargetRule, InputValidationRule
 
 RULE_STRINGS = {
     "target_rule": "rule_strings/target_rule.txt",
@@ -64,7 +64,7 @@ def bar():
 
 
 def test_validation_rule_build_rule():
-    rule = ValidationRule(name="foo", input=["foo", "bar"], output="baz", validator=bar)
+    rule = InputValidationRule(name="foo", input=["foo", "bar"], output="baz", validator=bar)
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["validation_rule"]
     with open(file_path) as expected_file:
         expected = expected_file.read()

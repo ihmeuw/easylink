@@ -67,7 +67,7 @@ rule:
 
 
 @dataclass
-class ValidationRule(Rule):
+class InputValidationRule(Rule):
     name: str
     input: List[str]
     output: str

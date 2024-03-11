@@ -6,7 +6,7 @@ import yaml
 
 from linker.configuration import Config
 from linker.implementation import Implementation
-from linker.rule import ImplementedRule, TargetRule, ValidationRule
+from linker.rule import ImplementedRule, TargetRule, InputValidationRule
 from linker.utilities.general_utils import exit_with_validation_error
 from linker.utilities.validation_utils import validate_dummy_file
 
@@ -98,7 +98,7 @@ class Pipeline:
         final_output = [str(results_dir / "result.parquet")]
         validator_file = str(results_dir / "input_validations" / "final_validator")
         target_rule = TargetRule(target_files=final_output, validation=validator_file)
-        final_validation = ValidationRule(
+        final_validation = InputValidationRule(
             name="results",
             input=final_output,
             output=validator_file,
@@ -119,7 +119,7 @@ class Pipeline:
         validation_file = str(
             results_dir / "input_validations" / implementation.validation_filename
         )
-        validation_rule = ValidationRule(
+        validation_rule = InputValidationRule(
             name=implementation.name,
             input=input_files,
             output=validation_file,
