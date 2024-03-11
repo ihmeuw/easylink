@@ -89,12 +89,12 @@ class Pipeline:
             self.write_implementation_rules(implementation, results_dir)
         return results_dir / "Snakefile"
 
-    def write_imports(self, results_dir) -> None:
+    def write_imports(self, results_dir: Path) -> None:
         snakefile = results_dir / "Snakefile"
         with open(snakefile, "a") as f:
             f.write("import linker.utilities.validation_utils as validation_utils")
 
-    def write_target_rules(self, results_dir) -> None:
+    def write_target_rules(self, results_dir: Path) -> None:
         final_output = [str(results_dir / "result.parquet")]
         validator_file = str(results_dir / "input_validations" / "final_validator")
         target_rule = TargetRule(target_files=final_output, validation=validator_file)
@@ -107,7 +107,7 @@ class Pipeline:
         target_rule.write_to_snakefile(results_dir)
         final_validation.write_to_snakefile(results_dir)
 
-    def write_implementation_rules(self, implementation, results_dir) -> None:
+    def write_implementation_rules(self, implementation: Implementation, results_dir: Path) -> None:
         input_files = self.get_input_files(implementation, results_dir)
         output_files = [
             str(self.get_output_dir(implementation, results_dir) / "result.parquet"),
