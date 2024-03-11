@@ -37,7 +37,7 @@ def test_get_schemas():
         for step in schema.steps:
             assert isinstance(step, Step)
             assert step.name
-            assert isinstance(step.validate_file, Callable)
+            assert isinstance(step.input_validator, Callable)
 
 
 def test__add_step():

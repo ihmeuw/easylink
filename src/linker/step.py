@@ -14,4 +14,4 @@ class Step:
     """
 
     name: str
-    validate_file: Callable = validate_dummy_file
+    input_validator: Callable = validate_dummy_file

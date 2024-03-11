@@ -9,4 +9,4 @@ from linker.step import Step
 def test_step_instantiation():
     step = Step("foo")
     assert step.name == "foo"
-    assert isinstance(step.validate_file, Callable)
+    assert isinstance(step.input_validator, Callable)
