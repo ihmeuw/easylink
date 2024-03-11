@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from linker.rule import ImplementedRule, Rule, TargetRule, InputValidationRule
+from linker.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
 
 RULE_STRINGS = {
     "target_rule": "rule_strings/target_rule.txt",

@@ -6,7 +6,7 @@ import yaml
 
 from linker.configuration import Config
 from linker.implementation import Implementation
-from linker.rule import ImplementedRule, TargetRule, InputValidationRule
+from linker.rule import ImplementedRule, InputValidationRule, TargetRule
 from linker.utilities.general_utils import exit_with_validation_error
 from linker.utilities.validation_utils import validate_dummy_file
 
