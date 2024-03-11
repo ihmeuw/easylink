@@ -64,5 +64,8 @@ def test_build_snakefile(default_config, mocker, test_dir):
         expected = expected.replace("{snake_dir}", snake_dir)
         expected = expected.replace("{test_dir}", test_dir)
         snake_str = snakefile.read_text()
-        for test_line, expected_line in zip(snake_str.split("\n"), expected.split("\n")):
-            assert test_line.strip() == expected_line.strip()
+        snake_str_lines = snake_str.split("\n")
+        expected_lines = expected.split("\n")
+    assert len(snake_str_lines) == len(expected_lines)
+    for i, expected_line in enumerate(expected_lines):
+        assert snake_str_lines[i].strip() == expected_line.strip()

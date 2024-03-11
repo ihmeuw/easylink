@@ -35,6 +35,7 @@ def test_target_rule_build_rule():
     rulestring = rule._build_rule()
     rulestring_lines = rulestring.split("\n")
     expected_lines = expected.split("\n")
+    assert len(rulestring_lines) == len(expected_lines)
     for i, expected_line in enumerate(expected_lines):
         assert rulestring_lines[i].strip() == expected_line.strip()
 
@@ -55,6 +56,7 @@ def test_implemented_rule_build_rule():
     rulestring = rule._build_rule()
     rulestring_lines = rulestring.split("\n")
     expected_lines = expected.split("\n")
+    assert len(rulestring_lines) == len(expected_lines)
     for i, expected_line in enumerate(expected_lines):
         assert rulestring_lines[i].strip() == expected_line.strip()
 
@@ -71,5 +73,6 @@ def test_validation_rule_build_rule():
     rulestring = rule._build_rule()
     rulestring_lines = rulestring.split("\n")
     expected_lines = expected.split("\n")
+    assert len(rulestring_lines) == len(expected_lines)
     for i, expected_line in enumerate(expected_lines):
         assert rulestring_lines[i].strip() == expected_line.strip()
