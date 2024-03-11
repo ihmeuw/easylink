@@ -33,8 +33,10 @@ def test_target_rule_build_rule():
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
-    for test_line, expected_line in zip(rulestring.split("\n"), expected.split("\n")):
-        assert test_line.strip() == expected_line.strip()
+    rulestring_lines = rulestring.split("\n")
+    expected_lines = expected.split("\n")
+    for i, expected_line in enumerate(expected_lines):
+        assert rulestring_lines[i].strip() == expected_line.strip()
 
 
 def test_implemented_rule_build_rule():
@@ -51,8 +53,10 @@ def test_implemented_rule_build_rule():
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
-    for test_line, expected_line in zip(rulestring.split("\n"), expected.split("\n")):
-        assert test_line.strip() == expected_line.strip()
+    rulestring_lines = rulestring.split("\n")
+    expected_lines = expected.split("\n")
+    for i, expected_line in enumerate(expected_lines):
+        assert rulestring_lines[i].strip() == expected_line.strip()
 
 
 def bar():
@@ -65,5 +69,7 @@ def test_validation_rule_build_rule():
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
-    for test_line, expected_line in zip(rulestring.split("\n"), expected.split("\n")):
-        assert test_line.strip() == expected_line.strip()
+    rulestring_lines = rulestring.split("\n")
+    expected_lines = expected.split("\n")
+    for i, expected_line in enumerate(expected_lines):
+        assert rulestring_lines[i].strip() == expected_line.strip()
