@@ -119,6 +119,8 @@ class Pipeline:
         validation_file = str(
             results_dir / "input_validations" / implementation.validation_filename
         )
+        ## The InputValidationRule must be first, as it validates the input
+        ## of the next implementation
         validation_rule = InputValidationRule(
             name=implementation.name,
             input=input_files,
