@@ -107,7 +107,9 @@ class Pipeline:
         target_rule.write_to_snakefile(results_dir)
         final_validation.write_to_snakefile(results_dir)
 
-    def write_implementation_rules(self, implementation: Implementation, results_dir: Path) -> None:
+    def write_implementation_rules(
+        self, implementation: Implementation, results_dir: Path
+    ) -> None:
         input_files = self.get_input_files(implementation, results_dir)
         output_files = [
             str(self.get_output_dir(implementation, results_dir) / "result.parquet"),
