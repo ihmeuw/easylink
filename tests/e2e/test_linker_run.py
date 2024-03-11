@@ -1,3 +1,4 @@
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -9,6 +10,7 @@ from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import is_on_slurm
 
 SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
+RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
 
 
 @pytest.mark.slow
@@ -61,6 +63,11 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
             )
 
         assert (results_dir / "result.parquet").exists()
+        # Check that the results file checksum matches the expected value
+        with open(results_dir / "result.parquet", "rb") as f:
+            actual_checksum = hashlib.sha256(f.read()).hexdigest()
+        assert actual_checksum == RESULT_CHECKSUM
+
         assert (results_dir / pipeline_specification).exists()
         assert (results_dir / input_data).exists()
         assert (results_dir / computing_environment).exists()
