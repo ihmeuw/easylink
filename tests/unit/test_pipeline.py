@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -57,65 +58,11 @@ def test_build_snakefile(default_config, mocker, test_dir):
     pipeline = Pipeline(default_config)
     with TemporaryDirectory() as snake_dir:
         snakefile = pipeline.build_snakefile(Path(snake_dir))
-        expected = f"""import linker.utilities.validation_utils as validation_utils
-rule all:
-    input:
-        final_output=['{snake_dir}/result.parquet'],
-        validation='{snake_dir}/input_validations/final_validator'
-rule:
-    name: "results_validator"
-    input: ['{snake_dir}/result.parquet']
-    output: touch("{snake_dir}/input_validations/final_validator")
-    localrule: True         
-    message: "Validating results input"
-    run:
-        for f in input:
-            validation_utils.validate_dummy_file(f)
-rule:
-    name: "step_1_python_pandas_validator"
-    input: ['{test_dir}/input_data1/file1.csv', '{test_dir}/input_data2/file2.csv']
-    output: touch("{snake_dir}/input_validations/step_1_python_pandas_validator")
-    localrule: True         
-    message: "Validating step_1_python_pandas input"
-    run:
-        for f in input:
-            validation_utils.validate_dummy_file(f)
-rule:
-    name: "step_1_python_pandas"
-    input:
-        implementation_inputs=['{test_dir}/input_data1/file1.csv', '{test_dir}/input_data2/file2.csv'],
-        validation="{snake_dir}/input_validations/step_1_python_pandas_validator"
-    output: ['{snake_dir}/intermediate/1_step_1/result.parquet']
-    shell:
-        '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={test_dir}/input_data1/file1.csv,{test_dir}/input_data2/file2.csv
-        export DUMMY_CONTAINER_OUTPUT_PATHS={snake_dir}/intermediate/1_step_1/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={snake_dir}/diagnostics/1_step_1
-        python src/linker/steps/dev/python_pandas/dummy_step.py
-        '''
-rule:
-    name: "step_2_python_pandas_validator"
-    input: ['{snake_dir}/intermediate/1_step_1/result.parquet']
-    output: touch("{snake_dir}/input_validations/step_2_python_pandas_validator")
-    localrule: True         
-    message: "Validating step_2_python_pandas input"
-    run:
-        for f in input:
-            validation_utils.validate_dummy_file(f)
-rule:
-    name: "step_2_python_pandas"
-    input:
-        implementation_inputs=['{snake_dir}/intermediate/1_step_1/result.parquet'],
-        validation="{snake_dir}/input_validations/step_2_python_pandas_validator"
-    output: ['{snake_dir}/result.parquet']
-    shell:
-        '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={snake_dir}/intermediate/1_step_1/result.parquet
-        export DUMMY_CONTAINER_OUTPUT_PATHS={snake_dir}/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={snake_dir}/diagnostics/2_step_2
-        python src/linker/steps/dev/python_pandas/dummy_step.py
-        '''
-            """
+        expected_file_path = Path(os.path.dirname(__file__)) / "rule_strings/pipeline.txt"
+        with open(expected_file_path) as expected_file:
+            expected = expected_file.read()
+        expected = expected.replace("{snake_dir}", snake_dir)
+        expected = expected.replace("{test_dir}", test_dir)
         snake_str = snakefile.read_text()
         for test_line, expected_line in zip(snake_str.split("\n"), expected.split("\n")):
             assert test_line.strip() == expected_line.strip()
