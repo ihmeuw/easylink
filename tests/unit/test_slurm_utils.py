@@ -199,3 +199,8 @@ def test__generate_spark_cluster_jt(test_dir, mocker):
     )
     assert jt.nativeSpecification == expected_native_specification
     session.exit()
+
+
+@pytest.mark.skip(reason="TODO: MIC-4915")
+def test_slurm_resource_requests():
+    pass

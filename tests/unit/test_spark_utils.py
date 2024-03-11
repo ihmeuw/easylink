@@ -61,3 +61,13 @@ def test_find_spark_master_url_fails_if_no_master_url(test_dir):
         f.write("some stuff\n" "this is not a url\n" "some other stuff\n")
     with pytest.raises(ValueError, match="Could not find a Spark master URL"):
         find_spark_master_url(logfile, attempt_sleep_time=0, num_attempts=2)
+
+
+@pytest.mark.skip(reason="TODO: MIC-4916")
+def test_spark_resource_requests():
+    pass
+
+
+@pytest.mark.skip(reason="TODO: MIC-4917")
+def test_spark_cluster_utilized():
+    pass

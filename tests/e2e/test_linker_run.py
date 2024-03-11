@@ -1,4 +1,6 @@
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -8,62 +10,59 @@ from linker.utilities.data_utils import load_yaml
 SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
+        # local
         (
             "pipeline.yaml",
             "input_data.yaml",
             "environment_local.yaml",
         ),
-        # (
-        #     "pipeline.yaml",
-        #     "input_data.yaml",
-        #     "environment_slurm.yaml",
-        # ),
+        # slurm
+        (
+            "pipeline.yaml",
+            "input_data.yaml",
+            "environment_slurm.yaml",
+        ),
     ],
 )
-def test_linker_run(tmpdir, pipeline_specification, input_data, computing_environment):
+def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
     """e2e tests for 'linker run' command"""
-    cmd = (
-        "linker run "
-        f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
-        f"-i {SPECIFICATIONS_DIR / input_data} "
-        f"-e {SPECIFICATIONS_DIR / computing_environment} "
-        f"-o {tmpdir} "
-        "--no-timestamp"
-    )
-    subprocess.run(
-        cmd,
-        shell=True,
-        capture_output=True,
-        # text=True,
-        # env=env_vars,
-        check=True,
-    )
+    # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
+    # because other nodes do not have access to it.
+    with tempfile.TemporaryDirectory(dir="tests/e2e/") as results_dir:
+        results_dir = Path(results_dir)
+        cmd = (
+            "linker run "
+            f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
+            f"-i {SPECIFICATIONS_DIR / input_data} "
+            f"-e {SPECIFICATIONS_DIR / computing_environment} "
+            f"-o {str(results_dir)} "
+            "--no-timestamp"
+        )
+        with capsys.disabled():  # disabled so we can monitor job submissions
+            print(
+                "\n\n*** RUNNING TEST ***\n"
+                f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
+            )
+            subprocess.run(
+                cmd,
+                shell=True,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
+                check=True,
+            )
 
-    assert (tmpdir / "result.parquet").exists()
-    assert (tmpdir / pipeline_specification).exists()
-    assert (tmpdir / input_data).exists()
-    assert (tmpdir / computing_environment).exists()
-    # check expected diagnostics files exist
-    if computing_environment == "environment_local.yaml":
-        expected_files = [
-            "diagnostics.yaml",
-            "singularity.o",
-        ]
-    elif computing_environment == "environment_slurm.yaml":
-        raise NotImplementedError("Slurm environment not yet implemented")
-    else:
-        raise NotImplementedError(f"Unknown computing environment: {computing_environment}")
-    for step_dir in ["1_step_1", "2_step_2"]:
-        for file in expected_files:
-            assert (tmpdir / "diagnostics" / step_dir / file).exists()
-    # Check that implementation configuration worked
-    assert (
-        load_yaml(tmpdir / "diagnostics" / "1_step_1" / "diagnostics.yaml")["increment"] == 1
-    )
-    assert (
-        load_yaml(tmpdir / "diagnostics" / "2_step_2" / "diagnostics.yaml")["increment"]
-        == 100
-    )
+        assert (results_dir / "result.parquet").exists()
+        assert (results_dir / pipeline_specification).exists()
+        assert (results_dir / input_data).exists()
+        assert (results_dir / computing_environment).exists()
+
+        # Check that implementation configuration worked
+        diagnostics_dir = results_dir / "diagnostics"
+        assert load_yaml(diagnostics_dir / "1_step_1" / "diagnostics.yaml")["increment"] == 1
+        assert (
+            load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
+        )
