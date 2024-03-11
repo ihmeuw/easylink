@@ -15,6 +15,7 @@ def is_on_slurm() -> bool:
     """Returns True if the current environment is a SLURM cluster."""
     return "SLURM_ROOT" in os.environ
 
+
 def get_slurm_drmaa() -> "drmaa":
     """Returns object() to bypass RuntimeError when not on a DRMAA-compliant system"""
     try:
