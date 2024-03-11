@@ -253,3 +253,9 @@ def default_config_params(test_dir) -> Dict[str, Path]:
 def default_config(default_config_params) -> Config:
     """A good/known Config object"""
     return Config(**default_config_params)
+
+
+def text_block_line_by_line(test_string, expected_string):
+    "Test text block line by line for easier debugging"
+    for test_line, expected_line in zip(test_string.split("\n"), expected_string.split("\n")):
+        assert test_line.strip() == expected_line.strip()

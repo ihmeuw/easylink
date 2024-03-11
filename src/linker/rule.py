@@ -24,8 +24,7 @@ class TargetRule(Rule):
 rule all:
     input:
         final_output={self.target_files},
-        validator="{self.validation}"
-                """
+        validation='{self.validation}'"""
 
 
 @dataclass
@@ -46,27 +45,23 @@ rule:
     input: 
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
-    output: {self.output}
-                """
+    output: {self.output}"""
             + self._build_shell_command()
         )
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
     shell:
-            '''
+        '''
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={",".join(self.execution_input)}
         export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}
-                """
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
-        export {var_name}={var_value}
-            """
+        export {var_name}={var_value}"""
         shell_cmd += f"""
         {self.script_cmd}
-            '''
-        """
+        '''"""
 
         return shell_cmd
 
@@ -88,5 +83,4 @@ rule:
     message: "Validating {self.name} input"
     run:
         for f in input:
-            validation_utils.{self.validator.__name__}(f)
-                """
+            validation_utils.{self.validator.__name__}(f)"""

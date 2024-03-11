@@ -99,7 +99,7 @@ class Pipeline:
         validator_file = str(results_dir / "input_validations" / "final_validator")
         target_rule = TargetRule(target_files=final_output, validation=validator_file)
         final_validation = ValidationRule(
-            name="validate_results",
+            name="results",
             input=final_output,
             output=validator_file,
             validator=validate_dummy_file,
