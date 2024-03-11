@@ -12,6 +12,7 @@ from linker.utilities.slurm_utils import (
     _generate_spark_cluster_job_template,
     _get_cli_args,
     get_slurm_drmaa,
+    is_on_slurm,
 )
 
 CLI_KWARGS = {
@@ -26,10 +27,9 @@ CLI_KWARGS = {
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
-
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test_get_slurm_drmaa():
     """Confirm that a drmaa object is indeed returned"""
@@ -55,8 +55,8 @@ def test__get_cli_args():
 
 
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test__generate_job_template(default_config_params, mocker):
     slurm_kwargs = CLI_KWARGS.copy()
@@ -139,8 +139,8 @@ def test__generate_job_template(default_config_params, mocker):
 
 
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test__generate_spark_cluster_jt(test_dir, mocker):
     launcher = tempfile.NamedTemporaryFile(

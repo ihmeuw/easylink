@@ -6,11 +6,16 @@ from pathlib import Path
 import pytest
 
 from linker.utilities.data_utils import load_yaml
+from linker.utilities.slurm_utils import is_on_slurm
 
 SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 
 
 @pytest.mark.slow
+@pytest.mark.skipif(
+    not is_on_slurm(),
+    reason="Must be on slurm to run this test.",
+)
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
