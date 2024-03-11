@@ -12,3 +12,4 @@ rule:
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
         export eggs=coconut
         echo hello world
+        '''
