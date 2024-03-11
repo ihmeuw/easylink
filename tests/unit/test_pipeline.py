@@ -3,8 +3,6 @@ from tempfile import TemporaryDirectory
 
 from linker.pipeline import Pipeline
 
-from .conftest import text_block_line_by_line
-
 
 def test__get_implementations(default_config, mocker):
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
@@ -119,4 +117,5 @@ rule:
         '''
             """
         snake_str = snakefile.read_text()
-        text_block_line_by_line(snake_str, expected)
+        for test_line, expected_line in zip(snake_str.split("\n"), expected.split("\n")):
+            assert test_line.strip() == expected_line.strip()

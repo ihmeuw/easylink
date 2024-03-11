@@ -4,8 +4,6 @@ from tempfile import TemporaryDirectory
 
 from linker.rule import ImplementedRule, Rule, TargetRule, ValidationRule
 
-from .conftest import text_block_line_by_line
-
 RULE_STRINGS = {
     "target_rule": "rule_strings/target_rule.txt",
     "implemented_rule": "rule_strings/implemented_rule.txt",
@@ -35,7 +33,8 @@ def test_target_rule_build_rule():
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
-    text_block_line_by_line(rulestring, expected)
+    for test_line, expected_line in zip(rulestring.split("\n"), expected.split("\n")):
+        assert test_line.strip() == expected_line.strip()
 
 
 def test_implemented_rule_build_rule():
@@ -52,7 +51,8 @@ def test_implemented_rule_build_rule():
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
-    text_block_line_by_line(rulestring, expected)
+    for test_line, expected_line in zip(rulestring.split("\n"), expected.split("\n")):
+        assert test_line.strip() == expected_line.strip()
 
 
 def bar():
@@ -65,4 +65,5 @@ def test_validation_rule_build_rule():
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
-    text_block_line_by_line(rulestring, expected)
+    for test_line, expected_line in zip(rulestring.split("\n"), expected.split("\n")):
+        assert test_line.strip() == expected_line.strip()
