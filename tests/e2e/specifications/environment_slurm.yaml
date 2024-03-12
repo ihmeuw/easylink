@@ -1,0 +1,16 @@
+computing_environment: slurm
+container_engine: singularity
+slurm:
+  account: proj_simscience
+  partition: all.q
+implementation_resources:
+  memory: 1  # GB
+  cpus: 1
+  time_limit: 1  # hours
+spark:
+  workers:
+    num_workers: 1  # num_workers + 1 nodes will be requested
+    cpus_per_node: 1
+    mem_per_node: 1  # GB
+    time_limit: 1  # hours
+  keep_alive: false
