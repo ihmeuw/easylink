@@ -4,7 +4,7 @@ import pandas as pd
 from pyarrow import parquet as pq
 
 
-def validate_dummy_file(filepath: str) -> None:
+def validate_input_file_dummy(filepath: str) -> None:
     extension = Path(filepath).suffix
     if extension == ".parquet":
         output_columns = set(pq.ParquetFile(filepath).schema.names)

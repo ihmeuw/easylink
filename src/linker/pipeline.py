@@ -8,7 +8,7 @@ from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.rule import ImplementedRule, InputValidationRule, TargetRule
 from linker.utilities.general_utils import exit_with_validation_error
-from linker.utilities.validation_utils import validate_dummy_file
+from linker.utilities.validation_utils import validate_input_file_dummy
 
 
 class Pipeline:
@@ -92,17 +92,19 @@ class Pipeline:
     def write_imports(self, results_dir: Path) -> None:
         snakefile = results_dir / "Snakefile"
         with open(snakefile, "a") as f:
-            f.write("import linker.utilities.validation_utils as validation_utils")
+            f.write("from linker.utilities import validation_utils")
 
     def write_target_rules(self, results_dir: Path) -> None:
         final_output = [str(results_dir / "result.parquet")]
         validator_file = str(results_dir / "input_validations" / "final_validator")
+        # Snakemake resolves the DAG based on the first rule, so we put the target
+        # before the validation
         target_rule = TargetRule(target_files=final_output, validation=validator_file)
         final_validation = InputValidationRule(
             name="results",
             input=final_output,
             output=validator_file,
-            validator=validate_dummy_file,
+            validator=validate_input_file_dummy,
         )
         target_rule.write_to_snakefile(results_dir)
         final_validation.write_to_snakefile(results_dir)
@@ -119,8 +121,6 @@ class Pipeline:
         validation_file = str(
             results_dir / "input_validations" / implementation.validation_filename
         )
-        ## The InputValidationRule must be first, as it validates the input
-        ## of the next implementation
         validation_rule = InputValidationRule(
             name=implementation.name,
             input=input_files,

@@ -25,7 +25,7 @@ def main(
     snakefile = pipeline.build_snakefile(results_dir)
     environment_args = get_environment_args(config, results_dir)
     # We need to set a dummy environment variable to avoid logging a wall of text.
-    # TODO: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
+    # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
     os.environ["foo"] = "bar"
     argv = [
         "--snakefile",
