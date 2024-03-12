@@ -8,9 +8,8 @@ import pytest
 
 from linker.configuration import Config
 from linker.utilities.slurm_utils import (
-    _generate_job_template,
     _generate_spark_cluster_job_template,
-    _get_cli_args,
+    get_cli_args,
     get_slurm_drmaa,
 )
 
@@ -39,7 +38,7 @@ def test_get_slurm_drmaa():
 
 
 def test__get_cli_args():
-    cli_args = _get_cli_args(**CLI_KWARGS)
+    cli_args = get_cli_args(**CLI_KWARGS)
     assert cli_args == (
         f"-J {CLI_KWARGS['job_name']} "
         f"-A {CLI_KWARGS['account']} "
@@ -52,90 +51,6 @@ def test__get_cli_args():
     # Ensure that there are spaces between each item. When splitting on spaces,
     # we expect there to be 11 items (not 12 b/c "--mem=X" does not count as 2 items)
     assert len(cli_args.split(" ")) == 11
-
-
-@pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
-)
-def test__generate_job_template(default_config_params, mocker):
-    slurm_kwargs = CLI_KWARGS.copy()
-    # Change name from user requests to slurm requests
-    slurm_kwargs["memory"] = slurm_kwargs.pop("peak_memory")
-    slurm_kwargs["time_limit"] = slurm_kwargs.pop("max_runtime")
-    slurm_kwargs["cpus"] = slurm_kwargs.pop("num_threads")
-    mocker.patch(
-        "linker.utilities.slurm_utils.Config.slurm_resources",
-        return_value=slurm_kwargs,
-        new_callable=mocker.PropertyMock,
-    )
-
-    job_template_kwargs = {
-        "container_engine": "singularity",
-        "input_data": ["input1", "input2"],
-        "results_dir": Path("path/to/results"),
-        "diagnostics_dir": Path("path/to/diagnostics"),
-        "step_id": "some-step-id",
-        "step_name": "some-step-name",
-        "implementation_name": "some-implementation-name",
-        "container_full_stem": "some-container-full-stem",
-        "implementation_config": {"SOME_VAR_1": "env-var-1", "SOME_VAR_2": "env-var-2"},
-    }
-    config = Config(**default_config_params)
-    drmaa = get_slurm_drmaa()
-    session = drmaa.Session()
-    session.initialize()
-
-    jt = _generate_job_template(
-        session,
-        config,
-        **job_template_kwargs,
-    )
-
-    # assert jt attributes are as expected
-    assert re.match(rf"{job_template_kwargs['implementation_name']}_\d{{14}}$", jt.jobName)
-    assert not jt.joinFiles
-    assert jt.outputPath == f":{job_template_kwargs['diagnostics_dir']}/%A.o%a"
-    assert jt.errorPath == f":{job_template_kwargs['diagnostics_dir']}/%A.e%a"
-    assert jt.remoteCommand.split("/")[-1] == "linker"
-    actual_args = jt.args
-    # NOTE: this is pretty hacky and ordering is hard-coded
-    expected_args = [
-        "run-slurm-job",
-        job_template_kwargs["container_engine"],
-        str(job_template_kwargs["results_dir"]),
-        str(job_template_kwargs["diagnostics_dir"]),
-        job_template_kwargs["step_id"],
-        job_template_kwargs["step_name"],
-        job_template_kwargs["implementation_name"],
-        job_template_kwargs["container_full_stem"],
-        "-vvv",
-    ]
-    expected_args.extend(
-        item
-        for filename in job_template_kwargs["input_data"]
-        for item in ("--input-data", filename)
-    )
-    expected_args.extend(
-        ["--implementation-config", str(job_template_kwargs["implementation_config"])]
-    )
-    assert len(jt.args) == len(expected_args)
-    # Special-case the implementation config since that's a stringified dict and hard to predict
-    actual_config = actual_args.pop()
-    expected_config = expected_args.pop()
-    assert ast.literal_eval(actual_config) == ast.literal_eval(expected_config)
-    assert actual_args == expected_args
-    assert jt.jobEnvironment == {"LC_ALL": "en_US.UTF-8", "LANG": "en_US.UTF-8"}
-    expected_native_specification = (
-        f"-J {jt.jobName} "
-        f"-A {CLI_KWARGS['account']} "
-        f"-p {CLI_KWARGS['partition']} "
-        f"--mem={CLI_KWARGS['peak_memory']*1024} "
-        f"-t {CLI_KWARGS['max_runtime']}:00:00 "
-        f"-c {CLI_KWARGS['num_threads']}"
-    )
-    assert jt.nativeSpecification == expected_native_specification
-    session.exit()
 
 
 @pytest.mark.skipif(

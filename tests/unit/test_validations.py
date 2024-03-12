@@ -377,12 +377,12 @@ def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
         return_value={
             "step_1_python_pandas": {
                 "step": "not-the-step-1-name",
-                "path": "/some/path",
+                "image_path": "/some/path",
                 "name": "some-name",
             },
             "step_2_python_pandas": {
                 "step": "not-the-step-2-name",
-                "path": "/some/path",
+                "image_path": "/some/path",
                 "name": "some-name",
             },
         },

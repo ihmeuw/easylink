@@ -144,3 +144,8 @@ notebooks/
 
 # Version
 src/linker/_version.py
+
+# Local specification files
+.specifications/
+
+.snakemake/
