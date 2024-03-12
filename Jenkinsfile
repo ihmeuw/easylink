@@ -24,7 +24,7 @@ pipeline {
   parameters {
     booleanParam(
       name: "IS_CRON",
-      defaultValue: false,
+      defaultValue: true,
       description: "Inidicates a recurring build. Used to skip deployment steps."
     )
   }
@@ -39,7 +39,7 @@ pipeline {
 
     // Specify conda env by build number so that we don't have collisions if builds from
     // different branches happen concurrently.
-    CONDA_ENV_NAME = "vivarium_census_prl_synth_pop${BUILD_NUMBER}"
+    CONDA_ENV_NAME = "linker${BUILD_NUMBER}"
     CONDA_ENV_PATH = "/tmp/${CONDA_ENV_NAME}"
 
     // Path to conda binaries.
@@ -62,9 +62,6 @@ pipeline {
         script {
           // Use the name of the branch in the build name
           currentBuild.displayName = "#${BUILD_NUMBER} ${GIT_BRANCH}"
-
-          // Tell BitBucket that a build has started.
-          notifyBitbucket()
         }
       }
     }
@@ -72,10 +69,6 @@ pipeline {
     stage("Debug Info") {
       steps {
         echo "Jenkins pipeline run timestamp: ${TIMESTAMP}"
-        // Display parameters used.
-        echo """Parameters:
-        DEPLOY_OVERRIDE: ${params.DEPLOY_OVERRIDE}"""
-
         // Display environment variables from Jenkins.
         echo """Environment:
         ACTIVATE:       '${ACTIVATE}'
@@ -139,13 +132,13 @@ pipeline {
     stage("Test") {
       // removable, if passwords can be exported to env. securely without bash indirection
       parallel {
-        stage("Run integration Tests") {
+        stage("Run e2e tests") {
           steps {
-            sh "${ACTIVATE} && make integration"
+            sh "${ACTIVATE} && make e2e"
           }
         }
 
-        stage("Run unit Tests") {
+        stage("Run unit tests") {
           steps {
             sh "${ACTIVATE} && make unit"
           }
@@ -160,9 +153,9 @@ pipeline {
         allowMissing: true,
         alwaysLinkToLastBuild: false,
         keepAll: true,
-        reportDir: 'output/htmlcov_integration_',
+        reportDir: 'output/htmlcov_e2e_',
         reportFiles: 'index.html',
-        reportName: 'Coverage Report - Integration Tests',
+        reportName: 'Coverage Report - e2e Tests',
         reportTitles: ''
       ])
       publishHTML([
@@ -187,11 +180,6 @@ pipeline {
 
       // Delete the workspace directory.
       deleteDir()
-
-      // Tell BitBucket whether the build succeeded or failed.
-      script {
-        notifyBitbucket()
-      }
     }
   }
 }

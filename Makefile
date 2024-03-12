@@ -2,16 +2,16 @@ this_makefile := $(lastword $(MAKEFILE_LIST)) # Used to automatically list targe
 .DEFAULT_GOAL := list # If someone runs "make", run "make list"
 
 # Source files to format, lint, and type check.
-LOCATIONS=src integration_tests tests
+LOCATIONS=src tests
 
 # Unless overridden, build conda environment using the package name.
-PACKAGE_NAME = vivarium_census_prl_synth_pop
+PACKAGE_NAME = linker
 SAFE_NAME = $(shell python -c "from pkg_resources import safe_name; print(safe_name(\"$(PACKAGE_NAME)\"))")
 
 about_file   = $(shell find src -name __about__.py)
-version_line = $(shell grep "__version__ = " ${about_file})
+version_file = $(shell find src -name _version.py)
+version_line = $(shell grep "__version__ = " ${version_file})
 PACKAGE_VERSION = $(shell echo ${version_line} | cut -d "=" -f 2 | xargs)
-# PACKAGE_VERSION = $(shell echo $(shell pip list | grep -e "$(SAFE_NAME)") | cut -d " " -f2)
 
 # Use this URL to pull IHME Python packages and deploy this package to PyPi.
 IHME_PYPI := https://artifactory.ihme.washington.edu/artifactory/api/pypi/pypi-shared/
@@ -72,14 +72,14 @@ typecheck: pytype.cfg $(MAKE_SOURCES) # Run the type checker
 	-pytype --config=pytype.cfg $(LOCATIONS)
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
-integration: $(MAKE_SOURCES) # Run the integration tests
-	export COVERAGE_FILE=./output/.coverage.integration_${PYTHON_VERSION}
-	pytest --runslow --cov --cov-report term --cov-report html:./output/htmlcov_integration_${PYTHON_VERSION} integration_tests/
+e2e: $(MAKE_SOURCES) # Run the e2e tests
+	export COVERAGE_FILE=./output/.coverage.e2e_${PYTHON_VERSION}
+	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_e2e_${PYTHON_VERSION} tests/e2e/
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
 unit: $(MAKE_SOURCES) # Run unit tests
 	export COVERAGE_FILE=./output/.coverage.unit_${PYTHON_VERSION}
-	pytest --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit_${PYTHON_VERSION} tests/
+	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit_${PYTHON_VERSION} tests/unit/
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
 clean: # Delete build artifacts and do any custom cleanup such as spinning down services
