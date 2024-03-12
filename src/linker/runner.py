@@ -10,6 +10,7 @@ from linker.configuration import Config
 from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.paths import LINKER_TEMP
+from linker.utilities.slurm_utils import is_on_slurm
 
 
 def main(
@@ -67,11 +68,11 @@ def get_environment_args(config: Config, results_dir: Path) -> List[str]:
         # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
     elif config.computing_environment == "slurm":
         # Set up a single drmaa.session that is persistent for the duration of the pipeline
-        # TODO [MIC-4468]: Check for slurm in a more meaningful way
-        hostname = socket.gethostname()
-        if "slurm" not in hostname:
+        if not is_on_slurm():
             raise RuntimeError(
-                f"Specified a 'slurm' computing-environment but on host {hostname}"
+                f"A 'slurm' computing environment is specified but it has been "
+                "determined that the current host is not on a slurm cluster "
+                f"(host: {socket.gethostname()})."
             )
         os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
         resources = config.slurm_resources

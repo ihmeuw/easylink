@@ -26,6 +26,15 @@ CLI_KWARGS = {
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
+def test_is_on_slurm():
+    # export SLURM_ROOT
+    os.environ["SLURM_ROOT"] = "/some/path"
+    assert is_on_slurm()
+    # unset SLURM_ROOT
+    del os.environ["SLURM_ROOT"]
+    assert not is_on_slurm()
+
+
 @pytest.mark.skipif(
     IN_GITHUB_ACTIONS,
     reason="Github Actions does not have access to our file system and so no drmaa.",
