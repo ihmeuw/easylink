@@ -10,7 +10,7 @@ from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.docker_utils import run_with_docker
 from linker.utilities.singularity_utils import run_with_singularity
-from linker.utilities.slurm_utils import get_slurm_drmaa, launch_slurm_job
+from linker.utilities.slurm_utils import get_slurm_drmaa, is_on_slurm, launch_slurm_job
 
 
 def main(
@@ -31,11 +31,11 @@ def main(
         runner = run_container
     elif config.computing_environment == "slurm":
         # Set up a single drmaa.session that is persistent for the duration of the pipeline
-        # TODO [MIC-4468]: Check for slurm in a more meaningful way
-        hostname = socket.gethostname()
-        if "slurm" not in hostname:
+        if not is_on_slurm():
             raise RuntimeError(
-                f"Specified a 'slurm' computing-environment but on host {hostname}"
+                f"A 'slurm' computing environment is specified but it has been "
+                "determined that the current host is not on a slurm cluster "
+                f"(host: {socket.gethostname()})."
             )
         drmaa = get_slurm_drmaa()
         session = drmaa.Session()
