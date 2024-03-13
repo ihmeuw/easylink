@@ -2,6 +2,8 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from loguru import logger
 
+from pathlib import Path
+
 
 def pytest_addoption(parser):
     parser.addoption("--runslow", action="store_true", default=False, help="run slow tests")
@@ -32,3 +34,8 @@ def caplog(caplog: LogCaptureFixture):
     )
     yield caplog
     logger.remove(handler_id)
+
+
+@pytest.fixture
+def test_env_dir():
+    return Path("/mnt/team/simulation_science/priv/engineering/envs/")

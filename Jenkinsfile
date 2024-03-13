@@ -181,5 +181,11 @@ pipeline {
       // Delete the workspace directory.
       deleteDir()
     }
+    failure {
+      slackSend channel: '#simsci-test-ci-status', 
+                message: ":x: JOB FAILURE: $JOB_NAME - #$BUILD_ID\n\n$BUILD_URL\n\n<!channel>",
+                teamDomain: 'ihme',
+                tokenCredentialId: 'eafd508b-f614-460d-bce5-3a5a43b7aa68'
+    }
   }
 }
