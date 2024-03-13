@@ -103,7 +103,12 @@ pipeline {
 
     stage("Install Package") {
       steps {
-        sh "${ACTIVATE} && make install"
+        // HACK: Note we REINSTALL the current package (".") because we want a
+        // "portable" environment that has all the files copied into it. By default we
+        // get a reference back to the current working directory, but that will be in
+        // the Jenkins VM, and we need an environment that slurm tasks can run on
+        // (remotely).
+        sh "${ACTIVATE} && make install && pip install ."
       }
     }
 

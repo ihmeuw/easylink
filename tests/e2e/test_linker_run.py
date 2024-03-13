@@ -4,11 +4,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-from click.testing import CliRunner
-from linker import cli
-
 import pytest
+from click.testing import CliRunner
 
+from linker import cli
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import is_on_slurm
 
@@ -38,7 +37,9 @@ RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552
         # ),
     ],
 )
-def test_linker_run(pipeline_specification, input_data, computing_environment, capsys, test_env_dir):
+def test_linker_run(
+    pipeline_specification, input_data, computing_environment, capsys, test_env_dir
+):
     """e2e tests for 'linker run' command"""
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
     # because other nodes do not have access to it.

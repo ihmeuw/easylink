@@ -1,8 +1,8 @@
+from pathlib import Path
+
 import pytest
 from _pytest.logging import LogCaptureFixture
 from loguru import logger
-
-from pathlib import Path
 
 
 def pytest_addoption(parser):
