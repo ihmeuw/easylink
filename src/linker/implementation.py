@@ -85,7 +85,7 @@ class Implementation:
 
     @property
     def singularity_image_path(self) -> str:
-        return self._get_container_full_stem + ".sif"
+        return self._container_full_stem + ".sif"
 
     @property
     def script_cmd(self) -> str:

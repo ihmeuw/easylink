@@ -63,6 +63,7 @@ class ImplementedRule(Rule):
     output: List[str]
     envvars: dict
     diagnostics_dir: str
+    container_path: str
     script_cmd: str
 
     def _build_rule(self) -> str:
@@ -73,7 +74,8 @@ rule:
     input: 
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
-    output: {self.output}"""
+    output: {self.output}
+    singularity: "{self.container_path}" """
             + self._build_shell_command()
         )
 

@@ -26,6 +26,9 @@ def main(
     environment_args = get_environment_args(config, results_dir)
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
+    singularity_args = "--no-home --containall"
+    input_file_paths = ",".join(file.as_posix() for file in config.input_data)
+    singularity_args += f" -B {results_dir}/,{input_file_paths}"
     os.environ["foo"] = "bar"
     argv = [
         "--snakefile",
@@ -37,6 +40,9 @@ def main(
         ## See above
         "--envvars",
         "foo",
+        "--use-singularity",
+        "--singularity-args",
+        singularity_args,
     ]
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")
