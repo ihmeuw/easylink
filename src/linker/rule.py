@@ -76,7 +76,7 @@ rule:
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
-    singularity: "{self.image_path}" """
+    container: "{self.image_path}" """
             + self._build_shell_command()
         )
 

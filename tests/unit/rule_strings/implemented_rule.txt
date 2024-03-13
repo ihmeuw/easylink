@@ -5,7 +5,7 @@ rule:
         implementation_inputs=['foo', 'bar'],
         validation="bar"
     output: ['baz']
-    singularity: "Multipolarity.sif"
+    container: "Multipolarity.sif"
     shell:
         '''
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=foo,bar
