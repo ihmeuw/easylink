@@ -1,6 +1,7 @@
 def pipeline_name="linker"
 def env_name="$pipeline_name-$BUILD_NUMBER"
-def conda_env_path="/mnt/team/simulation_science/priv/engineering/venv/svc-ccomp/$env_name"
+// def conda_env_path="/mnt/team/simulation_science/priv/engineering/venv/svc-ccomp/$env_name"
+def conda_env_path="/mnt/share/homes/sbachmei/venv/$env_name"
 
 pipeline {
   // This agent runs as svc-ccomp on node cc-slurm-sbuild-p01.
