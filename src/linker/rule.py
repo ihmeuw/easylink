@@ -54,6 +54,7 @@ class ImplementedRule(Rule):
     output: List of file paths created by implementation
     envvars: Dictionary of environment variables to set
     diagnostics_dir: Directory for diagnostic files
+    image_path: Path to Singularity image
     script_cmd: Command to execute
     """
 
@@ -63,7 +64,7 @@ class ImplementedRule(Rule):
     output: List[str]
     envvars: dict
     diagnostics_dir: str
-    container_path: str
+    image_path: str
     script_cmd: str
 
     def _build_rule(self) -> str:
@@ -75,7 +76,7 @@ rule:
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
-    singularity: "{self.container_path}" """
+    singularity: "{self.image_path}" """
             + self._build_shell_command()
         )
 
