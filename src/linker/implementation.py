@@ -48,7 +48,7 @@ class Implementation:
 
     def _get_container_full_stem(self) -> str:
         return (
-            f"{self._metadata[self.name]['image_path']}/{self._metadata[self.name]['name']}"
+            f"{self._metadata[self.name]['image_path']}{self._metadata[self.name]['name']}"
         )
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:

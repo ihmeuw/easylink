@@ -50,7 +50,7 @@ def main(
 def get_singularity_args(config, results_dir) -> str:
     input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
-    singularity_args += f" -B {results_dir}/,{input_file_paths}"
+    singularity_args += f" -B /tmp,{results_dir}/,{input_file_paths}"
     return singularity_args
 
 
