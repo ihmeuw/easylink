@@ -44,7 +44,8 @@ def test_linker_run(
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
     # because other nodes do not have access to it.
     with tempfile.TemporaryDirectory(dir="tests/e2e/") as results_dir:
-        results_dir = Path(results_dir)
+        # results_dir = Path(results_dir)
+        results_dir = Path("/mnt/share/homes/sbachmei/venv/results")
         cli_args = (
             "run "
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "

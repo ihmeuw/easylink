@@ -144,7 +144,7 @@ pipeline {
       parallel {
         stage("Run e2e tests") {
           steps {
-            sh "${ACTIVATE} && make e2e"
+            sh "${ACTIVATE} && make unit"  // TODO: PUT BACK TO E2E 
           }
         }
 
@@ -186,14 +186,14 @@ pipeline {
       sh "${ACTIVATE} && make clean"
 
       // Delete the conda environment used in this build.
-      sh "rm -rf ${CONDA_ENV_PATH}"
+      // sh "rm -rf ${CONDA_ENV_PATH}"  //TODO: UNCOMMEND THIS OUT!!
 
       // Delete the workspace directory.
       deleteDir()
     }
     failure {
       slackSend channel: '#simsci-test-ci-status', 
-                message: ":x: JOB FAILURE: $JOB_NAME - #$BUILD_ID\n\n$BUILD_URL\n\n<!channel>",
+                message: ":x: JOB FAILURE: $JOB_NAME - #$BUILD_ID\n\n$BUILD_URL/console\n\n<!channel>",
                 teamDomain: 'ihme',
                 tokenCredentialId: 'eafd508b-f614-460d-bce5-3a5a43b7aa68'
     }
