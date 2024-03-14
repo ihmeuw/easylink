@@ -149,7 +149,7 @@ pipeline {
       parallel {
         stage("Run e2e tests") {
           steps {
-            sh "${ACTIVATE} && make unit"  // TODO: PUT BACK TO E2E 
+            sh "${ACTIVATE} && make e2e"
           }
         }
 
