@@ -34,8 +34,3 @@ def caplog(caplog: LogCaptureFixture):
     )
     yield caplog
     logger.remove(handler_id)
-
-
-@pytest.fixture
-def test_env_dir():
-    return Path("/mnt/team/simulation_science/priv/engineering/envs/")
