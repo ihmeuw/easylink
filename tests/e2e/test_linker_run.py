@@ -67,9 +67,7 @@ def test_linker_run(
     #         check=True,
     #     )
     result = CliRunner().invoke(cli=cli.linker, args=cli_args)
-    print(result.stdout)
-    print(result.stderr)
-    print(result.exc_info)
+    print(result.stdout)  # useful for debugging in Jenkins console
     assert result.exit_code == 0
     assert (results_dir / "result.parquet").exists()
     # Check that the results file checksum matches the expected value
