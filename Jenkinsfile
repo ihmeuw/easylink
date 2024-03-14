@@ -32,6 +32,11 @@ pipeline {
       defaultValue: true,
       description: "Inidicates a recurring build. Used to skip deployment steps."
     )
+    string(
+      name: "SLACK_TO",
+      defaultValue: "simsci-ci-status",
+      description: "The slack channel to send notifications to."
+    )
   }
 
   environment {
@@ -192,10 +197,10 @@ pipeline {
       deleteDir()
     }
     failure {
-      slackSend channel: '#simsci-test-ci-status', 
+      slackSend channel: "#$SLACK_TO", 
                 message: ":x: JOB FAILURE: $JOB_NAME - #$BUILD_ID\n\n$BUILD_URL/console\n\n<!channel>",
-                teamDomain: 'ihme',
-                tokenCredentialId: 'eafd508b-f614-460d-bce5-3a5a43b7aa68'
+                teamDomain: "ihme",
+                tokenCredentialId: "eafd508b-f614-460d-bce5-3a5a43b7aa68"
     }
   }
 }
