@@ -37,8 +37,8 @@ def main(
         ## See above
         "--envvars",
         "foo",
-        "--quiet",
-        "progress"
+        # "--quiet",
+        # "progress"
     ]
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")

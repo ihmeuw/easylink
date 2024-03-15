@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 
 class Rule(ABC):
@@ -39,7 +39,8 @@ class TargetRule(Rule):
 rule all:
     input:
         final_output={self.target_files},
-        validation='{self.validation}'"""
+        validation='{self.validation}'
+    message: 'Grabbing final output' """
 
 
 @dataclass
@@ -52,6 +53,7 @@ class ImplementedRule(Rule):
     execution_input: List of file paths required by implementation
     validation: name of file created by InputValidationRule to check for compatible input
     output: List of file paths created by implementation
+    resources:
     envvars: Dictionary of environment variables to set
     diagnostics_dir: Directory for diagnostic files
     script_cmd: Command to execute
@@ -61,6 +63,7 @@ class ImplementedRule(Rule):
     execution_input: List[str]
     validation: str
     output: List[str]
+    resources: Optional[dict]
     envvars: dict
     diagnostics_dir: str
     script_cmd: str
@@ -70,12 +73,30 @@ class ImplementedRule(Rule):
             f"""
 rule:
     name: "{self.name}"
+    message: "Running Implementation {self.name}"
     input: 
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
-    output: {self.output}"""
+    output: {self.output}
+    log: 
+        stdout="{self.diagnostics_dir}/implementation_logs/stdout", 
+        stderr="{self.diagnostics_dir}/implementation_logs/stderr" """
+            + self._build_resources()
             + self._build_shell_command()
         )
+
+    def _build_resources(self) -> str:
+        # Include slurm partition for now, as snakemake has trouble
+        # parsing strings with periods like "all.q"
+        if not self.resources:
+            return ""
+        return f"""
+    resources:
+        slurm_partition='{self.resources['partition']}',
+        mem={self.resources['memory']},
+        runtime={self.resources['time_limit']},
+        nodes={self.resources['cpus']},
+        """
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
