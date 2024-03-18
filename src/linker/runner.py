@@ -9,7 +9,7 @@ from snakemake.cli import main as snake_main
 from linker.configuration import Config
 from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
-from linker.utilities.slurm_utils import get_cli_args
+from linker.utilities.paths import LINKER_TEMP
 
 
 def main(
@@ -50,7 +50,8 @@ def main(
 def get_singularity_args(input_data: List[Path], results_dir: Path) -> str:
     input_file_paths = ",".join(file.as_posix() for file in input_data)
     singularity_args = "--no-home --containall"
-    singularity_args += f" -B /tmp,{results_dir},{input_file_paths}"
+    LINKER_TEMP.mkdir(parents=True, exist_ok=True)
+    singularity_args += f" -B {LINKER_TEMP}:/tmp,{results_dir},{input_file_paths}"
     return singularity_args
 
 
