@@ -1,11 +1,18 @@
 
 rule:
     name: "foo"
+    message: "Running Implementation foo"
     input:
         implementation_inputs=['foo', 'bar'],
         validation="bar"
     output: ['baz']
     container: "Multipolarity.sif"
+    resources:
+        slurm_partition='slurmpart',
+        mem=5,
+        runtime=1,
+        nodes=1337,
+
     shell:
         '''
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=foo,bar
