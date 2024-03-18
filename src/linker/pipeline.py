@@ -121,7 +121,11 @@ class Pipeline:
         validation_file = str(
             results_dir / "input_validations" / implementation.validation_filename
         )
-        resources = self.config.slurm_resources if self.config.computing_environment == "slurm" else None
+        resources = (
+            self.config.slurm_resources
+            if self.config.computing_environment == "slurm"
+            else None
+        )
         validation_rule = InputValidationRule(
             name=implementation.name,
             input=input_files,

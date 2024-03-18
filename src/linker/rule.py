@@ -71,8 +71,10 @@ class ImplementedRule(Rule):
     script_cmd: str
 
     def _build_rule(self) -> str:
-        return (
-            f"""
+        return self._build_io() + self._build_resources() + self._build_shell_command()
+
+    def _build_io(self) -> str:
+        return f"""
 rule:
     name: "{self.name}"
     message: "Running Implementation {self.name}"
@@ -80,12 +82,7 @@ rule:
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
-    log: 
-        stdout="{self.diagnostics_dir}/implementation_logs/stdout", 
-        stderr="{self.diagnostics_dir}/implementation_logs/stderr",
     container: "{self.image_path}" """
-            + self._build_shell_command()
-        )
 
     def _build_resources(self) -> str:
         # Include slurm partition for now, as snakemake has trouble
