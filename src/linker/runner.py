@@ -24,7 +24,7 @@ def main(
     copy_configuration_files_to_results_directory(config, results_dir)
     snakefile = pipeline.build_snakefile(results_dir)
     environment_args = get_environment_args(config, results_dir)
-    singularity_args = get_singularity_args(config.input_data, results_dir)
+    singularity_args = get_singularity_args(config, results_dir)
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
     os.environ["foo"] = "bar"
@@ -49,11 +49,15 @@ def main(
     snake_main(argv)
 
 
-def get_singularity_args(input_data: List[Path], results_dir: Path) -> str:
-    input_file_paths = ",".join(file.as_posix() for file in input_data)
+def get_singularity_args(config: Config, results_dir: Path) -> str:
+    input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
-    LINKER_TEMP.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {LINKER_TEMP}:/tmp,{results_dir},{input_file_paths}"
+    # Bind linker temp dir to /tmp in the container
+    # Slurm will delete /tmp after job completion
+    # but we'll bind a subdirectory for local runs
+    linker_tmp_dir = LINKER_TEMP[config.computing_environment]
+    linker_tmp_dir.mkdir(parents=True, exist_ok=True)
+    singularity_args += f" -B {linker_tmp_dir}:/tmp,{results_dir},{input_file_paths}"
     return singularity_args
 
 
@@ -84,7 +88,7 @@ def get_environment_args(config: Config, results_dir: Path) -> List[str]:
             f"mem={resources['memory']}",
             f"runtime={resources['time_limit']}",
             f"nodes={resources['cpus']}",
-                    ]
+        ]
         return slurm_args
     else:
         raise NotImplementedError(
