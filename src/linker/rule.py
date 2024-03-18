@@ -82,6 +82,7 @@ rule:
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
+    log: "{self.diagnostics_dir}/{self.name}-output.log"
     container: "{self.image_path}" """
 
     def _build_resources(self) -> str:
@@ -95,6 +96,7 @@ rule:
         mem={self.resources['memory']},
         runtime={self.resources['time_limit']},
         nodes={self.resources['cpus']},
+        slurm_extra="--output '{self.diagnostics_dir}/{self.name}-slurm-%j.log'"
         """
 
     def _build_shell_command(self) -> str:
@@ -107,8 +109,9 @@ rule:
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
         export {var_name}={var_value}"""
+        # Log stdout/stderr to diagnostics directory
         shell_cmd += f"""
-        {self.script_cmd}
+        {self.script_cmd} > {{log}} 2>&1
         '''"""
 
         return shell_cmd

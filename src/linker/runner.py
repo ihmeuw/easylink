@@ -38,8 +38,8 @@ def main(
         ## See above
         "--envvars",
         "foo",
-        # "--quiet",
-        # "progress"
+        "--quiet",
+        "progress",
         "--use-singularity",
         "--singularity-args",
         singularity_args,
@@ -76,8 +76,6 @@ def get_environment_args(config: Config, results_dir: Path) -> List[str]:
                 f"Specified a 'slurm' computing-environment but on host {hostname}"
             )
         os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
-        diagnostics = results_dir / "diagnostics/"
-        job_name = "snakemake-linker"
         resources = config.slurm_resources
         slurm_args = [
             "--executor",

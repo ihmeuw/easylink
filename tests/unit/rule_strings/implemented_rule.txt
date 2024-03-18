@@ -6,12 +6,14 @@ rule:
         implementation_inputs=['foo', 'bar'],
         validation="bar"
     output: ['baz']
+    log: "spam/foo-output.log"
     container: "Multipolarity.sif"
     resources:
         slurm_partition='slurmpart',
         mem=5,
         runtime=1,
         nodes=1337,
+        slurm_extra="--output 'spam/foo-slurm-%j.log'"
 
     shell:
         '''
@@ -19,5 +21,5 @@ rule:
         export DUMMY_CONTAINER_OUTPUT_PATHS=baz
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
         export eggs=coconut
-        echo hello world
+        echo hello world > {log} 2>&1
         '''
