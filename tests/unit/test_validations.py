@@ -144,7 +144,6 @@ def test_pipeline_validation(pipeline, expected_msg, test_dir, caplog, mocker):
 
 def test_unsupported_step(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     config_params = {
         "pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml"),
@@ -178,7 +177,6 @@ def test_unsupported_step(test_dir, caplog, mocker):
 
 def test_unsupported_implementation(test_dir, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     mocker.patch(
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
@@ -344,10 +342,10 @@ def test_missing_slurm_details(test_dir, caplog, mocker):
 
 
 def test_no_container(default_config, caplog, mocker):
-    mocker.patch(
-        "linker.implementation.Implementation._get_container_full_stem",
-        return_value=Path("some/path/with/no/container"),
-    )
+    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+    metadata["step_1_python_pandas"]["image_path"] = "some/path/with/no/container.sif"
+    metadata["step_2_python_pandas"]["image_path"] = "some/path/with/no/container_2.sif"
+    mocker.patch("linker.implementation.load_yaml", return_value=metadata)
     mocker.PropertyMock(
         "linker.implementation.Implementation._container_engine", return_value="undefined"
     )
@@ -361,10 +359,10 @@ def test_no_container(default_config, caplog, mocker):
         expected_msg={
             "IMPLEMENTATION ERRORS": {
                 "step_1_python_pandas": [
-                    "- Container 'some/path/with/no/container' does not exist.",
+                    "- Container 'some/path/with/no/container.sif' does not exist.",
                 ],
                 "step_2_python_pandas": [
-                    "- Container 'some/path/with/no/container' does not exist.",
+                    "- Container 'some/path/with/no/container_2.sif' does not exist.",
                 ],
             },
         },
@@ -372,21 +370,10 @@ def test_no_container(default_config, caplog, mocker):
 
 
 def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
-    mocker.patch(
-        "linker.implementation.Implementation._load_metadata",
-        return_value={
-            "step_1_python_pandas": {
-                "step": "not-the-step-1-name",
-                "image_path": "/some/path",
-                "name": "some-name",
-            },
-            "step_2_python_pandas": {
-                "step": "not-the-step-2-name",
-                "image_path": "/some/path",
-                "name": "some-name",
-            },
-        },
-    )
+    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+    metadata["step_1_python_pandas"]["step"] = "not-the-step-1-name"
+    metadata["step_2_python_pandas"]["step"] = "not-the-step-2-name"
+    mocker.patch("linker.implementation.load_yaml", return_value=metadata)
     mocker.patch(
         "linker.implementation.Implementation._validate_container_exists",
         side_effect=lambda x: x,

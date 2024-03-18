@@ -134,6 +134,7 @@ class Pipeline:
             output=output_files,
             envvars=implementation.environment_variables,
             diagnostics_dir=str(diagnostics_dir),
+            image_path=implementation.singularity_image_path,
             script_cmd=implementation.script_cmd,
         )
         validation_rule.write_to_snakefile(results_dir)

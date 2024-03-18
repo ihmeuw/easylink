@@ -22,9 +22,8 @@ class Implementation:
             "implementation"
         ].get("configuration", {})
         self._metadata = self._load_metadata()
-        self.step_name = self._metadata[self.name]["step"]
-        self._requires_spark = self._metadata[self.name].get("requires_spark", False)
-        self._container_full_stem = self._get_container_full_stem()
+        self.step_name = self._metadata["step"]
+        self._requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"
@@ -44,12 +43,7 @@ class Implementation:
 
     def _load_metadata(self) -> Dict[str, str]:
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        return metadata
-
-    def _get_container_full_stem(self) -> str:
-        return (
-            f"{self._metadata[self.name]['image_path']}/{self._metadata[self.name]['name']}"
-        )
+        return metadata[self.name]
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
         if self.step_name != self._pipeline_step_name:
@@ -60,22 +54,8 @@ class Implementation:
         return logs
 
     def _validate_container_exists(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        err_str = f"Container '{self._container_full_stem}' does not exist."
-        if (
-            self.config.container_engine == "docker"
-            and not Path(f"{self._container_full_stem}.tar.gz").exists()
-        ):
-            logs.append(err_str)
-        if (
-            self.config.container_engine == "singularity"
-            and not Path(f"{self._container_full_stem}.sif").exists()
-        ):
-            logs.append(err_str)
-        if (
-            self.config.container_engine == "undefined"
-            and not Path(f"{self._container_full_stem}.tar.gz").exists()
-            and not Path(f"{self._container_full_stem}.sif").exists()
-        ):
+        err_str = f"Container '{self.singularity_image_path}' does not exist."
+        if not Path(self.singularity_image_path).exists():
             logs.append(err_str)
         return logs
 
@@ -85,8 +65,8 @@ class Implementation:
 
     @property
     def singularity_image_path(self) -> str:
-        return self._get_container_full_stem + ".sif"
+        return self._metadata["image_path"]
 
     @property
     def script_cmd(self) -> str:
-        return f"{self._metadata[self.name]['script_cmd']}"
+        return self._metadata["script_cmd"]

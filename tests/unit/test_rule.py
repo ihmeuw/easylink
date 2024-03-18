@@ -48,6 +48,7 @@ def test_implemented_rule_build_rule():
         output=["baz"],
         envvars={"eggs": "coconut"},
         diagnostics_dir="spam",
+        image_path="Multipolarity.sif",
         script_cmd="echo hello world",
     )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["implemented_rule"]
