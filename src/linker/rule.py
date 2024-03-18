@@ -56,6 +56,7 @@ class ImplementedRule(Rule):
     resources:
     envvars: Dictionary of environment variables to set
     diagnostics_dir: Directory for diagnostic files
+    image_path: Path to Singularity image
     script_cmd: Command to execute
     """
 
@@ -66,6 +67,7 @@ class ImplementedRule(Rule):
     resources: Optional[dict]
     envvars: dict
     diagnostics_dir: str
+    image_path: str
     script_cmd: str
 
     def _build_rule(self) -> str:
@@ -80,8 +82,8 @@ rule:
     output: {self.output}
     log: 
         stdout="{self.diagnostics_dir}/implementation_logs/stdout", 
-        stderr="{self.diagnostics_dir}/implementation_logs/stderr" """
-            + self._build_resources()
+        stderr="{self.diagnostics_dir}/implementation_logs/stderr",
+    container: "{self.image_path}" """
             + self._build_shell_command()
         )
 

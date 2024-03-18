@@ -22,6 +22,7 @@ if __name__ == "__main__":
         "pandas",
         "pyyaml",
         "pyarrow",
+        "snakemake>=8.0.0",
     ]
 
     setup_requires = ["setuptools_scm"]
