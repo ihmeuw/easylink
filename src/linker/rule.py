@@ -53,7 +53,7 @@ class ImplementedRule(Rule):
     execution_input: List of file paths required by implementation
     validation: name of file created by InputValidationRule to check for compatible input
     output: List of file paths created by implementation
-    resources:
+    resources: Computational resources used by executor (e.g. SLURM)
     envvars: Dictionary of environment variables to set
     diagnostics_dir: Directory for diagnostic files
     image_path: Path to Singularity image

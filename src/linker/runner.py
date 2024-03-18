@@ -38,6 +38,7 @@ def main(
         ## See above
         "--envvars",
         "foo",
+        ## Suppress some of the snakemake output
         "--quiet",
         "progress",
         "--use-singularity",
@@ -52,9 +53,6 @@ def main(
 def get_singularity_args(config: Config, results_dir: Path) -> str:
     input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
-    # Bind linker temp dir to /tmp in the container
-    # Slurm will delete /tmp after job completion
-    # but we'll bind a subdirectory for local runs
     linker_tmp_dir = LINKER_TEMP[config.computing_environment]
     linker_tmp_dir.mkdir(parents=True, exist_ok=True)
     singularity_args += f" -B {linker_tmp_dir}:/tmp,{results_dir},{input_file_paths}"
