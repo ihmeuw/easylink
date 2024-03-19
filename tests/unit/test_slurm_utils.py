@@ -11,6 +11,7 @@ from linker.utilities.slurm_utils import (
     _generate_spark_cluster_job_template,
     get_cli_args,
     get_slurm_drmaa,
+    is_on_slurm,
 )
 
 CLI_KWARGS = {
