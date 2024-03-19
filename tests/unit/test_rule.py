@@ -40,6 +40,7 @@ def test_target_rule_build_rule():
     for i, expected_line in enumerate(expected_lines):
         assert rulestring_lines[i].strip() == expected_line.strip()
 
+
 def test_implemented_rule_build_rule_local():
     rule = ImplementedRule(
         name="foo",
@@ -52,7 +53,7 @@ def test_implemented_rule_build_rule_local():
         image_path="Multipolarity.sif",
         script_cmd="echo hello world",
     )
-    
+
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["implemented_rule_local"]
     with open(file_path) as expected_file:
         expected = expected_file.read()
@@ -62,7 +63,8 @@ def test_implemented_rule_build_rule_local():
     assert len(rulestring_lines) == len(expected_lines)
     for i, expected_line in enumerate(expected_lines):
         assert rulestring_lines[i].strip() == expected_line.strip()
-    
+
+
 def test_implemented_rule_build_rule_slurm():
     rule = ImplementedRule(
         name="foo",

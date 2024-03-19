@@ -2,11 +2,13 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from linker.pipeline import Pipeline
 from linker.configuration import Config
+from linker.pipeline import Pipeline
 
-PIPELINE_STRINGS = {    "pipeline_local": "rule_strings/pipeline_local.txt",
-    "pipeline_slurm": "rule_strings/pipeline_slurm.txt",}
+PIPELINE_STRINGS = {
+    "pipeline_local": "rule_strings/pipeline_local.txt",
+    "pipeline_slurm": "rule_strings/pipeline_slurm.txt",
+}
 
 
 def test__get_implementations(default_config, mocker):
@@ -62,7 +64,9 @@ def test_build_snakefile_local(default_config, mocker, test_dir):
     pipeline = Pipeline(default_config)
     with TemporaryDirectory() as snake_dir:
         snakefile = pipeline.build_snakefile(Path(snake_dir))
-        expected_file_path = Path(os.path.dirname(__file__)) / PIPELINE_STRINGS["pipeline_local"]
+        expected_file_path = (
+            Path(os.path.dirname(__file__)) / PIPELINE_STRINGS["pipeline_local"]
+        )
         with open(expected_file_path) as expected_file:
             expected = expected_file.read()
         expected = expected.replace("{snake_dir}", snake_dir)
@@ -74,15 +78,20 @@ def test_build_snakefile_local(default_config, mocker, test_dir):
     for i, expected_line in enumerate(expected_lines):
         assert snake_str_lines[i].strip() == expected_line.strip()
 
+
 def test_build_snakefile_slurm(default_config_params, mocker, test_dir):
-    slurm_config_params =  default_config_params
-    slurm_config_params.update({"computing_environment": Path(f"{test_dir}/spark_environment.yaml")})
+    slurm_config_params = default_config_params
+    slurm_config_params.update(
+        {"computing_environment": Path(f"{test_dir}/spark_environment.yaml")}
+    )
     slurm_config = Config(**slurm_config_params)
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(slurm_config)
     with TemporaryDirectory() as snake_dir:
         snakefile = pipeline.build_snakefile(Path(snake_dir))
-        expected_file_path = Path(os.path.dirname(__file__)) / PIPELINE_STRINGS["pipeline_slurm"]
+        expected_file_path = (
+            Path(os.path.dirname(__file__)) / PIPELINE_STRINGS["pipeline_slurm"]
+        )
         with open(expected_file_path) as expected_file:
             expected = expected_file.read()
         expected = expected.replace("{snake_dir}", snake_dir)
