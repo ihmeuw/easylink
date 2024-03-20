@@ -87,6 +87,7 @@ def test__generate_spark_cluster_jt(test_dir, mocker):
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
         "computing_environment": Path(f"{test_dir}/spark_environment.yaml"),
+        "results_dir": Path(f"{test_dir}/results"),
     }
     config = Config(**config_params)
 

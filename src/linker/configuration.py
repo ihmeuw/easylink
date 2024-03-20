@@ -2,12 +2,12 @@ import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+import os
 from loguru import logger
 
 from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities import paths
-from linker.utilities.data_utils import create_results_directory, load_yaml
+from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
 
 PIPELINE_ERRORS_KEY = "PIPELINE ERRORS"
@@ -45,18 +45,18 @@ class Config:
         self,
         pipeline_specification: str,
         input_data: str,
-        computing_environment: Optional[Path],
-        results_dir: str,
+        computing_environment: Optional[str],
+        results_dir: Path,
     ):
         # Handle pipeline specification
         self.pipeline_specification_path = Path(pipeline_specification)
         self.pipeline = load_yaml(pipeline_specification)
         self._requires_spark = self._determine_if_spark_is_required(self.pipeline)
         # Handle input data specification
-        self.input_data_specification_path = input_data
+        self.input_data_specification_path = Path(input_data)
         self.input_data = self._load_input_data_paths(input_data)
         # Handle environment specification
-        self.computing_environment_specification_path = computing_environment
+        self.computing_environment_specification_path = Path(computing_environment) if computing_environment else None
         self.environment = self._load_computing_environment(computing_environment)
         # Create results directory
         self.results_dir = results_dir
@@ -76,7 +76,7 @@ class Config:
 
         self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
-        # Now that all validation is done, copy the configuration files to the results directory
+        # Now that all validation is done, create results dir and copy the configuration files to the results directory
         self._copy_configuration_files_to_results_directory()
 
     @property
@@ -329,6 +329,10 @@ class Config:
         return errors
 
     def _copy_configuration_files_to_results_directory(self) -> None:
+        _ = os.umask(0o002)
+        self.results_dir.mkdir(parents=True, exist_ok=True)
+        (self.results_dir / "intermediate").mkdir(exist_ok=True)
+        (self.results_dir / "diagnostics").mkdir(exist_ok=True)
         shutil.copy(self.pipeline_specification_path, self.results_dir)
         shutil.copy(self.input_data_specification_path, self.results_dir)
         if self.computing_environment_specification_path:

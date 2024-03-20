@@ -58,12 +58,12 @@ def test__load_missing_computing_environment_fails():
         Config._load_computing_environment(Path("some/bogus/path.yaml"))
 
 
-def test_input_data_configuration_requires_key_value_pairs(test_dir):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
+def test_input_data_configuration_requires_key_value_pairs(default_config_params, test_dir):
+    config_params = default_config_params
+    config_params.update({
         "input_data": f"{test_dir}/input_data_list.yaml",
         "computing_environment": None,
-    }
+    })
     with pytest.raises(
         TypeError, match="Input data should be submitted like 'key': path/to/file."
     ):
@@ -185,3 +185,17 @@ def test_get_implementation_specific_configuration(
         config.pipeline["steps"]["step_2"]["implementation"]["configuration"] = step_2_config
     assert config.get_implementation_specific_configuration("step_1") == step_1_config
     assert config.get_implementation_specific_configuration("step_2") == step_2_config
+
+def test__copy_configuration_files_to_results_directory(default_config_params):
+    output_dir = Path("some/output/dir")
+    config_params = default_config_params
+    config_params.update(
+        {"results_dir": output_dir}
+    )
+    config = Config(**config_params)
+    results_dir = config.results_dir
+    assert results_dir.exists()
+    assert (results_dir / "intermediate").exists()
+    assert (results_dir / "diagnostics").exists()
+    
+    

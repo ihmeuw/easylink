@@ -1,13 +1,11 @@
-import json
-from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import click
 from loguru import logger
 
 from linker import runner
 from linker.configuration import Config
-from linker.utilities.data_utils import create_results_directory
+from linker.utilities.data_utils import get_results_directory
 from linker.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
@@ -82,16 +80,12 @@ def run(
     """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
-    pipeline_specification = Path(pipeline_specification)
-    input_data = Path(input_data)
-    if computing_environment:
-        computing_environment = Path(computing_environment)
-    results_dir = create_results_directory(output_dir, timestamp)
+    results_dir = get_results_directory(output_dir, timestamp)
     logger.info(f"Results directory: {str(results_dir)}")
     # TODO [MIC-4493]: Add configuration validation
     config = Config(
-        pipeline_specification=Path(pipeline_specification),
-        input_data=Path(input_data),
+        pipeline_specification=pipeline_specification,
+        input_data=input_data,
         computing_environment=computing_environment,
         results_dir=results_dir,
     )
