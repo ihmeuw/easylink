@@ -43,7 +43,8 @@ def test_target_rule_build_rule():
 
 def test_implemented_rule_build_rule_local():
     rule = ImplementedRule(
-        name="foo",
+        step_name="foo_step",
+        implementation_name="foo",
         execution_input=["foo", "bar"],
         validation="bar",
         output=["baz"],
@@ -67,7 +68,8 @@ def test_implemented_rule_build_rule_local():
 
 def test_implemented_rule_build_rule_slurm():
     rule = ImplementedRule(
-        name="foo",
+        step_name="foo_step",
+        implementation_name="foo",
         execution_input=["foo", "bar"],
         validation="bar",
         output=["baz"],

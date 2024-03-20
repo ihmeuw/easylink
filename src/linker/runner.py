@@ -67,14 +67,12 @@ def get_environment_args(config: Config, results_dir: Path) -> List[str]:
 
         # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
     elif config.computing_environment == "slurm":
-        # Set up a single drmaa.session that is persistent for the duration of the pipeline
         if not is_on_slurm():
             raise RuntimeError(
                 f"A 'slurm' computing environment is specified but it has been "
                 "determined that the current host is not on a slurm cluster "
                 f"(host: {socket.gethostname()})."
             )
-        os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
         resources = config.slurm_resources
         slurm_args = [
             "--executor",

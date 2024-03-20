@@ -49,7 +49,8 @@ class ImplementedRule(Rule):
     A rule that defines the execution of an implementation
 
     Parameters:
-    name: Name
+    step_name: Name of step
+    implementation_name: Name of implementation
     execution_input: List of file paths required by implementation
     validation: name of file created by InputValidationRule to check for compatible input
     output: List of file paths created by implementation
@@ -60,7 +61,8 @@ class ImplementedRule(Rule):
     script_cmd: Command to execute
     """
 
-    name: str
+    step_name: str
+    implementation_name: str
     execution_input: List[str]
     validation: str
     output: List[str]
@@ -76,18 +78,16 @@ class ImplementedRule(Rule):
     def _build_io(self) -> str:
         return f"""
 rule:
-    name: "{self.name}"
-    message: "Running Implementation {self.name}"
+    name: "{self.implementation_name}"
+    message: "Running {self.step_name} implementation: {self.implementation_name}"
     input: 
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
-    log: "{self.diagnostics_dir}/{self.name}-output.log"
+    log: "{self.diagnostics_dir}/{self.implementation_name}-output.log"
     container: "{self.image_path}" """
 
     def _build_resources(self) -> str:
-        # Include slurm partition for now, as snakemake has trouble
-        # parsing strings with periods like "all.q"
         if not self.resources:
             return ""
         return f"""
@@ -96,7 +96,7 @@ rule:
         mem={self.resources['memory']},
         runtime={self.resources['time_limit']},
         nodes={self.resources['cpus']},
-        slurm_extra="--output '{self.diagnostics_dir}/{self.name}-slurm-%j.log'"
+        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'"
         """
 
     def _build_shell_command(self) -> str:

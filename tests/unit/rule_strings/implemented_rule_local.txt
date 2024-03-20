@@ -1,7 +1,7 @@
 
 rule:
     name: "foo"
-    message: "Running Implementation foo"
+    message: "Running foo_step implementation: foo"
     input:
         implementation_inputs=['foo', 'bar'],
         validation="bar"

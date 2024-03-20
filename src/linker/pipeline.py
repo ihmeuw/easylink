@@ -133,7 +133,8 @@ class Pipeline:
             validator=implementation.step.input_validator,
         )
         implementation_rule = ImplementedRule(
-            name=implementation.name,
+            step_name=implementation.step_name,
+            implementation_name=implementation.name,
             execution_input=input_files,
             validation=validation_file,
             output=output_files,
