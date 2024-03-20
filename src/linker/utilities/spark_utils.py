@@ -15,7 +15,6 @@ def build_spark_cluster(
     session: "drmaa.Session",
     config: Config,
     step_id: str,
-    results_dir: Path,
     diagnostics_dir: Path,
     input_data: List[Path],
 ) -> Tuple[str, str]:
@@ -36,7 +35,7 @@ def build_spark_cluster(
 
     # call build_launch_script
     launcher = build_cluster_launch_script(
-        results_dir=results_dir,
+        results_dir=config.results_dir,
         diagnostics_dir=diagnostics_dir,
         input_data=input_data,
     )

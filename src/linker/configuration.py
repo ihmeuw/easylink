@@ -1,3 +1,4 @@
+import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -6,7 +7,7 @@ from loguru import logger
 
 from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from linker.utilities import paths
-from linker.utilities.data_utils import load_yaml
+from linker.utilities.data_utils import create_results_directory, load_yaml
 from linker.utilities.general_utils import exit_with_validation_error
 
 PIPELINE_ERRORS_KEY = "PIPELINE ERRORS"
@@ -42,12 +43,13 @@ class Config:
 
     def __init__(
         self,
-        pipeline_specification: Path,
-        input_data: Path,
+        pipeline_specification: str,
+        input_data: str,
         computing_environment: Optional[Path],
+        results_dir: str,
     ):
         # Handle pipeline specification
-        self.pipeline_specification_path = pipeline_specification
+        self.pipeline_specification_path = Path(pipeline_specification)
         self.pipeline = load_yaml(pipeline_specification)
         self._requires_spark = self._determine_if_spark_is_required(self.pipeline)
         # Handle input data specification
@@ -56,6 +58,8 @@ class Config:
         # Handle environment specification
         self.computing_environment_specification_path = computing_environment
         self.environment = self._load_computing_environment(computing_environment)
+        # Create results directory
+        self.results_dir = results_dir
 
         # Extract environment attributes and assign defaults as necessary
         self.computing_environment = self._get_required_attribute(
@@ -72,6 +76,8 @@ class Config:
 
         self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
+        # Now that all validation is done, copy the configuration files to the results directory
+        self._copy_configuration_files_to_results_directory()
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
@@ -321,3 +327,9 @@ class Config:
             )
 
         return errors
+
+    def _copy_configuration_files_to_results_directory(self) -> None:
+        shutil.copy(self.pipeline_specification_path, self.results_dir)
+        shutil.copy(self.input_data_specification_path, self.results_dir)
+        if self.computing_environment_specification_path:
+            shutil.copy(self.computing_environment_specification_path, self.results_dir)

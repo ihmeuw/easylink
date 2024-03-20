@@ -246,6 +246,7 @@ def default_config_params(test_dir) -> Dict[str, Path]:
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
         "computing_environment": Path(f"{test_dir}/environment.yaml"),
+        "results_dir": Path(f"{test_dir}/results"),
     }
 
 

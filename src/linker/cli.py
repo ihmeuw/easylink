@@ -90,77 +90,14 @@ def run(
     logger.info(f"Results directory: {str(results_dir)}")
     # TODO [MIC-4493]: Add configuration validation
     config = Config(
-        pipeline_specification=pipeline_specification,
-        input_data=input_data,
+        pipeline_specification=Path(pipeline_specification),
+        input_data=Path(input_data),
         computing_environment=computing_environment,
+        results_dir=results_dir,
     )
-    results_dir = create_results_directory(output_dir, timestamp)
-    logger.info(f"Results directory: {str(results_dir)}")
 
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
-    main(
-        config=config,
-        results_dir=results_dir,
-    )
-    logger.info(f"Results directory: {str(results_dir)}")
-    logger.info("*** FINISHED ***")
-
-
-@linker.command(hidden=True)
-@click.argument(
-    "container_engine",
-    type=click.Choice(["docker", "singularity", "undefined"]),
-)
-@click.argument(
-    "results_dir",
-    type=click.Path(exists=True, resolve_path=True),
-)
-@click.argument(
-    "diagnostics_dir",
-    type=click.Path(exists=True, resolve_path=True),
-)
-@click.argument("step_id")
-@click.argument("step_name")
-@click.argument("implementation_name")
-@click.argument("container_full_stem")
-@click.option("--input-data", multiple=True)
-@click.option("--implementation-config")
-@click.option("-v", "verbose", count=True, help="Configure logging verbosity.", hidden=True)
-def run_slurm_job(
-    container_engine: str,
-    results_dir: str,
-    diagnostics_dir: str,
-    step_id: str,
-    step_name: str,
-    implementation_name: str,
-    container_full_stem: str,
-    input_data: Tuple[str],
-    implementation_config: str,
-    verbose: int,
-) -> None:
-    """Runs a job on Slurm. The standard use case is this would be kicked off
-    when a slurm computing environment is defined in the environment.yaml.
-    """
-    configure_logging_to_terminal(verbose)
-    main = handle_exceptions(
-        func=runner.run_container, exceptions_logger=logger, with_debugger=False
-    )
-    # Put the implementation_config back to a dictionary
-    implementation_config = (
-        json.loads(implementation_config) if implementation_config else None
-    )
-    main(
-        container_engine=container_engine,
-        input_data=[Path(x) for x in input_data],
-        results_dir=Path(results_dir),
-        diagnostics_dir=Path(diagnostics_dir),
-        step_id=step_id,
-        step_name=step_name,
-        implementation_name=implementation_name,
-        container_full_stem=container_full_stem,
-        implementation_config=implementation_config,
-    )
-
+    main(config)
     logger.info("*** FINISHED ***")

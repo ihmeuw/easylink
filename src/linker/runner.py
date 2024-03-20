@@ -12,19 +12,13 @@ from linker.utilities.data_utils import copy_configuration_files_to_results_dire
 from linker.utilities.paths import LINKER_TEMP
 
 
-def main(
-    config: Config,
-    results_dir: Path,
-) -> None:
+def main(config: Config) -> None:
     """Set up and run the pipeline"""
 
     pipeline = Pipeline(config)
-
-    # Now that all validation is done, copy the configuration files to the results directory
-    copy_configuration_files_to_results_directory(config, results_dir)
-    snakefile = pipeline.build_snakefile(results_dir)
-    environment_args = get_environment_args(config, results_dir)
-    singularity_args = get_singularity_args(config.input_data, results_dir)
+    snakefile = pipeline.build_snakefile()
+    environment_args = get_environment_args(config)
+    singularity_args = get_singularity_args(config)
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
     os.environ["foo"] = "bar"
@@ -47,15 +41,15 @@ def main(
     snake_main(argv)
 
 
-def get_singularity_args(input_data: List[Path], results_dir: Path) -> str:
-    input_file_paths = ",".join(file.as_posix() for file in input_data)
+def get_singularity_args(config: Config) -> str:
+    input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
     LINKER_TEMP.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {LINKER_TEMP}:/tmp,{results_dir},{input_file_paths}"
+    singularity_args += f" -B {LINKER_TEMP}:/tmp,{config.results_dir},{input_file_paths}"
     return singularity_args
 
 
-def get_environment_args(config: Config, results_dir: Path) -> List[str]:
+def get_environment_args(config: Config) -> List[str]:
     # Set up computing environment
     if config.computing_environment == "local":
         return []
