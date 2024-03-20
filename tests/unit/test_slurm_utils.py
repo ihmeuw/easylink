@@ -11,6 +11,7 @@ from linker.utilities.slurm_utils import (
     _generate_spark_cluster_job_template,
     get_cli_args,
     get_slurm_drmaa,
+    is_on_slurm,
 )
 
 CLI_KWARGS = {
@@ -26,9 +27,18 @@ CLI_KWARGS = {
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
+def test_is_on_slurm():
+    # export SLURM_ROOT
+    os.environ["SLURM_ROOT"] = "/some/path"
+    assert is_on_slurm()
+    # unset SLURM_ROOT
+    del os.environ["SLURM_ROOT"]
+    assert not is_on_slurm()
+
+
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test_get_slurm_drmaa():
     """Confirm that a drmaa object is indeed returned"""
@@ -54,8 +64,8 @@ def test__get_cli_args():
 
 
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test__generate_spark_cluster_jt(test_dir, mocker):
     launcher = tempfile.NamedTemporaryFile(
@@ -114,3 +124,8 @@ def test__generate_spark_cluster_jt(test_dir, mocker):
     )
     assert jt.nativeSpecification == expected_native_specification
     session.exit()
+
+
+@pytest.mark.skip(reason="TODO: MIC-4915")
+def test_slurm_resource_requests():
+    pass
