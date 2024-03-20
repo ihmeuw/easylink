@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
+
 from linker.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
 
 RULE_STRINGS = {
@@ -41,50 +43,35 @@ def test_target_rule_build_rule():
         assert rulestring_lines[i].strip() == expected_line.strip()
 
 
-def test_implemented_rule_build_rule_local():
-    rule = ImplementedRule(
-        step_name="foo_step",
-        implementation_name="foo",
-        execution_input=["foo", "bar"],
-        validation="bar",
-        output=["baz"],
-        resources=None,
-        envvars={"eggs": "coconut"},
-        diagnostics_dir="spam",
-        image_path="Multipolarity.sif",
-        script_cmd="echo hello world",
-    )
-
-    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["implemented_rule_local"]
-    with open(file_path) as expected_file:
-        expected = expected_file.read()
-    rulestring = rule._build_rule()
-    rulestring_lines = rulestring.split("\n")
-    expected_lines = expected.split("\n")
-    assert len(rulestring_lines) == len(expected_lines)
-    for i, expected_line in enumerate(expected_lines):
-        assert rulestring_lines[i].strip() == expected_line.strip()
-
-
-def test_implemented_rule_build_rule_slurm():
-    rule = ImplementedRule(
-        step_name="foo_step",
-        implementation_name="foo",
-        execution_input=["foo", "bar"],
-        validation="bar",
-        output=["baz"],
-        resources={
+@pytest.mark.parametrize("computing_environment", ["local", "slurm"])
+def test_implemented_rule_build_rule(computing_environment):
+    if computing_environment == "slurm":
+        resources = {
             "partition": "slurmpart",
             "time_limit": 1,
             "memory": 5,
             "cpus": 1337,
-        },
+        }
+    else:
+        resources = None
+
+    rule = ImplementedRule(
+        step_name="foo_step",
+        implementation_name="foo",
+        execution_input=["foo", "bar"],
+        validation="bar",
+        output=["baz"],
+        resources=resources,
         envvars={"eggs": "coconut"},
         diagnostics_dir="spam",
         image_path="Multipolarity.sif",
         script_cmd="echo hello world",
     )
-    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["implemented_rule_slurm"]
+
+    file_path = (
+        Path(os.path.dirname(__file__))
+        / RULE_STRINGS[f"implemented_rule_{computing_environment}"]
+    )
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
