@@ -2,7 +2,15 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
+
+from linker.configuration import Config
 from linker.pipeline import Pipeline
+
+PIPELINE_STRINGS = {
+    "local": "rule_strings/pipeline_local.txt",
+    "slurm": "rule_strings/pipeline_slurm.txt",
+}
 
 
 def test__get_implementations(default_config, mocker):
@@ -53,12 +61,21 @@ def test_get_diagnostic_dir(default_config, mocker):
     )
 
 
-def test_build_snakefile(default_config, mocker, test_dir):
+@pytest.mark.parametrize("computing_environment", ["local", "slurm"])
+def test_build_snakefile(default_config_params, mocker, test_dir, computing_environment):
+    config_params = default_config_params
+    if computing_environment == "slurm":
+        config_params.update(
+            {"computing_environment": Path(f"{test_dir}/spark_environment.yaml")}
+        )
+    config = Config(**config_params)
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
+    pipeline = Pipeline(config)
     with TemporaryDirectory() as snake_dir:
         snakefile = pipeline.build_snakefile(Path(snake_dir))
-        expected_file_path = Path(os.path.dirname(__file__)) / "rule_strings/pipeline.txt"
+        expected_file_path = (
+            Path(os.path.dirname(__file__)) / PIPELINE_STRINGS[computing_environment]
+        )
         with open(expected_file_path) as expected_file:
             expected = expected_file.read()
         expected = expected.replace("{snake_dir}", snake_dir)

@@ -10,6 +10,7 @@ from linker.configuration import Config
 from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.paths import LINKER_TEMP
+from linker.utilities.slurm_utils import is_on_slurm
 
 
 def main(
@@ -24,7 +25,7 @@ def main(
     copy_configuration_files_to_results_directory(config, results_dir)
     snakefile = pipeline.build_snakefile(results_dir)
     environment_args = get_environment_args(config, results_dir)
-    singularity_args = get_singularity_args(config.input_data, results_dir)
+    singularity_args = get_singularity_args(config, results_dir)
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
     os.environ["foo"] = "bar"
@@ -38,6 +39,9 @@ def main(
         ## See above
         "--envvars",
         "foo",
+        ## Suppress some of the snakemake output
+        "--quiet",
+        "progress",
         "--use-singularity",
         "--singularity-args",
         singularity_args,
@@ -47,11 +51,12 @@ def main(
     snake_main(argv)
 
 
-def get_singularity_args(input_data: List[Path], results_dir: Path) -> str:
-    input_file_paths = ",".join(file.as_posix() for file in input_data)
+def get_singularity_args(config: Config, results_dir: Path) -> str:
+    input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
-    LINKER_TEMP.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {LINKER_TEMP}:/tmp,{results_dir},{input_file_paths}"
+    linker_tmp_dir = LINKER_TEMP[config.computing_environment]
+    linker_tmp_dir.mkdir(parents=True, exist_ok=True)
+    singularity_args += f" -B {linker_tmp_dir}:/tmp,{results_dir},{input_file_paths}"
     return singularity_args
 
 
@@ -62,44 +67,24 @@ def get_environment_args(config: Config, results_dir: Path) -> List[str]:
 
         # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
     elif config.computing_environment == "slurm":
-        # TODO: Add back slurm support
-        raise NotImplementedError(
-            "Slurm support is not yet implemented with snakemake integration"
-        )
-        # # Set up a single drmaa.session that is persistent for the duration of the pipeline
-        # # TODO [MIC-4468]: Check for slurm in a more meaningful way
-        # hostname = socket.gethostname()
-        # if "slurm" not in hostname:
-        #     raise RuntimeError(
-        #         f"Specified a 'slurm' computing-environment but on host {hostname}"
-        #     )
-        # os.environ["DRMAA_LIBRARY_PATH"] = "/opt/slurm-drmaa/lib/libdrmaa.so"
-        # diagnostics = results_dir / "diagnostics/"
-        # job_name = "snakemake-linker"
-        # resources = config.slurm_resources
-        # drmaa_args = get_cli_args(
-        #     job_name=job_name,
-        #     account=resources["account"],
-        #     partition=resources["partition"],
-        #     peak_memory=resources["memory"],
-        #     max_runtime=resources["time_limit"],
-        #     num_threads=resources["cpus"],
-        # )
-        # drmaa_cli_arguments = [
-        #     "--executor",
-        #     "drmaa",
-        #     "--drmaa-args",
-        #     drmaa_args,
-        #     "--drmaa-log-dir",
-        #     str(diagnostics),
-        # ]
-        # # slurm_args = [
-        # #     "--executor",
-        # #     "slurm",
-        # #     "--profile",
-        # #     "/ihme/homes/pnast/repos/linker/.config/snakemake/slurm"
-        # #     ]
-        # return drmaa_cli_arguments
+        if not is_on_slurm():
+            raise RuntimeError(
+                f"A 'slurm' computing environment is specified but it has been "
+                "determined that the current host is not on a slurm cluster "
+                f"(host: {socket.gethostname()})."
+            )
+        resources = config.slurm_resources
+        slurm_args = [
+            "--executor",
+            "slurm",
+            "--default-resources",
+            f"slurm_account={resources['account']}",
+            f"slurm_partition='{resources['partition']}'",
+            f"mem={resources['memory']}",
+            f"runtime={resources['time_limit']}",
+            f"nodes={resources['cpus']}",
+        ]
+        return slurm_args
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "

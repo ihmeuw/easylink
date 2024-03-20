@@ -3,3 +3,4 @@ rule all:
     input:
         final_output=['foo', 'bar'],
         validation='bar'
+    message: 'Grabbing final output' 
