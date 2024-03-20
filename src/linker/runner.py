@@ -48,8 +48,9 @@ def main(config: Config) -> None:
 def get_singularity_args(config: Config) -> str:
     input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
-    LINKER_TEMP.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {LINKER_TEMP}:/tmp,{config.results_dir},{input_file_paths}"
+    linker_tmp_dir = LINKER_TEMP[config.computing_environment]
+    linker_tmp_dir.mkdir(parents=True, exist_ok=True)
+    singularity_args += f" -B {linker_tmp_dir}:/tmp,{config.results_dir},{input_file_paths}"
     return singularity_args
 
 
