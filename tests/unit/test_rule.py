@@ -2,11 +2,14 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import pytest
+
 from linker.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
 
 RULE_STRINGS = {
     "target_rule": "rule_strings/target_rule.txt",
-    "implemented_rule": "rule_strings/implemented_rule.txt",
+    "implemented_rule_local": "rule_strings/implemented_rule_local.txt",
+    "implemented_rule_slurm": "rule_strings/implemented_rule_slurm.txt",
     "validation_rule": "rule_strings/validation_rule.txt",
 }
 
@@ -40,18 +43,35 @@ def test_target_rule_build_rule():
         assert rulestring_lines[i].strip() == expected_line.strip()
 
 
-def test_implemented_rule_build_rule():
+@pytest.mark.parametrize("computing_environment", ["local", "slurm"])
+def test_implemented_rule_build_rule(computing_environment):
+    if computing_environment == "slurm":
+        resources = {
+            "partition": "slurmpart",
+            "time_limit": 1,
+            "memory": 5,
+            "cpus": 1337,
+        }
+    else:
+        resources = None
+
     rule = ImplementedRule(
-        name="foo",
+        step_name="foo_step",
+        implementation_name="foo",
         execution_input=["foo", "bar"],
         validation="bar",
         output=["baz"],
+        resources=resources,
         envvars={"eggs": "coconut"},
         diagnostics_dir="spam",
         image_path="Multipolarity.sif",
         script_cmd="echo hello world",
     )
-    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["implemented_rule"]
+
+    file_path = (
+        Path(os.path.dirname(__file__))
+        / RULE_STRINGS[f"implemented_rule_{computing_environment}"]
+    )
     with open(file_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()

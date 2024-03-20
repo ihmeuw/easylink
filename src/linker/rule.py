@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 
 class Rule(ABC):
@@ -39,7 +39,8 @@ class TargetRule(Rule):
 rule all:
     input:
         final_output={self.target_files},
-        validation='{self.validation}'"""
+        validation='{self.validation}'
+    message: 'Grabbing final output' """
 
 
 @dataclass
@@ -48,37 +49,55 @@ class ImplementedRule(Rule):
     A rule that defines the execution of an implementation
 
     Parameters:
-    name: Name
+    step_name: Name of step
+    implementation_name: Name of implementation
     execution_input: List of file paths required by implementation
     validation: name of file created by InputValidationRule to check for compatible input
     output: List of file paths created by implementation
+    resources: Computational resources used by executor (e.g. SLURM)
     envvars: Dictionary of environment variables to set
     diagnostics_dir: Directory for diagnostic files
     image_path: Path to Singularity image
     script_cmd: Command to execute
     """
 
-    name: str
+    step_name: str
+    implementation_name: str
     execution_input: List[str]
     validation: str
     output: List[str]
+    resources: Optional[dict]
     envvars: dict
     diagnostics_dir: str
     image_path: str
     script_cmd: str
 
     def _build_rule(self) -> str:
-        return (
-            f"""
+        return self._build_io() + self._build_resources() + self._build_shell_command()
+
+    def _build_io(self) -> str:
+        return f"""
 rule:
-    name: "{self.name}"
+    name: "{self.implementation_name}"
+    message: "Running {self.step_name} implementation: {self.implementation_name}"
     input: 
         implementation_inputs={self.execution_input},
         validation="{self.validation}"           
     output: {self.output}
+    log: "{self.diagnostics_dir}/{self.implementation_name}-output.log"
     container: "{self.image_path}" """
-            + self._build_shell_command()
-        )
+
+    def _build_resources(self) -> str:
+        if not self.resources:
+            return ""
+        return f"""
+    resources:
+        slurm_partition='{self.resources['partition']}',
+        mem={self.resources['memory']},
+        runtime={self.resources['time_limit']},
+        nodes={self.resources['cpus']},
+        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'"
+        """
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
@@ -90,8 +109,9 @@ rule:
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
         export {var_name}={var_value}"""
+        # Log stdout/stderr to diagnostics directory
         shell_cmd += f"""
-        {self.script_cmd}
+        {self.script_cmd} > {{log}} 2>&1
         '''"""
 
         return shell_cmd

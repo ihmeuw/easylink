@@ -11,6 +11,7 @@ from linker.utilities.slurm_utils import (
     _generate_spark_cluster_job_template,
     get_cli_args,
     get_slurm_drmaa,
+    is_on_slurm,
 )
 
 CLI_KWARGS = {
@@ -24,6 +25,15 @@ CLI_KWARGS = {
 
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
+
+
+def test_is_on_slurm():
+    # export SLURM_ROOT
+    os.environ["SLURM_ROOT"] = "/some/path"
+    assert is_on_slurm()
+    # unset SLURM_ROOT
+    del os.environ["SLURM_ROOT"]
+    assert not is_on_slurm()
 
 
 @pytest.mark.skipif(
