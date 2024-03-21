@@ -13,12 +13,12 @@ IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 def test_get_singularity_args(default_config, test_dir):
     assert (
-            get_singularity_args(default_config)
-            == f"--no-home --containall -B {LINKER_TEMP[default_config.computing_environment]}:/tmp,"
-            f"{test_dir}/results_dir,"
-            f"{test_dir}/input_data1/file1.csv,"
-            f"{test_dir}/input_data2/file2.csv"
-        )
+        get_singularity_args(default_config)
+        == f"--no-home --containall -B {LINKER_TEMP[default_config.computing_environment]}:/tmp,"
+        f"{test_dir}/results_dir,"
+        f"{test_dir}/input_data1/file1.csv,"
+        f"{test_dir}/input_data2/file2.csv"
+    )
 
 
 def test_get_environment_args_local(default_config_params, test_dir):

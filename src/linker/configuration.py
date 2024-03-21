@@ -1,8 +1,9 @@
+import os
 import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-import os
+
 from loguru import logger
 
 from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
@@ -74,7 +75,9 @@ class Config:
         self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
         # Now that all validation is done, create results dir and copy the configuration files to the results directory
-        self._copy_configuration_files_to_results_directory(pipeline_specification, input_data, computing_environment)
+        self._copy_configuration_files_to_results_directory(
+            pipeline_specification, input_data, computing_environment
+        )
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
@@ -142,7 +145,9 @@ class Config:
         return file_list
 
     @staticmethod
-    def _load_computing_environment(computing_environment_specification_path: Path) -> Dict[Any, Any]:
+    def _load_computing_environment(
+        computing_environment_specification_path: Path,
+    ) -> Dict[Any, Any]:
         """Load the computing environment yaml file and return the contents as a dict."""
         if not computing_environment_specification_path:
             return {}  # handles empty environment.yaml
@@ -150,7 +155,7 @@ class Config:
             raise FileNotFoundError(
                 "Computing environment is expected to be a path to an existing"
                 f" yaml file. Input was: '{computing_environment_specification_path}'"
-                )
+            )
         else:
             return load_yaml(computing_environment_specification_path)
 
@@ -322,7 +327,12 @@ class Config:
 
         return errors
 
-    def _copy_configuration_files_to_results_directory(self, pipeline_specification_path,input_data_specification_path, computing_environment_specification_path) -> None:
+    def _copy_configuration_files_to_results_directory(
+        self,
+        pipeline_specification_path,
+        input_data_specification_path,
+        computing_environment_specification_path,
+    ) -> None:
         _ = os.umask(0o002)
         self.results_dir.mkdir(parents=True, exist_ok=True)
         (self.results_dir / "intermediate").mkdir(exist_ok=True)

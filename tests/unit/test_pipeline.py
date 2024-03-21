@@ -47,7 +47,9 @@ def test_get_output_dir(default_config, mocker, test_dir):
     assert pipeline.get_output_dir(pipeline.implementations[0]) == Path(
         test_dir + "/results_dir/intermediate/1_step_1"
     )
-    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path(test_dir + "/results_dir")
+    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path(
+        test_dir + "/results_dir"
+    )
 
 
 def test_get_diagnostic_dir(default_config, mocker, test_dir):

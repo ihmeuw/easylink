@@ -121,7 +121,9 @@ def test_batch_validation():
         ),
     ],
 )
-def test_pipeline_validation(pipeline, default_config_params, expected_msg, test_dir, caplog, mocker):
+def test_pipeline_validation(
+    pipeline, default_config_params, expected_msg, test_dir, caplog, mocker
+):
     mocker.patch(
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
     )
@@ -143,8 +145,10 @@ def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params.update({"pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml")})
-    
+    config_params.update(
+        {"pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml")}
+    )
+
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
 
@@ -176,7 +180,9 @@ def test_unsupported_implementation(test_dir, default_config_params, caplog, moc
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
     )
     config_params = default_config_params
-    config_params.update({"pipeline_specification": Path(f"{test_dir}/bad_implementation_pipeline.yaml")})
+    config_params.update(
+        {"pipeline_specification": Path(f"{test_dir}/bad_implementation_pipeline.yaml")}
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -199,10 +205,11 @@ def test_unsupported_implementation(test_dir, default_config_params, caplog, moc
     )
 
 
-def test_pipeline_schema_bad_input_data_type(default_config_params,test_dir, caplog):
+def test_pipeline_schema_bad_input_data_type(default_config_params, test_dir, caplog):
     config_params = default_config_params
-    config_params.update({"input_data": f"{test_dir}/bad_type_input_data.yaml",
-        "computing_environment": None})
+    config_params.update(
+        {"input_data": f"{test_dir}/bad_type_input_data.yaml", "computing_environment": None}
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -222,8 +229,12 @@ def test_pipeline_schema_bad_input_data_type(default_config_params,test_dir, cap
 
 def test_pipeline_schema_bad_input_data(default_config_params, test_dir, caplog):
     config_params = default_config_params
-    config_params.update({"input_data": f"{test_dir}/bad_columns_input_data.yaml",
-        "computing_environment": None})
+    config_params.update(
+        {
+            "input_data": f"{test_dir}/bad_columns_input_data.yaml",
+            "computing_environment": None,
+        }
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -247,9 +258,10 @@ def test_pipeline_schema_bad_input_data(default_config_params, test_dir, caplog)
 
 def test_pipeline_schema_missing_input_file(default_config_params, test_dir, caplog):
     config_params = default_config_params
-    config_params.update({"input_data": f"{test_dir}/missing_input_data.yaml",
-        "computing_environment": None})
-    
+    config_params.update(
+        {"input_data": f"{test_dir}/missing_input_data.yaml", "computing_environment": None}
+    )
+
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
 

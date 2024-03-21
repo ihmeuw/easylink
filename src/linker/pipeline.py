@@ -4,6 +4,7 @@ from typing import Dict, Tuple
 
 import yaml
 from loguru import logger
+
 from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.rule import ImplementedRule, InputValidationRule, TargetRule
@@ -79,7 +80,7 @@ class Pipeline:
 
     def get_diagnostics_dir(self, implementation: Implementation) -> Path:
         return self.config.results_dir / "diagnostics" / self.get_step_id(implementation)
-    
+
     @property
     def snakefile_path(self) -> Path:
         return self.config.results_dir / "Snakefile"

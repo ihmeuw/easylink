@@ -3,9 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from linker.utilities.data_utils import (
-    get_results_directory,
-)
+from linker.utilities.data_utils import get_results_directory
 
 
 @pytest.mark.parametrize(
