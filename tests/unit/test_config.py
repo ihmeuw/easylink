@@ -186,8 +186,8 @@ def test_get_implementation_specific_configuration(
     assert config.get_implementation_specific_configuration("step_1") == step_1_config
     assert config.get_implementation_specific_configuration("step_2") == step_2_config
 
-def test__copy_configuration_files_to_results_directory(default_config_params):
-    output_dir = Path("some/output/dir")
+def test__copy_configuration_files_to_results_directory(default_config_params, test_dir):
+    output_dir = Path(test_dir + "/some/output/dir")
     config_params = default_config_params
     config_params.update(
         {"results_dir": output_dir}
