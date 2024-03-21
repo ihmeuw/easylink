@@ -63,6 +63,7 @@ def test_get_diagnostic_dir(default_config, mocker, test_dir):
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
 def test_build_snakefile(default_config_params, mocker, test_dir, computing_environment):
+    results_dir = test_dir + "/results_dir"
     config_params = default_config_params
     if computing_environment == "slurm":
         config_params.update(
@@ -77,7 +78,7 @@ def test_build_snakefile(default_config_params, mocker, test_dir, computing_envi
     )
     with open(expected_file_path) as expected_file:
         expected = expected_file.read()
-    expected = expected.replace("{snake_dir}", test_dir + "/results_dir")
+    expected = expected.replace("{snake_dir}", results_dir)
     expected = expected.replace("{test_dir}", test_dir)
     snake_str = snakefile.read_text()
     snake_str_lines = snake_str.split("\n")

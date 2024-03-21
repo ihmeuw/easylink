@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import yaml
-
+from loguru import logger
 from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.rule import ImplementedRule, InputValidationRule, TargetRule
@@ -79,17 +79,23 @@ class Pipeline:
 
     def get_diagnostics_dir(self, implementation: Implementation) -> Path:
         return self.config.results_dir / "diagnostics" / self.get_step_id(implementation)
+    
+    @property
+    def snakefile_path(self) -> Path:
+        return self.config.results_dir / "Snakefile"
 
     def build_snakefile(self) -> Path:
+        if self.snakefile_path.is_file():
+            logger.warning("Snakefile already exists, overwriting.")
+            self.snakefile_path.unlink()
         self.write_imports()
         self.write_target_rules()
         for implementation in self.implementations:
             self.write_implementation_rules(implementation)
-        return self.config.results_dir / "Snakefile"
+        return self.snakefile_path
 
     def write_imports(self) -> None:
-        snakefile = self.config.results_dir / "Snakefile"
-        with open(snakefile, "a") as f:
+        with open(self.snakefile_path, "a") as f:
             f.write("from linker.utilities import validation_utils")
 
     def write_target_rules(self) -> None:
@@ -106,8 +112,8 @@ class Pipeline:
             output=validator_file,
             validator=validate_input_file_dummy,
         )
-        target_rule.write_to_snakefile(self.config.results_dir)
-        final_validation.write_to_snakefile(self.config.results_dir)
+        target_rule.write_to_snakefile(self.snakefile_path)
+        final_validation.write_to_snakefile(self.snakefile_path)
 
     def write_implementation_rules(self, implementation: Implementation) -> None:
         input_files = self.get_input_files(implementation)
@@ -142,5 +148,5 @@ class Pipeline:
             image_path=implementation.singularity_image_path,
             script_cmd=implementation.script_cmd,
         )
-        validation_rule.write_to_snakefile(self.config.results_dir)
-        implementation_rule.write_to_snakefile(self.config.results_dir)
+        validation_rule.write_to_snakefile(self.snakefile_path)
+        implementation_rule.write_to_snakefile(self.snakefile_path)
