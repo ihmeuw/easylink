@@ -80,8 +80,8 @@ def run(
     """Run a pipeline from the command line."""
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
-    results_dir = get_results_directory(output_dir, timestamp)
-    logger.info(f"Results directory: {str(results_dir)}")
+    results_dir = get_results_directory(output_dir, timestamp).as_posix()
+    logger.info(f"Results directory: {results_dir}")
     # TODO [MIC-4493]: Add configuration validation
     config = Config(
         pipeline_specification=pipeline_specification,

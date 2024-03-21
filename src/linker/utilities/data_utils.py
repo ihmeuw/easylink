@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Union
 
 import yaml
 
@@ -18,7 +18,7 @@ def _get_timestamp():
     return datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
 
-def load_yaml(filepath: Path) -> Dict:
+def load_yaml(filepath: Union[str, Path]) -> Dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
