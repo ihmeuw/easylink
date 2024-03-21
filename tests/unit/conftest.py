@@ -241,12 +241,17 @@ def test_dir(tmpdir_factory) -> str:
 
 
 @pytest.fixture()
-def default_config_params(test_dir) -> Dict[str, Path]:
+def results_dir(test_dir) -> Path:
+    return Path(f"{test_dir}/results_dir")
+
+
+@pytest.fixture()
+def default_config_params(test_dir, results_dir) -> Dict[str, Path]:
     return {
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
         "computing_environment": Path(f"{test_dir}/environment.yaml"),
-        "results_dir": Path(f"{test_dir}/results_dir"),
+        "results_dir": results_dir,
     }
 
 

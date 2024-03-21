@@ -192,7 +192,7 @@ def test_get_implementation_specific_configuration(
 def test__copy_configuration_files_to_results_directory(default_config_params, test_dir):
     output_dir = Path(test_dir + "/some/output/dir")
     config_params = default_config_params
-    config_params.update({"results_dir": output_dir})
+    config_params["results_dir"] = output_dir
     config = Config(**config_params)
     results_dir = config.results_dir
     assert results_dir.exists()

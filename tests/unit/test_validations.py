@@ -128,7 +128,7 @@ def test_pipeline_validation(
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
     )
     config_params = default_config_params
-    config_params.update({"pipeline_specification": Path(f"{test_dir}/{pipeline}")})
+    config_params["pipeline_specification"] = Path(f"{test_dir}/{pipeline}")
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -145,9 +145,7 @@ def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params.update(
-        {"pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml")}
-    )
+    config_params["pipeline_specification"] = Path(f"{test_dir}/bad_step_pipeline.yaml")
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -180,8 +178,8 @@ def test_unsupported_implementation(test_dir, default_config_params, caplog, moc
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
     )
     config_params = default_config_params
-    config_params.update(
-        {"pipeline_specification": Path(f"{test_dir}/bad_implementation_pipeline.yaml")}
+    config_params["pipeline_specification"] = Path(
+        f"{test_dir}/bad_implementation_pipeline.yaml"
     )
 
     with pytest.raises(SystemExit) as e:
@@ -281,7 +279,7 @@ def test_pipeline_schema_missing_input_file(default_config_params, test_dir, cap
 # Environment validations
 def test_unsupported_container_engine(default_config_params, caplog, mocker):
     config_params = default_config_params
-    config_params.update({"computing_environment": None})
+    config_params["computing_environment"] = None
 
     mocker.patch(
         "linker.configuration.Config._get_required_attribute",
@@ -311,7 +309,7 @@ def test_missing_slurm_details(default_config_params, caplog, mocker):
         else "undefined",
     )
     config_params = default_config_params
-    config_params.update({"computing_environment": None})
+    config_params["computing_environment"] = None
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
     _check_expected_validation_exit(
