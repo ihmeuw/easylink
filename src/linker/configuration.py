@@ -49,15 +49,12 @@ class Config:
         results_dir: Path,
     ):
         # Handle pipeline specification
-        self.pipeline_specification_path = Path(pipeline_specification)
-        self.pipeline = load_yaml(pipeline_specification)
+        self.pipeline = load_yaml(Path(pipeline_specification))
         self._requires_spark = self._determine_if_spark_is_required(self.pipeline)
         # Handle input data specification
-        self.input_data_specification_path = Path(input_data)
-        self.input_data = self._load_input_data_paths(input_data)
+        self.input_data = self._load_input_data_paths(Path(input_data))
         # Handle environment specification
-        self.computing_environment_specification_path = Path(computing_environment) if computing_environment else None
-        self.environment = self._load_computing_environment(computing_environment)
+        self.environment = self._load_computing_environment(Path(computing_environment))
         # Create results directory
         self.results_dir = results_dir
 
@@ -77,7 +74,7 @@ class Config:
         self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
         # Now that all validation is done, create results dir and copy the configuration files to the results directory
-        self._copy_configuration_files_to_results_directory()
+        self._copy_configuration_files_to_results_directory(pipeline_specification, input_data, computing_environment)
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
@@ -145,20 +142,17 @@ class Config:
         return file_list
 
     @staticmethod
-    def _load_computing_environment(
-        computing_environment_path: Optional[Path],
-    ) -> Dict[Any, Any]:
+    def _load_computing_environment(computing_environment_specification_path: Path) -> Dict[Any, Any]:
         """Load the computing environment yaml file and return the contents as a dict."""
-        if computing_environment_path:
-            if not computing_environment_path.is_file():
-                raise FileNotFoundError(
-                    "Computing environment is expected to be a path to an existing"
-                    f" yaml file. Input was: '{computing_environment_path}'"
+        if not computing_environment_specification_path:
+            return {}  # handles empty environment.yaml
+        elif not computing_environment_specification_path.is_file():
+            raise FileNotFoundError(
+                "Computing environment is expected to be a path to an existing"
+                f" yaml file. Input was: '{computing_environment_specification_path}'"
                 )
-            environment = load_yaml(computing_environment_path)
         else:
-            environment = {}  # handles empty environment.yaml
-        return environment
+            return load_yaml(computing_environment_specification_path)
 
     @staticmethod
     def _get_required_attribute(environment: Dict[Any, Any], key: str) -> str:
@@ -328,12 +322,12 @@ class Config:
 
         return errors
 
-    def _copy_configuration_files_to_results_directory(self) -> None:
+    def _copy_configuration_files_to_results_directory(self, pipeline_specification_path,input_data_specification_path, computing_environment_specification_path) -> None:
         _ = os.umask(0o002)
         self.results_dir.mkdir(parents=True, exist_ok=True)
         (self.results_dir / "intermediate").mkdir(exist_ok=True)
         (self.results_dir / "diagnostics").mkdir(exist_ok=True)
-        shutil.copy(self.pipeline_specification_path, self.results_dir)
-        shutil.copy(self.input_data_specification_path, self.results_dir)
-        if self.computing_environment_specification_path:
-            shutil.copy(self.computing_environment_specification_path, self.results_dir)
+        shutil.copy(pipeline_specification_path, self.results_dir)
+        shutil.copy(input_data_specification_path, self.results_dir)
+        if computing_environment_specification_path:
+            shutil.copy(computing_environment_specification_path, self.results_dir)
