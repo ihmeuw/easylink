@@ -3,7 +3,25 @@ from pathlib import Path
 
 import pytest
 
-from linker.utilities.data_utils import get_results_directory
+from linker.utilities.data_utils import (
+    copy_configuration_files_to_results_directory,
+    get_results_directory,
+)
+
+
+def test_copy_configuration_files_to_results_directory(default_config_params, test_dir):
+    output_dir = Path(test_dir + "/some/output/dir")
+    config_params = default_config_params
+    config_params["results_dir"] = output_dir
+    copy_configuration_files_to_results_directory(
+        config_params["pipeline_specification"],
+        config_params["input_data"],
+        config_params["computing_environment"],
+        output_dir,
+    )
+    assert output_dir.exists()
+    assert (output_dir / "intermediate").exists()
+    assert (output_dir / "diagnostics").exists()
 
 
 @pytest.mark.parametrize(

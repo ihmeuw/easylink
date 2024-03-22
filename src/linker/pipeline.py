@@ -54,6 +54,10 @@ class Pipeline:
             for idx, implementation in enumerate(self.implementations)
         }
 
+    @property
+    def snakefile_path(self) -> Path:
+        return self.config.results_dir / "Snakefile"
+
     # The following are in Pipeline instead of Implementation because they require
     # information about the entire pipeline (namely the index number),
     # not just the individual implementation.
@@ -80,10 +84,6 @@ class Pipeline:
 
     def get_diagnostics_dir(self, implementation: Implementation) -> Path:
         return self.config.results_dir / "diagnostics" / self.get_step_id(implementation)
-
-    @property
-    def snakefile_path(self) -> Path:
-        return self.config.results_dir / "Snakefile"
 
     def build_snakefile(self) -> Path:
         if self.snakefile_path.is_file():

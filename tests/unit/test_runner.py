@@ -21,7 +21,7 @@ def test_get_singularity_args(default_config, test_dir, results_dir):
     )
 
 
-def test_get_environment_args_local(default_config_params, test_dir):
+def test_get_environment_args_local(default_config_params):
     config = Config(**default_config_params)
     assert get_environment_args(config) == []
 

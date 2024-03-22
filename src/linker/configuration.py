@@ -56,7 +56,7 @@ class Config:
         self.input_data = self._load_input_data_paths(input_data)
         # Handle environment specification
         self.environment = self._load_computing_environment(computing_environment)
-        # Create results directory
+        # Store path to results directory
         self.results_dir = Path(results_dir)
 
         # Extract environment attributes and assign defaults as necessary
@@ -74,10 +74,6 @@ class Config:
 
         self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
         self._validate()
-        # Now that all validation is done, create results dir and copy the configuration files to the results directory
-        self._copy_configuration_files_to_results_directory(
-            pipeline_specification, input_data, computing_environment
-        )
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
@@ -326,18 +322,3 @@ class Config:
             )
 
         return errors
-
-    def _copy_configuration_files_to_results_directory(
-        self,
-        pipeline_specification_path,
-        input_data_specification_path,
-        computing_environment_specification_path,
-    ) -> None:
-        _ = os.umask(0o002)
-        self.results_dir.mkdir(parents=True, exist_ok=True)
-        (self.results_dir / "intermediate").mkdir(exist_ok=True)
-        (self.results_dir / "diagnostics").mkdir(exist_ok=True)
-        shutil.copy(pipeline_specification_path, self.results_dir)
-        shutil.copy(input_data_specification_path, self.results_dir)
-        if computing_environment_specification_path:
-            shutil.copy(computing_environment_specification_path, self.results_dir)

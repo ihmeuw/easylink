@@ -4,7 +4,6 @@ import click
 from loguru import logger
 
 from linker import runner
-from linker.configuration import Config
 from linker.utilities.data_utils import get_results_directory
 from linker.utilities.general_utils import (
     configure_logging_to_terminal,
@@ -83,15 +82,14 @@ def run(
     results_dir = get_results_directory(output_dir, timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")
     # TODO [MIC-4493]: Add configuration validation
-    config = Config(
+
+    main = handle_exceptions(
+        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
+    )
+    main(
         pipeline_specification=pipeline_specification,
         input_data=input_data,
         computing_environment=computing_environment,
         results_dir=results_dir,
     )
-
-    main = handle_exceptions(
-        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
-    )
-    main(config)
     logger.info("*** FINISHED ***")

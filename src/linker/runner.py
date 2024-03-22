@@ -8,14 +8,27 @@ from snakemake.cli import main as snake_main
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
+from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 from linker.utilities.paths import LINKER_TEMP
 from linker.utilities.slurm_utils import is_on_slurm
 
 
-def main(config: Config) -> None:
+def main(
+    pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
+) -> None:
     """Set up and run the pipeline"""
 
+    config = Config(
+        pipeline_specification=pipeline_specification,
+        input_data=input_data,
+        computing_environment=computing_environment,
+        results_dir=results_dir,
+    )
     pipeline = Pipeline(config)
+    # Now that all validation is done, create results dir and copy the configuration files to the results directory
+    copy_configuration_files_to_results_directory(
+        Path(pipeline_specification), Path(input_data), Path(computing_environment), Path(results_dir)
+    )
     snakefile = pipeline.build_snakefile()
     environment_args = get_environment_args(config)
     singularity_args = get_singularity_args(config)

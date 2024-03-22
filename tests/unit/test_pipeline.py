@@ -6,6 +6,7 @@ import pytest
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
+from linker.utilities.data_utils import copy_configuration_files_to_results_directory
 
 PIPELINE_STRINGS = {
     "local": "rule_strings/pipeline_local.txt",
@@ -71,6 +72,7 @@ def test_build_snakefile(default_config_params, mocker, test_dir, computing_envi
     config = Config(**config_params)
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(config)
+    copy_configuration_files_to_results_directory(**config_params)
     snakefile = pipeline.build_snakefile()
     expected_file_path = (
         Path(os.path.dirname(__file__)) / PIPELINE_STRINGS[computing_environment]
