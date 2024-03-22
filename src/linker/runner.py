@@ -27,7 +27,10 @@ def main(
     pipeline = Pipeline(config)
     # Now that all validation is done, create results dir and copy the configuration files to the results directory
     copy_configuration_files_to_results_directory(
-        Path(pipeline_specification), Path(input_data), Path(computing_environment), Path(results_dir)
+        Path(pipeline_specification),
+        Path(input_data),
+        Path(computing_environment),
+        Path(results_dir),
     )
     snakefile = pipeline.build_snakefile()
     environment_args = get_environment_args(config)
