@@ -14,18 +14,27 @@ from linker.utilities.slurm_utils import is_on_slurm
 
 
 def main(
-    config: Config,
-    results_dir: Path,
+    pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
 ) -> None:
     """Set up and run the pipeline"""
 
+    config = Config(
+        pipeline_specification=pipeline_specification,
+        input_data=input_data,
+        computing_environment=computing_environment,
+        results_dir=results_dir,
+    )
     pipeline = Pipeline(config)
-
-    # Now that all validation is done, copy the configuration files to the results directory
-    copy_configuration_files_to_results_directory(config, results_dir)
-    snakefile = pipeline.build_snakefile(results_dir)
-    environment_args = get_environment_args(config, results_dir)
-    singularity_args = get_singularity_args(config, results_dir)
+    # Now that all validation is done, create results dir and copy the configuration files to the results directory
+    copy_configuration_files_to_results_directory(
+        Path(pipeline_specification),
+        Path(input_data),
+        Path(computing_environment),
+        Path(results_dir),
+    )
+    snakefile = pipeline.build_snakefile()
+    environment_args = get_environment_args(config)
+    singularity_args = get_singularity_args(config)
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
     os.environ["foo"] = "bar"
@@ -51,16 +60,16 @@ def main(
     snake_main(argv)
 
 
-def get_singularity_args(config: Config, results_dir: Path) -> str:
+def get_singularity_args(config: Config) -> str:
     input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
     linker_tmp_dir = LINKER_TEMP[config.computing_environment]
     linker_tmp_dir.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {linker_tmp_dir}:/tmp,{results_dir},{input_file_paths}"
+    singularity_args += f" -B {linker_tmp_dir}:/tmp,{config.results_dir},{input_file_paths}"
     return singularity_args
 
 
-def get_environment_args(config: Config, results_dir: Path) -> List[str]:
+def get_environment_args(config: Config) -> List[str]:
     # Set up computing environment
     if config.computing_environment == "local":
         return []
