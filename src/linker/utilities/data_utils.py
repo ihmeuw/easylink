@@ -14,14 +14,16 @@ def copy_configuration_files_to_results_directory(
     results_dir: Path,
 ) -> None:
     old_umask = os.umask(0o002)
-    results_dir.mkdir(parents=True, exist_ok=True)
-    (results_dir / "intermediate").mkdir(exist_ok=True)
-    (results_dir / "diagnostics").mkdir(exist_ok=True)
-    shutil.copy(pipeline_specification, results_dir)
-    shutil.copy(input_data, results_dir)
-    if computing_environment:
-        shutil.copy(computing_environment, results_dir)
-    os.umask(old_umask)
+    try:
+        results_dir.mkdir(parents=True, exist_ok=True)
+        (results_dir / "intermediate").mkdir(exist_ok=True)
+        (results_dir / "diagnostics").mkdir(exist_ok=True)
+        shutil.copy(pipeline_specification, results_dir)
+        shutil.copy(input_data, results_dir)
+        if computing_environment:
+            shutil.copy(computing_environment, results_dir)
+    finally:
+        os.umask(old_umask)
 
 
 def get_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
