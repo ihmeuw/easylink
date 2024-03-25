@@ -1,6 +1,8 @@
+import os
+import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
 
@@ -42,20 +44,20 @@ class Config:
 
     def __init__(
         self,
-        pipeline_specification: Path,
-        input_data: Path,
-        computing_environment: Optional[Path],
+        pipeline_specification: Union[str, Path],
+        input_data: Union[str, Path],
+        computing_environment: Optional[Union[str, Path]],
+        results_dir: Union[str, Path],
     ):
         # Handle pipeline specification
-        self.pipeline_specification_path = pipeline_specification
         self.pipeline = load_yaml(pipeline_specification)
         self._requires_spark = self._determine_if_spark_is_required(self.pipeline)
         # Handle input data specification
-        self.input_data_specification_path = input_data
         self.input_data = self._load_input_data_paths(input_data)
         # Handle environment specification
-        self.computing_environment_specification_path = computing_environment
         self.environment = self._load_computing_environment(computing_environment)
+        # Store path to results directory
+        self.results_dir = Path(results_dir)
 
         # Extract environment attributes and assign defaults as necessary
         self.computing_environment = self._get_required_attribute(
@@ -128,7 +130,7 @@ class Config:
         return False
 
     @staticmethod
-    def _load_input_data_paths(input_data_specification_path: Path) -> List[Path]:
+    def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
         input_data_paths = load_yaml(input_data_specification_path)
         if not isinstance(input_data_paths, dict):
             raise TypeError(
@@ -140,19 +142,18 @@ class Config:
 
     @staticmethod
     def _load_computing_environment(
-        computing_environment_path: Optional[Path],
+        computing_environment_specification_path: Optional[str],
     ) -> Dict[Any, Any]:
         """Load the computing environment yaml file and return the contents as a dict."""
-        if computing_environment_path:
-            if not computing_environment_path.is_file():
-                raise FileNotFoundError(
-                    "Computing environment is expected to be a path to an existing"
-                    f" yaml file. Input was: '{computing_environment_path}'"
-                )
-            environment = load_yaml(computing_environment_path)
+        if not computing_environment_specification_path:
+            return {}  # handles empty environment.yaml
+        elif not Path(computing_environment_specification_path).is_file():
+            raise FileNotFoundError(
+                "Computing environment is expected to be a path to an existing"
+                f" yaml file. Input was: '{computing_environment_specification_path}'"
+            )
         else:
-            environment = {}  # handles empty environment.yaml
-        return environment
+            return load_yaml(computing_environment_specification_path)
 
     @staticmethod
     def _get_required_attribute(environment: Dict[Any, Any], key: str) -> str:

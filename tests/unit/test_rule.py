@@ -21,9 +21,9 @@ def test_rule_interface():
 
     rule = TestRule()
     with TemporaryDirectory() as snake_dir_path:
-        snake_dir = Path(snake_dir_path)
-        rule.write_to_snakefile(snake_dir)
-        with open(snake_dir / "Snakefile", "r") as f:
+        snakefile_path = Path(snake_dir_path) / "Snakefile"
+        rule.write_to_snakefile(snakefile_path)
+        with open(snakefile_path, "r") as f:
             assert f.read() == "'Tis but a scratch!"
 
 

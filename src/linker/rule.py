@@ -9,9 +9,8 @@ class Rule(ABC):
     and 'Rules' in Snakemake syntax that must be written to the Snakefile
     """
 
-    def write_to_snakefile(self, snakefile_dir) -> None:
-        snakefile = snakefile_dir / "Snakefile"
-        with open(snakefile, "a") as f:
+    def write_to_snakefile(self, snakefile_path) -> None:
+        with open(snakefile_path, "a") as f:
             f.write(self._build_rule())
 
     @abstractmethod

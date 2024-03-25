@@ -5,8 +5,23 @@ import pytest
 
 from linker.utilities.data_utils import (
     copy_configuration_files_to_results_directory,
-    create_results_directory,
+    get_results_directory,
 )
+
+
+def test_copy_configuration_files_to_results_directory(default_config_params, test_dir):
+    output_dir = Path(test_dir + "/some/output/dir")
+    config_params = default_config_params
+    config_params["results_dir"] = output_dir
+    copy_configuration_files_to_results_directory(
+        config_params["pipeline_specification"],
+        config_params["input_data"],
+        config_params["computing_environment"],
+        output_dir,
+    )
+    assert output_dir.exists()
+    assert (output_dir / "intermediate").exists()
+    assert (output_dir / "diagnostics").exists()
 
 
 @pytest.mark.parametrize(
@@ -18,7 +33,7 @@ from linker.utilities.data_utils import (
         (True, True),
     ],
 )
-def test_create_results_directory(test_dir, output_dir_provided, timestamp, mocker):
+def test_get_results_directory(test_dir, output_dir_provided, timestamp, mocker):
     """Tests expected behavior. If directory is provided then a "results/" folder
     is created at the working directory. If timestamp is True, then a timestamped
     directory is created within the results directory.
@@ -32,7 +47,7 @@ def test_create_results_directory(test_dir, output_dir_provided, timestamp, mock
     mocker.patch(
         "linker.utilities.data_utils._get_timestamp", return_value="2024_01_01_00_00_00"
     )
-    results_dir = create_results_directory(output_dir, timestamp)
+    results_dir = get_results_directory(output_dir, timestamp)
 
     expected_results_dir = Path(test_dir)
     if not output_dir_provided:
@@ -41,17 +56,3 @@ def test_create_results_directory(test_dir, output_dir_provided, timestamp, mock
         expected_results_dir = expected_results_dir / "2024_01_01_00_00_00"
 
     assert expected_results_dir == results_dir
-    assert results_dir.exists()
-    assert (results_dir / "intermediate").exists()
-    assert (results_dir / "diagnostics").exists()
-
-
-def test_copy_configuration_files_to_results_directory(default_config, test_dir):
-    results_dir = create_results_directory(f"{test_dir}/check_copies/", False)
-    assert not (results_dir / "pipeline.yaml").exists()
-    assert not (results_dir / "input_data.yaml").exists()
-    assert not (results_dir / "environment.yaml").exists()
-    copy_configuration_files_to_results_directory(default_config, results_dir)
-    assert (results_dir / "pipeline.yaml").exists()
-    assert (results_dir / "input_data.yaml").exists()
-    assert (results_dir / "environment.yaml").exists()

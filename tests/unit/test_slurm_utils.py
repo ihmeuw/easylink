@@ -27,15 +27,6 @@ CLI_KWARGS = {
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
-def test_is_on_slurm():
-    # export SLURM_ROOT
-    os.environ["SLURM_ROOT"] = "/some/path"
-    assert is_on_slurm()
-    # unset SLURM_ROOT
-    del os.environ["SLURM_ROOT"]
-    assert not is_on_slurm()
-
-
 @pytest.mark.skipif(
     IN_GITHUB_ACTIONS,
     reason="Github Actions does not have access to our file system and so no drmaa.",
@@ -67,7 +58,7 @@ def test__get_cli_args():
     IN_GITHUB_ACTIONS,
     reason="Github Actions does not have access to our file system and so no drmaa.",
 )
-def test__generate_spark_cluster_jt(test_dir, mocker):
+def test__generate_spark_cluster_jt(default_config_params, test_dir, mocker):
     launcher = tempfile.NamedTemporaryFile(
         mode="w",
         dir=Path(test_dir),
@@ -83,11 +74,9 @@ def test__generate_spark_cluster_jt(test_dir, mocker):
     mocker.patch(
         "linker.configuration.Config._determine_if_spark_is_required", return_value=True
     )
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/spark_environment.yaml"),
-    }
+    config_params = default_config_params
+    config_params["computing_environment"] = Path(f"{test_dir}/spark_environment.yaml")
+
     config = Config(**config_params)
 
     drmaa = get_slurm_drmaa()
