@@ -16,6 +16,7 @@ from tests.conftest import SPECIFICATIONS_DIR
     reason="Must be on slurm to run this test.",
 )
 def test_slurm(caplog):
+    """Test that the pipeline runs on SLURM with appropriate resources."""
     with tempfile.TemporaryDirectory(dir="tests/integration/") as results_dir:
         results_dir = Path(results_dir).resolve()
         with pytest.raises(SystemExit) as exit:
