@@ -41,7 +41,7 @@ def test_get_environment_args_slurm(default_config_params, test_dir):
         "--default-resources",
         f"slurm_account={resources['account']}",
         f"slurm_partition='{resources['partition']}'",
-        f"mem={resources['memory']}",
+        f"mem_mb={resources['memory']*1024}",
         f"runtime={resources['time_limit']}",
         f"nodes={resources['cpus']}",
     ]
