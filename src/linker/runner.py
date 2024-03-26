@@ -89,7 +89,7 @@ def get_environment_args(config: Config) -> List[str]:
             "--default-resources",
             f"slurm_account={resources['account']}",
             f"slurm_partition='{resources['partition']}'",
-            f"mem={resources['memory']}",
+            f"mem_mb={resources['memory']*1024}",
             f"runtime={resources['time_limit']}",
             f"nodes={resources['cpus']}",
         ]
