@@ -10,7 +10,7 @@ from tests.conftest import SPECIFICATIONS_DIR
 @pytest.mark.slow
 def test_missing_results(mocker, caplog):
     """Test that the pipeline fails when a step is missing output files."""
-    
+
     ## Mock implementation script call to wait 1s instead of running something
     mocker.patch(
         "linker.implementation.Implementation.script_cmd",
