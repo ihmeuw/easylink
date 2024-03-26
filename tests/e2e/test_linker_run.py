@@ -1,4 +1,5 @@
 import hashlib
+import os
 import tempfile
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from linker.utilities.slurm_utils import is_on_slurm
 
 SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
+RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/scratch/"
 
 
 @pytest.mark.slow
@@ -40,7 +42,8 @@ def test_linker_run(pipeline_specification, input_data, computing_environment):
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
     # because other nodes do not have access to it.
     print(f"Is this on slurm: {is_on_slurm()}")  # print for jenkins
-    with tempfile.TemporaryDirectory(dir="tests/e2e/") as results_dir:
+    with tempfile.TemporaryDirectory(dir=RESULTS_DIR) as results_dir:
+        os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
         results_dir = Path(results_dir)
         cli_args = (
             "run "
