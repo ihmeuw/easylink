@@ -14,7 +14,11 @@ from linker.utilities.slurm_utils import is_on_slurm
 
 
 def main(
-    pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
+    pipeline_specification: str,
+    input_data: str,
+    computing_environment: str,
+    results_dir: str,
+    debug=False,
 ) -> None:
     """Set up and run the pipeline"""
 
@@ -42,19 +46,22 @@ def main(
         "--snakefile",
         str(snakefile),
         "--jobs=2",
-        "--latency-wait=60",
+        "--latency-wait=10",
         "--cores",
         "1",
         ## See above
         "--envvars",
         "foo",
-        ## Suppress some of the snakemake output
-        "--quiet",
-        "progress",
         "--use-singularity",
         "--singularity-args",
         singularity_args,
     ]
+    if not debug:
+        # Suppress some of the snakemake output
+        argv += [
+            "--quiet",
+            "progress",
+        ]
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")
     snake_main(argv)
