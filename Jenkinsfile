@@ -167,9 +167,9 @@ pipeline {
   post {
     always {
       sh "${ACTIVATE} && make clean"
-      sh "rm -rf ${CONDA_ENV_PATH}"
+      // sh "rm -rf ${CONDA_ENV_PATH}"
       // Delete the workspace directory.
-      deleteDir()
+      // deleteDir()
       // Tell BitBucket whether the build succeeded or failed.
       script {
         notifyBitbucket()

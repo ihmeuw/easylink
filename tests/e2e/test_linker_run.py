@@ -1,6 +1,4 @@
 import hashlib
-import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
@@ -37,15 +35,13 @@ RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552
         ),
     ],
 )
-def test_linker_run(
-    pipeline_specification, input_data, computing_environment, capsys
-):
+def test_linker_run(pipeline_specification, input_data, computing_environment):
     """e2e tests for 'linker run' command"""
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
     # because other nodes do not have access to it.
+    print(f"Is this on slurm: {is_on_slurm()}")  # print for jenkins
     with tempfile.TemporaryDirectory(dir="tests/e2e/") as results_dir:
         results_dir = Path(results_dir)
-        print(f"Is this on slurm: {is_on_slurm()}")
         cli_args = (
             "run "
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
@@ -54,20 +50,9 @@ def test_linker_run(
             f"-o {str(results_dir)} "
             "--no-timestamp"
         )
-        # with capsys.disabled():  # disabled so we can monitor job submissions
-        #     print(
-        #         "\n\n*** RUNNING TEST ***\n"
-        #         f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
-        #     )
-        #     subprocess.run(
-        #         cmd,
-        #         shell=True,
-        #         stdout=sys.stdout,
-        #         stderr=sys.stderr,
-        #         check=True,
-        #     )
         result = CliRunner().invoke(cli=cli.linker, args=cli_args)
-        print(result.stdout)  # useful for debugging in Jenkins console
+        print(result.output)  # print for jenkins
+        print(result.stdout)  # print for jenkins
         assert result.exit_code == 0
         assert (results_dir / "result.parquet").exists()
         # Check that the results file checksum matches the expected value
