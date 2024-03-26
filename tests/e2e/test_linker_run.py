@@ -16,10 +16,10 @@ RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(
-    not is_on_slurm(),
-    reason="Must be on slurm to run this test.",
-)
+# @pytest.mark.skipif(  # FIXME: UNCOMMENT THIS
+#     not is_on_slurm(),
+#     reason="Must be on slurm to run this test.",
+# )
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
@@ -45,6 +45,7 @@ def test_linker_run(
     # because other nodes do not have access to it.
     # with tempfile.TemporaryDirectory(dir="tests/e2e/") as results_dir:
         # results_dir = Path(results_dir)
+    print(is_on_slurm())
     results_dir = Path("/mnt/share/homes/sbachmei/venv/results")
     cli_args = (
         "run "
