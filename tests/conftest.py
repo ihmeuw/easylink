@@ -1,6 +1,10 @@
+from pathlib import Path
+
 import pytest
 from _pytest.logging import LogCaptureFixture
 from loguru import logger
+
+SPECIFICATIONS_DIR = Path("tests/specifications")
 
 
 def pytest_addoption(parser):

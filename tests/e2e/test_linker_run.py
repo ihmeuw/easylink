@@ -8,8 +8,8 @@ import pytest
 
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import is_on_slurm
+from tests.conftest import SPECIFICATIONS_DIR
 
-SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
 
 
