@@ -179,14 +179,14 @@ pipeline {
       slackSend channel: "#${params.SLACK_TO}", 
                 message: ":x: JOB FAILURE: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console\n\n<!channel>",
                 teamDomain: "ihme",
-                tokenCredentialId: "08c46d31-b3a1-49b0-b024-758c685fa8fb"
+                tokenCredentialId: "slack"
     }
     // Uncomment the following block for slack notification debugging
     success {
       slackSend channel: "#${params.SLACK_TO}", 
                 message: ":white_check_mark: (debugging) JOB SUCCESS: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console",
                 teamDomain: "ihme",
-                tokenCredentialId: "08c46d31-b3a1-49b0-b024-758c685fa8fb"
+                tokenCredentialId: "slack"
     }
   }
 }
