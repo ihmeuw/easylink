@@ -33,6 +33,11 @@ pipeline {
       defaultValue: "simsci-ci-status",
       description: "The Slack channel to send messages to."
     )
+    booleanParam(
+      name: "DEBUG",
+      defaultValue: false,
+      description: "Used as needed for debugging purposes."
+    )
   }
 
   environment {
@@ -181,12 +186,18 @@ pipeline {
                 teamDomain: "ihme",
                 tokenCredentialId: "slack"
     }
-    // Uncomment the following block for slack notification debugging
     success {
-      slackSend channel: "#${params.SLACK_TO}", 
-                message: ":white_check_mark: (debugging) JOB SUCCESS: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console",
-                teamDomain: "ihme",
-                tokenCredentialId: "slack"
+      script {
+        if (params.DEBUG) {
+          echo 'Debug is enabled. Sending a success message to Slack.'
+          slackSend channel: "#${params.SLACK_TO}", 
+                    message: ":white_check_mark: (debugging) JOB SUCCESS: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console",
+                    teamDomain: "ihme",
+                    tokenCredentialId: "slack"
+        } else {
+          echo 'Debug is not enabled. No success message will be sent to Slack.'
+        }
+      }
     }
   }
 }
