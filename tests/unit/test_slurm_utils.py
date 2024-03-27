@@ -115,6 +115,8 @@ def test__generate_spark_cluster_jt(default_config_params, test_dir, mocker):
     session.exit()
 
 
-@pytest.mark.skip(reason="TODO: MIC-4915")
+@pytest.mark.skip(
+    reason="TODO: MIC-4915: Test that slurm jobs are actually assigned the resources we request."
+)
 def test_slurm_resource_requests():
     pass

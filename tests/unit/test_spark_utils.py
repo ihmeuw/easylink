@@ -63,11 +63,15 @@ def test_find_spark_master_url_fails_if_no_master_url(test_dir):
         find_spark_master_url(logfile, attempt_sleep_time=0, num_attempts=2)
 
 
-@pytest.mark.skip(reason="TODO: MIC-4916")
+@pytest.mark.skip(
+    reason="TODO: MIC-4916: Test that the spark cluster is given the resources requested."
+)
 def test_spark_resource_requests():
     pass
 
 
-@pytest.mark.skip(reason="TODO: MIC-4917")
+@pytest.mark.skip(
+    reason="TODO: MIC-4917: Test that the spark cluster is not just spun up but is actually used by the tool."
+)
 def test_spark_cluster_utilized():
     pass
