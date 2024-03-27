@@ -90,15 +90,9 @@ def get_environment_args(config: Config) -> List[str]:
                 f"(host: {socket.gethostname()})."
             )
         resources = config.slurm_resources
-        slurm_args = [
-            "--executor",
-            "slurm",
-            "--default-resources",
-            f"slurm_account={resources['account']}",
-            f"slurm_partition='{resources['partition']}'",
-            f"mem_mb={resources['memory']*1024}",
-            f"runtime={resources['time_limit']}",
-            f"nodes={resources['cpus']}",
+        slurm_args = ["--executor", "slurm", "--default-resources"] + [
+            f"{resource_key}={resource_value}"
+            for resource_key, resource_value in resources.items()
         ]
         return slurm_args
     else:

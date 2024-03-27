@@ -77,7 +77,13 @@ class Config:
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
-        return {**self.implementation_resources, **self.slurm}
+        return {
+            "slurm_account": f"'{self.slurm['account']}'",
+            "slurm_partition": f"'{self.slurm['partition']}'",
+            "mem_mb": self.implementation_resources["memory"] * 1024,
+            "runtime": self.implementation_resources["time_limit"],
+            "nodes": self.implementation_resources["cpus"],
+        }
 
     @property
     def spark_resources(self) -> Dict[str, Any]:
