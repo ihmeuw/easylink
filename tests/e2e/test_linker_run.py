@@ -16,10 +16,10 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/scratch/tests/"
 
 
 @pytest.mark.slow
-# @pytest.mark.skipif(  # FIXME: UNCOMMENT THIS
-#     not is_on_slurm(),
-#     reason="Must be on slurm to run this test.",
-# )
+@pytest.mark.skipif(  # FIXME: UNCOMMENT THIS
+    not is_on_slurm(),
+    reason="Must be on slurm to run this test.",
+)
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
