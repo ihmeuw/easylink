@@ -91,7 +91,7 @@ rule:
             return ""
         return f"""
     resources:
-        slurm_partition='{self.resources['slurm_partition']}',
+        slurm_partition={self.resources['slurm_partition']},
         mem_mb={self.resources['mem_mb']},
         runtime={self.resources['runtime']},
         nodes={self.resources['nodes']},
