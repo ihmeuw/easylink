@@ -103,7 +103,7 @@ pipeline {
 
     stage("Install Package") {
       steps {
-        sh "${ACTIVATE} && make install"
+        sh "${ACTIVATE} && make install && pip install ."
       }
     }
 
