@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
+from linker.step import Step
 from linker.utilities.slurm_utils import is_on_slurm
 from tests.conftest import SPECIFICATIONS_DIR
 
@@ -15,13 +17,21 @@ from tests.conftest import SPECIFICATIONS_DIR
     not is_on_slurm(),
     reason="Must be on slurm to run this test.",
 )
-def test_slurm(caplog):
+def test_slurm(mocker, caplog):
     """Test that the pipeline runs on SLURM with appropriate resources."""
+    mocker.patch(
+        "linker.configuration.Config._get_schema",
+        return_value=PipelineSchema._generate_schema(
+            "test",
+            validate_dummy_input,
+            Step("step_1"),
+        ),
+    )
     with tempfile.TemporaryDirectory(dir="tests/integration/") as results_dir:
         results_dir = Path(results_dir).resolve()
         with pytest.raises(SystemExit) as exit:
             main(
-                SPECIFICATIONS_DIR / "pipeline.yaml",
+                SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
                 SPECIFICATIONS_DIR / "input_data.yaml",
                 SPECIFICATIONS_DIR / "environment_slurm.yaml",
                 results_dir,
@@ -30,7 +40,7 @@ def test_slurm(caplog):
         assert exit.value.code == 0
         output = caplog.text
         job_ids = re.findall(r"Job \d+ has been submitted with SLURM jobid (\d+)", output)
-        assert len(job_ids) == 2
+        assert len(job_ids) == 1
         cmd = [
             "sacct",
             "--jobs=" + ",".join(job_ids),
