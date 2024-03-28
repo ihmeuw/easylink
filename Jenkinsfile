@@ -1,5 +1,6 @@
 pipeline_name="linker"
 conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
+// using /tmp for the conda env path is MUCH faster, but it is not shared between nodes.
 conda_env_path="/mnt/team/simulation_science/priv/engineering/tests/venv/${conda_env_name}"
 // defaults for conda and pip are a local directory /svc-simsci for improved speed.
 // In the past, we used /ihme/code/* on the NFS (which is slower)
@@ -108,6 +109,9 @@ pipeline {
 
     stage("Install Package") {
       steps {
+        // NOTE: If you're having issues with the env not being found, it's possible
+        // that 'make install' is generating symlinks. Try adding
+        // '&& pip install .' to install a second time w/ realpaths.
         sh "${ACTIVATE} && make install"
       }
     }
