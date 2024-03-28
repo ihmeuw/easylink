@@ -77,7 +77,16 @@ class Config:
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
-        return {**self.implementation_resources, **self.slurm}
+        if not self.computing_environment == "slurm":
+            return {}
+        raw_slurm_resources = {**self.slurm, **self.implementation_resources}
+        return {
+            "slurm_account": f"'{raw_slurm_resources.get('account')}'",
+            "slurm_partition": f"'{raw_slurm_resources.get('partition')}'",
+            "mem_mb": raw_slurm_resources.get("memory", 0) * 1024,
+            "runtime": raw_slurm_resources.get("time_limit"),
+            "cpus_per_task": raw_slurm_resources.get("cpus"),
+        }
 
     @property
     def spark_resources(self) -> Dict[str, Any]:
@@ -170,7 +179,7 @@ class Config:
     @staticmethod
     def _get_implementation_resource_requests(environment: Dict[Any, Any]) -> Dict[Any, Any]:
         """Extracts the implementation_resources requests from the environment
-        and assigns default valuesif they are not present.
+        and assigns default values if they are not present.
         """
         key = "implementation_resources"
         if not key in environment:
@@ -315,7 +324,7 @@ class Config:
                 "container_engine"
             ] = f"The value '{self.container_engine}' is not supported."
 
-        if self.computing_environment == "slurm" and not self.slurm_resources:
+        if self.computing_environment == "slurm" and not self.slurm:
             errors[ENVIRONMENT_ERRORS_KEY]["slurm"] = (
                 "The environment configuration file must include a 'slurm' key "
                 "defining slurm resources if the computing_environment is 'slurm'."

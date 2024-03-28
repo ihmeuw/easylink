@@ -33,9 +33,9 @@ rule:
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     resources:
         slurm_partition='some-partition',
-        mem=42,
+        mem_mb=43008,
         runtime=42,
-        nodes=42,
+        cpus_per_task=42,
         slurm_extra="--output '{snake_dir}/diagnostics/1_step_1/step_1_python_pandas-slurm-%j.log'"
 
     shell:
@@ -65,9 +65,9 @@ rule:
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     resources:
         slurm_partition='some-partition',
-        mem=42,
+        mem_mb=43008,
         runtime=42,
-        nodes=42,
+        cpus_per_task=42,
         slurm_extra="--output '{snake_dir}/diagnostics/2_step_2/step_2_python_pandas-slurm-%j.log'"
 
     shell:

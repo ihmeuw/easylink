@@ -1,0 +1,2 @@
+computing_environment: local
+container_engine: singularity
