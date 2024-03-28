@@ -77,6 +77,8 @@ class Config:
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
+        if not self.slurm or not self.computing_environment == "slurm":
+            return {}
         return {
             "slurm_account": f"'{self.slurm['account']}'",
             "slurm_partition": f"'{self.slurm['partition']}'",
