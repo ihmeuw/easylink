@@ -171,12 +171,17 @@ pipeline {
 
   post {
     always {
-      sh "${ACTIVATE} && make clean"
-      echo "Cleaning up conda environment: ${CONDA_ENV_PATH}"
-      sh "rm -rf ${CONDA_ENV_PATH}"
-      echo "Did the cleanup work?"
-      // Delete the workspace directory.
-      deleteDir()
+      script {
+        if (params.DEBUG) {
+          echo "Debug is enabled. Not cleaning up."
+        } else {
+          echo "Cleaning up."
+          sh "${ACTIVATE} && make clean"
+          sh "rm -rf ${CONDA_ENV_PATH}"
+          // Delete the workspace directory.
+          deleteDir()
+        }
+      }
       // Tell BitBucket whether the build succeeded or failed.
       script {
         notifyBitbucket()
@@ -191,13 +196,11 @@ pipeline {
     success {
       script {
         if (params.DEBUG) {
-          echo 'Debug is enabled. Sending a success message to Slack.'
+          echo "Debug is enabled. Sending a success message to Slack."
           slackSend channel: "#${params.SLACK_TO}", 
                     message: ":white_check_mark: (debugging) JOB SUCCESS: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console",
                     teamDomain: "ihme",
                     tokenCredentialId: "slack"
-        } else {
-          echo 'Debug is not enabled. No success message will be sent to Slack.'
         }
       }
     }

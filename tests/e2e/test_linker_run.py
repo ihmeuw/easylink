@@ -16,7 +16,7 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(  # FIXME: UNCOMMENT THIS
+@pytest.mark.skipif(
     not is_on_slurm(),
     reason="Must be on slurm to run this test.",
 )
