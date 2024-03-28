@@ -10,9 +10,9 @@ rule:
     container: "Multipolarity.sif"
     resources:
         slurm_partition='slurmpart',
-        mem=5,
+        mem_mb=5120,
         runtime=1,
-        nodes=1337,
+        cpus_per_task=1337,
         slurm_extra="--output 'spam/foo-slurm-%j.log'"
 
     shell:

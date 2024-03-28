@@ -91,10 +91,10 @@ rule:
             return ""
         return f"""
     resources:
-        slurm_partition='{self.resources['partition']}',
-        mem={self.resources['memory']},
-        runtime={self.resources['time_limit']},
-        nodes={self.resources['cpus']},
+        slurm_partition={self.resources['slurm_partition']},
+        mem_mb={self.resources['mem_mb']},
+        runtime={self.resources['runtime']},
+        cpus_per_task={self.resources['cpus_per_task']},
         slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'"
         """
 

@@ -28,8 +28,8 @@ IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test_get_slurm_drmaa():
     """Confirm that a drmaa object is indeed returned"""
@@ -55,8 +55,8 @@ def test__get_cli_args():
 
 
 @pytest.mark.skipif(
-    IN_GITHUB_ACTIONS,
-    reason="Github Actions does not have access to our file system and so no drmaa.",
+    IN_GITHUB_ACTIONS or not is_on_slurm(),
+    reason="Must be on slurm and not in Github Actions to run this test.",
 )
 def test__generate_spark_cluster_jt(default_config_params, test_dir, mocker):
     launcher = tempfile.NamedTemporaryFile(
@@ -105,11 +105,18 @@ def test__generate_spark_cluster_jt(default_config_params, test_dir, mocker):
     assert jt.args == [launcher.name]
     assert jt.jobEnvironment == {"LC_ALL": "en_US.UTF-8", "LANG": "en_US.UTF-8"}
     expected_native_specification = (
-        f"--account={config.slurm_resources['account']} "
-        f"--partition={config.slurm_resources['partition']} "
-        f"--mem={config.slurm_resources['memory']*1024} "
-        f"--time={config.slurm_resources['time_limit']}:00:00 "
-        f"--cpus-per-task={config.slurm_resources['cpus']}"
+        f"--account={config.slurm['account']} "
+        f"--partition={config.slurm['partition']} "
+        f"--mem={config.slurm_resources['mem_mb']} "
+        f"--time={config.slurm_resources['runtime']}:00:00 "
+        f"--cpus-per-task={config.slurm_resources['cpus_per_task']}"
     )
     assert jt.nativeSpecification == expected_native_specification
     session.exit()
+
+
+@pytest.mark.skip(
+    reason="TODO: MIC-4915: Test that slurm jobs are actually assigned the resources we request."
+)
+def test_slurm_resource_requests():
+    pass

@@ -47,10 +47,10 @@ def test_target_rule_build_rule():
 def test_implemented_rule_build_rule(computing_environment):
     if computing_environment == "slurm":
         resources = {
-            "partition": "slurmpart",
-            "time_limit": 1,
-            "memory": 5,
-            "cpus": 1337,
+            "slurm_partition": "'slurmpart'",
+            "runtime": 1,
+            "mem_mb": 5120,
+            "cpus_per_task": 1337,
         }
     else:
         resources = None
