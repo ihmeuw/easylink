@@ -109,7 +109,7 @@ def test__generate_spark_cluster_jt(default_config_params, test_dir, mocker):
         f"--partition={config.slurm['partition']} "
         f"--mem={config.slurm_resources['mem_mb']} "
         f"--time={config.slurm_resources['runtime']}:00:00 "
-        f"--cpus-per-task={config.slurm_resources['nodes']}"
+        f"--cpus-per-task={config.slurm_resources['cpus_per_task']}"
     )
     assert jt.nativeSpecification == expected_native_specification
     session.exit()

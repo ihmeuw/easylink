@@ -44,7 +44,7 @@ def test_slurm(mocker, caplog):
         cmd = [
             "sacct",
             "--jobs=" + ",".join(job_ids),
-            "--format=JobID,Account,Partition,ReqMem,ReqNodes,TimelimitRaw",
+            "--format=JobID,Account,Partition,ReqMem,ReqCPUS,TimelimitRaw",
             "--noheader",
             "--parsable2",
         ]
@@ -57,9 +57,9 @@ def test_slurm(mocker, caplog):
         ]
         for line in main_job_lines:
             fields = line.split("|")
-            account, partition, mem, nodes, time = fields[1:6]
+            account, partition, mem, cpus, time = fields[1:6]
             assert account == "proj_simscience"
             assert partition == "all.q"
             assert mem == "1G" or mem == "1024M"  # Just in case
-            assert nodes == "1"
+            assert cpus == "1"
             assert time == "1"

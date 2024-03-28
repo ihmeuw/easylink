@@ -50,7 +50,7 @@ def test_implemented_rule_build_rule(computing_environment):
             "slurm_partition": "'slurmpart'",
             "runtime": 1,
             "mem_mb": 5120,
-            "nodes": 1337,
+            "cpus_per_task": 1337,
         }
     else:
         resources = None

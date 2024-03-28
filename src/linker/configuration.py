@@ -84,7 +84,7 @@ class Config:
             "slurm_partition": f"'{self.slurm['partition']}'",
             "mem_mb": self.implementation_resources["memory"] * 1024,
             "runtime": self.implementation_resources["time_limit"],
-            "nodes": self.implementation_resources["cpus"],
+            "cpus_per_task": self.implementation_resources["cpus"],
         }
 
     @property

@@ -94,7 +94,7 @@ rule:
         slurm_partition={self.resources['slurm_partition']},
         mem_mb={self.resources['mem_mb']},
         runtime={self.resources['runtime']},
-        nodes={self.resources['nodes']},
+        cpus_per_task={self.resources['cpus_per_task']},
         slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'"
         """
 
