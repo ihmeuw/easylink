@@ -12,7 +12,7 @@ from linker.utilities.slurm_utils import is_on_slurm
 
 SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
-RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/scratch/tests/"
+RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 
 
 @pytest.mark.slow
@@ -72,7 +72,9 @@ def test_linker_run(pipeline_specification, input_data, computing_environment):
     # Check that implementation configuration worked
     diagnostics_dir = results_dir / "diagnostics"
     assert load_yaml(diagnostics_dir / "1_step_1" / "diagnostics.yaml")["increment"] == 1
-    assert load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
+    final_diagnostics = load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")
+    assert final_diagnostics["increment"] == 100
     
-    # If it made it through all this, delete the results_dir
+    # If it made it through all this, print some diagnnostics and delete the results_dir
+    print(final_diagnostics)
     os.system(f"rm -rf {results_dir}")
