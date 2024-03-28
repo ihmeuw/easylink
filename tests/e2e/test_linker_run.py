@@ -24,11 +24,11 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
     "pipeline_specification, input_data, computing_environment",
     [
         # local
-        # (
-        #     "pipeline.yaml",
-        #     "input_data.yaml",
-        #     "environment_local.yaml",
-        # ),
+        (
+            "pipeline.yaml",
+            "input_data.yaml",
+            "environment_local.yaml",
+        ),
         # slurm
         (
             "pipeline.yaml",
