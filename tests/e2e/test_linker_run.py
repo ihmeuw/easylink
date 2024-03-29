@@ -1,16 +1,16 @@
 import hashlib
 import os
 
-# from click.testing import CliRunner
-import subprocess
-import sys
+from click.testing import CliRunner
+# import subprocess
+# import sys
 import tempfile
 from pathlib import Path
 from pprint import pprint
 
 import pytest
 
-# from linker import cli
+from linker import cli
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import is_on_slurm
 
@@ -27,18 +27,18 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
-        # # local
-        # (
-        #     "pipeline.yaml",
-        #     "input_data.yaml",
-        #     "environment_local.yaml",
-        # ),
-        # slurm
+        # local
         (
             "pipeline.yaml",
             "input_data.yaml",
-            "environment_slurm.yaml",
+            "environment_local.yaml",
         ),
+        # # slurm
+        # (
+        #     "pipeline.yaml",
+        #     "input_data.yaml",
+        #     "environment_slurm.yaml",
+        # ),
     ],
 )
 def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
@@ -53,38 +53,38 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
     # cluster jobs can write to it
     os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
     results_dir = Path(results_dir)
-    # cli_args = (
-    #     "run "
-    #     f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
-    #     f"-i {SPECIFICATIONS_DIR / input_data} "
-    #     f"-e {SPECIFICATIONS_DIR / computing_environment} "
-    #     f"-o {str(results_dir)} "
-    #     "--no-timestamp"
-    # )
-    # result = CliRunner().invoke(cli=cli.linker, args=cli_args)
-    cmd = (
-        "linker run "
+    cli_args = (
+        "run "
         f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
         f"-i {SPECIFICATIONS_DIR / input_data} "
         f"-e {SPECIFICATIONS_DIR / computing_environment} "
         f"-o {str(results_dir)} "
         "--no-timestamp"
     )
+    result = CliRunner().invoke(cli=cli.linker, args=cli_args)
+    # cmd = (
+    #     "linker run "
+    #     f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
+    #     f"-i {SPECIFICATIONS_DIR / input_data} "
+    #     f"-e {SPECIFICATIONS_DIR / computing_environment} "
+    #     f"-o {str(results_dir)} "
+    #     "--no-timestamp"
+    # )
     with capsys.disabled():  # disabled so we can monitor job submissions
         print(
             "\n\n*** RUNNING TEST ***\n"
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
         )
-        subprocess.run(
-            cmd,
-            shell=True,
-            stdout=sys.stdout,
-            stderr=sys.stderr,
-            check=True,
-        )
-        # print(result.output)  # print for jenkins
-        # print(result.stdout)  # print for jenkins
-        # assert result.exit_code == 0
+        # subprocess.run(
+        #     cmd,
+        #     shell=True,
+        #     stdout=sys.stdout,
+        #     stderr=sys.stderr,
+        #     check=True,
+        # )
+        print(result.output)  # print for jenkins
+        print(result.stdout)  # print for jenkins
+        assert result.exit_code == 0
         assert (results_dir / "result.parquet").exists()
         # Check that the results file checksum matches the expected value
         with open(results_dir / "result.parquet", "rb") as f:
