@@ -32,12 +32,12 @@ pipeline {
   parameters {
     string(
       name: "SLACK_TO",
-      defaultValue: "simsci-ci-status-test",  // FIXME SET TO simsci-ci-status
+      defaultValue: "simsci-ci-status",
       description: "The Slack channel to send messages to."
     )
     booleanParam(
       name: "DEBUG",
-      defaultValue: true,  // FIXME SET TO FALSE
+      defaultValue: false,
       description: "Used as needed for debugging purposes."
     )
   }
