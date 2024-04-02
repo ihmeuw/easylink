@@ -75,12 +75,12 @@ typecheck: pytype.cfg $(MAKE_SOURCES) # Run the type checker
 
 e2e: $(MAKE_SOURCES) # Run the e2e tests
 	export COVERAGE_FILE=./output/.coverage.e2e
-	pytest -vvv --runslow --cov --cov-report term --cov-report html:/mnt/team/simulation_science/priv/engineering/tests/output/htmlcov_e2e tests/e2e/
+	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_e2e tests/e2e/
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
 unit: $(MAKE_SOURCES) # Run unit tests
 	export COVERAGE_FILE=./output/.coverage.unit
-	pytest -vvv --runslow --cov --cov-report term --cov-report html:/mnt/team/simulation_science/priv/engineering/tests/output/htmlcov_unit tests/unit/
+	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit tests/unit/
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
 clean: # Delete build artifacts and do any custom cleanup such as spinning down services

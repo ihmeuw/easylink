@@ -1,6 +1,5 @@
 import hashlib
 import os
-
 import subprocess
 import sys
 import tempfile
@@ -8,6 +7,7 @@ from pathlib import Path
 from pprint import pprint
 
 import pytest
+
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.slurm_utils import is_on_slurm
 
@@ -55,7 +55,7 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
             "\n\n*** RUNNING TEST ***\n"
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
         )
-        
+
         cmd = (
             "linker run "
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
@@ -85,10 +85,15 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         # Check that implementation configuration worked
         diagnostics_dir = results_dir / "diagnostics"
         assert load_yaml(diagnostics_dir / "1_step_1" / "diagnostics.yaml")["increment"] == 1
-        assert load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
+        assert (
+            load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
+        )
 
         # If it made it through all this, print some diagnnostics and delete the results_dir
-        final_diagnostics = load_yaml(sorted([d for d in diagnostics_dir.iterdir() if d.is_dir()])[-1] / "diagnostics.yaml")
+        final_diagnostics = load_yaml(
+            sorted([d for d in diagnostics_dir.iterdir() if d.is_dir()])[-1]
+            / "diagnostics.yaml"
+        )
         print("\nFinal diagnostics:\n")
         pprint(final_diagnostics)
         os.system(f"rm -rf {results_dir}")

@@ -1,10 +1,11 @@
 pipeline_name="linker"
 conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
-// using /tmp for the conda env path is MUCH faster, but it is not shared between nodes.
-conda_env_path="/mnt/team/simulation_science/priv/engineering/tests/venv/${conda_env_name}"
+// using /tmp for things is MUCH faster but not shared between nodes.
+shared_filesystem_path="/mnt/team/simulation_science/priv/engineering/tests"
+conda_env_path="${shared_filesystem_path}/venv/${conda_env_name}"
 // defaults for conda and pip are a local directory /svc-simsci for improved speed.
 // In the past, we used /ihme/code/* on the NFS (which is slower)
-shared_path="/svc-simsci"
+shared_jenkins_node_path="/svc-simsci"
 
 pipeline {
   // This agent runs as svc-simsci on node simsci-slurm-sbuild-p01.
@@ -47,14 +48,14 @@ pipeline {
     TIMESTAMP = sh(script: 'date', returnStdout: true)
     // Specify the path to the .condarc file via environment variable.
     // This file configures the shared conda package cache.
-    CONDARC = "${shared_path}/miniconda3/.condarc"
-    CONDA_BIN_PATH = "${shared_path}/miniconda3/bin"
+    CONDARC = "${shared_jenkins_node_path}/miniconda3/.condarc"
+    CONDA_BIN_PATH = "${shared_jenkins_node_path}/miniconda3/bin"
     // Specify conda env by build number so that we don't have collisions if builds from
     // different branches happen concurrently.
     CONDA_ENV_NAME = "${conda_env_name}"
     CONDA_ENV_PATH = "${conda_env_path}"
     // Set the Pip cache.
-    XDG_CACHE_HOME = "${shared_path}/pip-cache"
+    XDG_CACHE_HOME = "${shared_jenkins_node_path}/pip-cache"
     // Jenkins commands run in separate processes, so need to activate the environment every
     // time we run pip, poetry, etc.
     ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
