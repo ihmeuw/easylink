@@ -13,7 +13,7 @@ from linker.configuration import Config
 
 def is_on_slurm() -> bool:
     """Returns True if the current environment is a SLURM cluster."""
-    return "SLURM_ROOT" in os.environ
+    return shutil.which("sbatch") is not None
 
 
 def get_slurm_drmaa() -> "drmaa":

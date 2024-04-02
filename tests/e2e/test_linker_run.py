@@ -1,8 +1,10 @@
 import hashlib
+import os
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from pprint import pprint
 
 import pytest
 
@@ -11,6 +13,7 @@ from linker.utilities.slurm_utils import is_on_slurm
 
 SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
+RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 
 
 @pytest.mark.slow
@@ -21,26 +24,41 @@ RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
-        # local
-        (
-            "pipeline.yaml",
-            "input_data.yaml",
-            "environment_local.yaml",
-        ),
         # slurm
         (
             "pipeline.yaml",
             "input_data.yaml",
             "environment_slurm.yaml",
         ),
+        # local
+        (
+            "pipeline.yaml",
+            "input_data.yaml",
+            "environment_local.yaml",
+        ),
     ],
 )
 def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
-    """e2e tests for 'linker run' command"""
+    """e2e tests for 'linker run' command
+
+    NOTE: We use various print statements in this test because they show up in the
+    Jenkins logs.
+    """
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
-    # because other nodes do not have access to it.
-    with tempfile.TemporaryDirectory(dir="tests/e2e/") as results_dir:
-        results_dir = Path(results_dir)
+    # because other nodes do not have access to it. Also, do not use a context manager
+    # (i.e. tempfile.TemporaryDirectory) because it's too difficult to debug when the test
+    # fails b/c the dir gets deleted.
+    results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
+    # give the tmpdir the same permissions as the parent directory so that
+    # cluster jobs can write to it
+    os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
+    results_dir = Path(results_dir)
+    with capsys.disabled():  # disabled so we can monitor job submissions
+        print(
+            "\n\n*** RUNNING TEST ***\n"
+            f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
+        )
+
         cmd = (
             "linker run "
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
@@ -49,18 +67,13 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
             f"-o {str(results_dir)} "
             "--no-timestamp"
         )
-        with capsys.disabled():  # disabled so we can monitor job submissions
-            print(
-                "\n\n*** RUNNING TEST ***\n"
-                f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
-            )
-            subprocess.run(
-                cmd,
-                shell=True,
-                stdout=sys.stdout,
-                stderr=sys.stderr,
-                check=True,
-            )
+        subprocess.run(
+            cmd,
+            shell=True,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            check=True,
+        )
 
         assert (results_dir / "result.parquet").exists()
         # Check that the results file checksum matches the expected value
@@ -77,4 +90,18 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         assert load_yaml(diagnostics_dir / "1_step_1" / "diagnostics.yaml")["increment"] == 1
         assert (
             load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
+        )
+
+        # If it made it through all this, print some diagnnostics and delete the results_dir
+        final_diagnostics = load_yaml(
+            sorted([d for d in diagnostics_dir.iterdir() if d.is_dir()])[-1]
+            / "diagnostics.yaml"
+        )
+        print("\nFinal diagnostics:\n")
+        pprint(final_diagnostics)
+        # sleep briefly before removing tmpdir b/c sometimes one lingers
+        os.system(f"sleep 1 && rm -rf {results_dir}")
+        print(
+            "\n\n*** END OF TEST ***\n"
+            f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
         )
