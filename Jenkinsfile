@@ -140,40 +140,39 @@ pipeline {
       }
     }
 
-    // stage("Test") {
-    //   parallel {
-
-      stage("Run End-to-End Tests") {
-        steps {
-          sh "${ACTIVATE} && make e2e"
-          publishHTML([
-            allowMissing: true,
-            alwaysLinkToLastBuild: false,
-            keepAll: true,
-            reportDir: "output/htmlcov_e2e",
-            reportFiles: "index.html",
-            reportName: "Coverage Report - E2E tests",
-            reportTitles: ''
-          ])
+    stage("Test") {
+      parallel {
+        stage("Run End-to-End Tests") {
+          steps {
+            sh "${ACTIVATE} && make e2e"
+            publishHTML([
+              allowMissing: true,
+              alwaysLinkToLastBuild: false,
+              keepAll: true,
+              reportDir: "output/htmlcov_e2e",
+              reportFiles: "index.html",
+              reportName: "Coverage Report - E2E tests",
+              reportTitles: ''
+            ])
+          }
         }
-      }
       
-      stage("Run Unit Tests") {
-        steps {
-          sh "${ACTIVATE} && make unit"
-          publishHTML([
-            allowMissing: true,
-            alwaysLinkToLastBuild: false,
-            keepAll: true,
-            reportDir: "output/htmlcov_unit",
-            reportFiles: "index.html",
-            reportName: "Coverage Report - Unit Tests",
-            reportTitles: ''
-          ])
+        stage("Run Unit Tests") {
+          steps {
+            sh "${ACTIVATE} && make unit"
+            publishHTML([
+              allowMissing: true,
+              alwaysLinkToLastBuild: false,
+              keepAll: true,
+              reportDir: "output/htmlcov_unit",
+              reportFiles: "index.html",
+              reportName: "Coverage Report - Unit Tests",
+              reportTitles: ''
+            ])
+          }
         }
       }
-      // }
-    // }
+    }
   }
 
   post {
