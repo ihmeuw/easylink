@@ -291,9 +291,9 @@ def test_unsupported_container_engine(test_dir, caplog, mocker):
     }
     mocker.patch(
         "linker.configuration.Config._get_required_attribute",
-        side_effect=lambda _env, attribute: "foo"
-        if attribute == "container_engine"
-        else None,
+        side_effect=lambda _env, attribute: (
+            "foo" if attribute == "container_engine" else None
+        ),
     )
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -312,9 +312,9 @@ def test_unsupported_container_engine(test_dir, caplog, mocker):
 def test_missing_slurm_details(test_dir, caplog, mocker):
     mocker.patch(
         "linker.configuration.Config._get_required_attribute",
-        side_effect=lambda _env, attribute: "slurm"
-        if attribute == "computing_environment"
-        else "undefined",
+        side_effect=lambda _env, attribute: (
+            "slurm" if attribute == "computing_environment" else "undefined"
+        ),
     )
     config_params = {
         "pipeline_specification": f"{test_dir}/pipeline.yaml",

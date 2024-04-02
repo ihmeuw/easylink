@@ -40,7 +40,7 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 )
 def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
     """e2e tests for 'linker run' command
-    
+
     NOTE: We use various print statements in this test because they show up in the
     Jenkins logs.
     """
