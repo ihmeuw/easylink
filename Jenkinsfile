@@ -114,7 +114,7 @@ pipeline {
         // NOTE: If you're having issues with the env not being found, it's possible
         // that 'make install' is generating symlinks. Try adding
         // '&& pip install .' to install a second time w/ realpaths.
-        sh "${ACTIVATE} && make install"
+        sh "${ACTIVATE} && make install && pip install ."
       }
     }
 
