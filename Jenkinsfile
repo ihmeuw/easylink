@@ -88,6 +88,8 @@ pipeline {
         JOB_NAME:       '${JOB_NAME}'
         WORKSPACE:      '${WORKSPACE}'
         XDG_CACHE_HOME: '${XDG_CACHE_HOME}'"""
+        // display env
+        sh "env | sort"
       }
     }
 
