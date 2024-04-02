@@ -39,8 +39,11 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
     ],
 )
 def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
-    """e2e tests for 'linker run' command"""
-    print(f"Is this on slurm: {is_on_slurm()}")  # print for jenkins
+    """e2e tests for 'linker run' command
+    
+    NOTE: We use various print statements in this test because they show up in the
+    Jenkins logs.
+    """
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
     # because other nodes do not have access to it. Also, do not use a context manager
     # (i.e. tempfile.TemporaryDirectory) because it's too difficult to debug when the test
@@ -96,6 +99,7 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         )
         print("\nFinal diagnostics:\n")
         pprint(final_diagnostics)
+        # sleep briefly before removing tmpdir b/c sometimes one lingers
         os.system(f"sleep 1 && rm -rf {results_dir}")
         print(
             "\n\n*** END OF TEST ***\n"
