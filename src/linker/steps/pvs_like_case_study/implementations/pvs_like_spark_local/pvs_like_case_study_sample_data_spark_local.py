@@ -296,9 +296,9 @@ def pvs_matching_pass(blocking_cols):
 
     assert (potential_links.groupby("record_id_census_2030").pik.nunique() == 1).all()
     links = potential_links.groupby("record_id_census_2030").pik.first().reset_index()
-    census_2030.loc[census_index_of_ids.loc[links.record_id_census_2030], "pik"] = (
-        links.pik.values
-    )
+    census_2030.loc[
+        census_index_of_ids.loc[links.record_id_census_2030], "pik"
+    ] = links.pik.values
 
     print(
         f"Matched {len(links)} records; {census_2030.pik.isnull().mean():.2%} still eligible to match"
