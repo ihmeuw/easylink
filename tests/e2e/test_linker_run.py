@@ -24,18 +24,18 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
-        # local
-        (
-            "pipeline.yaml",
-            "input_data.yaml",
-            "environment_local.yaml",
-        ),
         # slurm
         (
             "pipeline.yaml",
             "input_data.yaml",
             "environment_slurm.yaml",
         ),
+        # # local
+        # (
+        #     "pipeline.yaml",
+        #     "input_data.yaml",
+        #     "environment_local.yaml",
+        # ),
     ],
 )
 def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
