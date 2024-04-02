@@ -96,7 +96,7 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         )
         print("\nFinal diagnostics:\n")
         pprint(final_diagnostics)
-        os.system(f"rm -rf {results_dir}")
+        os.system(f"sleep 1 && rm -rf {results_dir}")
         print(
             "\n\n*** END OF TEST ***\n"
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
