@@ -24,11 +24,6 @@ pipeline {
     parallelsAlwaysFailFast()
   }
 
-  // This trigger enables Bitbucket integration.
-  triggers {
-    pollSCM "H H(0-6) * * *"
-  }
-
   parameters {
     string(
       name: "SLACK_TO",
