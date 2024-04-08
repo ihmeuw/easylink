@@ -1,10 +1,22 @@
+rule terminate_spark:
+    input:
+        config["results_dir"] + "/result.parquet",
+    output:
+        temp(config["results_dir"] + "/spark_logs/spark_master_terminated.txt"),
+    localrule: True
+    shell:
+        """
+        touch {output}
+        """
+
+
 rule start_spark_master:
     output:
-        rules.all.input.master_log,
+        config["results_dir"] + "/spark_logs/spark_master_log.txt",
     container:
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/spark_cluster.sif"
     params:
-        terminate_file_name=rules.all.input.term,
+        terminate_file_name=rules.terminate_spark.output,
     shell:
         """
     echo "Starting spark master - logging to {output}"
@@ -47,7 +59,7 @@ rule wait_for_spark_master:
     output:
         temp(config["results_dir"] + "/spark_logs/spark_master_uri.txt"),
     params:
-        spark_master_log_file=rules.all.input.master_log,
+        spark_master_log_file=rules.start_spark_master.output,
     localrule: True
     shell:
         """
@@ -71,6 +83,7 @@ rule wait_for_spark_master:
 
 
 rule split_workers:
+    localrule: True
     input:
         rules.wait_for_spark_master.output,
     output:
@@ -90,7 +103,7 @@ rule start_spark_worker:
     output:
         config["results_dir"] + "/spark_logs/spark_worker_log_{scatteritem}.txt",
     params:
-        terminate_file_name=rules.all.input.term,
+        terminate_file_name=rules.terminate_spark.output,
         user=os.environ["USER"],
     container:
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/spark_cluster.sif"
@@ -161,16 +174,4 @@ rule wait_for_spark_worker:
 
         done
         echo "Quitting Worker wait loop"
-        """
-
-
-rule terminate_spark:
-    input:
-        rules.all.input.final_output,
-    output:
-        temp(rules.all.input.term),
-    localrule: True
-    shell:
-        """
-        touch {output}
         """
