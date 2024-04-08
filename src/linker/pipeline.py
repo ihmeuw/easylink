@@ -93,8 +93,7 @@ class Pipeline:
         self.write_imports()
         self.write_target_rules()
         if self.config.spark:
-            with open(self.snakefile_path, "a") as f:
-                f.write(f"\ninclude: '{SPARK_SNAKEFILE}'")
+            self.write_spark_module()
         for implementation in self.implementations:
             self.write_implementation_rules(implementation)
         return self.snakefile_path
@@ -165,3 +164,23 @@ class Pipeline:
         )
         validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
+    
+    def write_spark_module(self) -> None:
+        with open(self.snakefile_path, "a") as f:
+            module = f"""
+module spark_cluster:
+    snakefile: '{SPARK_SNAKEFILE}'
+    config: config
+
+use rule * from spark_cluster"""
+            if self.config.computing_environment == "slurm":
+                for rule in ["start_spark_master", "start_spark_worker"]:
+                    module += f"""
+use rule {rule} from spark_cluster with:
+    resources:
+        slurm_partition={self.config.slurm_resources['slurm_partition']},
+        mem_mb={self.config.slurm_resources['mem_mb']},
+        runtime={self.config.slurm_resources['runtime']},
+        cpus_per_task={self.config.slurm_resources['cpus_per_task']},
+                        """
+            f.write(module)
