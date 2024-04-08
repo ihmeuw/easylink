@@ -22,6 +22,8 @@ if __name__ == "__main__":
         "pyyaml",
         "pyarrow",
         "snakemake>=8.0.0",
+        # TODO MIC-4963: Resolve quoting issue and remove pin
+        "snakemake-interface-executor-plugins<9.0.0",
         "snakemake-executor-plugin-slurm",
     ]
 
