@@ -9,6 +9,7 @@ from linker.configuration import Config
 from linker.implementation import Implementation
 from linker.rule import ImplementedRule, InputValidationRule, TargetRule
 from linker.utilities.general_utils import exit_with_validation_error
+from linker.utilities.paths import SPARK_SNAKEFILE
 from linker.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -91,6 +92,9 @@ class Pipeline:
             self.snakefile_path.unlink()
         self.write_imports()
         self.write_target_rules()
+        if self.config.spark:
+            with open(self.snakefile_path, "a") as f:
+                f.write(f"\ninclude: '{SPARK_SNAKEFILE}'")
         for implementation in self.implementations:
             self.write_implementation_rules(implementation)
         return self.snakefile_path
@@ -98,6 +102,11 @@ class Pipeline:
     def write_imports(self) -> None:
         with open(self.snakefile_path, "a") as f:
             f.write("from linker.utilities import validation_utils")
+            f.write(f"\nconfig['results_dir']='{self.config.results_dir}'")
+            if self.config.spark:
+                f.write(
+                    f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
+                )
 
     def write_target_rules(self) -> None:
         final_output = [str(self.config.results_dir / "result.parquet")]
@@ -106,7 +115,11 @@ class Pipeline:
         )
         # Snakemake resolves the DAG based on the first rule, so we put the target
         # before the validation
-        target_rule = TargetRule(target_files=final_output, validation=validator_file)
+        target_rule = TargetRule(
+            target_files=final_output,
+            validation=validator_file,
+            requires_spark=bool(self.config.spark),
+        )
         final_validation = InputValidationRule(
             name="results",
             input=final_output,
@@ -148,6 +161,7 @@ class Pipeline:
             diagnostics_dir=str(diagnostics_dir),
             image_path=implementation.singularity_image_path,
             script_cmd=implementation.script_cmd,
+            requires_spark=implementation.requires_spark,
         )
         validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
