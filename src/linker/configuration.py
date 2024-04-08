@@ -84,7 +84,7 @@ class Config:
             "slurm_account": f"'{raw_slurm_resources.get('account')}'",
             "slurm_partition": f"'{raw_slurm_resources.get('partition')}'",
             "mem_mb": raw_slurm_resources.get("memory", 0) * 1024,
-            "runtime": raw_slurm_resources.get("time_limit"),
+            "runtime": raw_slurm_resources.get("time_limit") * 60,
             "cpus_per_task": raw_slurm_resources.get("cpus"),
         }
 
