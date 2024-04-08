@@ -164,7 +164,7 @@ class Pipeline:
         )
         validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
-    
+
     def write_spark_module(self) -> None:
         with open(self.snakefile_path, "a") as f:
             module = f"""
