@@ -3,6 +3,7 @@ import functools
 import sys
 from bdb import BdbQuit
 from typing import Any, Callable, Dict, TextIO
+import shutil
 
 import yaml
 from loguru import logger
@@ -103,3 +104,8 @@ def exit_with_validation_error(error_msg: Dict) -> None:
         "\n==========================================\n"
     )
     exit(errno.EINVAL)
+
+
+def is_on_slurm() -> bool:
+    """Returns True if the current environment is a SLURM cluster."""
+    return shutil.which("sbatch") is not None

@@ -8,7 +8,7 @@ import pytest
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
 from linker.step import Step
-from linker.utilities.slurm_utils import is_on_slurm
+from linker.utilities.general_utils import is_on_slurm
 from tests.conftest import SPECIFICATIONS_DIR
 
 
