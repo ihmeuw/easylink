@@ -25,7 +25,7 @@ DEFAULT_ENVIRONMENT = {
     },
     "spark": {
         "workers": {
-            "num_workers": 2,  # num_workers + 1 nodes will be requested
+            "num_workers": 2, 
             "cpus_per_node": 1,
             "mem_per_node": 1,  # GB
             "time_limit": 1,  # hours

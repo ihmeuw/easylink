@@ -100,12 +100,12 @@ def get_environment_args(config: Config) -> List[str]:
             f"provided {config.computing_environment}"
         )
 
-def get_num_jobs(config: Config) -> int:
+def get_num_jobs(config: Config) -> str:
     if config.spark:
         # If using spark, we need at least one job for the master,
         # one job for each worker, and one job for the steps.
         # It's more parallel to also have a job for each worker.
-        return 2* (config.spark['workers'] + 1)
+        return str(2* (config.spark_resources['num_workers'] + 1))
     else:
         #This might not be the right thing to do
-        return 1
+        return str(1)
