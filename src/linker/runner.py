@@ -9,8 +9,8 @@ from snakemake.cli import main as snake_main
 from linker.configuration import Config
 from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
-from linker.utilities.paths import LINKER_TEMP
 from linker.utilities.general_utils import is_on_slurm
+from linker.utilities.paths import LINKER_TEMP
 
 
 def main(
