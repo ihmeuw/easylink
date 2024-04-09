@@ -40,8 +40,7 @@ rule all:
     message: 'Grabbing final output'
     input:
         final_output={self.target_files},
-        validation='{self.validation}',
-        """
+        validation='{self.validation}',"""
         if self.requires_spark:
             rulestring += f"""
         term=config['results_dir'] + "/spark_logs/spark_master_terminated.txt",
@@ -86,14 +85,17 @@ class ImplementedRule(Rule):
         return self._build_io() + self._build_resources() + self._build_shell_command()
 
     def _build_io(self) -> str:
-        return f"""
+        return (
+            f"""
 rule:
     name: "{self.implementation_name}"
-    message: "Running {self.step_name} implementation: {self.implementation_name}"
-    {self._build_input()}        
+    message: "Running {self.step_name} implementation: {self.implementation_name}" """
+            + self._build_input()
+            + f"""        
     output: {self.output}
     log: "{self.diagnostics_dir}/{self.implementation_name}-output.log"
     container: "{self.image_path}" """
+        )
 
     def _build_input(self) -> str:
         input_str = f"""
