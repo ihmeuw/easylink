@@ -34,7 +34,6 @@ rule start_spark_master:
     --webui-port $SPARK_MASTER_WEBUI_PORT \
     &> {output} &
     spid=$!
-    echo "Master PID is" $spid
 
     trap "kill -9 $spid &>/dev/null" EXIT
 
@@ -60,25 +59,38 @@ rule wait_for_spark_master:
         temp(config["results_dir"] + "/spark_logs/spark_master_uri.txt"),
     params:
         spark_master_log_file=rules.start_spark_master.output,
+        max_attempts=10,
+        attempt_sleep_time=10,
     localrule: True
     shell:
         """
+        echo "Searching for Spark master URL in {params.spark_master_log_file}"
+        sleep {params.attempt_sleep_time}
+        num_attempts=1
         while true; do
-            echo "Waiting for Spark Cluster to start..."
 
             if [[ -e {params.spark_master_log_file} ]]; then
                 found=`grep -o "\\(spark://.*\$\\)" {params.spark_master_log_file} || true`
 
                 if [[ ! -z $found ]]; then
+                    echo "Spark master URL found: $found"
                     echo $found > {output}
                     break
                 fi
             fi
 
-            sleep 10
+            if (( $num_attempts > {params.max_attempts})); then
+                echo "Couldn't find Spark master after {params.max_attempts} attempts. Exiting."
+                exit 2
+            
+            fi
+
+            echo "Unable to find Spark master URL in logfile. Waiting {params.attempt_sleep_time} seconds and retrying..."
+            echo "(attempt $num_attempts/{params.max_attempts})"
+            sleep {params.attempt_sleep_time}
+            num_attempts=$((num_attempts + 1))
 
         done
-        echo "Quitting Master wait loop"
         """
 
 
@@ -109,7 +121,7 @@ rule start_spark_worker:
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/spark_cluster.sif"
     shell:
         """
-        echo " Starting Spark Worker"
+        echo " Starting Spark Worker {wildcards.scatteritem}"
         SPARK_ROOT=/opt/spark
         SPARK_WORKER_WEBUI_PORT=28510
         read -r MASTER_URL < {input.masterurl}
@@ -124,7 +136,6 @@ rule start_spark_worker:
         $MASTER_URL \
         &> {output} &
     spid=$!
-    echo "Worker PID is" $spid
 
     trap "kill -9 $spid &>/dev/null" EXIT
 
@@ -151,27 +162,38 @@ rule wait_for_spark_worker:
     output:
         temp(config["results_dir"] + "/spark_logs/spark_worker_started_{scatteritem}.txt"),
     params:
-        spark_worker_log_file=config["results_dir"]
-        + "/spark_logs/spark_worker_log_{scatteritem}.txt",
+        spark_worker_log_file=config["results_dir"] + "/spark_logs/spark_worker_log_{scatteritem}.txt",
+        max_attempts=10,
+        attempt_sleep_time=10,
     localrule: True
     shell:
         """
+        echo "Waiting for Spark Worker {wildcards.scatteritem} to start..."
+        sleep {params.attempt_sleep_time}
+        num_attempts=1
         read -r MASTER_URL < {input}
         while true; do
-            echo "Waiting for Spark Worker to start..."
 
             if [[ -e {params.spark_worker_log_file} ]]; then
                 found=`grep -o "\\(Worker: Successfully registered with master $MASTER_URL\\)" {params.spark_worker_log_file} || true`
 
                 if [[ ! -z $found ]]; then
-                    echo $found
+                    echo "Spark Worker {wildcards.scatteritem} registered successfully"
                     touch {output}
                     break
                 fi
             fi
 
-            sleep 10
+            if (( $num_attempts > {params.max_attempts})); then
+                echo "Couldn't find Spark worker {wildcards.scatteritem} after {params.max_attempts} attempts. Exiting."
+                exit 2
+            
+            fi
+            
+            echo "Unable to find Spark worker {wildcards.scatteritem} registration. Waiting {params.attempt_sleep_time} seconds and retrying..."
+            echo "(attempt $num_attempts/{params.max_attempts})"
+            sleep {params.attempt_sleep_time}
+            num_attempts=$((num_attempts + 1))
 
         done
-        echo "Quitting Worker wait loop"
         """
