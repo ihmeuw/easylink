@@ -11,6 +11,6 @@ spark:
   workers:
     num_workers: 1  # num_workers + 1 nodes will be requested
     cpus_per_node: 1
-    mem_per_node: 0.5  # GB
+    mem_per_node: 1.5  # GB
     time_limit: 0.5  # hours
   keep_alive: false

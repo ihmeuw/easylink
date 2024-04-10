@@ -16,7 +16,7 @@ RESOURCES = {
     "spark": {
         "account": "proj_simscience",
         "partition": "all.q",
-        "mem": "512M",
+        "mem": "1.50G",
         "cpus": "1",
         "time": "30",
     },
@@ -59,10 +59,10 @@ def test_spark_slurm(mocker, caplog):
         output = caplog.text
         job_ids = re.findall(r"Job \d+ has been submitted with SLURM jobid (\d+)", output)
         assert len(job_ids) == 3
-        for job_id in job_ids:
+        for idx, job_id in enumerate(job_ids):
             cmd = [
                 "sacct",
-                "--jobs=" + ",".join(job_id),
+                f"--jobs={job_id}",
                 "--format=JobID,Account,Partition,ReqMem,ReqCPUS,TimelimitRaw",
                 "--noheader",
                 "--parsable2",
@@ -71,14 +71,16 @@ def test_spark_slurm(mocker, caplog):
             output = result.stdout
             # Filter out jobs that are not the main job and grab full line
             main_job_pattern = r"^(\d+)\|"
-            main_job_lines = [
-                line for line in output.split("\n") if re.match(main_job_pattern, line)
-            ]
-            for line in main_job_lines:
-                fields = line.split("|")
-                account, partition, mem, cpus, time = fields[1:6]
-                assert account == RESOURCES[JOB_TYPE[job_id]]["account"]
-                assert partition == RESOURCES[JOB_TYPE[job_id]]["partition"]
-                assert mem == RESOURCES[JOB_TYPE[job_id]]["mem"]
-                assert cpus == RESOURCES[JOB_TYPE[job_id]]["cpus"]
-                assert time == RESOURCES[JOB_TYPE[job_id]]["time"]
+            main_line = None
+            for line in output.split("\n"):
+                if re.match(main_job_pattern, line):
+                    main_line = line
+                    break
+            assert main_line
+            fields = main_line.split("|")
+            account, partition, mem, cpus, time = fields[1:6]
+            assert account == RESOURCES[JOB_TYPE[idx]]["account"]
+            assert partition == RESOURCES[JOB_TYPE[idx]]["partition"]
+            assert mem == RESOURCES[JOB_TYPE[idx]]["mem"]
+            assert cpus == RESOURCES[JOB_TYPE[idx]]["cpus"]
+            assert time == RESOURCES[JOB_TYPE[idx]]["time"]

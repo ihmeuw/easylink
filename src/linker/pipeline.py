@@ -180,8 +180,8 @@ use rule terminate_spark from spark_cluster with:
                     module += f"""
 use rule {rule} from spark_cluster with:
     resources:
-        slurm_account={self.config.spark_resources['slurm_account']},
-        slurm_partition={self.config.spark_resources['slurm_partition']},
+        slurm_account={self.config.slurm_resources['slurm_account']},
+        slurm_partition={self.config.slurm_resources['slurm_partition']},
         mem_mb={self.config.spark_resources['mem_mb']},
         runtime={self.config.spark_resources['runtime']},
         cpus_per_task={self.config.spark_resources['cpus_per_task']},
