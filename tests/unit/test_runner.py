@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import pytest
 
 from linker.configuration import Config
-from linker.runner import get_environment_args, get_num_jobs, get_singularity_args
+from linker.runner import get_environment_args, get_singularity_args
 from linker.utilities.paths import LINKER_TEMP
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
