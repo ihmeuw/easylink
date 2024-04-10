@@ -45,8 +45,10 @@ def main(
     argv = [
         "--snakefile",
         str(snakefile),
+        "--cores",
+        "all",
         "--jobs",
-        get_num_jobs(config),
+        "unlimited",
         "--latency-wait=10",
         ## See above
         "--envvars",
@@ -99,14 +101,3 @@ def get_environment_args(config: Config) -> List[str]:
             "only computing_environment 'local' and 'slurm' are supported; "
             f"provided {config.computing_environment}"
         )
-
-
-def get_num_jobs(config: Config) -> str:
-    if config.spark:
-        # If using spark, we need at least one job for the master,
-        # one job for each worker, and one job for the steps.
-        # It's more parallel to also have a job for each watcher.
-        return str(2 * (config.spark_resources["num_workers"] + 1))
-    else:
-        # This might not be the right thing to do
-        return str(1)
