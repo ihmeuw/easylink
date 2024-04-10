@@ -83,17 +83,26 @@ class Config:
         return {
             "slurm_account": f"'{raw_slurm_resources.get('account')}'",
             "slurm_partition": f"'{raw_slurm_resources.get('partition')}'",
-            "mem_mb": raw_slurm_resources.get("memory", 0) * 1024,
-            "runtime": raw_slurm_resources.get("time_limit") * 60,
+            "mem_mb": int(raw_slurm_resources.get("memory", 0) * 1024),
+            "runtime": int(raw_slurm_resources.get("time_limit") * 60),
             "cpus_per_task": raw_slurm_resources.get("cpus"),
         }
 
     @property
     def spark_resources(self) -> Dict[str, Any]:
         """Return the spark resources as a flat dictionary"""
+        spark_workers_raw = self.spark.get("workers")
+        spark_workers = {
+            "num_workers": spark_workers_raw.get("num_workers"),
+            "slurm_account": f"'{spark_workers_raw.get('account')}'",
+            "slurm_partition": f"'{spark_workers_raw.get('partition')}'",
+            "mem_mb": int(spark_workers_raw.get("mem_per_node", 0) * 1024),
+            "runtime": int(spark_workers_raw.get("time_limit") * 60),
+            "cpus_per_task": spark_workers_raw.get("cpus_per_node"),
+        }
         return {
             **self.slurm,
-            **self.spark["workers"],
+            **spark_workers,
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
 

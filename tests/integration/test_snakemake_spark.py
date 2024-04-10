@@ -16,9 +16,9 @@ RESOURCES = {
     "spark": {
         "account": "proj_simscience",
         "partition": "all.q",
-        "mem": "2G",
+        "mem": "512M",
         "cpus": "1",
-        "time": "120",
+        "time": "30",
     },
     "implementation": {
         "account": "proj_simscience",
