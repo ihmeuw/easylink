@@ -109,4 +109,4 @@ def get_num_jobs(config: Config) -> str:
         return str((config.spark_resources["num_workers"] + 1))
     else:
         # This might not be the right thing to do
-        return 1
+        return str(1)
