@@ -5,11 +5,21 @@ import pytest
 
 from linker.runner import main
 from tests.conftest import SPECIFICATIONS_DIR
+from linker.pipeline_schema import PipelineSchema, validate_dummy_input
+from linker.step import Step
 
 
 @pytest.mark.slow
 def test_missing_results(mocker, caplog):
     """Test that the pipeline fails when a step is missing output files."""
+    mocker.patch(
+        "linker.configuration.Config._get_schema",
+        return_value=PipelineSchema._generate_schema(
+            "test",
+            validate_dummy_input,
+            Step("step_1"),
+        ),
+    )
 
     ## Mock implementation script call to wait 1s instead of running something
     mocker.patch(
@@ -21,10 +31,10 @@ def test_missing_results(mocker, caplog):
         results_dir = Path(results_dir).resolve()
         with pytest.raises(SystemExit) as exit:
             main(
-                SPECIFICATIONS_DIR / "pipeline.yaml",
+                SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
                 SPECIFICATIONS_DIR / "input_data.yaml",
                 SPECIFICATIONS_DIR / "environment_local.yaml",
-                results_dir,
+                str(results_dir),
             )
         assert exit.value.code == 1
         assert "MissingOutputException" in caplog.text

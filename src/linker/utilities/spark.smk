@@ -59,7 +59,7 @@ rule wait_for_spark_master:
         temp(config["results_dir"] + "/spark_logs/spark_master_uri.txt"),
     params:
         spark_master_log_file=rules.start_spark_master.output,
-        max_attempts=10,
+        max_attempts=20,
         attempt_sleep_time=10,
     localrule: True
     shell:
@@ -163,8 +163,8 @@ rule wait_for_spark_worker:
         temp(config["results_dir"] + "/spark_logs/spark_worker_started_{scatteritem}.txt"),
     params:
         spark_worker_log_file=config["results_dir"] + "/spark_logs/spark_worker_log_{scatteritem}.txt",
-        max_attempts=10,
-        attempt_sleep_time=10,
+        max_attempts=20,
+        attempt_sleep_time=20,
     localrule: True
     shell:
         """

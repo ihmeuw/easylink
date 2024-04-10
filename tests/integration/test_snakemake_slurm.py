@@ -62,4 +62,4 @@ def test_slurm(mocker, caplog):
             assert partition == "all.q"
             assert mem == "1G" or mem == "1024M"  # Just in case
             assert cpus == "1"
-            assert time == "1"
+            assert time == "60"
