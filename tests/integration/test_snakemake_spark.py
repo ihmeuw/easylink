@@ -14,17 +14,19 @@ from tests.conftest import SPECIFICATIONS_DIR
 JOB_TYPE = {0: "spark", 1: "spark", 2: "implementation"}
 RESOURCES = {
     "spark": {
-    "account": "proj_simscience",
-    "partition": "all.q",
-    "mem": "1G",
-    "cpus": "1",
-    "time": "60", },
+        "account": "proj_simscience",
+        "partition": "all.q",
+        "mem": "1G",
+        "cpus": "1",
+        "time": "60",
+    },
     "implementation": {
-    "account": "proj_simscience",
-    "partition": "all.q",
-    "mem": "1G",
-    "cpus": "1",
-    "time": "60", }
+        "account": "proj_simscience",
+        "partition": "all.q",
+        "mem": "1G",
+        "cpus": "1",
+        "time": "60",
+    },
 }
 
 

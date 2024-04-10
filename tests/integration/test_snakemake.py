@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from linker.runner import main
-from tests.conftest import SPECIFICATIONS_DIR
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
+from linker.runner import main
 from linker.step import Step
+from tests.conftest import SPECIFICATIONS_DIR
 
 
 @pytest.mark.slow
