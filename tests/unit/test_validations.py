@@ -336,6 +336,8 @@ def test_no_container(default_config, caplog, mocker):
     metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     metadata["step_1_python_pandas"]["image_path"] = "some/path/with/no/container.sif"
     metadata["step_2_python_pandas"]["image_path"] = "some/path/with/no/container_2.sif"
+    metadata["step_3_python_pandas"]["image_path"] = "some/path/with/no/container_3.sif"
+    metadata["step_4_python_pandas"]["image_path"] = "some/path/with/no/container_4.sif"
     mocker.patch("linker.implementation.load_yaml", return_value=metadata)
     mocker.PropertyMock(
         "linker.implementation.Implementation._container_engine", return_value="undefined"
@@ -354,6 +356,12 @@ def test_no_container(default_config, caplog, mocker):
                 ],
                 "step_2_python_pandas": [
                     "- Container 'some/path/with/no/container_2.sif' does not exist.",
+                ],
+                "step_3_python_pandas": [
+                    "- Container 'some/path/with/no/container_3.sif' does not exist.",
+                ],
+                "step_4_python_pandas": [
+                    "- Container 'some/path/with/no/container_4.sif' does not exist.",
                 ],
             },
         },
