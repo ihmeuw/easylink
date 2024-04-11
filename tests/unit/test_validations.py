@@ -94,7 +94,7 @@ def test_batch_validation():
                         "and spelling in the pipeline configuration yaml."
                     ],
                     "pvs_like_case_study": [
-                        "- Expected 1 steps but found 2 implementations. Check "
+                        "- Expected 1 steps but found 4 implementations. Check "
                         "that all steps are accounted for \\(and there are no extraneous "
                         "ones\\) in the pipeline configuration yaml."
                     ],
@@ -107,7 +107,7 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": [
-                        "- Expected 2 steps but found 1 implementations. Check that "
+                        "- Expected 4 steps but found 1 implementations. Check that "
                         "all steps are accounted for \\(and there are no extraneous "
                         "ones\\) in the pipeline configuration yaml.",
                     ],
@@ -157,7 +157,7 @@ def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
         expected_msg={
             PIPELINE_ERRORS_KEY: {
                 "development": [
-                    "- Expected 2 steps but found 1 implementations. Check that "
+                    "- Expected 4 steps but found 1 implementations. Check that "
                     "all steps are accounted for \\(and there are no extraneous "
                     "ones\\) in the pipeline configuration yaml.",
                 ],

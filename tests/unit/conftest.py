@@ -48,6 +48,16 @@ PIPELINE_CONFIG_DICT = {
                     "name": "step_2_python_pandas",
                 },
             },
+            "step_3": {
+                "implementation": {
+                    "name": "step_3_python_pandas",
+                },
+            },
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
+            },
         },
     },
     "out_of_order": {
@@ -60,6 +70,16 @@ PIPELINE_CONFIG_DICT = {
             "step_1": {
                 "implementation": {
                     "name": "step_1_python_pandas",
+                },
+            },
+            "step_3": {
+                "implementation": {
+                    "name": "step_3_python_pandas",
+                },
+            },
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
                 },
             },
         },

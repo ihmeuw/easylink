@@ -78,3 +78,9 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         assert (
             load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
         )
+        assert (
+            load_yaml(diagnostics_dir / "3_step_3" / "diagnostics.yaml")["increment"] == 702
+        )
+        assert (
+            load_yaml(diagnostics_dir / "4_step_4" / "diagnostics.yaml")["increment"] == 912
+        )

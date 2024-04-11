@@ -39,6 +39,8 @@ class PipelineSchema:
                 validate_dummy_input,
                 Step("step_1"),
                 Step("step_2"),
+                Step("step_3"),
+                Step("step_4"),
             )
         )
 

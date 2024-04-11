@@ -21,7 +21,12 @@ def test__determine_if_spark_is_required(test_dir, requires_spark):
 
 def test__get_schema(default_config):
     """Test that the schema is correctly loaded from the pipeline.yaml"""
-    assert default_config.schema.steps == [Step("step_1"), Step("step_2")]
+    assert default_config.schema.steps == [
+        Step("step_1"),
+        Step("step_2"),
+        Step("step_3"),
+        Step("step_4"),
+    ]
 
 
 def test__load_input_data_paths(test_dir):
