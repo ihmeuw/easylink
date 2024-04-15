@@ -4,30 +4,14 @@ import tempfile
 from pathlib import Path
 
 import pytest
+import yaml
 
+from linker.configuration import Config
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
 from linker.step import Step
 from linker.utilities.general_utils import is_on_slurm
 from tests.conftest import SPECIFICATIONS_DIR
-
-JOB_TYPE = {0: "spark", 1: "spark", 2: "implementation"}
-RESOURCES = {
-    "spark": {
-        "account": "proj_simscience",
-        "partition": "all.q",
-        "mem": "1.50G",
-        "cpus": "1",
-        "time": "30",
-    },
-    "implementation": {
-        "account": "proj_simscience",
-        "partition": "all.q",
-        "mem": "1G",
-        "cpus": "1",
-        "time": "60",
-    },
-}
 
 
 @pytest.mark.slow
@@ -47,11 +31,16 @@ def test_spark_slurm(mocker, caplog):
     )
     with tempfile.TemporaryDirectory(dir="tests/integration/") as results_dir:
         results_dir = Path(results_dir).resolve()
+        pipeline_specification = SPECIFICATIONS_DIR / "integration" / "pipeline_spark.yaml"
+        input_data = SPECIFICATIONS_DIR / "input_data.yaml"
+        computing_environment = SPECIFICATIONS_DIR / "environment_slurm.yaml"
+        with open(computing_environment, "r") as stream:
+            env_config = yaml.safe_load(stream)
         with pytest.raises(SystemExit) as exit:
             main(
-                SPECIFICATIONS_DIR / "integration" / "pipeline_spark.yaml",
-                SPECIFICATIONS_DIR / "input_data.yaml",
-                SPECIFICATIONS_DIR / "environment_slurm.yaml",
+                pipeline_specification,
+                input_data,
+                computing_environment,
                 str(results_dir),
                 debug=True,
             )
@@ -79,8 +68,19 @@ def test_spark_slurm(mocker, caplog):
             assert main_line
             fields = main_line.split("|")
             account, partition, mem, cpus, time = fields[1:6]
-            assert account == RESOURCES[JOB_TYPE[idx]]["account"]
-            assert partition == RESOURCES[JOB_TYPE[idx]]["partition"]
-            assert mem == RESOURCES[JOB_TYPE[idx]]["mem"]
-            assert cpus == RESOURCES[JOB_TYPE[idx]]["cpus"]
-            assert time == RESOURCES[JOB_TYPE[idx]]["time"]
+            assert account == env_config["slurm"]["account"]
+            assert partition == env_config["slurm"]["partition"]
+            # First two jobs are spark master and spark worker
+            if idx in [0, 1]:
+                assert (
+                    mem
+                    == str(env_config["spark"]["workers"]["mem_per_node"] * 1024 + 500) + "M"
+                )
+                assert cpus == str(env_config["spark"]["workers"]["cpus_per_node"])
+                assert time == str(int(env_config["spark"]["workers"]["time_limit"] * 60))
+            else:
+                assert mem == str(env_config["implementation_resources"]["memory"]) + "G"
+                assert cpus == str(env_config["implementation_resources"]["cpus"])
+                assert time == str(
+                    int(env_config["implementation_resources"]["time_limit"] * 60)
+                )

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import yaml
+import pickle
 import json
 from loguru import logger
 
@@ -163,10 +164,8 @@ class Pipeline:
         implementation_rule.write_to_snakefile(self.snakefile_path)
 
     def write_config(self) -> None:
-        snake_config = {'results_dir': self.config.results_dir,
-                        'spark_resources': self.config.spark_resources}
         with open(self.snakefile_path, "a") as f:
-            json.dump(snake_config, f)
+            f.write(f"\nconfig['results_dir']='{self.config.results_dir}'")
             if self.config.spark:
                 f.write(
                     f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
@@ -196,11 +195,13 @@ use rule start_spark_worker from spark_cluster with:
     resources:
         slurm_account={self.config.slurm_resources['slurm_account']},
         slurm_partition={self.config.slurm_resources['slurm_partition']},
-        mem_mb={self.config.spark_resources['mem_mb']},
+        mem_mb={self.config.spark_resources['slurm_mem_mb']},
         runtime={self.config.spark_resources['runtime']},
         cpus_per_task={self.config.spark_resources['cpus_per_task']},
         slurm_extra="--output '{self.config.results_dir}/spark_logs/start_spark_worker-slurm-%j.log'"
     params:
+        terminate_file_name=rules.terminate_spark.output,
+        user=os.environ["USER"],
         cores={self.config.spark_resources['cpus_per_task']},
         memory={self.config.spark_resources['mem_mb']}
                         """
