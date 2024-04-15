@@ -117,6 +117,8 @@ rule start_spark_worker:
     params:
         terminate_file_name=rules.terminate_spark.output,
         user=os.environ["USER"],
+        cores=1
+        memory='1G'
     container:
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/spark_cluster.sif"
     shell:
@@ -130,7 +132,7 @@ rule start_spark_worker:
          mkdir -p "/tmp/spark_cluster_{params.user}"
 
         $SPARK_ROOT/bin/spark-class org.apache.spark.deploy.worker.Worker \
-        --cores 1 --memory 1G \
+        --cores {params.cores} --memory {params.memory} \
         --webui-port $SPARK_WORKER_WEBUI_PORT \
         --work-dir /tmp/singularity_spark_{params.user}/spark_work \
         $MASTER_URL \

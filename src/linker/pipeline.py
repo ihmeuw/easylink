@@ -176,15 +176,25 @@ use rule * from spark_cluster
 use rule terminate_spark from spark_cluster with:
     input: rules.all.input.final_output"""
             if self.config.computing_environment == "slurm":
-                for rule in ["start_spark_master", "start_spark_worker"]:
-                    module += f"""
-use rule {rule} from spark_cluster with:
+                module += f"""
+use rule start_spark_master from spark_cluster with:
     resources:
         slurm_account={self.config.slurm_resources['slurm_account']},
         slurm_partition={self.config.slurm_resources['slurm_partition']},
         mem_mb={self.config.spark_resources['mem_mb']},
         runtime={self.config.spark_resources['runtime']},
         cpus_per_task={self.config.spark_resources['cpus_per_task']},
-        slurm_extra="--output '{self.config.results_dir}/spark_logs/{rule}-slurm-%j.log'"
+        slurm_extra="--output '{self.config.results_dir}/spark_logs/start_spark_master-slurm-%j.log'"
+use rule start_spark_worker from spark_cluster with:
+    resources:
+        slurm_account={self.config.slurm_resources['slurm_account']},
+        slurm_partition={self.config.slurm_resources['slurm_partition']},
+        mem_mb={self.config.spark_resources['mem_mb']},
+        runtime={self.config.spark_resources['runtime']},
+        cpus_per_task={self.config.spark_resources['cpus_per_task']},
+        slurm_extra="--output '{self.config.results_dir}/spark_logs/start_spark_worker-slurm-%j.log'"
+    params:
+        cores={self.config.spark_resources['cpus_per_task']},
+        memory={self.config.spark_resources['mem_mb']}
                         """
             f.write(module)
