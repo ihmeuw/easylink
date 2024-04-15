@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import yaml
+import json
 from loguru import logger
 
 from linker.configuration import Config
@@ -91,6 +92,7 @@ class Pipeline:
             logger.warning("Snakefile already exists, overwriting.")
             self.snakefile_path.unlink()
         self.write_imports()
+        self.write_config()
         self.write_target_rules()
         if self.config.spark:
             self.write_spark_module()
@@ -101,11 +103,6 @@ class Pipeline:
     def write_imports(self) -> None:
         with open(self.snakefile_path, "a") as f:
             f.write("from linker.utilities import validation_utils")
-            f.write(f"\nconfig['results_dir']='{self.config.results_dir}'")
-            if self.config.spark:
-                f.write(
-                    f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
-                )
 
     def write_target_rules(self) -> None:
         final_output = [str(self.config.results_dir / "result.parquet")]
@@ -165,6 +162,16 @@ class Pipeline:
         validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
 
+    def write_config(self) -> None:
+        snake_config = {'results_dir': self.config.results_dir,
+                        'spark_resources': self.config.spark_resources}
+        with open(self.snakefile_path, "a") as f:
+            json.dump(snake_config, f)
+            if self.config.spark:
+                f.write(
+                    f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
+                )
+        
     def write_spark_module(self) -> None:
         with open(self.snakefile_path, "a") as f:
             module = f"""
@@ -182,7 +189,7 @@ use rule {rule} from spark_cluster with:
     resources:
         slurm_account={self.config.slurm_resources['slurm_account']},
         slurm_partition={self.config.slurm_resources['slurm_partition']},
-        mem_mb={self.config.spark_resources['mem_mb']},
+        mem_mb={self.config.spark_resources['slurm_mem_mb']},
         runtime={self.config.spark_resources['runtime']},
         cpus_per_task={self.config.spark_resources['cpus_per_task']},
         slurm_extra="--output '{self.config.results_dir}/spark_logs/{rule}-slurm-%j.log'"
