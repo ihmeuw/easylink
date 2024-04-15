@@ -2,9 +2,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Tuple
 
-import yaml
-import pickle
-import json
 from loguru import logger
 
 from linker.configuration import Config
@@ -170,7 +167,7 @@ class Pipeline:
                 f.write(
                     f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
                 )
-        
+
     def write_spark_module(self) -> None:
         with open(self.snakefile_path, "a") as f:
             module = f"""

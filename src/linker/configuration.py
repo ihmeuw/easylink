@@ -97,7 +97,9 @@ class Config:
         spark_workers = {
             "num_workers": spark_workers_raw.get("num_workers"),
             "mem_mb": int(spark_workers_raw.get("mem_per_node", 0) * 1024),
-            "slurm_mem_mb": int(spark_workers_raw.get("mem_per_node", 0) * 1024 +SLURM_SPARK_MEM_BUFFER),
+            "slurm_mem_mb": int(
+                spark_workers_raw.get("mem_per_node", 0) * 1024 + SLURM_SPARK_MEM_BUFFER
+            ),
             "runtime": int(spark_workers_raw.get("time_limit") * 60),
             "cpus_per_task": spark_workers_raw.get("cpus_per_node"),
         }

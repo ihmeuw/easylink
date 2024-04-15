@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-from linker.configuration import Config
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
 from linker.step import Step
