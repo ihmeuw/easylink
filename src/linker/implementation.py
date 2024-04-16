@@ -23,7 +23,7 @@ class Implementation:
         ].get("configuration", {})
         self._metadata = self._load_metadata()
         self.step_name = self._metadata["step"]
-        self._requires_spark = self._metadata.get("requires_spark", False)
+        self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"

@@ -1,5 +1,3 @@
-import os
-import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -25,7 +23,7 @@ DEFAULT_ENVIRONMENT = {
     },
     "spark": {
         "workers": {
-            "num_workers": 2,  # num_workers + 1 nodes will be requested
+            "num_workers": 2,
             "cpus_per_node": 1,
             "mem_per_node": 1,  # GB
             "time_limit": 1,  # hours
@@ -33,6 +31,9 @@ DEFAULT_ENVIRONMENT = {
         "keep_alive": False,
     },
 }
+
+# Allow some buffer so that slurm doesn't kill spark workers
+SLURM_SPARK_MEM_BUFFER = 500
 
 
 class Config:
@@ -83,17 +84,27 @@ class Config:
         return {
             "slurm_account": f"'{raw_slurm_resources.get('account')}'",
             "slurm_partition": f"'{raw_slurm_resources.get('partition')}'",
-            "mem_mb": raw_slurm_resources.get("memory", 0) * 1024,
-            "runtime": raw_slurm_resources.get("time_limit"),
+            "mem_mb": int(raw_slurm_resources.get("memory", 0) * 1024),
+            "runtime": int(raw_slurm_resources.get("time_limit") * 60),
             "cpus_per_task": raw_slurm_resources.get("cpus"),
         }
 
     @property
     def spark_resources(self) -> Dict[str, Any]:
         """Return the spark resources as a flat dictionary"""
+        spark_workers_raw = self.spark.get("workers")
+        spark_workers = {
+            "num_workers": spark_workers_raw.get("num_workers"),
+            "mem_mb": int(spark_workers_raw.get("mem_per_node", 0) * 1024),
+            "slurm_mem_mb": int(
+                spark_workers_raw.get("mem_per_node", 0) * 1024 + SLURM_SPARK_MEM_BUFFER
+            ),
+            "runtime": int(spark_workers_raw.get("time_limit") * 60),
+            "cpus_per_task": spark_workers_raw.get("cpus_per_node"),
+        }
         return {
             **self.slurm,
-            **self.spark["workers"],
+            **spark_workers,
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
 

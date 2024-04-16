@@ -31,6 +31,7 @@ def test_target_rule_build_rule():
     rule = TargetRule(
         target_files=["foo", "bar"],
         validation="bar",
+        requires_spark=False,
     )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["target_rule"]
     with open(file_path) as expected_file:
@@ -66,6 +67,7 @@ def test_implemented_rule_build_rule(computing_environment):
         diagnostics_dir="spam",
         image_path="Multipolarity.sif",
         script_cmd="echo hello world",
+        requires_spark=False,
     )
 
     file_path = (

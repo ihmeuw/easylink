@@ -6,3 +6,5 @@ IMPLEMENTATION_METADATA = Path(__file__).parent.parent / "implementation_metadat
 # Bind linker temp dir to /tmp in the container.
 # For now, put slurm in /tmp to avoid creating a subdir with a prolog script
 LINKER_TEMP = {"local": Path("/tmp/linker"), "slurm": Path("/tmp")}
+
+SPARK_SNAKEFILE = Path(__file__).parent / "spark.smk"

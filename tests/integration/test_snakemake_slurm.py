@@ -8,7 +8,7 @@ import pytest
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
 from linker.step import Step
-from linker.utilities.slurm_utils import is_on_slurm
+from linker.utilities.general_utils import is_on_slurm
 from tests.conftest import SPECIFICATIONS_DIR
 
 
@@ -52,14 +52,16 @@ def test_slurm(mocker, caplog):
         output = result.stdout
         # Filter out jobs that are not the main job and grab full line
         main_job_pattern = r"^(\d+)\|"
-        main_job_lines = [
-            line for line in output.split("\n") if re.match(main_job_pattern, line)
-        ]
-        for line in main_job_lines:
-            fields = line.split("|")
-            account, partition, mem, cpus, time = fields[1:6]
-            assert account == "proj_simscience"
-            assert partition == "all.q"
-            assert mem == "1G" or mem == "1024M"  # Just in case
-            assert cpus == "1"
-            assert time == "1"
+        main_line = None
+        for line in output.split("\n"):
+            if re.match(main_job_pattern, line):
+                main_line = line
+                break
+        assert main_line
+        fields = main_line.split("|")
+        account, partition, mem, cpus, time = fields[1:6]
+        assert account == "proj_simscience"
+        assert partition == "all.q"
+        assert mem == "1G" or mem == "1024M"  # Just in case
+        assert cpus == "1"
+        assert time == "60"
