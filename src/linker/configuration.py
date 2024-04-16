@@ -1,5 +1,3 @@
-import os
-import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -34,6 +32,7 @@ DEFAULT_ENVIRONMENT = {
     },
 }
 
+# Allow some buffer so that slurm doesn't kill spark workers
 SLURM_SPARK_MEM_BUFFER = 500
 
 
