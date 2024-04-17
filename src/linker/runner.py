@@ -58,6 +58,9 @@ def main(
         singularity_args,
         "--shared-fs-usage",
         "input-output",
+        "persistence","software-deployment",
+        "sources",
+        "storage-local-copies",
         "--verbose",
     ]
     # if not debug:
