@@ -56,6 +56,9 @@ def main(
         "--use-singularity",
         "--singularity-args",
         singularity_args,
+        "--shared-fs-usage",
+        "input-output",
+        
     ]
     if not debug:
         # Suppress some of the snakemake output
