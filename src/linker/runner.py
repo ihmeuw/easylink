@@ -59,7 +59,6 @@ def main(
         "--shared-fs-usage",
         "input-output",
         "--debug",
-        
     ]
     if not debug:
         # Suppress some of the snakemake output
