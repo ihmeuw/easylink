@@ -58,6 +58,7 @@ def main(
         singularity_args,
         "--shared-fs-usage",
         "input-output",
+        "--debug",
         
     ]
     if not debug:
