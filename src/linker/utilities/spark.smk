@@ -1,8 +1,8 @@
 rule terminate_spark:
     input:
-        config["results_dir"] + "/result.parquet",
+        "result.parquet",
     output:
-        temp(config["results_dir"] + "/spark_logs/spark_master_terminated.txt"),
+        temp("spark_logs/spark_master_terminated.txt"),
     localrule: True
     shell:
         """
@@ -12,7 +12,7 @@ rule terminate_spark:
 
 rule start_spark_master:
     output:
-        config["results_dir"] + "/spark_logs/spark_master_log.txt",
+        "spark_logs/spark_master_log.txt",
     container:
         "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/spark_cluster.sif"
     params:
@@ -41,7 +41,7 @@ rule start_spark_master:
 
         if ! kill -0 $spid >/dev/null 2>&1; then
             echo "rule $spid died"
-            cat {output} >&2
+          #  cat {output} >&2
             exit 1
         fi
 
@@ -56,7 +56,7 @@ rule start_spark_master:
 
 rule wait_for_spark_master:
     output:
-        temp(config["results_dir"] + "/spark_logs/spark_master_uri.txt"),
+        temp("spark_logs/spark_master_uri.txt"),
     params:
         spark_master_log_file=rules.start_spark_master.output,
         max_attempts=20,
@@ -102,7 +102,7 @@ rule split_workers:
         temp(
             touch(
                 scatter.num_workers(
-                    config["results_dir"] + "/spark_logs/spark_worker_{scatteritem}.txt"
+                    "spark_logs/spark_worker_{scatteritem}.txt"
                 )
             )
         ),
@@ -111,9 +111,9 @@ rule split_workers:
 rule start_spark_worker:
     input:
         masterurl=rules.wait_for_spark_master.output,
-        workers=config["results_dir"] + "/spark_logs/spark_worker_{scatteritem}.txt",
+        workers="spark_logs/spark_worker_{scatteritem}.txt",
     output:
-        config["results_dir"] + "/spark_logs/spark_worker_log_{scatteritem}.txt",
+        "spark_logs/spark_worker_log_{scatteritem}.txt",
     params:
         terminate_file_name=rules.terminate_spark.output,
         user=os.environ["USER"],
@@ -146,7 +146,7 @@ rule start_spark_worker:
 
         if ! kill -0 $spid >/dev/null 2>&1; then
             echo "rule $spid died"
-            cat {output} >&2
+           # cat {output} >&2
             exit 1
         fi
 
@@ -163,9 +163,9 @@ rule wait_for_spark_worker:
     input:
         rules.wait_for_spark_master.output,
     output:
-        temp(config["results_dir"] + "/spark_logs/spark_worker_started_{scatteritem}.txt"),
+        temp("spark_logs/spark_worker_started_{scatteritem}.txt"),
     params:
-        spark_worker_log_file=config["results_dir"] + "/spark_logs/spark_worker_log_{scatteritem}.txt",
+        spark_worker_log_file="spark_logs/spark_worker_log_{scatteritem}.txt",
         max_attempts=20,
         attempt_sleep_time=20,
     localrule: True

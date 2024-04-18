@@ -45,6 +45,8 @@ def main(
     argv = [
         "--snakefile",
         str(snakefile),
+        "--directory",
+        results_dir,
         "--cores",
         "all",
         "--jobs",
@@ -56,11 +58,6 @@ def main(
         "--use-singularity",
         "--singularity-args",
         singularity_args,
-        "--shared-fs-usage",
-        "input-output",
-        "persistence","software-deployment",
-        "sources",
-        "storage-local-copies",
         "--verbose",
     ]
     # if not debug:
@@ -79,7 +76,7 @@ def get_singularity_args(config: Config) -> str:
     singularity_args = "--no-home --containall"
     linker_tmp_dir = LINKER_TEMP[config.computing_environment]
     linker_tmp_dir.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {linker_tmp_dir}:/tmp,{config.results_dir},{input_file_paths}"
+    singularity_args += f" -B {linker_tmp_dir}:/tmp,$(pwd),{input_file_paths} --pwd $(pwd)"
     return singularity_args
 
 
