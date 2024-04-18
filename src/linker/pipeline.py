@@ -80,7 +80,7 @@ class Pipeline:
         if idx == len(self.implementations) - 1:
             return Path()
 
-        return Path("diagnostics") / self.get_step_id(implementation)
+        return Path("intermediate") / self.get_step_id(implementation)
 
     def get_diagnostics_dir(self, implementation: Implementation) -> Path:
         return Path("diagnostics") / self.get_step_id(implementation)

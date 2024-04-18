@@ -15,9 +15,10 @@ def test_get_singularity_args(default_config, test_dir, results_dir):
     assert (
         get_singularity_args(default_config)
         == f"--no-home --containall -B {LINKER_TEMP[default_config.computing_environment]}:/tmp,"
-        f"{results_dir.as_posix()},"
+        f"$(pwd),"
         f"{test_dir}/input_data1/file1.csv,"
         f"{test_dir}/input_data2/file2.csv"
+        " --pwd $(pwd)"
     )
 
 

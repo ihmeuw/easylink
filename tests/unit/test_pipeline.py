@@ -30,7 +30,7 @@ def test_get_step_id(default_config, mocker):
     assert pipeline.get_step_id(pipeline.implementations[1]) == "2_step_2"
 
 
-def test_get_input_files(default_config, mocker, test_dir, results_dir):
+def test_get_input_files(default_config, mocker, test_dir):
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_input_files(pipeline.implementations[0]) == [
@@ -38,33 +38,32 @@ def test_get_input_files(default_config, mocker, test_dir, results_dir):
         test_dir + "/input_data2/file2.csv",
     ]
     assert pipeline.get_input_files(pipeline.implementations[1]) == [
-        str(results_dir / "intermediate/1_step_1/result.parquet")
+        "intermediate/1_step_1/result.parquet"
     ]
 
 
-def test_get_output_dir(default_config, mocker, results_dir):
+def test_get_output_dir(default_config, mocker):
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_output_dir(pipeline.implementations[0]) == Path(
-        results_dir / "intermediate/1_step_1"
+        "intermediate/1_step_1"
     )
-    assert pipeline.get_output_dir(pipeline.implementations[1]) == results_dir
+    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path()
 
 
-def test_get_diagnostic_dir(default_config, mocker, results_dir):
+def test_get_diagnostic_dir(default_config, mocker):
     mocker.patch("linker.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_diagnostics_dir(pipeline.implementations[0]) == Path(
-        results_dir / "diagnostics/1_step_1"
+        "diagnostics/1_step_1"
     )
     assert pipeline.get_diagnostics_dir(pipeline.implementations[1]) == Path(
-        results_dir / "diagnostics/2_step_2"
+        "diagnostics/2_step_2"
     )
 
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
 def test_build_snakefile(default_config_params, mocker, test_dir, computing_environment):
-    results_dir = test_dir + "/results_dir"
     config_params = default_config_params
     if computing_environment == "slurm":
         config_params["computing_environment"] = Path(f"{test_dir}/spark_environment.yaml")
@@ -79,7 +78,6 @@ def test_build_snakefile(default_config_params, mocker, test_dir, computing_envi
     )
     with open(expected_file_path) as expected_file:
         expected = expected_file.read()
-    expected = expected.replace("{snake_dir}", results_dir)
     expected = expected.replace("{test_dir}", test_dir)
     snake_str = snakefile.read_text()
     snake_str_lines = snake_str.split("\n")
