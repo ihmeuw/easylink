@@ -41,6 +41,8 @@ def main(
     singularity_args = get_singularity_args(config)
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
+    # Set source cache in appropriate location so that jenkins runs
+    os.environ["XDG_CACHE_HOME"] = LINKER_TEMP[config.computing_environment] / "source_cache"
     os.environ["foo"] = "bar"
     argv = [
         "--snakefile",
