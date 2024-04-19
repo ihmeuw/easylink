@@ -149,5 +149,3 @@ src/linker/_version.py
 .specifications/
 
 .snakemake/
-
-.source_cache/

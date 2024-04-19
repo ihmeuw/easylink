@@ -60,14 +60,13 @@ def main(
         "--use-singularity",
         "--singularity-args",
         singularity_args,
-        "--verbose",
     ]
-    # if not debug:
-    #     # Suppress some of the snakemake output
-    #     argv += [
-    #         "--quiet",
-    #         "progress",
-    #     ]
+    if not debug:
+        # Suppress some of the snakemake output
+        argv += [
+            "--quiet",
+            "progress",
+        ]
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")
     snake_main(argv)
