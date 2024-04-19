@@ -40,7 +40,7 @@ def main(
     environment_args = get_environment_args(config)
     singularity_args = get_singularity_args(config)
     # Set source cache in appropriate location to avoid jenkins failures
-    os.environ["XDG_CACHE_HOME"] = results_dir + "/.source_cache"
+    os.environ["XDG_CACHE_HOME"] = results_dir + "/.snakemake/source_cache"
     # We need to set a dummy environment variable to avoid logging a wall of text.
     # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
     os.environ["foo"] = "bar"
