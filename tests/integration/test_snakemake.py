@@ -1,12 +1,12 @@
-import tempfile
 import os
+import tempfile
 
 import pytest
 
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
 from linker.step import Step
-from tests.conftest import SPECIFICATIONS_DIR, RESULTS_DIR
+from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
 
 @pytest.mark.slow
@@ -36,7 +36,7 @@ def test_missing_results(mocker, caplog):
             SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
             SPECIFICATIONS_DIR / "common/input_data.yaml",
             SPECIFICATIONS_DIR / "common/environment_local.yaml",
-            str(results_dir),
+            results_dir,
         )
     assert exit.value.code == 1
     assert "MissingOutputException" in caplog.text
