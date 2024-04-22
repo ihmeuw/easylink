@@ -73,7 +73,8 @@ def test_spark_slurm(mocker, caplog):
             if idx in [0, 1]:
                 assert (
                     mem
-                    == str(int(env_config["spark"]["workers"]["mem_per_node"] * 1024 + 500)) + "M"
+                    == str(int(env_config["spark"]["workers"]["mem_per_node"] * 1024 + 500))
+                    + "M"
                 )
                 assert cpus == str(env_config["spark"]["workers"]["cpus_per_node"])
                 assert time == str(int(env_config["spark"]["workers"]["time_limit"] * 60))
