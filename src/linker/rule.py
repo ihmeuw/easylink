@@ -43,9 +43,9 @@ rule all:
         validation='{self.validation}',"""
         if self.requires_spark:
             rulestring += f"""
-        term=config['results_dir'] + "/spark_logs/spark_master_terminated.txt",
-        master_log=config['results_dir'] + "/spark_logs/spark_master_log.txt",
-        worker_logs=gather.num_workers(config['results_dir'] + "/spark_logs/spark_worker_log_{{scatteritem}}.txt",
+        term="spark_logs/spark_master_terminated.txt",
+        master_log="spark_logs/spark_master_log.txt",
+        worker_logs=gather.num_workers("spark_logs/spark_worker_log_{{scatteritem}}.txt",
         ),
             """
         return rulestring

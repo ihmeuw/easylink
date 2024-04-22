@@ -55,9 +55,11 @@ extra_implementation_specific_input_glob = glob.glob(
 )
 extra_implementation_specific_input_file_path = os.getenv(
     "DUMMY_CONTAINER_EXTRA_IMPLEMENTATION_SPECIFIC_INPUT_FILE_PATH",
-    extra_implementation_specific_input_glob[0]
-    if len(extra_implementation_specific_input_glob) > 0
-    else None,
+    (
+        extra_implementation_specific_input_glob[0]
+        if len(extra_implementation_specific_input_glob) > 0
+        else None
+    ),
 )
 diagnostics["extra_implementation_specific_input"] = (
     extra_implementation_specific_input_file_path is not None

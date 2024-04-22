@@ -33,6 +33,7 @@ if __name__ == "__main__":
     data_requires = []
     test_requirements = [
         "pytest",
+        "pytest-cov",
         "pytest-mock",
     ]
 

@@ -78,12 +78,12 @@ class Pipeline:
     def get_output_dir(self, implementation: Implementation) -> Path:
         idx = self.implementation_indices[implementation.name]
         if idx == len(self.implementations) - 1:
-            return self.config.results_dir
+            return Path()
 
-        return self.config.results_dir / "intermediate" / self.get_step_id(implementation)
+        return Path("intermediate") / self.get_step_id(implementation)
 
     def get_diagnostics_dir(self, implementation: Implementation) -> Path:
-        return self.config.results_dir / "diagnostics" / self.get_step_id(implementation)
+        return Path("diagnostics") / self.get_step_id(implementation)
 
     def build_snakefile(self) -> Path:
         if self.snakefile_path.is_file():
@@ -103,10 +103,8 @@ class Pipeline:
             f.write("from linker.utilities import validation_utils")
 
     def write_target_rules(self) -> None:
-        final_output = [str(self.config.results_dir / "result.parquet")]
-        validator_file = str(
-            self.config.results_dir / "input_validations" / "final_validator"
-        )
+        final_output = ["result.parquet"]
+        validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
         # before the validation
         target_rule = TargetRule(
@@ -125,14 +123,10 @@ class Pipeline:
 
     def write_implementation_rules(self, implementation: Implementation) -> None:
         input_files = self.get_input_files(implementation)
-        output_files = [
-            str(self.get_output_dir(implementation) / "result.parquet"),
-        ]
+        output_files = [str(self.get_output_dir(implementation) / "result.parquet")]
         diagnostics_dir = self.get_diagnostics_dir(implementation)
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
-        validation_file = str(
-            self.config.results_dir / "input_validations" / implementation.validation_filename
-        )
+        validation_file = f"input_validations/{implementation.validation_filename}"
         resources = (
             self.config.slurm_resources
             if self.config.computing_environment == "slurm"
@@ -162,7 +156,6 @@ class Pipeline:
 
     def write_config(self) -> None:
         with open(self.snakefile_path, "a") as f:
-            f.write(f"\nconfig['results_dir']='{self.config.results_dir}'")
             if self.config.spark:
                 f.write(
                     f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
@@ -187,7 +180,7 @@ use rule start_spark_master from spark_cluster with:
         mem_mb={self.config.spark_resources['slurm_mem_mb']},
         runtime={self.config.spark_resources['runtime']},
         cpus_per_task={self.config.spark_resources['cpus_per_task']},
-        slurm_extra="--output '{self.config.results_dir}/spark_logs/start_spark_master-slurm-%j.log'"
+        slurm_extra="--output 'spark_logs/start_spark_master-slurm-%j.log'"
 use rule start_spark_worker from spark_cluster with:
     resources:
         slurm_account={self.config.slurm_resources['slurm_account']},
@@ -195,7 +188,7 @@ use rule start_spark_worker from spark_cluster with:
         mem_mb={self.config.spark_resources['slurm_mem_mb']},
         runtime={self.config.spark_resources['runtime']},
         cpus_per_task={self.config.spark_resources['cpus_per_task']},
-        slurm_extra="--output '{self.config.results_dir}/spark_logs/start_spark_worker-slurm-%j.log'"
+        slurm_extra="--output 'spark_logs/start_spark_worker-slurm-%j.log'"
     params:
         terminate_file_name=rules.terminate_spark.output,
         user=os.environ["USER"],
