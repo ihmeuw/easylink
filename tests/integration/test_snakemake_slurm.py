@@ -28,7 +28,7 @@ def test_slurm(mocker, caplog):
         ),
     )
     with tempfile.TemporaryDirectory(dir="tests/integration/") as results_dir:
-        results_dir = Path(results_dir).resolve()
+        results_dir = str(Path(results_dir).resolve())
         with pytest.raises(SystemExit) as exit:
             main(
                 SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
