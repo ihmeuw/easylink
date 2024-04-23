@@ -5,6 +5,7 @@ from _pytest.logging import LogCaptureFixture
 from loguru import logger
 
 SPECIFICATIONS_DIR = Path("tests/specifications")
+RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 
 
 def pytest_addoption(parser):
