@@ -23,12 +23,12 @@ RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
-        # # slurm
-        # (
-        #     "e2e/pipeline.yaml",
-        #     "common/input_data.yaml",
-        #     "e2e/environment_slurm.yaml",
-        # ),
+        # slurm
+        (
+            "e2e/pipeline.yaml",
+            "common/input_data.yaml",
+            "e2e/environment_slurm.yaml",
+        ),
         # local
         (
             "e2e/pipeline.yaml",
