@@ -1,12 +1,12 @@
+import os
 import tempfile
-from pathlib import Path
 
 import pytest
 
 from linker.pipeline_schema import PipelineSchema, validate_dummy_input
 from linker.runner import main
 from linker.step import Step
-from tests.conftest import SPECIFICATIONS_DIR
+from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
 
 @pytest.mark.slow
@@ -27,14 +27,16 @@ def test_missing_results(mocker, caplog):
         new_callable=mocker.PropertyMock,
         return_value="sleep 1s",
     )
-    with tempfile.TemporaryDirectory(dir="tests/integration/") as results_dir:
-        results_dir = Path(results_dir).resolve()
-        with pytest.raises(SystemExit) as exit:
-            main(
-                SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
-                SPECIFICATIONS_DIR / "input_data.yaml",
-                SPECIFICATIONS_DIR / "environment_local.yaml",
-                str(results_dir),
-            )
-        assert exit.value.code == 1
-        assert "MissingOutputException" in caplog.text
+    results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
+    # give the tmpdir the same permissions as the parent directory so that
+    # cluster jobs can write to it
+    os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
+    with pytest.raises(SystemExit) as exit:
+        main(
+            SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
+            SPECIFICATIONS_DIR / "common/input_data.yaml",
+            SPECIFICATIONS_DIR / "common/environment_local.yaml",
+            results_dir,
+        )
+    assert exit.value.code == 1
+    assert "MissingOutputException" in caplog.text

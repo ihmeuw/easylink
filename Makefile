@@ -78,6 +78,11 @@ e2e: $(MAKE_SOURCES) # Run the e2e tests
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_e2e tests/e2e/
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
+integration: $(MAKE_SOURCES) # Run unit tests
+	export COVERAGE_FILE=./output/.coverage.integration
+	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_integration tests/integration/
+	@echo "Ignore, Created by Makefile, `date`" > $@
+
 unit: $(MAKE_SOURCES) # Run unit tests
 	export COVERAGE_FILE=./output/.coverage.unit
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit tests/unit/

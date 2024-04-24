@@ -10,10 +10,9 @@ import pytest
 
 from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import is_on_slurm
+from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
-SPECIFICATIONS_DIR = Path("tests/e2e/specifications")
 RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
-RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
 
 
 @pytest.mark.slow
@@ -26,15 +25,15 @@ RESULTS_DIR = "/mnt/team/simulation_science/priv/engineering/tests/output/"
     [
         # slurm
         (
-            "pipeline.yaml",
-            "input_data.yaml",
-            "environment_slurm.yaml",
+            "e2e/pipeline.yaml",
+            "common/input_data.yaml",
+            "e2e/environment_slurm.yaml",
         ),
         # local
         (
-            "pipeline.yaml",
-            "input_data.yaml",
-            "environment_local.yaml",
+            "e2e/pipeline.yaml",
+            "common/input_data.yaml",
+            "common/environment_local.yaml",
         ),
     ],
 )
@@ -81,9 +80,9 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
             actual_checksum = hashlib.sha256(f.read()).hexdigest()
         assert actual_checksum == RESULT_CHECKSUM
 
-        assert (results_dir / pipeline_specification).exists()
-        assert (results_dir / input_data).exists()
-        assert (results_dir / computing_environment).exists()
+        assert (results_dir / Path(pipeline_specification).name).exists()
+        assert (results_dir / Path(input_data).name).exists()
+        assert (results_dir / Path(computing_environment).name).exists()
 
         # Check that implementation configuration worked
         diagnostics_dir = results_dir / "diagnostics"

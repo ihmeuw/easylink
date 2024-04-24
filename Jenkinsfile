@@ -147,7 +147,22 @@ pipeline {
               keepAll: true,
               reportDir: "output/htmlcov_e2e",
               reportFiles: "index.html",
-              reportName: "Coverage Report - E2E tests",
+              reportName: "Coverage Report - E2E Tests",
+              reportTitles: ''
+            ])
+          }
+        }
+
+        stage("Run Integration Tests") {
+          steps {
+            sh "${ACTIVATE} && make integration"
+            publishHTML([
+              allowMissing: true,
+              alwaysLinkToLastBuild: false,
+              keepAll: true,
+              reportDir: "output/htmlcov_integration",
+              reportFiles: "index.html",
+              reportName: "Coverage Report - Integration Tests",
               reportTitles: ''
             ])
           }
