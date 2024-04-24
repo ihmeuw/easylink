@@ -58,12 +58,14 @@ def test__load_missing_computing_environment_fails():
         Config._load_computing_environment(Path("some/bogus/path.yaml"))
 
 
-def test_input_data_configuration_requires_key_value_pairs(test_dir):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data_list.yaml",
-        "computing_environment": None,
-    }
+def test_input_data_configuration_requires_key_value_pairs(default_config_params, test_dir):
+    config_params = default_config_params
+    config_params.update(
+        {
+            "input_data": f"{test_dir}/input_data_list.yaml",
+            "computing_environment": None,
+        }
+    )
     with pytest.raises(
         TypeError, match="Input data should be submitted like 'key': path/to/file."
     ):

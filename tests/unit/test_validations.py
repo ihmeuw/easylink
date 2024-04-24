@@ -121,15 +121,14 @@ def test_batch_validation():
         ),
     ],
 )
-def test_pipeline_validation(pipeline, expected_msg, test_dir, caplog, mocker):
+def test_pipeline_validation(
+    pipeline, default_config_params, expected_msg, test_dir, caplog, mocker
+):
     mocker.patch(
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
     )
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/{pipeline}"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/environment.yaml"),
-    }
+    config_params = default_config_params
+    config_params["pipeline_specification"] = Path(f"{test_dir}/{pipeline}")
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -142,15 +141,11 @@ def test_pipeline_validation(pipeline, expected_msg, test_dir, caplog, mocker):
     )
 
 
-def test_unsupported_step(test_dir, caplog, mocker):
+def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/bad_step_pipeline.yaml"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/environment.yaml"),
-    }
+    config_params = default_config_params
+    config_params["pipeline_specification"] = Path(f"{test_dir}/bad_step_pipeline.yaml")
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -176,18 +171,16 @@ def test_unsupported_step(test_dir, caplog, mocker):
     )
 
 
-def test_unsupported_implementation(test_dir, caplog, mocker):
+def test_unsupported_implementation(test_dir, default_config_params, caplog, mocker):
     mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation._get_container_full_stem")
     mocker.patch("linker.implementation.Implementation.validate", return_value=[])
     mocker.patch(
         "linker.configuration.Config._determine_if_spark_is_required", return_value=False
     )
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/bad_implementation_pipeline.yaml"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/environment.yaml"),
-    }
+    config_params = default_config_params
+    config_params["pipeline_specification"] = Path(
+        f"{test_dir}/bad_implementation_pipeline.yaml"
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -210,12 +203,11 @@ def test_unsupported_implementation(test_dir, caplog, mocker):
     )
 
 
-def test_pipeline_schema_bad_input_data_type(test_dir, caplog):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/bad_type_input_data.yaml",
-        "computing_environment": None,
-    }
+def test_pipeline_schema_bad_input_data_type(default_config_params, test_dir, caplog):
+    config_params = default_config_params
+    config_params.update(
+        {"input_data": f"{test_dir}/bad_type_input_data.yaml", "computing_environment": None}
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -233,12 +225,14 @@ def test_pipeline_schema_bad_input_data_type(test_dir, caplog):
     )
 
 
-def test_pipeline_schema_bad_input_data(test_dir, caplog):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/bad_columns_input_data.yaml",
-        "computing_environment": None,
-    }
+def test_pipeline_schema_bad_input_data(default_config_params, test_dir, caplog):
+    config_params = default_config_params
+    config_params.update(
+        {
+            "input_data": f"{test_dir}/bad_columns_input_data.yaml",
+            "computing_environment": None,
+        }
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
@@ -260,12 +254,12 @@ def test_pipeline_schema_bad_input_data(test_dir, caplog):
     )
 
 
-def test_pipeline_schema_missing_input_file(test_dir, caplog):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/missing_input_data.yaml",
-        "computing_environment": None,
-    }
+def test_pipeline_schema_missing_input_file(default_config_params, test_dir, caplog):
+    config_params = default_config_params
+    config_params.update(
+        {"input_data": f"{test_dir}/missing_input_data.yaml", "computing_environment": None}
+    )
+
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
 
@@ -283,12 +277,10 @@ def test_pipeline_schema_missing_input_file(test_dir, caplog):
 
 
 # Environment validations
-def test_unsupported_container_engine(test_dir, caplog, mocker):
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": None,
-    }
+def test_unsupported_container_engine(default_config_params, caplog, mocker):
+    config_params = default_config_params
+    config_params["computing_environment"] = None
+
     mocker.patch(
         "linker.configuration.Config._get_required_attribute",
         side_effect=lambda _env, attribute: (
@@ -309,18 +301,15 @@ def test_unsupported_container_engine(test_dir, caplog, mocker):
     )
 
 
-def test_missing_slurm_details(test_dir, caplog, mocker):
+def test_missing_slurm_details(default_config_params, caplog, mocker):
     mocker.patch(
         "linker.configuration.Config._get_required_attribute",
         side_effect=lambda _env, attribute: (
             "slurm" if attribute == "computing_environment" else "undefined"
         ),
     )
-    config_params = {
-        "pipeline_specification": f"{test_dir}/pipeline.yaml",
-        "input_data": f"{test_dir}/input_data.yaml",
-        "computing_environment": None,
-    }
+    config_params = default_config_params
+    config_params["computing_environment"] = None
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
     _check_expected_validation_exit(
@@ -344,10 +333,10 @@ def test_missing_slurm_details(test_dir, caplog, mocker):
 
 
 def test_no_container(default_config, caplog, mocker):
-    mocker.patch(
-        "linker.implementation.Implementation._get_container_full_stem",
-        return_value=Path("some/path/with/no/container"),
-    )
+    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+    metadata["step_1_python_pandas"]["image_path"] = "some/path/with/no/container.sif"
+    metadata["step_2_python_pandas"]["image_path"] = "some/path/with/no/container_2.sif"
+    mocker.patch("linker.implementation.load_yaml", return_value=metadata)
     mocker.PropertyMock(
         "linker.implementation.Implementation._container_engine", return_value="undefined"
     )
@@ -361,44 +350,28 @@ def test_no_container(default_config, caplog, mocker):
         expected_msg={
             "IMPLEMENTATION ERRORS": {
                 "step_1_python_pandas": [
-                    "- Container 'some/path/with/no/container' does not exist.",
+                    "- Container 'some/path/with/no/container.sif' does not exist.",
                 ],
                 "step_2_python_pandas": [
-                    "- Container 'some/path/with/no/container' does not exist.",
+                    "- Container 'some/path/with/no/container_2.sif' does not exist.",
                 ],
             },
         },
     )
 
 
-def test_implemenation_does_not_match_step(test_dir, caplog, mocker):
-    mocker.patch(
-        "linker.implementation.Implementation._load_metadata",
-        return_value={
-            "step_1_python_pandas": {
-                "step": "not-the-step-1-name",
-                "path": "/some/path",
-                "name": "some-name",
-            },
-            "step_2_python_pandas": {
-                "step": "not-the-step-2-name",
-                "path": "/some/path",
-                "name": "some-name",
-            },
-        },
-    )
+def test_implemenation_does_not_match_step(default_config, test_dir, caplog, mocker):
+    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+    metadata["step_1_python_pandas"]["step"] = "not-the-step-1-name"
+    metadata["step_2_python_pandas"]["step"] = "not-the-step-2-name"
+    mocker.patch("linker.implementation.load_yaml", return_value=metadata)
     mocker.patch(
         "linker.implementation.Implementation._validate_container_exists",
         side_effect=lambda x: x,
     )
-    config_params = {
-        "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
-        "input_data": Path(f"{test_dir}/input_data.yaml"),
-        "computing_environment": Path(f"{test_dir}/environment.yaml"),
-    }
-    config = Config(**config_params)
+
     with pytest.raises(SystemExit) as e:
-        Pipeline(config)
+        Pipeline(default_config)
 
     _check_expected_validation_exit(
         error=e,

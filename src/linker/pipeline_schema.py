@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Callable, List, Optional
 
 from linker.step import Step
-from linker.utilities.data_utils import validate_dummy_file
+from linker.utilities.validation_utils import validate_input_file_dummy
 
 
 class PipelineSchema:
@@ -58,7 +58,7 @@ class PipelineSchema:
 def validate_dummy_input(filepath: Path) -> Optional[List[str]]:
     "Wrap the output file validator for now, since it is the same"
     try:
-        validate_dummy_file(filepath)
+        validate_input_file_dummy(filepath)
     except Exception as e:
         return [e.args[0]]
 

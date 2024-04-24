@@ -17,11 +17,14 @@ if __name__ == "__main__":
     install_requirements = [
         "click",
         "docker",
-        "drmaa",
         "loguru",
         "pandas",
         "pyyaml",
         "pyarrow",
+        "snakemake>=8.0.0",
+        # TODO MIC-4963: Resolve quoting issue and remove pin
+        "snakemake-interface-executor-plugins<9.0.0",
+        "snakemake-executor-plugin-slurm",
     ]
 
     setup_requires = ["setuptools_scm"]

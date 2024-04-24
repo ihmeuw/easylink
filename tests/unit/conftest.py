@@ -26,7 +26,7 @@ ENV_CONFIG_DICT = {
         },
         "spark": {
             "workers": {
-                "num_working": 42,
+                "num_workers": 42,
                 "cpus_per_node": 42,
                 "mem_per_node": 42,
                 "time_limit": 42,
@@ -46,6 +46,20 @@ PIPELINE_CONFIG_DICT = {
             "step_2": {
                 "implementation": {
                     "name": "step_2_python_pandas",
+                },
+            },
+        },
+    },
+    "spark": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pyspark_distributed",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pyspark_distributed",
                 },
             },
         },
@@ -129,6 +143,9 @@ def test_dir(tmpdir_factory) -> str:
     # good pipeline.yaml
     with open(f"{str(tmp_path)}/pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["good"], file, sort_keys=False)
+        # good pipeline.yaml
+    with open(f"{str(tmp_path)}/pipeline_spark.yaml", "w") as file:
+        yaml.dump(PIPELINE_CONFIG_DICT["spark"], file, sort_keys=False)
     # bad pipeline.yamls
     with open(f"{str(tmp_path)}/out_of_order_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["out_of_order"], file, sort_keys=False)
@@ -241,11 +258,17 @@ def test_dir(tmpdir_factory) -> str:
 
 
 @pytest.fixture()
-def default_config_params(test_dir) -> Dict[str, Path]:
+def results_dir(test_dir) -> Path:
+    return Path(f"{test_dir}/results_dir")
+
+
+@pytest.fixture()
+def default_config_params(test_dir, results_dir) -> Dict[str, Path]:
     return {
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
         "computing_environment": Path(f"{test_dir}/environment.yaml"),
+        "results_dir": results_dir,
     }
 
 

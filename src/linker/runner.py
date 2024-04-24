@@ -1,113 +1,107 @@
+import os
 import socket
-from functools import partial
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List
 
 from loguru import logger
+from snakemake.cli import main as snake_main
 
 from linker.configuration import Config
 from linker.pipeline import Pipeline
 from linker.utilities.data_utils import copy_configuration_files_to_results_directory
-from linker.utilities.docker_utils import run_with_docker
-from linker.utilities.singularity_utils import run_with_singularity
-from linker.utilities.slurm_utils import get_slurm_drmaa, is_on_slurm, launch_slurm_job
+from linker.utilities.general_utils import is_on_slurm
+from linker.utilities.paths import LINKER_TEMP
 
 
 def main(
-    config: Config,
-    results_dir: Path,
+    pipeline_specification: str,
+    input_data: str,
+    computing_environment: str,
+    results_dir: str,
+    debug=False,
 ) -> None:
     """Set up and run the pipeline"""
 
+    config = Config(
+        pipeline_specification=pipeline_specification,
+        input_data=input_data,
+        computing_environment=computing_environment,
+        results_dir=results_dir,
+    )
     pipeline = Pipeline(config)
+    # Now that all validation is done, create results dir and copy the configuration files to the results directory
+    copy_configuration_files_to_results_directory(
+        Path(pipeline_specification),
+        Path(input_data),
+        Path(computing_environment),
+        Path(results_dir),
+    )
+    snakefile = pipeline.build_snakefile()
+    environment_args = get_environment_args(config)
+    singularity_args = get_singularity_args(config)
+    # Set source cache in appropriate location to avoid jenkins failures
+    os.environ["XDG_CACHE_HOME"] = results_dir + "/.snakemake/source_cache"
+    # We need to set a dummy environment variable to avoid logging a wall of text.
+    # TODO [MIC-4920]: Remove when https://github.com/snakemake/snakemake-interface-executor-plugins/issues/55 merges
+    os.environ["foo"] = "bar"
+    argv = [
+        "--snakefile",
+        str(snakefile),
+        "--directory",
+        results_dir,
+        "--cores",
+        "all",
+        "--jobs",
+        "unlimited",
+        "--latency-wait=30",
+        ## See above
+        "--envvars",
+        "foo",
+        "--use-singularity",
+        "--singularity-args",
+        singularity_args,
+    ]
+    if not debug:
+        # Suppress some of the snakemake output
+        argv += [
+            "--quiet",
+            "progress",
+        ]
+    argv.extend(environment_args)
+    logger.info(f"Running Snakemake")
+    snake_main(argv)
 
-    # Now that all validation is done, copy the configuration files to the results directory
-    copy_configuration_files_to_results_directory(config, results_dir)
 
+def get_singularity_args(config: Config) -> str:
+    input_file_paths = ",".join(file.as_posix() for file in config.input_data)
+    singularity_args = "--no-home --containall"
+    linker_tmp_dir = LINKER_TEMP[config.computing_environment]
+    linker_tmp_dir.mkdir(parents=True, exist_ok=True)
+    singularity_args += f" -B {linker_tmp_dir}:/tmp,$(pwd),{input_file_paths} --pwd $(pwd)"
+    return singularity_args
+
+
+def get_environment_args(config: Config) -> List[str]:
     # Set up computing environment
     if config.computing_environment == "local":
-        session = None
+        return []
+
         # TODO [MIC-4822]: launch a local spark cluster instead of relying on implementation
-        runner = run_container
     elif config.computing_environment == "slurm":
-        # Set up a single drmaa.session that is persistent for the duration of the pipeline
         if not is_on_slurm():
             raise RuntimeError(
                 f"A 'slurm' computing environment is specified but it has been "
                 "determined that the current host is not on a slurm cluster "
                 f"(host: {socket.gethostname()})."
             )
-        drmaa = get_slurm_drmaa()
-        session = drmaa.Session()
-        session.initialize()
-        runner = partial(launch_slurm_job, session, config)
+        resources = config.slurm_resources
+        slurm_args = ["--executor", "slurm", "--default-resources"] + [
+            f"{resource_key}={resource_value}"
+            for resource_key, resource_value in resources.items()
+        ]
+        return slurm_args
     else:
         raise NotImplementedError(
             "only computing_environment 'local' and 'slurm' are supported; "
             f"provided {config.computing_environment}"
         )
-
-    pipeline.run(runner=runner, results_dir=results_dir, session=session)
-
-
-def run_container(
-    container_engine: str,
-    input_data: List[Path],
-    results_dir: Path,
-    diagnostics_dir: Path,
-    step_id: str,
-    step_name: str,
-    implementation_name: str,
-    container_full_stem: str,
-    implementation_config: Optional[Dict[str, str]] = None,
-) -> None:
-    # TODO: send error to stdout in the event the step script fails
-    #   (currently it's only logged in the .o file)
-    kwargs = {
-        "input_data": input_data,
-        "results_dir": results_dir,
-        "diagnostics_dir": diagnostics_dir,
-        "step_id": step_id,
-        "implementation_config": implementation_config,
-    }
-    logger.info(f"Running step '{step_name}', implementation '{implementation_name}'")
-    if container_engine == "docker":
-        run_with_docker(
-            container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
-            **kwargs,
-        )
-    elif container_engine == "singularity":
-        run_with_singularity(
-            container_path=Path(f"{container_full_stem}.sif").resolve(),
-            **kwargs,
-        )
-    else:
-        if container_engine and container_engine != "undefined":
-            logger.warning(
-                "The container engine is expected to be either 'docker' or "
-                f"'singularity' but got '{container_engine}' - trying to run "
-                "with docker and then (if that fails) singularity."
-            )
-        else:
-            logger.info(
-                "No container engine is specified - trying to run with Docker and "
-                "then (if that fails) Singularity."
-            )
-        try:
-            run_with_docker(
-                container_path=Path(f"{container_full_stem}.tar.gz").resolve(),
-                **kwargs,
-            )
-        except Exception as e_docker:
-            logger.warning(f"Docker failed with error: '{e_docker}'")
-            try:
-                run_with_singularity(
-                    container_path=Path(f"{container_full_stem}.sif").resolve(),
-                    **kwargs,
-                )
-            except Exception as e_singularity:
-                raise RuntimeError(
-                    f"Both docker and singularity failed:\n"
-                    f"    Docker error: {e_docker}\n"
-                    f"    Singularity error: {str(e_singularity)}"
-                )
