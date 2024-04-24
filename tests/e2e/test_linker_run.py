@@ -12,7 +12,7 @@ from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
-RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
+RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81eb0"
 
 
 @pytest.mark.slow
@@ -90,8 +90,13 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         assert (
             load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
         )
-
-        # If it made it through all this, print some diagnnostics and delete the results_dir
+        assert (
+            load_yaml(diagnostics_dir / "3_step_3" / "diagnostics.yaml")["increment"] == 702
+        )
+        assert (
+            load_yaml(diagnostics_dir / "4_step_4" / "diagnostics.yaml")["increment"] == 912
+        )
+        # If it made it through all this, print some diagnostics and delete the results_dir
         final_diagnostics = load_yaml(
             sorted([d for d in diagnostics_dir.iterdir() if d.is_dir()])[-1]
             / "diagnostics.yaml"

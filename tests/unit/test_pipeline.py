@@ -20,7 +20,12 @@ def test__get_implementations(default_config, mocker):
     implementation_names = [
         implementation.name for implementation in pipeline.implementations
     ]
-    assert implementation_names == ["step_1_python_pandas", "step_2_python_pandas"]
+    assert implementation_names == [
+        "step_1_python_pandas",
+        "step_2_python_pandas",
+        "step_3_python_pandas",
+        "step_4_python_pandas",
+    ]
 
 
 def test_get_step_id(default_config, mocker):
@@ -48,7 +53,13 @@ def test_get_output_dir(default_config, mocker):
     assert pipeline.get_output_dir(pipeline.implementations[0]) == Path(
         "intermediate/1_step_1"
     )
-    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path()
+    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path(
+        "intermediate/2_step_2"
+    )
+    assert pipeline.get_output_dir(pipeline.implementations[2]) == Path(
+        "intermediate/3_step_3"
+    )
+    assert pipeline.get_output_dir(pipeline.implementations[3]) == Path()
 
 
 def test_get_diagnostic_dir(default_config, mocker):

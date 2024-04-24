@@ -94,7 +94,7 @@ def test_batch_validation():
                         "and spelling in the pipeline configuration yaml."
                     ],
                     "pvs_like_case_study": [
-                        "- Expected 1 steps but found 2 implementations. Check "
+                        "- Expected 1 steps but found 4 implementations. Check "
                         "that all steps are accounted for \\(and there are no extraneous "
                         "ones\\) in the pipeline configuration yaml."
                     ],
@@ -107,7 +107,7 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": [
-                        "- Expected 2 steps but found 1 implementations. Check that "
+                        "- Expected 4 steps but found 1 implementations. Check that "
                         "all steps are accounted for \\(and there are no extraneous "
                         "ones\\) in the pipeline configuration yaml.",
                     ],
@@ -157,7 +157,7 @@ def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
         expected_msg={
             PIPELINE_ERRORS_KEY: {
                 "development": [
-                    "- Expected 2 steps but found 1 implementations. Check that "
+                    "- Expected 4 steps but found 1 implementations. Check that "
                     "all steps are accounted for \\(and there are no extraneous "
                     "ones\\) in the pipeline configuration yaml.",
                 ],
@@ -336,6 +336,8 @@ def test_no_container(default_config, caplog, mocker):
     metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     metadata["step_1_python_pandas"]["image_path"] = "some/path/with/no/container.sif"
     metadata["step_2_python_pandas"]["image_path"] = "some/path/with/no/container_2.sif"
+    metadata["step_3_python_pandas"]["image_path"] = "some/path/with/no/container_3.sif"
+    metadata["step_4_python_pandas"]["image_path"] = "some/path/with/no/container_4.sif"
     mocker.patch("linker.implementation.load_yaml", return_value=metadata)
     mocker.PropertyMock(
         "linker.implementation.Implementation._container_engine", return_value="undefined"
@@ -354,6 +356,12 @@ def test_no_container(default_config, caplog, mocker):
                 ],
                 "step_2_python_pandas": [
                     "- Container 'some/path/with/no/container_2.sif' does not exist.",
+                ],
+                "step_3_python_pandas": [
+                    "- Container 'some/path/with/no/container_3.sif' does not exist.",
+                ],
+                "step_4_python_pandas": [
+                    "- Container 'some/path/with/no/container_4.sif' does not exist.",
                 ],
             },
         },

@@ -60,7 +60,7 @@ rule:
     input:
         implementation_inputs=['intermediate/1_step_1/result.parquet'],
         validation="input_validations/step_2_python_pandas_validator",
-    output: ['result.parquet']
+    output: ['intermediate/2_step_2/result.parquet']
     log: "diagnostics/2_step_2/step_2_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     resources:
@@ -73,7 +73,71 @@ rule:
     shell:
         '''
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/1_step_1/result.parquet
-        export DUMMY_CONTAINER_OUTPUT_PATHS=result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/2_step_2/result.parquet
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/2_step_2
+        python /dummy_step.py > {log} 2>&1
+        '''
+rule:
+    name: "step_3_python_pandas_validator"
+    input: ['intermediate/2_step_2/result.parquet']
+    output: touch("input_validations/step_3_python_pandas_validator")
+    localrule: True         
+    message: "Validating step_3_python_pandas input"
+    run:
+        for f in input:
+            validation_utils.validate_input_file_dummy(f)
+rule:
+    name: "step_3_python_pandas"
+    message: "Running step_3 implementation: step_3_python_pandas"
+    input:
+        implementation_inputs=['intermediate/2_step_2/result.parquet'],
+        validation="input_validations/step_3_python_pandas_validator",
+    output: ['intermediate/3_step_3/result.parquet']
+    log: "diagnostics/3_step_3/step_3_python_pandas-output.log"
+    container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
+    resources:
+        slurm_partition='some-partition',
+        mem_mb=43008,
+        runtime=2520,
+        cpus_per_task=42,
+        slurm_extra="--output 'diagnostics/3_step_3/step_3_python_pandas-slurm-%j.log'"
+
+    shell:
+        '''
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/2_step_2/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/3_step_3/result.parquet
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/3_step_3
+        python /dummy_step.py > {log} 2>&1
+        '''
+rule:
+    name: "step_4_python_pandas_validator"
+    input: ['intermediate/3_step_3/result.parquet']
+    output: touch("input_validations/step_4_python_pandas_validator")
+    localrule: True         
+    message: "Validating step_4_python_pandas input"
+    run:
+        for f in input:
+            validation_utils.validate_input_file_dummy(f)
+rule:
+    name: "step_4_python_pandas"
+    message: "Running step_4 implementation: step_4_python_pandas"
+    input:
+        implementation_inputs=['intermediate/3_step_3/result.parquet'],
+        validation="input_validations/step_4_python_pandas_validator",
+    output: ['result.parquet']
+    log: "diagnostics/4_step_4/step_4_python_pandas-output.log"
+    container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
+    resources:
+        slurm_partition='some-partition',
+        mem_mb=43008,
+        runtime=2520,
+        cpus_per_task=42,
+        slurm_extra="--output 'diagnostics/4_step_4/step_4_python_pandas-slurm-%j.log'"
+
+    shell:
+        '''
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/3_step_3/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=result.parquet
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/4_step_4
         python /dummy_step.py > {log} 2>&1
         '''
