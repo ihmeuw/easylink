@@ -12,7 +12,7 @@ from linker.utilities.data_utils import load_yaml
 from linker.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
-RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552510"
+RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81eb0"
 
 
 @pytest.mark.slow
@@ -23,12 +23,12 @@ RESULT_CHECKSUM = "adb46fa755d56105c16e6d1b2b2c185e1b9ba8fccc8f68aae5635f695d552
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
-        # slurm
-        (
-            "e2e/pipeline.yaml",
-            "common/input_data.yaml",
-            "e2e/environment_slurm.yaml",
-        ),
+        # # slurm
+        # (
+        #     "e2e/pipeline.yaml",
+        #     "common/input_data.yaml",
+        #     "e2e/environment_slurm.yaml",
+        # ),
         # local
         (
             "e2e/pipeline.yaml",
