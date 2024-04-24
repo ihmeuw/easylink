@@ -74,20 +74,6 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
-    "spark": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pyspark_distributed",
-                },
-            },
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pyspark_distributed",
-                },
-            },
-        },
-    },
     "out_of_order": {
         "steps": {
             "step_2": {
