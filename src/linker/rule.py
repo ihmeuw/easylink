@@ -32,14 +32,23 @@ class TargetRule(Rule):
 
     target_files: List[str]
     validation: str
+    requires_spark: bool
 
     def _build_rule(self) -> str:
-        return f"""
+        rulestring = f"""
 rule all:
+    message: 'Grabbing final output'
     input:
         final_output={self.target_files},
-        validation='{self.validation}'
-    message: 'Grabbing final output' """
+        validation='{self.validation}',"""
+        if self.requires_spark:
+            rulestring += f"""
+        term="spark_logs/spark_master_terminated.txt",
+        master_log="spark_logs/spark_master_log.txt",
+        worker_logs=gather.num_workers("spark_logs/spark_worker_log_{{scatteritem}}.txt",
+        ),
+            """
+        return rulestring
 
 
 @dataclass
@@ -70,21 +79,35 @@ class ImplementedRule(Rule):
     diagnostics_dir: str
     image_path: str
     script_cmd: str
+    requires_spark: bool
 
     def _build_rule(self) -> str:
         return self._build_io() + self._build_resources() + self._build_shell_command()
 
     def _build_io(self) -> str:
-        return f"""
+        return (
+            f"""
 rule:
     name: "{self.implementation_name}"
-    message: "Running {self.step_name} implementation: {self.implementation_name}"
-    input: 
-        implementation_inputs={self.execution_input},
-        validation="{self.validation}"           
+    message: "Running {self.step_name} implementation: {self.implementation_name}" """
+            + self._build_input()
+            + f"""        
     output: {self.output}
     log: "{self.diagnostics_dir}/{self.implementation_name}-output.log"
     container: "{self.image_path}" """
+        )
+
+    def _build_input(self) -> str:
+        input_str = f"""
+    input:
+        implementation_inputs={self.execution_input},
+        validation="{self.validation}", """
+        if self.requires_spark:
+            input_str += f"""
+        master_trigger=gather.num_workers(rules.wait_for_spark_worker.output),
+        master_url=rules.wait_for_spark_master.output,
+            """
+        return input_str
 
     def _build_resources(self) -> str:
         if not self.resources:
@@ -105,6 +128,10 @@ rule:
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={",".join(self.execution_input)}
         export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
+        if self.requires_spark:
+            shell_cmd += f"""
+        read -r DUMMY_CONTAINER_SPARK_MASTER_URL < {{input.master_url}}
+        export DUMMY_CONTAINER_SPARK_MASTER_URL"""
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
         export {var_name}={var_value}"""

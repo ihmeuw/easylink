@@ -1,13 +1,13 @@
 from linker.utilities import validation_utils
 rule all:
+    message: 'Grabbing final output' 
     input:
-        final_output=['{snake_dir}/result.parquet'],
-        validation='{snake_dir}/input_validations/final_validator'
-message: 'Grabbing final output' 
+        final_output=['result.parquet'],
+        validation='input_validations/final_validator',
 rule:
     name: "results_validator"
-    input: ['{snake_dir}/result.parquet']
-    output: touch("{snake_dir}/input_validations/final_validator")
+    input: ['result.parquet']
+    output: touch("input_validations/final_validator")
     localrule: True         
     message: "Validating results input"
     run:
@@ -16,7 +16,7 @@ rule:
 rule:
     name: "step_1_python_pandas_validator"
     input: ['{test_dir}/input_data1/file1.csv', '{test_dir}/input_data2/file2.csv']
-    output: touch("{snake_dir}/input_validations/step_1_python_pandas_validator")
+    output: touch("input_validations/step_1_python_pandas_validator")
     localrule: True         
     message: "Validating step_1_python_pandas input"
     run:
@@ -27,21 +27,21 @@ rule:
     message: "Running step_1 implementation: step_1_python_pandas"
     input:
         implementation_inputs=['{test_dir}/input_data1/file1.csv', '{test_dir}/input_data2/file2.csv'],
-        validation="{snake_dir}/input_validations/step_1_python_pandas_validator"
-    output: ['{snake_dir}/intermediate/1_step_1/result.parquet']
-    log: "{snake_dir}/diagnostics/1_step_1/step_1_python_pandas-output.log"
+        validation="input_validations/step_1_python_pandas_validator",
+    output: ['intermediate/1_step_1/result.parquet']
+    log: "diagnostics/1_step_1/step_1_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     shell:
         '''
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={test_dir}/input_data1/file1.csv,{test_dir}/input_data2/file2.csv
-        export DUMMY_CONTAINER_OUTPUT_PATHS={snake_dir}/intermediate/1_step_1/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={snake_dir}/diagnostics/1_step_1
+        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/1_step_1/result.parquet
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/1_step_1
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
     name: "step_2_python_pandas_validator"
-    input: ['{snake_dir}/intermediate/1_step_1/result.parquet']
-    output: touch("{snake_dir}/input_validations/step_2_python_pandas_validator")
+    input: ['intermediate/1_step_1/result.parquet']
+    output: touch("input_validations/step_2_python_pandas_validator")
     localrule: True         
     message: "Validating step_2_python_pandas input"
     run:
@@ -51,22 +51,22 @@ rule:
     name: "step_2_python_pandas"
     message: "Running step_2 implementation: step_2_python_pandas"
     input:
-        implementation_inputs=['{snake_dir}/intermediate/1_step_1/result.parquet'],
-        validation="{snake_dir}/input_validations/step_2_python_pandas_validator"
-    output: ['{snake_dir}/intermediate/2_step_2/result.parquet']
-    log: "{snake_dir}/diagnostics/2_step_2/step_2_python_pandas-output.log"
+        implementation_inputs=['/intermediate/1_step_1/result.parquet'],
+        validation="/input_validations/step_2_python_pandas_validator"
+    output: ['/intermediate/2_step_2/result.parquet']
+    log: "/diagnostics/2_step_2/step_2_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={snake_dir}/intermediate/1_step_1/result.parquet
-        export DUMMY_CONTAINER_OUTPUT_PATHS={snake_dir}/intermediate/2_step_2/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={snake_dir}/diagnostics/2_step_2
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=/intermediate/1_step_1/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=/intermediate/2_step_2/result.parquet
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=/diagnostics/2_step_2
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
     name: "step_3_python_pandas_validator"
-    input: ['{snake_dir}/intermediate/2_step_2/result.parquet']
-    output: touch("{snake_dir}/input_validations/step_3_python_pandas_validator")
+    input: ['/intermediate/2_step_2/result.parquet']
+    output: touch("/input_validations/step_3_python_pandas_validator")
     localrule: True         
     message: "Validating step_3_python_pandas input"
     run:
@@ -76,22 +76,22 @@ rule:
     name: "step_3_python_pandas"
     message: "Running step_3 implementation: step_3_python_pandas"
     input:
-        implementation_inputs=['{snake_dir}/intermediate/2_step_2/result.parquet'],
-        validation="{snake_dir}/input_validations/step_3_python_pandas_validator"
-    output: ['{snake_dir}/intermediate/3_step_3/result.parquet']
-    log: "{snake_dir}/diagnostics/3_step_3/step_3_python_pandas-output.log"
+        implementation_inputs=['/intermediate/2_step_2/result.parquet'],
+        validation="/input_validations/step_3_python_pandas_validator"
+    output: ['/intermediate/3_step_3/result.parquet']
+    log: "/diagnostics/3_step_3/step_3_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={snake_dir}/intermediate/2_step_2/result.parquet
-        export DUMMY_CONTAINER_OUTPUT_PATHS={snake_dir}/intermediate/3_step_3/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={snake_dir}/diagnostics/3_step_3
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=/intermediate/2_step_2/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=/intermediate/3_step_3/result.parquet
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=/diagnostics/3_step_3
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
     name: "step_4_python_pandas_validator"
-    input: ['{snake_dir}/intermediate/3_step_3/result.parquet']
-    output: touch("{snake_dir}/input_validations/step_4_python_pandas_validator")
+    input: ['/intermediate/3_step_3/result.parquet']
+    output: touch("/input_validations/step_4_python_pandas_validator")
     localrule: True         
     message: "Validating step_4_python_pandas input"
     run:
@@ -101,15 +101,15 @@ rule:
     name: "step_4_python_pandas"
     message: "Running step_4 implementation: step_4_python_pandas"
     input:
-        implementation_inputs=['{snake_dir}/intermediate/3_step_3/result.parquet'],
-        validation="{snake_dir}/input_validations/step_4_python_pandas_validator"
-    output: ['{snake_dir}/result.parquet']
-    log: "{snake_dir}/diagnostics/4_step_4/step_4_python_pandas-output.log"
+        implementation_inputs=['/intermediate/3_step_3/result.parquet'],
+        validation="/input_validations/step_4_python_pandas_validator"
+    output: ['/result.parquet']
+    log: "/diagnostics/4_step_4/step_4_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={snake_dir}/intermediate/3_step_3/result.parquet
-        export DUMMY_CONTAINER_OUTPUT_PATHS={snake_dir}/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={snake_dir}/diagnostics/4_step_4
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=/intermediate/3_step_3/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=/result.parquet
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=/diagnostics/4_step_4
         python /dummy_step.py > {log} 2>&1
         '''
