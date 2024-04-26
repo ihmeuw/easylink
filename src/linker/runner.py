@@ -53,7 +53,7 @@ def main(
         "all",
         "--jobs",
         "unlimited",
-        "--latency-wait=30",
+        "--latency-wait=120",
         ## See above
         "--envvars",
         "foo",
