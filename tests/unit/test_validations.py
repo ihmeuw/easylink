@@ -10,15 +10,15 @@ from pathlib import Path
 
 import pytest
 
-from linker.configuration import (
+from easylink.configuration import (
     ENVIRONMENT_ERRORS_KEY,
     INPUT_DATA_ERRORS_KEY,
     PIPELINE_ERRORS_KEY,
     Config,
 )
-from linker.pipeline import Pipeline
-from linker.utilities import paths
-from linker.utilities.data_utils import load_yaml
+from easylink.pipeline import Pipeline
+from easylink.utilities import paths
+from easylink.utilities.data_utils import load_yaml
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
@@ -125,7 +125,7 @@ def test_pipeline_validation(
     pipeline, default_config_params, expected_msg, test_dir, caplog, mocker
 ):
     mocker.patch(
-        "linker.configuration.Config._determine_if_spark_is_required", return_value=False
+        "easylink.configuration.Config._determine_if_spark_is_required", return_value=False
     )
     config_params = default_config_params
     config_params["pipeline_specification"] = Path(f"{test_dir}/{pipeline}")
@@ -142,8 +142,8 @@ def test_pipeline_validation(
 
 
 def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
-    mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation.validate", return_value=[])
+    mocker.patch("easylink.implementation.Implementation._load_metadata")
+    mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
     config_params["pipeline_specification"] = Path(f"{test_dir}/bad_step_pipeline.yaml")
 
@@ -172,10 +172,10 @@ def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
 
 
 def test_unsupported_implementation(test_dir, default_config_params, caplog, mocker):
-    mocker.patch("linker.implementation.Implementation._load_metadata")
-    mocker.patch("linker.implementation.Implementation.validate", return_value=[])
+    mocker.patch("easylink.implementation.Implementation._load_metadata")
+    mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     mocker.patch(
-        "linker.configuration.Config._determine_if_spark_is_required", return_value=False
+        "easylink.configuration.Config._determine_if_spark_is_required", return_value=False
     )
     config_params = default_config_params
     config_params["pipeline_specification"] = Path(
@@ -282,7 +282,7 @@ def test_unsupported_container_engine(default_config_params, caplog, mocker):
     config_params["computing_environment"] = None
 
     mocker.patch(
-        "linker.configuration.Config._get_required_attribute",
+        "easylink.configuration.Config._get_required_attribute",
         side_effect=lambda _env, attribute: (
             "foo" if attribute == "container_engine" else None
         ),
@@ -303,7 +303,7 @@ def test_unsupported_container_engine(default_config_params, caplog, mocker):
 
 def test_missing_slurm_details(default_config_params, caplog, mocker):
     mocker.patch(
-        "linker.configuration.Config._get_required_attribute",
+        "easylink.configuration.Config._get_required_attribute",
         side_effect=lambda _env, attribute: (
             "slurm" if attribute == "computing_environment" else "undefined"
         ),
@@ -338,9 +338,9 @@ def test_no_container(default_config, caplog, mocker):
     metadata["step_2_python_pandas"]["image_path"] = "some/path/with/no/container_2.sif"
     metadata["step_3_python_pandas"]["image_path"] = "some/path/with/no/container_3.sif"
     metadata["step_4_python_pandas"]["image_path"] = "some/path/with/no/container_4.sif"
-    mocker.patch("linker.implementation.load_yaml", return_value=metadata)
+    mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     mocker.PropertyMock(
-        "linker.implementation.Implementation._container_engine", return_value="undefined"
+        "easylink.implementation.Implementation._container_engine", return_value="undefined"
     )
     with pytest.raises(SystemExit) as e:
         Pipeline(default_config)
@@ -372,9 +372,9 @@ def test_implemenation_does_not_match_step(default_config, test_dir, caplog, moc
     metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     metadata["step_1_python_pandas"]["step"] = "not-the-step-1-name"
     metadata["step_2_python_pandas"]["step"] = "not-the-step-2-name"
-    mocker.patch("linker.implementation.load_yaml", return_value=metadata)
+    mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     mocker.patch(
-        "linker.implementation.Implementation._validate_container_exists",
+        "easylink.implementation.Implementation._validate_container_exists",
         side_effect=lambda x: x,
     )
 

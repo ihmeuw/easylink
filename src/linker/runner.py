@@ -6,11 +6,11 @@ from typing import List
 from loguru import logger
 from snakemake.cli import main as snake_main
 
-from linker.configuration import Config
-from linker.pipeline import Pipeline
-from linker.utilities.data_utils import copy_configuration_files_to_results_directory
-from linker.utilities.general_utils import is_on_slurm
-from linker.utilities.paths import LINKER_TEMP
+from easylink.configuration import Config
+from easylink.pipeline import Pipeline
+from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
+from easylink.utilities.general_utils import is_on_slurm
+from easylink.utilities.paths import EASYLINK_TEMP
 
 
 def main(
@@ -75,9 +75,9 @@ def main(
 def get_singularity_args(config: Config) -> str:
     input_file_paths = ",".join(file.as_posix() for file in config.input_data)
     singularity_args = "--no-home --containall"
-    linker_tmp_dir = LINKER_TEMP[config.computing_environment]
-    linker_tmp_dir.mkdir(parents=True, exist_ok=True)
-    singularity_args += f" -B {linker_tmp_dir}:/tmp,$(pwd),{input_file_paths} --pwd $(pwd)"
+    easylink_tmp_dir = EASYLINK_TEMP[config.computing_environment]
+    easylink_tmp_dir.mkdir(parents=True, exist_ok=True)
+    singularity_args += f" -B {easylink_tmp_dir}:/tmp,$(pwd),{input_file_paths} --pwd $(pwd)"
     return singularity_args
 
 

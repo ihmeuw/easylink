@@ -2,7 +2,7 @@ import errno
 
 import pytest
 
-from linker.utilities.general_utils import exit_with_validation_error
+from easylink.utilities.general_utils import exit_with_validation_error
 
 
 def test_exit_with_validation_error():

@@ -5,7 +5,7 @@ this_makefile := $(lastword $(MAKEFILE_LIST)) # Used to automatically list targe
 LOCATIONS=src tests
 
 # Unless overridden, build conda environment using the package name.
-PACKAGE_NAME = linker
+PACKAGE_NAME = easylink
 SAFE_NAME = $(shell python -c "from pkg_resources import safe_name; print(safe_name(\"$(PACKAGE_NAME)\"))")
 
 about_file   = $(shell find src -name __about__.py)

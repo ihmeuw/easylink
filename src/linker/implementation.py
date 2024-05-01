@@ -2,10 +2,10 @@ import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from linker.configuration import Config
-from linker.step import Step
-from linker.utilities import paths
-from linker.utilities.data_utils import load_yaml
+from easylink.configuration import Config
+from easylink.step import Step
+from easylink.utilities import paths
+from easylink.utilities.data_utils import load_yaml
 
 
 class Implementation:

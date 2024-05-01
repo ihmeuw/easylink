@@ -8,7 +8,7 @@ if __name__ == "__main__":
     src_dir = os.path.join(base_dir, "src")
 
     about = {}
-    with open(os.path.join(src_dir, "linker", "__about__.py")) as f:
+    with open(os.path.join(src_dir, "easylink", "__about__.py")) as f:
         exec(f.read(), about)
 
     with open(os.path.join(base_dir, "README.md")) as f:
@@ -56,13 +56,13 @@ if __name__ == "__main__":
         },
         zip_safe=False,
         use_scm_version={
-            "write_to": "src/linker/_version.py",
+            "write_to": "src/easylink/_version.py",
             "write_to_template": '__version__ = "{version}"\n',
             "tag_regex": r"^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$",
         },
         setup_requires=setup_requires,
         entry_points="""
             [console_scripts]
-            linker=linker.cli:linker
+            easylink=easylink.cli:easylink
         """,
     )

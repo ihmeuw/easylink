@@ -3,7 +3,7 @@ from typing import Callable
 
 import pytest
 
-from linker.step import Step
+from easylink.step import Step
 
 
 def test_step_instantiation():

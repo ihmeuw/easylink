@@ -1,10 +1,10 @@
 """
 ======
-linker
+EasyLink
 ======
 
-Research repository for the linker ER ecosystem project.
+Research repository for the EasyLink ER ecosystem project.
 
 """
 
-from linker._version import __version__
+from easylink._version import __version__

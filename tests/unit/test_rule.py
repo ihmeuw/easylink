@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from linker.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
+from easylink.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
 
 RULE_STRINGS = {
     "target_rule": "rule_strings/target_rule.txt",

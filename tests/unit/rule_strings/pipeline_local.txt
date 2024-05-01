@@ -1,4 +1,4 @@
-from linker.utilities import validation_utils
+from easylink.utilities import validation_utils
 rule all:
     message: 'Grabbing final output' 
     input:

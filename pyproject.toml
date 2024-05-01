@@ -5,7 +5,7 @@ line_length = 94
 profile = "black"
 
 [tool.coverage.run]
-source = ["linker"]
+source = ["easylink"]
 
 [tool.coverage.report]
 show_missing = true

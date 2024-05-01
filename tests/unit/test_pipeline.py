@@ -4,9 +4,9 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from linker.configuration import Config
-from linker.pipeline import Pipeline
-from linker.utilities.data_utils import copy_configuration_files_to_results_directory
+from easylink.configuration import Config
+from easylink.pipeline import Pipeline
+from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
 
 PIPELINE_STRINGS = {
     "local": "rule_strings/pipeline_local.txt",
@@ -15,7 +15,7 @@ PIPELINE_STRINGS = {
 
 
 def test__get_implementations(default_config, mocker):
-    mocker.patch("linker.implementation.Implementation.validate", return_value={})
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     implementation_names = [
         implementation.name for implementation in pipeline.implementations
@@ -29,14 +29,14 @@ def test__get_implementations(default_config, mocker):
 
 
 def test_get_step_id(default_config, mocker):
-    mocker.patch("linker.implementation.Implementation.validate", return_value={})
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_step_id(pipeline.implementations[0]) == "1_step_1"
     assert pipeline.get_step_id(pipeline.implementations[1]) == "2_step_2"
 
 
 def test_get_input_files(default_config, mocker, test_dir):
-    mocker.patch("linker.implementation.Implementation.validate", return_value={})
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_input_files(pipeline.implementations[0]) == [
         test_dir + "/input_data1/file1.csv",
@@ -48,7 +48,7 @@ def test_get_input_files(default_config, mocker, test_dir):
 
 
 def test_get_output_dir(default_config, mocker):
-    mocker.patch("linker.implementation.Implementation.validate", return_value={})
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_output_dir(pipeline.implementations[0]) == Path(
         "intermediate/1_step_1"
@@ -63,7 +63,7 @@ def test_get_output_dir(default_config, mocker):
 
 
 def test_get_diagnostic_dir(default_config, mocker):
-    mocker.patch("linker.implementation.Implementation.validate", return_value={})
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert pipeline.get_diagnostics_dir(pipeline.implementations[0]) == Path(
         "diagnostics/1_step_1"
@@ -80,7 +80,7 @@ def test_build_snakefile(default_config_params, mocker, test_dir, computing_envi
         config_params["computing_environment"] = Path(f"{test_dir}/spark_environment.yaml")
 
     config = Config(**config_params)
-    mocker.patch("linker.implementation.Implementation.validate", return_value={})
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(config)
     copy_configuration_files_to_results_directory(**config_params)
     snakefile = pipeline.build_snakefile()

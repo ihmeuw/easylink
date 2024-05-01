@@ -1,4 +1,4 @@
-pipeline_name="linker"
+pipeline_name="easylink"
 conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
 // using /tmp for things is MUCH faster but not shared between nodes.
 shared_filesystem_path="/mnt/team/simulation_science/priv/engineering/tests"

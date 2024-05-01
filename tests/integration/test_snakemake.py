@@ -3,9 +3,9 @@ import tempfile
 
 import pytest
 
-from linker.pipeline_schema import PipelineSchema, validate_dummy_input
-from linker.runner import main
-from linker.step import Step
+from easylink.pipeline_schema import PipelineSchema, validate_dummy_input
+from easylink.runner import main
+from easylink.step import Step
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
 
@@ -13,7 +13,7 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 def test_missing_results(mocker, caplog):
     """Test that the pipeline fails when a step is missing output files."""
     mocker.patch(
-        "linker.configuration.Config._get_schema",
+        "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema._generate_schema(
             "test",
             validate_dummy_input,
@@ -23,7 +23,7 @@ def test_missing_results(mocker, caplog):
 
     ## Mock implementation script call to wait 1s instead of running something
     mocker.patch(
-        "linker.implementation.Implementation.script_cmd",
+        "easylink.implementation.Implementation.script_cmd",
         new_callable=mocker.PropertyMock,
         return_value="sleep 1s",
     )
