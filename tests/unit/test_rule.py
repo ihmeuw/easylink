@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
+
 from easylink.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
 
 RULE_STRINGS = {

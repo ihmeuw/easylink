@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 
 import pytest
+
 from easylink.configuration import (
     ENVIRONMENT_ERRORS_KEY,
     INPUT_DATA_ERRORS_KEY,

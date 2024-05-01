@@ -1,6 +1,7 @@
 import errno
 
 import pytest
+
 from easylink.utilities.general_utils import exit_with_validation_error
 
 
