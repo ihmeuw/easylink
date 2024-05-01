@@ -4,7 +4,6 @@ from typing import Dict, List
 
 import pytest
 import yaml
-
 from easylink.configuration import Config
 
 ENV_CONFIG_DICT = {

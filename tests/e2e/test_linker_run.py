@@ -7,9 +7,9 @@ from pathlib import Path
 from pprint import pprint
 
 import pytest
-
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
+
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
 RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81eb0"

@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from easylink.configuration import DEFAULT_ENVIRONMENT, Config
 from easylink.step import Step
 from easylink.utilities.data_utils import load_yaml

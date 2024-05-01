@@ -2,10 +2,10 @@ import os
 import tempfile
 
 import pytest
-
 from easylink.pipeline_schema import PipelineSchema, validate_dummy_input
 from easylink.runner import main
 from easylink.step import Step
+
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
 

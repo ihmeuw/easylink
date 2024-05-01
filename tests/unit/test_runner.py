@@ -3,7 +3,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
-
 from easylink.configuration import Config
 from easylink.runner import get_environment_args, get_singularity_args
 from easylink.utilities.paths import EASYLINK_TEMP

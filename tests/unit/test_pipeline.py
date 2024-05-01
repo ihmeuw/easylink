@@ -3,7 +3,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pytest
-
 from easylink.configuration import Config
 from easylink.pipeline import Pipeline
 from easylink.utilities.data_utils import copy_configuration_files_to_results_directory

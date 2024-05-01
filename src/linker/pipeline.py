@@ -2,14 +2,13 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Tuple
 
-from loguru import logger
-
 from easylink.configuration import Config
 from easylink.implementation import Implementation
 from easylink.rule import ImplementedRule, InputValidationRule, TargetRule
 from easylink.utilities.general_utils import exit_with_validation_error
 from easylink.utilities.paths import SPARK_SNAKEFILE
 from easylink.utilities.validation_utils import validate_input_file_dummy
+from loguru import logger
 
 
 class Pipeline:

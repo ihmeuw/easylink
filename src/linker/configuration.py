@@ -2,12 +2,11 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from loguru import logger
-
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import exit_with_validation_error
+from loguru import logger
 
 PIPELINE_ERRORS_KEY = "PIPELINE ERRORS"
 INPUT_DATA_ERRORS_KEY = "INPUT DATA ERRORS"

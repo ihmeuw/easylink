@@ -3,14 +3,13 @@ import socket
 from pathlib import Path
 from typing import List
 
-from loguru import logger
-from snakemake.cli import main as snake_main
-
 from easylink.configuration import Config
 from easylink.pipeline import Pipeline
 from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
 from easylink.utilities.general_utils import is_on_slurm
 from easylink.utilities.paths import EASYLINK_TEMP
+from loguru import logger
+from snakemake.cli import main as snake_main
 
 
 def main(
