@@ -8,8 +8,8 @@ from pprint import pprint
 
 import pytest
 
-from linker.utilities.data_utils import load_yaml
-from linker.utilities.general_utils import is_on_slurm
+from easylink.utilities.data_utils import load_yaml
+from easylink.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
 RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81eb0"
@@ -37,8 +37,8 @@ RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81
         ),
     ],
 )
-def test_linker_run(pipeline_specification, input_data, computing_environment, capsys):
-    """e2e tests for 'linker run' command
+def test_easylink_run(pipeline_specification, input_data, computing_environment, capsys):
+    """e2e tests for 'easylink run' command
 
     NOTE: We use various print statements in this test because they show up in the
     Jenkins logs.
@@ -59,7 +59,7 @@ def test_linker_run(pipeline_specification, input_data, computing_environment, c
         )
 
         cmd = (
-            "linker run "
+            "easylink run "
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
             f"-i {SPECIFICATIONS_DIR / input_data} "
             f"-e {SPECIFICATIONS_DIR / computing_environment} "

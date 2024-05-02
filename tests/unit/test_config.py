@@ -2,9 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from linker.configuration import DEFAULT_ENVIRONMENT, Config
-from linker.step import Step
-from linker.utilities.data_utils import load_yaml
+from easylink.configuration import DEFAULT_ENVIRONMENT, Config
+from easylink.step import Step
+from easylink.utilities.data_utils import load_yaml
 
 
 @pytest.mark.parametrize("requires_spark", [True, False])

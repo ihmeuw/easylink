@@ -4,9 +4,9 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from linker.configuration import Config
-from linker.runner import get_environment_args, get_singularity_args
-from linker.utilities.paths import LINKER_TEMP
+from easylink.configuration import Config
+from easylink.runner import get_environment_args, get_singularity_args
+from easylink.utilities.paths import EASYLINK_TEMP
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
@@ -14,7 +14,7 @@ IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 def test_get_singularity_args(default_config, test_dir, results_dir):
     assert (
         get_singularity_args(default_config)
-        == f"--no-home --containall -B {LINKER_TEMP[default_config.computing_environment]}:/tmp,"
+        == f"--no-home --containall -B {EASYLINK_TEMP[default_config.computing_environment]}:/tmp,"
         f"$(pwd),"
         f"{test_dir}/input_data1/file1.csv,"
         f"{test_dir}/input_data2/file2.csv"

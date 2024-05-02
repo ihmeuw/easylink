@@ -1,3 +1,3 @@
 import pytest
 
-from linker.implementation import Implementation
+from easylink.implementation import Implementation

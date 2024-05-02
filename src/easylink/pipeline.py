@@ -4,12 +4,12 @@ from typing import Dict, Tuple
 
 from loguru import logger
 
-from linker.configuration import Config
-from linker.implementation import Implementation
-from linker.rule import ImplementedRule, InputValidationRule, TargetRule
-from linker.utilities.general_utils import exit_with_validation_error
-from linker.utilities.paths import SPARK_SNAKEFILE
-from linker.utilities.validation_utils import validate_input_file_dummy
+from easylink.configuration import Config
+from easylink.implementation import Implementation
+from easylink.rule import ImplementedRule, InputValidationRule, TargetRule
+from easylink.utilities.general_utils import exit_with_validation_error
+from easylink.utilities.paths import SPARK_SNAKEFILE
+from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 class Pipeline:
@@ -100,7 +100,7 @@ class Pipeline:
 
     def write_imports(self) -> None:
         with open(self.snakefile_path, "a") as f:
-            f.write("from linker.utilities import validation_utils")
+            f.write("from easylink.utilities import validation_utils")
 
     def write_target_rules(self) -> None:
         final_output = ["result.parquet"]

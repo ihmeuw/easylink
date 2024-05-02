@@ -8,11 +8,11 @@ __all__ = [
     "__copyright__",
 ]
 
-__title__ = "linker"
-__summary__ = "Research repository for the linker ER ecosystem project."
-__uri__ = "https://github.com/ihmeuw/linker"
+__title__ = "easylink"
+__summary__ = "Research repository for the EasyLink ER ecosystem project."
+__uri__ = "https://github.com/ihmeuw/easylink"
 
-__author__ = "The linker developers"
+__author__ = "The EasyLink developers"
 __email__ = "vivarium.dev@gmail.com"
 
 __license__ = "BSD-3-Clause"

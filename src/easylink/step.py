@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from linker.utilities.validation_utils import validate_input_file_dummy
+from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 @dataclass

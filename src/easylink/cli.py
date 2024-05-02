@@ -3,24 +3,24 @@ from typing import Optional
 import click
 from loguru import logger
 
-from linker import runner
-from linker.utilities.data_utils import get_results_directory
-from linker.utilities.general_utils import (
+from easylink import runner
+from easylink.utilities.data_utils import get_results_directory
+from easylink.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
 )
 
 
 @click.group()
-def linker():
-    """A command line utility for running a linker pipeline.
+def easylink():
+    """A command line utility for running an EasyLink pipeline.
 
     You may initiate a new run with the ``run`` sub-command.
     """
     pass
 
 
-@linker.command()
+@easylink.command()
 @click.option(
     "-p",
     "--pipeline-specification",

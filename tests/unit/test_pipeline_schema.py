@@ -1,7 +1,7 @@
 from typing import Callable
 
-from linker.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-from linker.step import Step
+from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+from easylink.step import Step
 
 
 def test__add_step():

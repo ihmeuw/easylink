@@ -5,7 +5,7 @@ from typing import Dict, List
 import pytest
 import yaml
 
-from linker.configuration import Config
+from easylink.configuration import Config
 
 ENV_CONFIG_DICT = {
     "minimum": {

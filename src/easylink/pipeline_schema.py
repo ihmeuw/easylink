@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Callable, List, Optional
 
-from linker.step import Step
-from linker.utilities.validation_utils import validate_input_file_dummy
+from easylink.step import Step
+from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 class PipelineSchema:
