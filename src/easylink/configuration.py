@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from loguru import logger
+from layered_config_tree import LayeredConfigTree
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.utilities import paths
@@ -14,22 +15,24 @@ INPUT_DATA_ERRORS_KEY = "INPUT DATA ERRORS"
 ENVIRONMENT_ERRORS_KEY = "ENVIRONMENT ERRORS"
 
 DEFAULT_ENVIRONMENT = {
-    "computing_environment": "local",
-    "container_engine": "undefined",
-    "implementation_resources": {
-        "memory": 1,  # GB
-        "cpus": 1,
-        "time_limit": 1,  # hours
-    },
-    "spark": {
-        "workers": {
-            "num_workers": 2,
-            "cpus_per_node": 1,
-            "mem_per_node": 1,  # GB
+    "environment": {
+        "computing_environment": "local",
+        "container_engine": "undefined",
+        "implementation_resources": {
+            "memory": 1,  # GB
+            "cpus": 1,
             "time_limit": 1,  # hours
         },
-        "keep_alive": False,
-    },
+        "spark": {
+            "workers": {
+                "num_workers": 2,
+                "cpus_per_node": 1,
+                "mem_per_node": 1,  # GB
+                "time_limit": 1,  # hours
+            },
+            "keep_alive": False,
+        },
+    }
 }
 
 # Allow some buffer so that slurm doesn't kill spark workers
@@ -342,3 +345,14 @@ class Config:
             )
 
         return errors
+
+
+def build_configuration(pipeline_specification: Path, input_data: Path, computing_environment: Path, results_dir: str) -> LayeredConfigTree:
+    """Builds the configuration tree for the pipeline."""
+    config = LayeredConfigTree(layers=["default", "user_configured"])
+    config.update(DEFAULT_ENVIRONMENT, layer="default")
+    config.update(pipeline_specification, layer="user_configured", source="pipeline_spec")
+    config.update(input_data, layer="user_configured", source="input_data_spec")
+    config.update(computing_environment, layer="user_configured", source="computing_env_spec")
+    config.update({"results_dir": results_dir}, layer="user_configured", source="results_dir")
+    return config

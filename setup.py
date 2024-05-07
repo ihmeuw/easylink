@@ -18,6 +18,7 @@ if __name__ == "__main__":
         "click",
         "docker",
         "loguru",
+        "layered_config_tree",
         "pandas",
         "pyyaml",
         "pyarrow",
