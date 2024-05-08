@@ -18,9 +18,7 @@ class Implementation:
         self.config = config
         self._pipeline_step_name = step.name
         self.name = config.get_implementation_name(step.name)
-        self.environment_variables = config.pipeline["steps"][self.step.name][
-            "implementation"
-        ].get("configuration", {})
+        self.environment_variables = config.pipeline["steps"][self.step.name]["implementation"]["configuration"]
         self._metadata = self._load_metadata()
         self.step_name = self._metadata["step"]
         self.requires_spark = self._metadata.get("requires_spark", False)
