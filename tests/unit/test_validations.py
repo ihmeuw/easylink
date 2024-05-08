@@ -62,15 +62,6 @@ def test_batch_validation():
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
     [
-        # missing 'implementation' key
-        (
-            "missing_implementation_pipeline.yaml",
-            {
-                PIPELINE_ERRORS_KEY: {
-                    "step step_1": ["Does not contain an 'implementation'."]
-                },
-            },
-        ),
         # missing implementation 'name' key
         (
             "missing_implementation_name_pipeline.yaml",
@@ -280,13 +271,10 @@ def test_pipeline_schema_missing_input_file(default_config_params, test_dir, cap
 def test_unsupported_container_engine(default_config_params, caplog, mocker):
     config_params = default_config_params
     config_params["computing_environment"] = None
-
     mocker.patch(
-        "easylink.configuration.Config._get_required_attribute",
-        side_effect=lambda _env, attribute: (
-            "foo" if attribute == "container_engine" else None
-        ),
-    )
+        "easylink.configuration.Config._load_computing_environment",
+        return_value={"container_engine": "foo"})
+
     with pytest.raises(SystemExit) as e:
         Config(**config_params)
     _check_expected_validation_exit(
@@ -303,11 +291,8 @@ def test_unsupported_container_engine(default_config_params, caplog, mocker):
 
 def test_missing_slurm_details(default_config_params, caplog, mocker):
     mocker.patch(
-        "easylink.configuration.Config._get_required_attribute",
-        side_effect=lambda _env, attribute: (
-            "slurm" if attribute == "computing_environment" else "undefined"
-        ),
-    )
+        "easylink.configuration.Config._load_computing_environment",
+        return_value={"computing_environment": "slurm"})
     config_params = default_config_params
     config_params["computing_environment"] = None
     with pytest.raises(SystemExit) as e:

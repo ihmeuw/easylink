@@ -116,13 +116,6 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
-    "missing_implementations": {
-        "steps": {
-            "step_1": {
-                "foo": "bar",  # Missing implementation key
-            },
-        },
-    },
     "missing_implementation_name": {
         "steps": {
             "step_1": {
@@ -175,8 +168,6 @@ def test_dir(tmpdir_factory) -> str:
         yaml.dump(PIPELINE_CONFIG_DICT["bad_step"], file, sort_keys=False)
     with open(f"{str(tmp_path)}/missing_outer_key_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["good"]["steps"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/missing_implementation_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["missing_implementations"], file, sort_keys=False)
     with open(f"{str(tmp_path)}/missing_implementation_name_pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["missing_implementation_name"], file, sort_keys=False)
     with open(f"{str(tmp_path)}/bad_implementation_pipeline.yaml", "w") as file:
