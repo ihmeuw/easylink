@@ -40,16 +40,6 @@ SPARK_DEFAULTS = {
 # Allow some buffer so that slurm doesn't kill spark workers
 SLURM_SPARK_MEM_BUFFER = 500
 
-# def build_configuration(pipeline_specification: Path, input_data: Path, computing_environment: Path, results_dir: str) -> LayeredConfigTree:
-#     """Builds the configuration tree for the pipeline."""
-#     config = LayeredConfigTree(layers=["default", "user_configured"])
-#     config.update(DEFAULT_ENVIRONMENT, layer="default")
-#     config.update(pipeline_specification, layer="user_configured", source="pipeline_spec")
-#     config.update(input_data, layer="user_configured", source="input_data_spec")
-#     config.update(computing_environment, layer="user_configured", source="computing_env_spec")
-#     config.update({"results_dir": results_dir}, layer="user_configured", source="results_dir")
-#     return config
-
 
 class Config(LayeredConfigTree):
     """A container for configuration information where each value is exposed
