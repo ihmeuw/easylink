@@ -42,7 +42,7 @@ def test__load_input_data_paths(test_dir):
             "environment.yaml",
             {
                 k: v
-                for k, v in DEFAULT_ENVIRONMENT.items()
+                for k, v in DEFAULT_ENVIRONMENT["environment"].items()
                 if k in ["computing_environment", "container_engine"]
             },
         ),
@@ -91,26 +91,6 @@ def test_environment_configuration_not_found(default_config_params, computing_en
     )
     with pytest.raises(FileNotFoundError):
         Config(**config_params)
-
-
-@pytest.mark.parametrize(
-    "key, input",
-    [
-        ("computing_environment", None),
-        ("computing_environment", "local"),
-        ("computing_environment", "slurm"),
-        ("container_engine", None),
-        ("container_engine", "docker"),
-        ("container_engine", "singularity"),
-        ("container_engine", "undefined"),
-    ],
-)
-def test__get_required_attribute(key, input):
-    env_dict = {key: input} if input else {}
-    retrieved = Config._get_required_attribute(env_dict, key)
-    expected = DEFAULT_ENVIRONMENT.copy()
-    expected.update(env_dict)
-    assert retrieved == expected[key]
 
 
 @pytest.mark.parametrize(
