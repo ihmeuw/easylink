@@ -1,9 +1,9 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-from easylink.utilities.data_utils import load_yaml
-from loguru import logger
+
 from layered_config_tree import LayeredConfigTree
+from loguru import logger
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.utilities import paths
@@ -26,19 +26,54 @@ DEFAULT_ENVIRONMENT = {
     }
 }
 SPARK_DEFAULTS = {
-    "spark": {
-        "workers": {
-            "num_workers": 2,
-            "cpus_per_node": 1,
-            "mem_per_node": 1,  # GB
-            "time_limit": 1,  # hours
-        },
-        "keep_alive": False,
+    "workers": {
+        "num_workers": 2,
+        "cpus_per_node": 1,
+        "mem_per_node": 1,  # GB
+        "time_limit": 1,  # hours
     },
+    "keep_alive": False,
 }
 
 # Allow some buffer so that slurm doesn't kill spark workers
 SLURM_SPARK_MEM_BUFFER = 500
+
+
+def load_params_from_specification(
+    pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
+) -> Dict:
+    return {
+        "pipeline": load_yaml(pipeline_specification),
+        "input_data": load_input_data_paths(input_data),
+        "environment": load_computing_environment(computing_environment),
+        "results_dir": Path(results_dir),
+    }
+
+
+def load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
+    input_data_paths = load_yaml(input_data_specification_path)
+    if not isinstance(input_data_paths, dict):
+        raise TypeError(
+            "Input data should be submitted like 'key': path/to/file. "
+            f"Input was: '{input_data_paths}'"
+        )
+    file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
+    return file_list
+
+
+def load_computing_environment(
+    computing_environment_specification_path: Optional[str],
+) -> Dict[Any, Any]:
+    """Load the computing environment yaml file and return the contents as a dict."""
+    if not computing_environment_specification_path:
+        return {}  # handles empty environment.yaml
+    elif not Path(computing_environment_specification_path).is_file():
+        raise FileNotFoundError(
+            "Computing environment is expected to be a path to an existing"
+            f" yaml file. Input was: '{computing_environment_specification_path}'"
+        )
+    else:
+        return load_yaml(computing_environment_specification_path)
 
 
 class Config(LayeredConfigTree):
@@ -50,27 +85,22 @@ class Config(LayeredConfigTree):
 
     def __init__(
         self,
-        pipeline_specification: Path,
-        input_data: Path,
-        computing_environment: Optional[Path],
-        results_dir: str,
+        config_params: Dict,
     ):
-        data = {
-            "pipeline": load_yaml(pipeline_specification),
-            "input_data": self._load_input_data_paths(input_data),
-            "environment": self._load_computing_environment(computing_environment),
-            "results_dir": Path(results_dir),
-        }
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
-        self.update(data, layer="user_configured")
+        self.update(config_params, layer="user_configured")
         for step in self.pipeline["steps"]:
             self.update(
-                {"pipeline": {"steps" :{step: {"implementation": {"configuration": {}}}}}},
+                {"pipeline": {"steps": {step: {"implementation": {"configuration": {}}}}}},
                 layer="default",
             )
         if self._determine_if_spark_is_required(self.pipeline):
-            self.update({"environment": SPARK_DEFAULTS}, layer="default")
+            self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
+        else:
+            # Is there a less hacky way to remove this?
+            del self.environment.spark
+            self.update({"environment": {"spark": {}}}, layer="default")
         if self.environment.computing_environment == "slurm":
             self.update({"environment": {"slurm": {}}}, layer="default")
 
@@ -130,22 +160,6 @@ class Config(LayeredConfigTree):
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
 
-    # def get_implementation_specific_configuration(self, step_name: str) -> Dict[str, Any]:
-    #     """Extracts and formats an implementation-specific configuration from the pipeline config"""
-
-    #     def _stringify_keys_values(config: Any) -> Dict[str, Any]:
-    #         # Singularity requires env variables be strings
-    #         if isinstance(config, Dict):
-    #             return {
-    #                 str(key): _stringify_keys_values(value) for key, value in config.items()
-    #             }
-    #         else:
-    #             # The last step of the recursion is not a dict but the leaf node's value
-    #             return str(config)
-
-    #     config = self.pipeline["steps"][step_name]["implementation"].get("configuration", {})
-    #     return _stringify_keys_values(config)
-
     def get_implementation_name(self, step_name: str) -> str:
         return self.pipeline["steps"][step_name]["implementation"]["name"]
 
@@ -169,32 +183,6 @@ class Config(LayeredConfigTree):
             if implementation_metadata[implementation].get("requires_spark", False):
                 return True
         return False
-
-    @staticmethod
-    def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
-        input_data_paths = load_yaml(input_data_specification_path)
-        if not isinstance(input_data_paths, dict):
-            raise TypeError(
-                "Input data should be submitted like 'key': path/to/file. "
-                f"Input was: '{input_data_paths}'"
-            )
-        file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
-        return file_list
-
-    @staticmethod
-    def _load_computing_environment(
-        computing_environment_specification_path: Optional[str],
-    ) -> Dict[Any, Any]:
-        """Load the computing environment yaml file and return the contents as a dict."""
-        if not computing_environment_specification_path:
-            return {}  # handles empty environment.yaml
-        elif not Path(computing_environment_specification_path).is_file():
-            raise FileNotFoundError(
-                "Computing environment is expected to be a path to an existing"
-                f" yaml file. Input was: '{computing_environment_specification_path}'"
-            )
-        else:
-            return load_yaml(computing_environment_specification_path)
 
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.
