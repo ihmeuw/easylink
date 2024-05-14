@@ -5,7 +5,7 @@ from typing import Dict, List
 import pytest
 import yaml
 
-from easylink.configuration import Config
+from easylink.configuration import Config, load_params_from_specification
 
 ENV_CONFIG_DICT = {
     "minimum": {
@@ -37,107 +37,91 @@ ENV_CONFIG_DICT = {
 
 PIPELINE_CONFIG_DICT = {
     "good": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pandas",
-                },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
             },
-            "step_3": {
-                "implementation": {
-                    "name": "step_3_python_pandas",
-                },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
             },
-            "step_4": {
-                "implementation": {
-                    "name": "step_4_python_pandas",
-                },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
             },
         },
     },
     "spark": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pyspark_distributed",
-                },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pyspark_distributed",
             },
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pyspark_distributed",
-                },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pyspark_distributed",
             },
         },
     },
     "out_of_order": {
-        "steps": {
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
             },
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pandas",
-                },
+        },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
-            "step_3": {
-                "implementation": {
-                    "name": "step_3_python_pandas",
-                },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
             },
-            "step_4": {
-                "implementation": {
-                    "name": "step_4_python_pandas",
-                },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
             },
         },
     },
     "missing_step": {
-        "steps": {
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
             },
         },
     },
     "bad_step": {
-        "steps": {
-            "foo": {  # Not a supported step
-                "implementation": {
-                    "name": "step_1_python_pandas",
-                },
+        "foo": {  # Not a supported step
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
         },
     },
     "missing_implementations": {
-        "steps": {
-            "step_1": {
-                "foo": "bar",  # Missing implementation key
-            },
+        "step_1": {
+            "foo": "bar",  # Missing implementation key
         },
     },
     "missing_implementation_name": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "foo": "bar",  # Missing name key
-                },
+        "step_1": {
+            "implementation": {
+                "foo": "bar",  # Missing name key
             },
         },
     },
     "bad_implementation": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "foo",  # Not a supported implementation
-                },
+        "step_1": {
+            "implementation": {
+                "name": "foo",  # Not a supported implementation
             },
         },
     },
@@ -163,24 +147,6 @@ def test_dir(tmpdir_factory) -> str:
     # good pipeline.yaml
     with open(f"{str(tmp_path)}/pipeline.yaml", "w") as file:
         yaml.dump(PIPELINE_CONFIG_DICT["good"], file, sort_keys=False)
-        # good pipeline.yaml
-    with open(f"{str(tmp_path)}/pipeline_spark.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["spark"], file, sort_keys=False)
-    # bad pipeline.yamls
-    with open(f"{str(tmp_path)}/out_of_order_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["out_of_order"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/missing_step_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["missing_step"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/bad_step_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["bad_step"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/missing_outer_key_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["good"]["steps"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/missing_implementation_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["missing_implementations"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/missing_implementation_name_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["missing_implementation_name"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/bad_implementation_pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["bad_implementation"], file, sort_keys=False)
 
     # dummy environment.yaml
     with open(f"{str(tmp_path)}/environment.yaml", "w") as file:
@@ -283,7 +249,7 @@ def results_dir(test_dir) -> Path:
 
 
 @pytest.fixture()
-def default_config_params(test_dir, results_dir) -> Dict[str, Path]:
+def default_config_paths(test_dir, results_dir) -> Dict[str, Path]:
     return {
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
@@ -293,6 +259,11 @@ def default_config_params(test_dir, results_dir) -> Dict[str, Path]:
 
 
 @pytest.fixture()
+def default_config_params(default_config_paths) -> Dict[str, Path]:
+    return load_params_from_specification(**default_config_paths)
+
+
+@pytest.fixture()
 def default_config(default_config_params) -> Config:
     """A good/known Config object"""
-    return Config(**default_config_params)
+    return Config(default_config_params)

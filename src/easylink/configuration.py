@@ -2,6 +2,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from layered_config_tree import LayeredConfigTree
 from loguru import logger
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
@@ -14,29 +15,68 @@ INPUT_DATA_ERRORS_KEY = "INPUT DATA ERRORS"
 ENVIRONMENT_ERRORS_KEY = "ENVIRONMENT ERRORS"
 
 DEFAULT_ENVIRONMENT = {
-    "computing_environment": "local",
-    "container_engine": "undefined",
-    "implementation_resources": {
-        "memory": 1,  # GB
-        "cpus": 1,
-        "time_limit": 1,  # hours
-    },
-    "spark": {
-        "workers": {
-            "num_workers": 2,
-            "cpus_per_node": 1,
-            "mem_per_node": 1,  # GB
+    "environment": {
+        "computing_environment": "local",
+        "container_engine": "undefined",
+        "implementation_resources": {
+            "memory": 1,  # GB
+            "cpus": 1,
             "time_limit": 1,  # hours
         },
-        "keep_alive": False,
+    }
+}
+SPARK_DEFAULTS = {
+    "workers": {
+        "num_workers": 2,
+        "cpus_per_node": 1,
+        "mem_per_node": 1,  # GB
+        "time_limit": 1,  # hours
     },
+    "keep_alive": False,
 }
 
 # Allow some buffer so that slurm doesn't kill spark workers
 SLURM_SPARK_MEM_BUFFER = 500
 
 
-class Config:
+def load_params_from_specification(
+    pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
+) -> Dict[str, Any]:
+    return {
+        "pipeline": load_yaml(pipeline_specification),
+        "input_data": _load_input_data_paths(input_data),
+        "environment": _load_computing_environment(computing_environment),
+        "results_dir": Path(results_dir),
+    }
+
+
+def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
+    input_data_paths = load_yaml(input_data_specification_path)
+    if not isinstance(input_data_paths, dict):
+        raise TypeError(
+            "Input data should be submitted like 'key': path/to/file. "
+            f"Input was: '{input_data_paths}'"
+        )
+    file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
+    return file_list
+
+
+def _load_computing_environment(
+    computing_environment_specification_path: Optional[str],
+) -> Dict[Any, Any]:
+    """Load the computing environment yaml file and return the contents as a dict."""
+    if not computing_environment_specification_path:
+        return {}  # handles empty environment.yaml
+    elif not Path(computing_environment_specification_path).is_file():
+        raise FileNotFoundError(
+            "Computing environment is expected to be a path to an existing"
+            f" yaml file. Input was: '{computing_environment_specification_path}'"
+        )
+    else:
+        return load_yaml(computing_environment_specification_path)
+
+
+class Config(LayeredConfigTree):
     """A container for configuration information where each value is exposed
     as an attribute. This class combines the pipeline, input data, and computing
     environment specifications into a single object. It is also responsible for
@@ -45,42 +85,57 @@ class Config:
 
     def __init__(
         self,
-        pipeline_specification: Union[str, Path],
-        input_data: Union[str, Path],
-        computing_environment: Optional[Union[str, Path]],
-        results_dir: Union[str, Path],
+        config_params: Dict[str, Any],
     ):
-        # Handle pipeline specification
-        self.pipeline = load_yaml(pipeline_specification)
-        self._requires_spark = self._determine_if_spark_is_required(self.pipeline)
-        # Handle input data specification
-        self.input_data = self._load_input_data_paths(input_data)
-        # Handle environment specification
-        self.environment = self._load_computing_environment(computing_environment)
-        # Store path to results directory
-        self.results_dir = Path(results_dir)
+        super().__init__(layers=["initial_data", "default", "user_configured"])
+        self.update(DEFAULT_ENVIRONMENT, layer="default")
+        self.update(config_params, layer="user_configured")
+        for step in self.pipeline:
+            self.update(
+                {"pipeline": {step: {"implementation": {"configuration": {}}}}},
+                layer="default",
+            )
+        if self._spark_is_required(self.pipeline):
+            self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
+        else:
+            # Remove spark params if not needed but set by user
+            del self.environment.spark
+            self.update({"environment": {"spark": {}}}, layer="default")
+        if self.environment.computing_environment == "slurm":
+            # Set slurm defaults to empty dict instead of None so that we don't get errors
+            # In slurm resources property
+            self.update({"environment": {"slurm": {}}}, layer="default")
 
-        # Extract environment attributes and assign defaults as necessary
-        self.computing_environment = self._get_required_attribute(
-            self.environment, "computing_environment"
-        )
-        self.container_engine = self._get_required_attribute(
-            self.environment, "container_engine"
-        )
-        self.slurm = self.environment.get("slurm", {})  # no defaults for slurm
-        self.implementation_resources = self._get_implementation_resource_requests(
-            self.environment
-        )
-        self.spark = self._get_spark_requests(self.environment, self._requires_spark)
-
-        self.schema = self._get_schema()  # NOTE: must be called prior to self._validate()
+        self.update({"schema": self._get_schema()}, layer="initial_data")
         self._validate()
+        self.freeze()
+
+    @property
+    def computing_environment(self) -> Dict[str, Any]:
+        return self.environment.computing_environment
+
+    @property
+    def slurm(self) -> Dict[str, Any]:
+        if not self.environment.computing_environment == "slurm":
+            return {}
+        else:
+            return self.environment.slurm.to_dict()
+
+    @property
+    def spark(self) -> Dict[str, Any]:
+        if not self._spark_is_required(self.pipeline):
+            return {}
+        else:
+            return self.environment.spark.to_dict()
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
         if not self.computing_environment == "slurm":
             return {}
-        raw_slurm_resources = {**self.slurm, **self.implementation_resources}
+        raw_slurm_resources = {
+            **self.slurm,
+            **self.environment.implementation_resources.to_dict(),
+        }
         return {
             "slurm_account": f"'{raw_slurm_resources.get('account')}'",
             "slurm_partition": f"'{raw_slurm_resources.get('partition')}'",
@@ -92,7 +147,7 @@ class Config:
     @property
     def spark_resources(self) -> Dict[str, Any]:
         """Return the spark resources as a flat dictionary"""
-        spark_workers_raw = self.spark.get("workers")
+        spark_workers_raw = self.spark["workers"]
         spark_workers = {
             "num_workers": spark_workers_raw.get("num_workers"),
             "mem_mb": int(spark_workers_raw.get("mem_per_node", 0) * 1024),
@@ -108,146 +163,27 @@ class Config:
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
 
-    def get_implementation_specific_configuration(self, step_name: str) -> Dict[str, Any]:
-        """Extracts and formats an implementation-specific configuration from the pipeline config"""
-
-        def _stringify_keys_values(config: Any) -> Dict[str, Any]:
-            # Singularity requires env variables be strings
-            if isinstance(config, Dict):
-                return {
-                    str(key): _stringify_keys_values(value) for key, value in config.items()
-                }
-            else:
-                # The last step of the recursion is not a dict but the leaf node's value
-                return str(config)
-
-        config = self.pipeline["steps"][step_name]["implementation"].get("configuration", {})
-        return _stringify_keys_values(config)
-
     def get_implementation_name(self, step_name: str) -> str:
-        return self.pipeline["steps"][step_name]["implementation"]["name"]
+        return self.pipeline[step_name].implementation.name
 
     #################
     # Setup Methods #
     #################
-
     @staticmethod
-    def _determine_if_spark_is_required(pipeline: Dict[str, Any]) -> bool:
+    def _spark_is_required(pipeline: Dict[str, Any]) -> bool:
         """Check if the pipeline requires spark resources."""
         implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         try:
-            implementations = [
-                step["implementation"]["name"] for step in pipeline["steps"].values()
-            ]
+            implementations = [step["implementation"]["name"] for step in pipeline.values()]
         except Exception as e:
             raise KeyError(
-                "The pipeline specification should contain a single 'steps' outer key "
+                "The pipeline specification should contain keys for each step "
                 "and each step should contain an 'implementation' key with a 'name' key."
             ) from e
         for implementation in implementations:
             if implementation_metadata[implementation].get("requires_spark", False):
                 return True
         return False
-
-    @staticmethod
-    def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
-        input_data_paths = load_yaml(input_data_specification_path)
-        if not isinstance(input_data_paths, dict):
-            raise TypeError(
-                "Input data should be submitted like 'key': path/to/file. "
-                f"Input was: '{input_data_paths}'"
-            )
-        file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
-        return file_list
-
-    @staticmethod
-    def _load_computing_environment(
-        computing_environment_specification_path: Optional[str],
-    ) -> Dict[Any, Any]:
-        """Load the computing environment yaml file and return the contents as a dict."""
-        if not computing_environment_specification_path:
-            return {}  # handles empty environment.yaml
-        elif not Path(computing_environment_specification_path).is_file():
-            raise FileNotFoundError(
-                "Computing environment is expected to be a path to an existing"
-                f" yaml file. Input was: '{computing_environment_specification_path}'"
-            )
-        else:
-            return load_yaml(computing_environment_specification_path)
-
-    @staticmethod
-    def _get_required_attribute(environment: Dict[Any, Any], key: str) -> str:
-        """Extracts the required-to-run (non-dict) values from the environment
-        and assigns default values if they are not present.
-        """
-        if not key in environment:
-            value = DEFAULT_ENVIRONMENT[key]
-            logger.info(f"Assigning default value for {key}: '{value}'")
-        else:
-            value = environment[key]
-        return value
-
-    @staticmethod
-    def _get_implementation_resource_requests(environment: Dict[Any, Any]) -> Dict[Any, Any]:
-        """Extracts the implementation_resources requests from the environment
-        and assigns default values if they are not present.
-        """
-        key = "implementation_resources"
-        if not key in environment:
-            # This is not strictly a required field so just return an empty dict
-            return {}
-
-        # Manually walk through the keys and assign default values if they are not present
-        requests = environment[key]
-        requests = Config._assign_defaults(key, requests, DEFAULT_ENVIRONMENT[key])
-        return requests
-
-    @staticmethod
-    def _get_spark_requests(
-        environment: Dict[Any, Any], requires_spark: bool = False
-    ) -> Dict[Any, Any]:
-        """Extracts the spark requests from the environment and assigns default
-        values if they are not present.
-        """
-        key = "spark"
-
-        if not requires_spark:
-            # This is not strictly a required field so just return an empty dict
-            return {}
-        elif not key in environment:
-            logger.info(f"Assigning default values for spark: '{DEFAULT_ENVIRONMENT[key]}'")
-            return DEFAULT_ENVIRONMENT[key]
-
-        # Manually walk through the keys and assign default values if they are not present
-        requests = environment[key]
-        # HACK: special case spark workers since it's a nested dict
-        if not "workers" in requests:
-            # Assign the entire default workers dict
-            requests["workers"] = DEFAULT_ENVIRONMENT["spark"]["workers"]
-            logger.info(
-                f"Assigning default values for spark workers: '{requests['workers']}'"
-            )
-        else:
-            # Handle workers since it's nested
-            requests["workers"] = Config._assign_defaults(
-                f"{key} workers", requests["workers"], DEFAULT_ENVIRONMENT[key]["workers"]
-            )
-        requests = Config._assign_defaults(key, requests, DEFAULT_ENVIRONMENT[key])
-
-        return requests
-
-    @staticmethod
-    def _assign_defaults(key: str, requests: Dict[str, Any], defaults: Dict[str, Any]):
-        """Loop through a single level of dictionary items and replace missing values
-        with defaults.
-        """
-        for default_key, default_value in defaults.items():
-            if not default_key in requests:
-                requests[default_key] = default_value
-                logger.info(
-                    f"Assigning default value for {key} {default_key}: '{default_value}'"
-                )
-        return requests
 
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.
@@ -259,12 +195,8 @@ class Config:
 
         # Check that each of the pipeline steps also contains an implementation
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        for step, step_config in self.pipeline["steps"].items():
-            if not "implementation" in step_config:
-                errors[PIPELINE_ERRORS_KEY][
-                    f"step {step}"
-                ] = "Does not contain an 'implementation'."
-            elif not "name" in step_config["implementation"]:
+        for step, step_config in self.pipeline.items():
+            if not "name" in step_config["implementation"]:
                 errors[PIPELINE_ERRORS_KEY][
                     f"step {step}"
                 ] = "The implementation does not contain a 'name'."
@@ -279,7 +211,7 @@ class Config:
         # Try each schema until one is validated
         for schema in PIPELINE_SCHEMAS:
             logs = []
-            config_steps = self.pipeline["steps"].keys()
+            config_steps = self.pipeline.keys()
             # Check that number of schema steps matches number of implementations
             if len(schema.steps) != len(config_steps):
                 logs.append(
@@ -330,12 +262,12 @@ class Config:
 
     def _validate_environment(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
-        if not self.container_engine in ["docker", "singularity", "undefined"]:
+        if not self.environment.container_engine in ["docker", "singularity", "undefined"]:
             errors[ENVIRONMENT_ERRORS_KEY][
                 "container_engine"
-            ] = f"The value '{self.container_engine}' is not supported."
+            ] = f"The value '{self.environment.container_engine}' is not supported."
 
-        if self.computing_environment == "slurm" and not self.slurm:
+        if self.environment.computing_environment == "slurm" and not self.environment.slurm:
             errors[ENVIRONMENT_ERRORS_KEY]["slurm"] = (
                 "The environment configuration file must include a 'slurm' key "
                 "defining slurm resources if the computing_environment is 'slurm'."

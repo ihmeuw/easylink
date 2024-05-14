@@ -9,14 +9,14 @@ from easylink.utilities.data_utils import (
 )
 
 
-def test_copy_configuration_files_to_results_directory(default_config_params, test_dir):
+def test_copy_configuration_files_to_results_directory(default_config_paths, test_dir):
     output_dir = Path(test_dir + "/some/output/dir")
-    config_params = default_config_params
-    config_params["results_dir"] = output_dir
+    config_paths = default_config_paths
+    config_paths["results_dir"] = output_dir
     copy_configuration_files_to_results_directory(
-        config_params["pipeline_specification"],
-        config_params["input_data"],
-        config_params["computing_environment"],
+        config_paths["pipeline_specification"],
+        config_paths["input_data"],
+        config_paths["computing_environment"],
         output_dir,
     )
     assert output_dir.exists()

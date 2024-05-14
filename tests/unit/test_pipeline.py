@@ -1,10 +1,9 @@
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
 
-from easylink.configuration import Config
+from easylink.configuration import Config, load_params_from_specification
 from easylink.pipeline import Pipeline
 from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
 
@@ -74,15 +73,16 @@ def test_get_diagnostic_dir(default_config, mocker):
 
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
-def test_build_snakefile(default_config_params, mocker, test_dir, computing_environment):
-    config_params = default_config_params
+def test_build_snakefile(default_config_paths, mocker, test_dir, computing_environment):
+    config_paths = default_config_paths
     if computing_environment == "slurm":
-        config_params["computing_environment"] = Path(f"{test_dir}/spark_environment.yaml")
+        config_paths["computing_environment"] = f"{test_dir}/spark_environment.yaml"
 
-    config = Config(**config_params)
+    config_params = load_params_from_specification(**config_paths)
+    config = Config(config_params)
     mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(config)
-    copy_configuration_files_to_results_directory(**config_params)
+    copy_configuration_files_to_results_directory(**config_paths)
     snakefile = pipeline.build_snakefile()
     expected_file_path = (
         Path(os.path.dirname(__file__)) / PIPELINE_STRINGS[computing_environment]

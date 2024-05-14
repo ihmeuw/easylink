@@ -6,7 +6,7 @@ from typing import List
 from loguru import logger
 from snakemake.cli import main as snake_main
 
-from easylink.configuration import Config
+from easylink.configuration import Config, load_params_from_specification
 from easylink.pipeline import Pipeline
 from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
 from easylink.utilities.general_utils import is_on_slurm
@@ -21,13 +21,10 @@ def main(
     debug=False,
 ) -> None:
     """Set up and run the pipeline"""
-
-    config = Config(
-        pipeline_specification=pipeline_specification,
-        input_data=input_data,
-        computing_environment=computing_environment,
-        results_dir=results_dir,
+    config_params = load_params_from_specification(
+        pipeline_specification, input_data, computing_environment, results_dir
     )
+    config = Config(config_params)
     pipeline = Pipeline(config)
     # Now that all validation is done, create results dir and copy the configuration files to the results directory
     copy_configuration_files_to_results_directory(

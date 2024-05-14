@@ -7,11 +7,12 @@ import pytest
 from easylink.configuration import Config
 from easylink.runner import get_environment_args, get_singularity_args
 from easylink.utilities.paths import EASYLINK_TEMP
+from tests.unit.conftest import ENV_CONFIG_DICT
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
 
-def test_get_singularity_args(default_config, test_dir, results_dir):
+def test_get_singularity_args(default_config, test_dir):
     assert (
         get_singularity_args(default_config)
         == f"--no-home --containall -B {EASYLINK_TEMP[default_config.computing_environment]}:/tmp,"
@@ -23,7 +24,7 @@ def test_get_singularity_args(default_config, test_dir, results_dir):
 
 
 def test_get_environment_args_local(default_config_params):
-    config = Config(**default_config_params)
+    config = Config(default_config_params)
     assert get_environment_args(config) == []
 
 
@@ -31,10 +32,10 @@ def test_get_environment_args_local(default_config_params):
     IN_GITHUB_ACTIONS,
     reason="Github Actions does not have access to our file system and so no SLURM.",
 )
-def test_get_environment_args_slurm(default_config_params, test_dir):
+def test_get_environment_args_slurm(default_config_params):
     slurm_config_params = default_config_params
-    slurm_config_params["computing_environment"] = Path(f"{test_dir}/spark_environment.yaml")
-    slurm_config = Config(**slurm_config_params)
+    slurm_config_params["environment"] = ENV_CONFIG_DICT["with_spark_and_slurm"]
+    slurm_config = Config(slurm_config_params)
     resources = slurm_config.slurm_resources
     assert get_environment_args(slurm_config) == [
         "--executor",

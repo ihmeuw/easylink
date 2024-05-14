@@ -15,10 +15,12 @@ from easylink.configuration import (
     INPUT_DATA_ERRORS_KEY,
     PIPELINE_ERRORS_KEY,
     Config,
+    load_params_from_specification,
 )
 from easylink.pipeline import Pipeline
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
+from tests.unit.conftest import ENV_CONFIG_DICT, PIPELINE_CONFIG_DICT
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
@@ -64,16 +66,16 @@ def test_batch_validation():
     [
         # missing 'implementation' key
         (
-            "missing_implementation_pipeline.yaml",
+            "missing_implementations",
             {
                 PIPELINE_ERRORS_KEY: {
-                    "step step_1": ["Does not contain an 'implementation'."]
+                    "step step_1": ["The implementation does not contain a 'name'."]
                 },
             },
         ),
         # missing implementation 'name' key
         (
-            "missing_implementation_name_pipeline.yaml",
+            "missing_implementation_name",
             {
                 PIPELINE_ERRORS_KEY: {
                     "step step_1": ["The implementation does not contain a 'name'."]
@@ -82,7 +84,7 @@ def test_batch_validation():
         ),
         # steps are out of order
         (
-            "out_of_order_pipeline.yaml",
+            "out_of_order",
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": [
@@ -103,7 +105,7 @@ def test_batch_validation():
         ),
         # missing a step
         (
-            "missing_step_pipeline.yaml",
+            "missing_step",
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": [
@@ -121,17 +123,13 @@ def test_batch_validation():
         ),
     ],
 )
-def test_pipeline_validation(
-    pipeline, default_config_params, expected_msg, test_dir, caplog, mocker
-):
-    mocker.patch(
-        "easylink.configuration.Config._determine_if_spark_is_required", return_value=False
-    )
+def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog, mocker):
+    mocker.patch("easylink.configuration.Config._spark_is_required", return_value=False)
     config_params = default_config_params
-    config_params["pipeline_specification"] = Path(f"{test_dir}/{pipeline}")
+    config_params["pipeline"] = PIPELINE_CONFIG_DICT[pipeline]
 
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
 
     _check_expected_validation_exit(
         error=e,
@@ -141,14 +139,14 @@ def test_pipeline_validation(
     )
 
 
-def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
+def test_unsupported_step(default_config_params, caplog, mocker):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params["pipeline_specification"] = Path(f"{test_dir}/bad_step_pipeline.yaml")
+    config_params["pipeline"] = PIPELINE_CONFIG_DICT["bad_step"]
 
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
 
     _check_expected_validation_exit(
         error=e,
@@ -171,19 +169,15 @@ def test_unsupported_step(test_dir, default_config_params, caplog, mocker):
     )
 
 
-def test_unsupported_implementation(test_dir, default_config_params, caplog, mocker):
+def test_unsupported_implementation(default_config_params, caplog, mocker):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    mocker.patch(
-        "easylink.configuration.Config._determine_if_spark_is_required", return_value=False
-    )
+    mocker.patch("easylink.configuration.Config._spark_is_required", return_value=False)
     config_params = default_config_params
-    config_params["pipeline_specification"] = Path(
-        f"{test_dir}/bad_implementation_pipeline.yaml"
-    )
+    config_params["pipeline"] = PIPELINE_CONFIG_DICT["bad_implementation"]
 
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
 
     implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     supported_implementations = (
@@ -203,14 +197,14 @@ def test_unsupported_implementation(test_dir, default_config_params, caplog, moc
     )
 
 
-def test_pipeline_schema_bad_input_data_type(default_config_params, test_dir, caplog):
-    config_params = default_config_params
-    config_params.update(
+def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, caplog):
+    config_paths = default_config_paths
+    config_paths.update(
         {"input_data": f"{test_dir}/bad_type_input_data.yaml", "computing_environment": None}
     )
-
+    config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
 
     _check_expected_validation_exit(
         error=e,
@@ -225,17 +219,17 @@ def test_pipeline_schema_bad_input_data_type(default_config_params, test_dir, ca
     )
 
 
-def test_pipeline_schema_bad_input_data(default_config_params, test_dir, caplog):
-    config_params = default_config_params
-    config_params.update(
+def test_pipeline_schema_bad_input_data(default_config_paths, test_dir, caplog):
+    config_paths = default_config_paths
+    config_paths.update(
         {
             "input_data": f"{test_dir}/bad_columns_input_data.yaml",
             "computing_environment": None,
         }
     )
-
+    config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
 
     _check_expected_validation_exit(
         error=e,
@@ -254,14 +248,14 @@ def test_pipeline_schema_bad_input_data(default_config_params, test_dir, caplog)
     )
 
 
-def test_pipeline_schema_missing_input_file(default_config_params, test_dir, caplog):
-    config_params = default_config_params
-    config_params.update(
+def test_pipeline_schema_missing_input_file(default_config_paths, test_dir, caplog):
+    config_paths = default_config_paths
+    config_paths.update(
         {"input_data": f"{test_dir}/missing_input_data.yaml", "computing_environment": None}
     )
-
+    config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
 
     _check_expected_validation_exit(
         error=e,
@@ -277,18 +271,11 @@ def test_pipeline_schema_missing_input_file(default_config_params, test_dir, cap
 
 
 # Environment validations
-def test_unsupported_container_engine(default_config_params, caplog, mocker):
+def test_unsupported_container_engine(default_config_params, caplog):
     config_params = default_config_params
-    config_params["computing_environment"] = None
-
-    mocker.patch(
-        "easylink.configuration.Config._get_required_attribute",
-        side_effect=lambda _env, attribute: (
-            "foo" if attribute == "container_engine" else None
-        ),
-    )
+    config_params["environment"] = {"container_engine": "foo"}
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
     _check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -301,17 +288,11 @@ def test_unsupported_container_engine(default_config_params, caplog, mocker):
     )
 
 
-def test_missing_slurm_details(default_config_params, caplog, mocker):
-    mocker.patch(
-        "easylink.configuration.Config._get_required_attribute",
-        side_effect=lambda _env, attribute: (
-            "slurm" if attribute == "computing_environment" else "undefined"
-        ),
-    )
+def test_missing_slurm_details(default_config_params, caplog):
     config_params = default_config_params
-    config_params["computing_environment"] = None
+    config_params["environment"] = {"computing_environment": "slurm"}
     with pytest.raises(SystemExit) as e:
-        Config(**config_params)
+        Config(config_params)
     _check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -368,7 +349,7 @@ def test_no_container(default_config, caplog, mocker):
     )
 
 
-def test_implemenation_does_not_match_step(default_config, test_dir, caplog, mocker):
+def test_implemenation_does_not_match_step(default_config, caplog, mocker):
     metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     metadata["step_1_python_pandas"]["step"] = "not-the-step-1-name"
     metadata["step_2_python_pandas"]["step"] = "not-the-step-2-name"
