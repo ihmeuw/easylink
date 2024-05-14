@@ -106,6 +106,11 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "missing_implementations": {
+        "step_1": {
+            "foo": "bar",  # Missing implementation key
+        },
+    },
     "missing_implementation_name": {
         "step_1": {
             "implementation": {

@@ -64,6 +64,15 @@ def test_batch_validation():
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
     [
+        # missing 'implementation' key
+        (
+            "missing_implementations",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "step step_1": ["The implementation does not contain a 'name'."]
+                },
+            },
+        ),
         # missing implementation 'name' key
         (
             "missing_implementation_name",
