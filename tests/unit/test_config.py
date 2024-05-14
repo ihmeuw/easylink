@@ -195,6 +195,9 @@ def test_spark_requests(default_config_params, input, requires_spark):
     retrieved = Config(config_params).environment[key].to_dict()
     expected_env_dict = {key: input.copy()} if input else {}
     if requires_spark:
+        # It's tricky to get the exact right behavior here without appealing to configtree
+        # "workers" is a nested dictionary, so the normal dict update method doesn't work
+        # for a partially specified environment here
         expected = LayeredConfigTree(SPARK_DEFAULTS, layers=["initial_data", "user"])
         if input:
             expected.update(expected_env_dict[key], layer="user")
