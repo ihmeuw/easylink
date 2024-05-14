@@ -115,9 +115,7 @@ def test_batch_validation():
     ],
 )
 def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog, mocker):
-    mocker.patch(
-        "easylink.configuration.Config._determine_if_spark_is_required", return_value=False
-    )
+    mocker.patch("easylink.configuration.Config._spark_is_required", return_value=False)
     config_params = default_config_params
     config_params["pipeline"] = PIPELINE_CONFIG_DICT[pipeline]
 
@@ -165,9 +163,7 @@ def test_unsupported_step(default_config_params, caplog, mocker):
 def test_unsupported_implementation(default_config_params, caplog, mocker):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    mocker.patch(
-        "easylink.configuration.Config._determine_if_spark_is_required", return_value=False
-    )
+    mocker.patch("easylink.configuration.Config._spark_is_required", return_value=False)
     config_params = default_config_params
     config_params["pipeline"] = PIPELINE_CONFIG_DICT["bad_implementation"]
 

@@ -37,100 +37,86 @@ ENV_CONFIG_DICT = {
 
 PIPELINE_CONFIG_DICT = {
     "good": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pandas",
-                },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
             },
-            "step_3": {
-                "implementation": {
-                    "name": "step_3_python_pandas",
-                },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
             },
-            "step_4": {
-                "implementation": {
-                    "name": "step_4_python_pandas",
-                },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
             },
         },
     },
     "spark": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pyspark_distributed",
-                },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pyspark_distributed",
             },
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pyspark_distributed",
-                },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pyspark_distributed",
             },
         },
     },
     "out_of_order": {
-        "steps": {
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
             },
-            "step_1": {
-                "implementation": {
-                    "name": "step_1_python_pandas",
-                },
+        },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
-            "step_3": {
-                "implementation": {
-                    "name": "step_3_python_pandas",
-                },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
             },
-            "step_4": {
-                "implementation": {
-                    "name": "step_4_python_pandas",
-                },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
             },
         },
     },
     "missing_step": {
-        "steps": {
-            "step_2": {
-                "implementation": {
-                    "name": "step_2_python_pandas",
-                },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
             },
         },
     },
     "bad_step": {
-        "steps": {
-            "foo": {  # Not a supported step
-                "implementation": {
-                    "name": "step_1_python_pandas",
-                },
+        "foo": {  # Not a supported step
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
         },
     },
     "missing_implementation_name": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "foo": "bar",  # Missing name key
-                },
+        "step_1": {
+            "implementation": {
+                "foo": "bar",  # Missing name key
             },
         },
     },
     "bad_implementation": {
-        "steps": {
-            "step_1": {
-                "implementation": {
-                    "name": "foo",  # Not a supported implementation
-                },
+        "step_1": {
+            "implementation": {
+                "name": "foo",  # Not a supported implementation
             },
         },
     },

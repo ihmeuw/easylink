@@ -41,16 +41,16 @@ SLURM_SPARK_MEM_BUFFER = 500
 
 def load_params_from_specification(
     pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
-) -> Dict:
+) -> Dict[str, Any]:
     return {
         "pipeline": load_yaml(pipeline_specification),
-        "input_data": load_input_data_paths(input_data),
-        "environment": load_computing_environment(computing_environment),
+        "input_data": _load_input_data_paths(input_data),
+        "environment": _load_computing_environment(computing_environment),
         "results_dir": Path(results_dir),
     }
 
 
-def load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
+def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(
@@ -61,7 +61,7 @@ def load_input_data_paths(input_data_specification_path: Union[str, Path]) -> Li
     return file_list
 
 
-def load_computing_environment(
+def _load_computing_environment(
     computing_environment_specification_path: Optional[str],
 ) -> Dict[Any, Any]:
     """Load the computing environment yaml file and return the contents as a dict."""
@@ -85,42 +85,45 @@ class Config(LayeredConfigTree):
 
     def __init__(
         self,
-        config_params: Dict,
+        config_params: Dict[str, Any],
     ):
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
-        for step in self.pipeline["steps"]:
+        for step in self.pipeline:
             self.update(
-                {"pipeline": {"steps": {step: {"implementation": {"configuration": {}}}}}},
+                {"pipeline": {step: {"implementation": {"configuration": {}}}}},
                 layer="default",
             )
-        if self._determine_if_spark_is_required(self.pipeline):
+        if self._spark_is_required(self.pipeline):
             self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
         else:
-            # Is there a less hacky way to remove this?
+            # Remove spark params if not needed but set by user
             del self.environment.spark
             self.update({"environment": {"spark": {}}}, layer="default")
         if self.environment.computing_environment == "slurm":
+            # Set slurm defaults to empty dict instead of None so that we don't get errors
+            # In slurm resources property
             self.update({"environment": {"slurm": {}}}, layer="default")
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
         self._validate()
+        self.freeze()
 
     @property
-    def computing_environment(self):
+    def computing_environment(self) -> Dict[str, Any]:
         return self.environment.computing_environment
 
     @property
-    def slurm(self):
+    def slurm(self) -> Dict[str, Any]:
         if not self.environment.computing_environment == "slurm":
             return {}
         else:
             return self.environment.slurm.to_dict()
 
     @property
-    def spark(self):
-        if not self._determine_if_spark_is_required(self.pipeline):
+    def spark(self) -> Dict[str, Any]:
+        if not self._spark_is_required(self.pipeline):
             return {}
         else:
             return self.environment.spark.to_dict()
@@ -161,22 +164,20 @@ class Config(LayeredConfigTree):
         }
 
     def get_implementation_name(self, step_name: str) -> str:
-        return self.pipeline["steps"][step_name]["implementation"]["name"]
+        return self.pipeline[step_name].implementation.name
 
     #################
     # Setup Methods #
     #################
     @staticmethod
-    def _determine_if_spark_is_required(pipeline) -> bool:
+    def _spark_is_required(pipeline: Dict[str, Any]) -> bool:
         """Check if the pipeline requires spark resources."""
         implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         try:
-            implementations = [
-                step["implementation"]["name"] for step in pipeline["steps"].values()
-            ]
+            implementations = [step["implementation"]["name"] for step in pipeline.values()]
         except Exception as e:
             raise KeyError(
-                "The pipeline specification should contain a single 'steps' outer key "
+                "The pipeline specification should contain keys for each step "
                 "and each step should contain an 'implementation' key with a 'name' key."
             ) from e
         for implementation in implementations:
@@ -194,7 +195,7 @@ class Config(LayeredConfigTree):
 
         # Check that each of the pipeline steps also contains an implementation
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        for step, step_config in self.pipeline["steps"].items():
+        for step, step_config in self.pipeline.items():
             if not "name" in step_config["implementation"]:
                 errors[PIPELINE_ERRORS_KEY][
                     f"step {step}"
@@ -210,7 +211,7 @@ class Config(LayeredConfigTree):
         # Try each schema until one is validated
         for schema in PIPELINE_SCHEMAS:
             logs = []
-            config_steps = self.pipeline["steps"].keys()
+            config_steps = self.pipeline.keys()
             # Check that number of schema steps matches number of implementations
             if len(schema.steps) != len(config_steps):
                 logs.append(

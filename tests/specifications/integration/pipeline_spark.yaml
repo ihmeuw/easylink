@@ -1,4 +1,3 @@
-steps:
-  step_1:
-    implementation:
-     name: step_1_python_pyspark_distributed
+step_1:
+  implementation:
+    name: step_1_python_pyspark_distributed
