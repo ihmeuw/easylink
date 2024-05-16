@@ -74,10 +74,6 @@ class Pipeline:
         return errors
 
     @property
-    def implementation_indices(self) -> Dict[str, int]:
-        return {impl.name: idx for idx, impl in enumerate(self.implementations)}
-
-    @property
     def snakefile_path(self) -> Path:
         return self.config.results_dir / "Snakefile"
 
