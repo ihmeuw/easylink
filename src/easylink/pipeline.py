@@ -1,8 +1,10 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
+import networkx as nx
 from loguru import logger
+from networkx import MultiDiGraph
 
 from easylink.configuration import Config
 from easylink.implementation import Implementation
@@ -17,18 +19,25 @@ class Pipeline:
 
     def __init__(self, config: Config):
         self.config = config
-        self.implementations = self._get_implementations()
+        self.pipeline_graph = self._get_pipeline_graph(config)
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
 
-    def _get_implementations(self) -> Tuple[Implementation, ...]:
-        return tuple(
-            Implementation(
-                config=self.config,
-                step=step,
-            )
-            for step in self.config.schema.steps
-        )
+    def _get_pipeline_graph(self, config) -> MultiDiGraph:
+        graph = MultiDiGraph()
+        prev_node = None
+        for step in config.schema.steps:
+            node_name = config.get_implementation_name(step.name)
+            graph.add_node(node_name, implementation=step.get_subgraph(config))
+            if prev_node:
+                graph.add_edge(prev_node, node_name)
+            prev_node = node_name
+        return graph
+
+    @property
+    def implementations(self) -> List[Implementation]:
+        ordered_nodes = list(nx.topological_sort(self.pipeline_graph))
+        return [self.pipeline_graph.nodes[node]["implementation"] for node in ordered_nodes]
 
     def _validate(self) -> None:
         """Validates the pipeline."""
@@ -48,11 +57,8 @@ class Pipeline:
         return errors
 
     @property
-    def implementation_indices(self) -> dict:
-        return {
-            implementation.name: idx
-            for idx, implementation in enumerate(self.implementations)
-        }
+    def implementation_indices(self) -> Dict[str, int]:
+        return {impl.name: idx for idx, impl in enumerate(self.implementations)}
 
     @property
     def snakefile_path(self) -> Path:

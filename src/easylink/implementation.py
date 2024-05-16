@@ -1,9 +1,10 @@
-import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
-from easylink.configuration import Config
-from easylink.step import Step
+if TYPE_CHECKING:
+    from easylink.configuration import Config
+    from easylink.step import Step
+
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
@@ -11,14 +12,12 @@ from easylink.utilities.data_utils import load_yaml
 class Implementation:
     def __init__(
         self,
-        config: Config,
-        step: Step,
+        config: "Config",
+        step: "Step",
     ):
-        self.step = step
-        self.config = config
-        self._pipeline_step_name = step.name
         self.name = config.get_implementation_name(step.name)
-        self.environment_variables = config.pipeline[self.step.name]["implementation"][
+        self.step = step
+        self.environment_variables = config.pipeline[step.name]["implementation"][
             "configuration"
         ].to_dict()
         self._metadata = self._load_metadata()
@@ -46,10 +45,10 @@ class Implementation:
         return metadata[self.name]
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        if self.step_name != self._pipeline_step_name:
+        if self.step_name != self.step.name:
             logs.append(
                 f"Implementaton metadata step '{self.step_name}' does not "
-                f"match pipeline configuration step '{self._pipeline_step_name}'"
+                f"match pipeline configuration step '{self.step.name}'"
             )
         return logs
 

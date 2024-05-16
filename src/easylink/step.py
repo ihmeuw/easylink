@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable
 
+from easylink.implementation import Implementation
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -15,3 +16,6 @@ class Step:
 
     name: str
     input_validator: Callable = validate_input_file_dummy
+
+    def get_subgraph(self, config):
+        return Implementation(config=config, step=self)
