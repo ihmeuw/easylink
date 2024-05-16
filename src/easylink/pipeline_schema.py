@@ -28,7 +28,7 @@ class PipelineSchema:
                 # TODO: Make a real validator for
                 # pvs_like_case_study and/or remove this hack
                 lambda x: None,
-                Step("pvs_like_case_study"),
+                Step("pvs_like_case_study", prev_input=False, input_files=[]),
             )
         )
 
@@ -37,10 +37,10 @@ class PipelineSchema:
             PipelineSchema._generate_schema(
                 "development",
                 validate_dummy_input,
-                Step("step_1"),
-                Step("step_2"),
-                Step("step_3"),
-                Step("step_4"),
+                Step("step_1", prev_input=False, input_files=["file_1"]),
+                Step("step_2", prev_input=True, input_files=[]),
+                Step("step_3", prev_input=True, input_files=[]),
+                Step("step_4", prev_input=True, input_files=[]),
             )
         )
 
@@ -55,6 +55,15 @@ class PipelineSchema:
         for step in steps:
             schema._add_step(step)
         return schema
+
+    def __len__(self) -> int:
+        # Later this might be the number of leaf nodes
+        return len(self.steps)
+
+    def get_step_id(self, step: Step) -> str:
+        idx = self.steps.index(step)
+        step_number = str(idx + 1).zfill(len(str(len(self))))
+        return f"{step_number}_{step.name}"
 
 
 def validate_dummy_input(filepath: Path) -> Optional[List[str]]:

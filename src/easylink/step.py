@@ -15,6 +15,8 @@ class Step:
     """
 
     name: str
+    prev_input: bool
+    input_files: list
     input_validator: Callable = validate_input_file_dummy
 
     def get_subgraph(self, config):

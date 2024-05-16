@@ -1,6 +1,7 @@
+import itertools
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import networkx as nx
 from loguru import logger
@@ -25,19 +26,33 @@ class Pipeline:
 
     def _get_pipeline_graph(self, config) -> MultiDiGraph:
         graph = MultiDiGraph()
-        prev_node = None
+        graph.add_node("input_data")
+        prev_step = None
         for step in config.schema.steps:
-            node_name = config.get_implementation_name(step.name)
-            graph.add_node(node_name, implementation=step.get_subgraph(config))
-            if prev_node:
-                graph.add_edge(prev_node, node_name)
-            prev_node = node_name
+            node_name = config.schema.get_step_id(step)
+            implementation = step.get_subgraph(config)
+            graph.add_node(node_name, implementation=implementation)
+            if step.prev_input:
+                graph.add_edge(
+                    prev_step,
+                    node_name,
+                    files=[str(Path("intermediate") / prev_step / "result.parquet")],
+                )
+            else:
+                graph.add_edge(
+                    "input_data",
+                    node_name,
+                    files=[str(file) for file in config.input_data],
+                )
+            prev_step = node_name
+        graph.add_node("results")
+        graph.add_edge(prev_step, "results", files=["result.parquet"])
         return graph
 
     @property
-    def implementations(self) -> List[Implementation]:
+    def implementation_nodes(self) -> List[Implementation]:
         ordered_nodes = list(nx.topological_sort(self.pipeline_graph))
-        return [self.pipeline_graph.nodes[node]["implementation"] for node in ordered_nodes]
+        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     def _validate(self) -> None:
         """Validates the pipeline."""
@@ -50,7 +65,9 @@ class Pipeline:
     def _validate_implementations(self) -> Dict:
         """Validates each individual Implementation instance."""
         errors = defaultdict(dict)
-        for implementation in self.implementations:
+        for implementation in nx.get_node_attributes(
+            self.pipeline_graph, "implementation"
+        ).values():
             implementation_errors = implementation.validate()
             if implementation_errors:
                 errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
@@ -64,33 +81,6 @@ class Pipeline:
     def snakefile_path(self) -> Path:
         return self.config.results_dir / "Snakefile"
 
-    # The following are in Pipeline instead of Implementation because they require
-    # information about the entire pipeline (namely the index number),
-    # not just the individual implementation.
-
-    def get_step_id(self, implementation: Implementation) -> str:
-        idx = self.implementation_indices[implementation.name]
-        step_number = str(idx + 1).zfill(len(str(len(self.implementations))))
-        return f"{step_number}_{implementation.step_name}"
-
-    def get_input_files(self, implementation: Implementation) -> list:
-        idx = self.implementation_indices[implementation.name]
-        if idx == 0:
-            return [str(file) for file in self.config.input_data]
-        else:
-            previous_output_dir = self.get_output_dir(self.implementations[idx - 1])
-            return [str(previous_output_dir / "result.parquet")]
-
-    def get_output_dir(self, implementation: Implementation) -> Path:
-        idx = self.implementation_indices[implementation.name]
-        if idx == len(self.implementations) - 1:
-            return Path()
-
-        return Path("intermediate") / self.get_step_id(implementation)
-
-    def get_diagnostics_dir(self, implementation: Implementation) -> Path:
-        return Path("diagnostics") / self.get_step_id(implementation)
-
     def build_snakefile(self) -> Path:
         if self.snakefile_path.is_file():
             logger.warning("Snakefile already exists, overwriting.")
@@ -100,8 +90,8 @@ class Pipeline:
         self.write_target_rules()
         if self.config.spark:
             self.write_spark_module()
-        for implementation in self.implementations:
-            self.write_implementation_rules(implementation)
+        for node in self.implementation_nodes:
+            self.write_implementation_rules(node)
         return self.snakefile_path
 
     def write_imports(self) -> None:
@@ -127,10 +117,25 @@ class Pipeline:
         target_rule.write_to_snakefile(self.snakefile_path)
         final_validation.write_to_snakefile(self.snakefile_path)
 
-    def write_implementation_rules(self, implementation: Implementation) -> None:
-        input_files = self.get_input_files(implementation)
-        output_files = [str(self.get_output_dir(implementation) / "result.parquet")]
-        diagnostics_dir = self.get_diagnostics_dir(implementation)
+    def write_implementation_rules(self, node: str) -> None:
+        implementation = self.pipeline_graph.nodes[node]["implementation"]
+        input_files = list(
+            itertools.chain.from_iterable(
+                [
+                    data["files"]
+                    for _, _, data in self.pipeline_graph.in_edges(node, data=True)
+                ]
+            )
+        )
+        output_files = list(
+            itertools.chain.from_iterable(
+                [
+                    data["files"]
+                    for _, _, data in self.pipeline_graph.out_edges(node, data=True)
+                ]
+            )
+        )
+        diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
         validation_file = f"input_validations/{implementation.validation_filename}"
         resources = (
