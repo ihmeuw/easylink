@@ -17,7 +17,7 @@ def test_missing_results(mocker, caplog):
         return_value=PipelineSchema._generate_schema(
             "test",
             validate_dummy_input,
-            Step("step_1"),
+            Step("step_1", prev_input=False, input_files=True),
         ),
     )
 
