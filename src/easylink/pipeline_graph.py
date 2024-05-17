@@ -1,9 +1,12 @@
 import itertools
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Any
 
 import networkx as nx
 from networkx import MultiDiGraph
+
+from easylink.configuration import Config
+from easylink.implementation import Implementation
 
 
 class PipelineGraph(MultiDiGraph):
@@ -11,7 +14,7 @@ class PipelineGraph(MultiDiGraph):
         super().__init__()
         self._create_graph(config)
 
-    def _create_graph(self, config):
+    def _create_graph(self, config: Config) -> None:
         self.config = config
         self.add_node("input_data")
         prev_nodes = None
@@ -42,18 +45,17 @@ class PipelineGraph(MultiDiGraph):
 
         for node in prev_nodes:
             self.add_edge(node, "results", files=["result.parquet"])
-        return self
 
     @property
-    def implementation_nodes(self):
+    def implementation_nodes(self) -> List[str]:
         ordered_nodes = list(nx.topological_sort(self))
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
-    def implementations(self):
+    def implementations(self) -> List[Implementation]:
         return [self.get_attr(node, "implementation") for node in self.implementation_nodes]
 
-    def get_attr(self, node: str, attr: str):
+    def get_attr(self, node: str, attr: str) -> Any:
         return self.nodes[node][attr]
 
     def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
