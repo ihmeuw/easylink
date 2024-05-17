@@ -27,30 +27,38 @@ class Pipeline:
     def _get_pipeline_graph(self, config) -> MultiDiGraph:
         graph = MultiDiGraph()
         graph.add_node("input_data")
-        prev_step = None
+        prev_nodes = None
+
         for step in config.schema.steps:
-            node_name = config.schema.get_step_id(step)
-            implementation = step.get_subgraph(config)
-            graph.add_node(node_name, implementation=implementation)
-            if step.prev_input:
-                graph.add_edge(
-                    prev_step,
-                    node_name,
-                    files=[str(Path("intermediate") / prev_step / "result.parquet")],
-                )
-            if step.input_files:
-                graph.add_edge(
-                    "input_data",
-                    node_name,
-                    files=[str(file) for file in config.input_data],
-                )
-            prev_step = node_name
+            step_graph = step.get_subgraph(config)
+            step_source_nodes = [node for node, deg in step_graph.in_degree() if deg == 0]
+            graph = nx.compose(graph, step_graph)
+            for source_node in step_source_nodes:
+                # Connect new source nodes to old sink nodes
+                if step.prev_input:
+                    for prev_node in prev_nodes:
+                        graph.add_edge(
+                            prev_node,
+                            source_node,
+                            files=[str(Path("intermediate") / prev_node / "result.parquet")],
+                        )
+                # Add input data to the first step
+                # This will probably need to be a node attribute in #TODO: [MIC-4774]
+                if step.input_files:
+                    graph.add_edge(
+                        "input_data",
+                        source_node,
+                        files=[str(file) for file in config.input_data],
+                    )
+            prev_nodes = [node for node, deg in graph.out_degree() if deg == 0]
         graph.add_node("results")
-        graph.add_edge(prev_step, "results", files=["result.parquet"])
+
+        for node in prev_nodes:
+            graph.add_edge(node, "results", files=["result.parquet"])
         return graph
 
     @property
-    def implementation_nodes(self) -> List[Implementation]:
+    def implementation_nodes(self) -> List[str]:
         ordered_nodes = list(nx.topological_sort(self.pipeline_graph))
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
@@ -128,10 +136,10 @@ class Pipeline:
             name=implementation.name,
             input=input_files,
             output=validation_file,
-            validator=implementation.step.input_validator,
+            validator=self.pipeline_graph.nodes[node]["input_validator"],
         )
         implementation_rule = ImplementedRule(
-            step_name=implementation.step_name,
+            step_name=implementation.schema_step_name,
             implementation_name=implementation.name,
             execution_input=input_files,
             validation=validation_file,
@@ -145,7 +153,7 @@ class Pipeline:
         )
         validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
-        
+
     def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
         input_files = list(
             itertools.chain.from_iterable(
