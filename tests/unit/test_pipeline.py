@@ -13,11 +13,18 @@ PIPELINE_STRINGS = {
 }
 
 
-def test__get_implementations(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
+def test_implementation_nodes(default_config):
     pipeline = Pipeline(default_config)
+    implementation_nodes = pipeline.implementation_nodes
+    assert implementation_nodes == [
+        "1_step_1",
+        "2_step_2",
+        "3_step_3",
+        "4_step_4",
+    ]
     implementation_names = [
-        implementation.name for implementation in pipeline.implementations
+        pipeline.pipeline_graph.nodes[node]["implementation"].name
+        for node in implementation_nodes
     ]
     assert implementation_names == [
         "step_1_python_pandas",
@@ -27,49 +34,56 @@ def test__get_implementations(default_config, mocker):
     ]
 
 
-def test_get_step_id(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
+def test__get_pipeline_graph(default_config, test_dir):
     pipeline = Pipeline(default_config)
-    assert pipeline.get_step_id(pipeline.implementations[0]) == "1_step_1"
-    assert pipeline.get_step_id(pipeline.implementations[1]) == "2_step_2"
-
-
-def test_get_input_files(default_config, mocker, test_dir):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_input_files(pipeline.implementations[0]) == [
-        test_dir + "/input_data1/file1.csv",
-        test_dir + "/input_data2/file2.csv",
+    assert set(pipeline.pipeline_graph.nodes) == {
+        "input_data",
+        "1_step_1",
+        "2_step_2",
+        "3_step_3",
+        "4_step_4",
+        "results",
+    }
+    expected_edges = [
+        (
+            "input_data",
+            "1_step_1",
+            {
+                "files": [
+                    f"{test_dir}/input_data1/file1.csv",
+                    f"{test_dir}/input_data2/file2.csv",
+                ]
+            },
+        ),
+        ("1_step_1", "2_step_2", {"files": ["intermediate/1_step_1/result.parquet"]}),
+        ("2_step_2", "3_step_3", {"files": ["intermediate/2_step_2/result.parquet"]}),
+        ("3_step_3", "4_step_4", {"files": ["intermediate/3_step_3/result.parquet"]}),
+        ("4_step_4", "results", {"files": ["result.parquet"]}),
     ]
-    assert pipeline.get_input_files(pipeline.implementations[1]) == [
-        "intermediate/1_step_1/result.parquet"
+    pipeline_edges = pipeline.pipeline_graph.edges(data=True)
+
+    for edge in pipeline_edges:
+        assert edge in expected_edges
+    for edge in expected_edges:
+        assert edge in pipeline_edges
+
+
+def test_get_input_output_files(default_config, test_dir):
+    pipeline = Pipeline(default_config)
+    input_files, output_files = pipeline.get_input_output_files("1_step_1")
+    assert input_files == [
+        f"{test_dir}/input_data1/file1.csv",
+        f"{test_dir}/input_data2/file2.csv",
     ]
+    assert output_files == ["intermediate/1_step_1/result.parquet"]
 
+    input_files, output_files = pipeline.get_input_output_files("2_step_2")
+    assert input_files == ["intermediate/1_step_1/result.parquet"]
+    assert output_files == ["intermediate/2_step_2/result.parquet"]
 
-def test_get_output_dir(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_output_dir(pipeline.implementations[0]) == Path(
-        "intermediate/1_step_1"
-    )
-    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path(
-        "intermediate/2_step_2"
-    )
-    assert pipeline.get_output_dir(pipeline.implementations[2]) == Path(
-        "intermediate/3_step_3"
-    )
-    assert pipeline.get_output_dir(pipeline.implementations[3]) == Path()
-
-
-def test_get_diagnostic_dir(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_diagnostics_dir(pipeline.implementations[0]) == Path(
-        "diagnostics/1_step_1"
-    )
-    assert pipeline.get_diagnostics_dir(pipeline.implementations[1]) == Path(
-        "diagnostics/2_step_2"
-    )
+    input_files, output_files = pipeline.get_input_output_files("4_step_4")
+    assert input_files == ["intermediate/3_step_3/result.parquet"]
+    assert output_files == ["result.parquet"]
 
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])

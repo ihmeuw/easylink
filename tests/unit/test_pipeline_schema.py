@@ -20,7 +20,10 @@ def test__generate_schema():
     )
     assert schema.name == "test_schema"
     assert isinstance(schema.validate_input, Callable)
-    assert schema.steps == [Step("step_1", prev_input=True, input_files=False), Step("step_2", prev_input=True, input_files=False)]
+    assert schema.steps == [
+        Step("step_1", prev_input=True, input_files=False),
+        Step("step_2", prev_input=True, input_files=False),
+    ]
 
 
 def test_get_schemas():
@@ -38,6 +41,14 @@ def test_get_schemas():
             assert isinstance(step, Step)
             assert step.name
             assert isinstance(step.input_validator, Callable)
+
+
+def test_get_step_id():
+    schema = PipelineSchema._get_schemas()[1]
+    step1 = schema.steps[0]
+    step2 = schema.steps[1]
+    assert schema.get_step_id(step1) == "1_step_1"
+    assert schema.get_step_id(step2) == "2_step_2"
 
 
 def test__add_step():
