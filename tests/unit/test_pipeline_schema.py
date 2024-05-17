@@ -15,12 +15,12 @@ def test__generate_schema():
     schema = PipelineSchema._generate_schema(
         "test_schema",
         lambda *_: None,
-        Step("step_1"),
-        Step("step_2"),
+        Step("step_1", prev_input=True, input_files=False),
+        Step("step_2", prev_input=True, input_files=False),
     )
     assert schema.name == "test_schema"
     assert isinstance(schema.validate_input, Callable)
-    assert schema.steps == [Step("step_1"), Step("step_2")]
+    assert schema.steps == [Step("step_1", prev_input=True, input_files=False), Step("step_2", prev_input=True, input_files=False)]
 
 
 def test_get_schemas():

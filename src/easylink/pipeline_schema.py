@@ -37,10 +37,10 @@ class PipelineSchema:
             PipelineSchema._generate_schema(
                 "development",
                 validate_dummy_input,
-                Step("step_1", prev_input=False, input_files=["file_1"]),
-                Step("step_2", prev_input=True, input_files=[]),
-                Step("step_3", prev_input=True, input_files=[]),
-                Step("step_4", prev_input=True, input_files=[]),
+                Step("step_1", prev_input=False, input_files=True),
+                Step("step_2", prev_input=True, input_files=False),
+                Step("step_3", prev_input=True, input_files=False),
+                Step("step_4", prev_input=True, input_files=False),
             )
         )
 

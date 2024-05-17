@@ -38,7 +38,7 @@ class Pipeline:
                     node_name,
                     files=[str(Path("intermediate") / prev_step / "result.parquet")],
                 )
-            else:
+            if step.input_files:
                 graph.add_edge(
                     "input_data",
                     node_name,
@@ -115,22 +115,7 @@ class Pipeline:
 
     def write_implementation_rules(self, node: str) -> None:
         implementation = self.pipeline_graph.nodes[node]["implementation"]
-        input_files = list(
-            itertools.chain.from_iterable(
-                [
-                    data["files"]
-                    for _, _, data in self.pipeline_graph.in_edges(node, data=True)
-                ]
-            )
-        )
-        output_files = list(
-            itertools.chain.from_iterable(
-                [
-                    data["files"]
-                    for _, _, data in self.pipeline_graph.out_edges(node, data=True)
-                ]
-            )
-        )
+        input_files, output_files = self.get_input_output_files(node)
         diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
         validation_file = f"input_validations/{implementation.validation_filename}"
@@ -160,6 +145,25 @@ class Pipeline:
         )
         validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
+        
+    def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
+        input_files = list(
+            itertools.chain.from_iterable(
+                [
+                    data["files"]
+                    for _, _, data in self.pipeline_graph.in_edges(node, data=True)
+                ]
+            )
+        )
+        output_files = list(
+            itertools.chain.from_iterable(
+                [
+                    data["files"]
+                    for _, _, data in self.pipeline_graph.out_edges(node, data=True)
+                ]
+            )
+        )
+        return input_files, output_files
 
     def write_config(self) -> None:
         with open(self.snakefile_path, "a") as f:
