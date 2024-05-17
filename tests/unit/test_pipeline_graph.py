@@ -1,7 +1,7 @@
 from easylink.pipeline_graph import PipelineGraph
 
 
-def test_create_graph(default_config, test_dir):
+def test__create_graph(default_config, test_dir):
     pipeline_graph = PipelineGraph(default_config)
     assert set(pipeline_graph.nodes) == {
         "input_data",

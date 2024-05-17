@@ -9,9 +9,9 @@ from networkx import MultiDiGraph
 class PipelineGraph(MultiDiGraph):
     def __init__(self, config):
         super().__init__()
-        self.create_graph(config)
+        self._create_graph(config)
 
-    def create_graph(self, config):
+    def _create_graph(self, config):
         self.config = config
         self.add_node("input_data")
         prev_nodes = None
