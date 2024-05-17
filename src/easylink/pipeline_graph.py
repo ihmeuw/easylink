@@ -1,6 +1,6 @@
 import itertools
 from pathlib import Path
-from typing import List, Tuple, Any
+from typing import Any, List, Tuple
 
 import networkx as nx
 from networkx import MultiDiGraph
