@@ -13,7 +13,8 @@ PIPELINE_STRINGS = {
 }
 
 
-def test_implementation_nodes(default_config):
+def test_implementation_nodes(default_config, mocker):
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     implementation_nodes = pipeline.implementation_nodes
     assert implementation_nodes == [
@@ -34,7 +35,8 @@ def test_implementation_nodes(default_config):
     ]
 
 
-def test__get_pipeline_graph(default_config, test_dir):
+def test__get_pipeline_graph(default_config, test_dir, mocker):
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     assert set(pipeline.pipeline_graph.nodes) == {
         "input_data",
@@ -68,7 +70,8 @@ def test__get_pipeline_graph(default_config, test_dir):
         assert edge in pipeline_edges
 
 
-def test_get_input_output_files(default_config, test_dir):
+def test_get_input_output_files(default_config, test_dir, mocker):
+    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(default_config)
     input_files, output_files = pipeline.get_input_output_files("1_step_1")
     assert input_files == [
