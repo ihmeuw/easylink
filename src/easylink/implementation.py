@@ -16,12 +16,12 @@ class Implementation:
         step: "Step",
     ):
         self.name = config.get_implementation_name(step.name)
-        self.step = step
         self.environment_variables = config.pipeline[step.name]["implementation"][
             "configuration"
         ].to_dict()
         self._metadata = self._load_metadata()
-        self.step_name = self._metadata["step"]
+        self.metadata_step_name = self._metadata["step"]
+        self.schema_step_name = step.name
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
@@ -45,10 +45,10 @@ class Implementation:
         return metadata[self.name]
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        if self.step_name != self.step.name:
+        if self.metadata_step_name != self.schema_step_name:
             logs.append(
-                f"Implementaton metadata step '{self.step_name}' does not "
-                f"match pipeline configuration step '{self.step.name}'"
+                f"Implementaton metadata step '{self.metadata_step_name}' does not "
+                f"match pipeline configuration step '{self.schema_step_name}'"
             )
         return logs
 
