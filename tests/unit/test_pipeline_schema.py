@@ -45,10 +45,8 @@ def test_get_schemas():
 
 def test_get_step_id():
     schema = PipelineSchema._get_schemas()[1]
-    step1 = schema.steps[0]
-    step2 = schema.steps[1]
-    assert schema.get_step_id(step1) == "1_step_1"
-    assert schema.get_step_id(step2) == "2_step_2"
+    assert schema.get_step_id(schema.steps[0]) == "1_step_1"
+    assert schema.get_step_id(schema.steps[1]) == "2_step_2"
 
 
 def test__add_step():
