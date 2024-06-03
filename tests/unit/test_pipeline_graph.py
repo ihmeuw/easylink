@@ -27,12 +27,7 @@ def test__create_graph(default_config, test_dir):
         ("3_step_3", "4_step_4", {"files": ["intermediate/3_step_3/result.parquet"]}),
         ("4_step_4", "results", {"files": ["result.parquet"]}),
     ]
-    pipeline_edges = pipeline_graph.edges(data=True)
-
-    for edge in pipeline_edges:
-        assert edge in expected_edges
-    for edge in expected_edges:
-        assert edge in pipeline_edges
+    assert list(pipeline_graph.edges(data=True)) == expected_edges
 
 
 def test_implementations(default_config):
