@@ -20,9 +20,7 @@ class Step:
     """
 
     name: str
-    prev_input: bool  # Toy version of TODO [MIC-4774]
-    input_files: list  # Toy version of TODO [MIC-4774]
-    input_validator: Callable = validate_input_file_dummy
+    input_validator: Callable
 
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         sub = MultiDiGraph()

@@ -221,7 +221,7 @@ class Config(LayeredConfigTree):
             else:
                 for idx, config_step in enumerate(config_steps):
                     # Check that all steps are accounted for and in the correct order
-                    schema_step = schema.steps[idx].name
+                    schema_step = schema.nodes(config_step)["name"]
                     if config_step != schema_step:
                         logs.append(
                             f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
