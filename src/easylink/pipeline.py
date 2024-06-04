@@ -1,11 +1,11 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict
 
 from loguru import logger
 
 from easylink.configuration import Config
-from easylink.implementation import Implementation
+from easylink.pipeline_graph import PipelineGraph
 from easylink.rule import ImplementedRule, InputValidationRule, TargetRule
 from easylink.utilities.general_utils import exit_with_validation_error
 from easylink.utilities.paths import SPARK_SNAKEFILE
@@ -17,18 +17,9 @@ class Pipeline:
 
     def __init__(self, config: Config):
         self.config = config
-        self.implementations = self._get_implementations()
+        self.pipeline_graph = PipelineGraph(config)
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
-
-    def _get_implementations(self) -> Tuple[Implementation, ...]:
-        return tuple(
-            Implementation(
-                config=self.config,
-                step=step,
-            )
-            for step in self.config.schema.steps
-        )
 
     def _validate(self) -> None:
         """Validates the pipeline."""
@@ -41,49 +32,15 @@ class Pipeline:
     def _validate_implementations(self) -> Dict:
         """Validates each individual Implementation instance."""
         errors = defaultdict(dict)
-        for implementation in self.implementations:
+        for implementation in self.pipeline_graph.implementations:
             implementation_errors = implementation.validate()
             if implementation_errors:
                 errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
         return errors
 
     @property
-    def implementation_indices(self) -> dict:
-        return {
-            implementation.name: idx
-            for idx, implementation in enumerate(self.implementations)
-        }
-
-    @property
     def snakefile_path(self) -> Path:
         return self.config.results_dir / "Snakefile"
-
-    # The following are in Pipeline instead of Implementation because they require
-    # information about the entire pipeline (namely the index number),
-    # not just the individual implementation.
-
-    def get_step_id(self, implementation: Implementation) -> str:
-        idx = self.implementation_indices[implementation.name]
-        step_number = str(idx + 1).zfill(len(str(len(self.implementations))))
-        return f"{step_number}_{implementation.step_name}"
-
-    def get_input_files(self, implementation: Implementation) -> list:
-        idx = self.implementation_indices[implementation.name]
-        if idx == 0:
-            return [str(file) for file in self.config.input_data]
-        else:
-            previous_output_dir = self.get_output_dir(self.implementations[idx - 1])
-            return [str(previous_output_dir / "result.parquet")]
-
-    def get_output_dir(self, implementation: Implementation) -> Path:
-        idx = self.implementation_indices[implementation.name]
-        if idx == len(self.implementations) - 1:
-            return Path()
-
-        return Path("intermediate") / self.get_step_id(implementation)
-
-    def get_diagnostics_dir(self, implementation: Implementation) -> Path:
-        return Path("diagnostics") / self.get_step_id(implementation)
 
     def build_snakefile(self) -> Path:
         if self.snakefile_path.is_file():
@@ -94,8 +51,8 @@ class Pipeline:
         self.write_target_rules()
         if self.config.spark:
             self.write_spark_module()
-        for implementation in self.implementations:
-            self.write_implementation_rules(implementation)
+        for node in self.pipeline_graph.implementation_nodes:
+            self.write_implementation_rules(node)
         return self.snakefile_path
 
     def write_imports(self) -> None:
@@ -121,10 +78,10 @@ class Pipeline:
         target_rule.write_to_snakefile(self.snakefile_path)
         final_validation.write_to_snakefile(self.snakefile_path)
 
-    def write_implementation_rules(self, implementation: Implementation) -> None:
-        input_files = self.get_input_files(implementation)
-        output_files = [str(self.get_output_dir(implementation) / "result.parquet")]
-        diagnostics_dir = self.get_diagnostics_dir(implementation)
+    def write_implementation_rules(self, node: str) -> None:
+        implementation = self.pipeline_graph.get_attr(node, "implementation")
+        input_files, output_files = self.pipeline_graph.get_input_output_files(node)
+        diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
         validation_file = f"input_validations/{implementation.validation_filename}"
         resources = (
@@ -136,10 +93,10 @@ class Pipeline:
             name=implementation.name,
             input=input_files,
             output=validation_file,
-            validator=implementation.step.input_validator,
+            validator=self.pipeline_graph.get_attr(node, "input_validator"),
         )
         implementation_rule = ImplementedRule(
-            step_name=implementation.step_name,
+            step_name=implementation.schema_step_name,
             implementation_name=implementation.name,
             execution_input=input_files,
             validation=validation_file,

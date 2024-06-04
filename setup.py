@@ -19,6 +19,7 @@ if __name__ == "__main__":
         "docker",
         "loguru",
         "layered_config_tree",
+        "networkx",
         "pandas",
         "pyyaml",
         "pyarrow",

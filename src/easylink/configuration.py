@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from layered_config_tree import LayeredConfigTree
-from loguru import logger
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.utilities import paths

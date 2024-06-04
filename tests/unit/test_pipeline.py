@@ -13,65 +13,6 @@ PIPELINE_STRINGS = {
 }
 
 
-def test__get_implementations(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    implementation_names = [
-        implementation.name for implementation in pipeline.implementations
-    ]
-    assert implementation_names == [
-        "step_1_python_pandas",
-        "step_2_python_pandas",
-        "step_3_python_pandas",
-        "step_4_python_pandas",
-    ]
-
-
-def test_get_step_id(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_step_id(pipeline.implementations[0]) == "1_step_1"
-    assert pipeline.get_step_id(pipeline.implementations[1]) == "2_step_2"
-
-
-def test_get_input_files(default_config, mocker, test_dir):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_input_files(pipeline.implementations[0]) == [
-        test_dir + "/input_data1/file1.csv",
-        test_dir + "/input_data2/file2.csv",
-    ]
-    assert pipeline.get_input_files(pipeline.implementations[1]) == [
-        "intermediate/1_step_1/result.parquet"
-    ]
-
-
-def test_get_output_dir(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_output_dir(pipeline.implementations[0]) == Path(
-        "intermediate/1_step_1"
-    )
-    assert pipeline.get_output_dir(pipeline.implementations[1]) == Path(
-        "intermediate/2_step_2"
-    )
-    assert pipeline.get_output_dir(pipeline.implementations[2]) == Path(
-        "intermediate/3_step_3"
-    )
-    assert pipeline.get_output_dir(pipeline.implementations[3]) == Path()
-
-
-def test_get_diagnostic_dir(default_config, mocker):
-    mocker.patch("easylink.implementation.Implementation.validate", return_value={})
-    pipeline = Pipeline(default_config)
-    assert pipeline.get_diagnostics_dir(pipeline.implementations[0]) == Path(
-        "diagnostics/1_step_1"
-    )
-    assert pipeline.get_diagnostics_dir(pipeline.implementations[1]) == Path(
-        "diagnostics/2_step_2"
-    )
-
-
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
 def test_build_snakefile(default_config_paths, mocker, test_dir, computing_environment):
     config_paths = default_config_paths
