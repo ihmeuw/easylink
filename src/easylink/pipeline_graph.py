@@ -72,6 +72,18 @@ class PipelineGraph(MultiDiGraph):
         """Convenience method to get a particular attribute from a node"""
         return self.nodes[node][attr]
 
+    def get_input_slots(self, node: str) -> Dict[str, List[str]]:
+        """Get all of a node's input slots from edges."""
+        input_slots = {}
+        for _, _, data in self.in_edges(node, data=True):
+            # Consider whether we need duplicate variables to merge
+            env_var, files = data["data"]["env_var"], data["data"]["files"]
+            if env_var in input_slots:
+                input_slots[env_var].extend(files)
+            else:
+                input_slots[env_var] = files
+        return input_slots
+
     def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
         """Get all of a node's input and output files from edges."""
         input_files = list(

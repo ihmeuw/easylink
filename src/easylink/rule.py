@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class Rule(ABC):
@@ -71,7 +71,7 @@ class ImplementedRule(Rule):
 
     step_name: str
     implementation_name: str
-    execution_input: List[str]
+    input_slots: Dict[str, List[str]]
     validation: str
     output: List[str]
     resources: Optional[dict]
@@ -99,8 +99,11 @@ rule:
 
     def _build_input(self) -> str:
         input_str = f"""
-    input:
-        implementation_inputs={self.execution_input},
+    input:"""
+        for slot_name, slot_files in self.input_slots.items():
+            input_str += f"""
+        {slot_name.lower()}={slot_files},"""
+        input_str += f"""
         validation="{self.validation}", """
         if self.requires_spark:
             input_str += f"""
@@ -125,9 +128,11 @@ rule:
         shell_cmd = f"""
     shell:
         '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={",".join(self.execution_input)}
         export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
+        for slot_name, slot_files in self.input_slots.items():
+            shell_cmd += f"""
+        export {slot_name}={",".join(slot_files)}"""
         if self.requires_spark:
             shell_cmd += f"""
         read -r DUMMY_CONTAINER_SPARK_MASTER_URL < {{input.master_url}}

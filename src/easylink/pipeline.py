@@ -81,6 +81,7 @@ class Pipeline:
     def write_implementation_rules(self, node: str) -> None:
         implementation = self.pipeline_graph.get_attr(node, "implementation")
         input_files, output_files = self.pipeline_graph.get_input_output_files(node)
+        input_slots = self.pipeline_graph.get_input_slots(node)
         diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
         validation_file = f"input_validations/{implementation.validation_filename}"
@@ -98,7 +99,7 @@ class Pipeline:
         implementation_rule = ImplementedRule(
             step_name=implementation.schema_step_name,
             implementation_name=implementation.name,
-            execution_input=input_files,
+            input_slots=input_slots,
             validation=validation_file,
             output=output_files,
             resources=resources,
