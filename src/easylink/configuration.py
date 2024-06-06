@@ -49,15 +49,19 @@ def load_params_from_specification(
     }
 
 
-def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
+def _load_input_data_paths(
+    input_data_specification_path: Union[str, Path]
+) -> Dict[str, List[Path]]:
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(
             "Input data should be submitted like 'key': path/to/file. "
             f"Input was: '{input_data_paths}'"
         )
-    file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
-    return file_list
+    filepath_dict = {
+        filename: Path(filepath).resolve() for filename, filepath in input_data_paths.items()
+    }
+    return filepath_dict
 
 
 def _load_computing_environment(
@@ -221,7 +225,7 @@ class Config(LayeredConfigTree):
             else:
                 for idx, config_step in enumerate(config_steps):
                     # Check that all steps are accounted for and in the correct order
-                    schema_step = schema.nodes(config_step)["name"]
+                    schema_step = list(schema)[idx + 1]
                     if config_step != schema_step:
                         logs.append(
                             f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
@@ -249,11 +253,13 @@ class Config(LayeredConfigTree):
     def _validate_input_data(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
         # Check that input data files exist
-        missing = [str(file) for file in self.input_data if not file.exists()]
+        missing = [
+            str(file) for file in self.input_data.to_dict().values() if not file.exists()
+        ]
         for file in missing:
             errors[INPUT_DATA_ERRORS_KEY][str(file)] = "File not found."
         # Check that input data files are valid
-        for file in [file for file in self.input_data if file.exists()]:
+        for file in [file for file in self.input_data.to_dict().values() if file.exists()]:
             input_data_errors = self.schema.validate_input(file)
             if input_data_errors:
                 errors[INPUT_DATA_ERRORS_KEY][str(file)] = input_data_errors
