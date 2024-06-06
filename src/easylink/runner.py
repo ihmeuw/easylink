@@ -70,7 +70,9 @@ def main(
 
 
 def get_singularity_args(config: Config) -> str:
-    input_file_paths = ",".join(file.as_posix() for file in config.input_data)
+    input_file_paths = ",".join(
+        file.as_posix() for file in config.input_data.to_dict().values()
+    )
     singularity_args = "--no-home --containall"
     easylink_tmp_dir = EASYLINK_TEMP[config.computing_environment]
     easylink_tmp_dir.mkdir(parents=True, exist_ok=True)
