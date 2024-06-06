@@ -26,7 +26,7 @@ class PipelineGraph(MultiDiGraph):
                 ]
 
         for schema_node in schema.nodes:
-            sub_graph = schema.get_attr(schema_node, "step").get_subgraph(config)
+            sub_graph = schema.nodes[schema_node]["step"].get_subgraph(config)
             # Connect the subgraph to the main graph
             self.update(sub_graph)
             sub_source_nodes = [
@@ -66,11 +66,7 @@ class PipelineGraph(MultiDiGraph):
     @property
     def implementations(self) -> List[Implementation]:
         """Convenience property to get all implementations in the graph."""
-        return [self.get_attr(node, "implementation") for node in self.implementation_nodes]
-
-    def get_attr(self, node: str, attr: str) -> Any:
-        """Convenience method to get a particular attribute from a node"""
-        return self.nodes[node][attr]
+        return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
 
     def get_input_slots(self, node: str) -> Dict[str, List[str]]:
         """Get all of a node's input slots from edges."""

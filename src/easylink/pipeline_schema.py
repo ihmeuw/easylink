@@ -41,11 +41,7 @@ class PipelineSchema(MultiDiGraph):
     @property
     def steps(self) -> List[AbstractStep]:
         """Convenience property to get all steps in the graph."""
-        return [self.get_attr(node, "step") for node in self.step_nodes]
-
-    def get_attr(self, node: str, attr: str) -> Any:
-        """Convenience method to get a particular attribute from a node"""
-        return self.nodes[node][attr]
+        return [self.nodes[node]["step"] for node in self.step_nodes]
 
     @classmethod
     def _get_schemas(cls) -> List["PipelineSchema"]:

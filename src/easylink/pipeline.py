@@ -79,7 +79,7 @@ class Pipeline:
         final_validation.write_to_snakefile(self.snakefile_path)
 
     def write_implementation_rules(self, node: str) -> None:
-        implementation = self.pipeline_graph.get_attr(node, "implementation")
+        implementation = self.pipeline_graph.nodes[node]["implementation"]
         input_files, output_files = self.pipeline_graph.get_input_output_files(node)
         input_slots = self.pipeline_graph.get_input_slots(node)
         diagnostics_dir = Path("diagnostics") / node
@@ -94,7 +94,7 @@ class Pipeline:
             name=implementation.name,
             input=input_files,
             output=validation_file,
-            validator=self.pipeline_graph.get_attr(node, "input_validator"),
+            validator=self.pipeline_graph.nodes[node]["input_validator"],
         )
         implementation_rule = ImplementedRule(
             step_name=implementation.schema_step_name,
