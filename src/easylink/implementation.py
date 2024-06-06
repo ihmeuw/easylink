@@ -1,27 +1,17 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
-
-if TYPE_CHECKING:
-    from easylink.configuration import Config
-    from easylink.step import Step
+from typing import Dict, List, Optional
 
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
 
 class Implementation:
-    def __init__(
-        self,
-        config: "Config",
-        step: "Step",
-    ):
-        self.name = config.get_implementation_name(step.name)
-        self.environment_variables = config.pipeline[step.name]["implementation"][
-            "configuration"
-        ].to_dict()
+    def __init__(self, name: str, step_name: str, environment_variables: Dict[str, str]):
+        self.name = name
+        self.environment_variables = environment_variables
         self._metadata = self._load_metadata()
         self.metadata_step_name = self._metadata["step"]
-        self.schema_step_name = step.name
+        self.schema_step_name = step_name
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
