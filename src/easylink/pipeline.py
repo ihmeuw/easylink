@@ -60,7 +60,7 @@ class Pipeline:
             f.write("from easylink.utilities import validation_utils")
 
     def write_target_rules(self) -> None:
-        final_output = ["result.parquet"]
+        final_output, _ = self.pipeline_graph.get_input_output_files("results")
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
         # before the validation
