@@ -20,6 +20,66 @@ class AbstractStep(ABC):
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         pass
 
+class GraphStep(AbstractStep):
+    
+    def __init__(self, name: str, input_validator: Callable, out_dir: Path, graph_params:dict) -> None:
+        self.name = name
+        self.input_validator = input_validator
+        self.graph = self._create_graph(graph_params)
+
+    def _create_graph(self, graph_params: dict) -> MultiDiGraph:
+        graph = MultiDiGraph()
+        for step_name, step_params in graph_params.items():
+            graph.add_node(
+                step_name,
+                step=step_params["step_type"](
+                    step_name,
+                    input_validator=step_params["input_validator"],
+                    out_dir=step_params["out_dir"],
+                ),
+            )
+            for in_edge, edge_params in step_params["in_edges"].items():
+                graph.add_edge(in_edge, step_name, **edge_params)
+
+        return graph
+
+    def get_subgraph(self, config: Config) -> MultiDiGraph:
+        sub_graph = MultiDiGraph()
+        sub_graph.update(self.graph)
+        for subgraph_node in self.graph.nodes:
+            node_graph = self.graph.nodes[subgraph_node]["step"].get_subgraph(config)
+            sub_graph.update(node_graph)
+            sub_source_nodes = [
+                node for node in node_graph.nodes if node_graph.in_degree(node) == 0
+            ]
+            input_edges = [
+                (source, subgraph_node, data)
+                for source, _, data in sub_graph.in_edges(subgraph_node, data=True)
+            ]
+            for source, _, data in input_edges:
+                sub_graph.add_edges_from([(source, node, data) for node in sub_source_nodes])
+
+            output_edges = [
+                (subgraph_node, sink, data)
+                for _, sink, data in sub_graph.out_edges(subgraph_node, data=True)
+            ]
+            sub_sink_nodes = [
+                node for node in sub_graph.nodes if sub_graph.out_degree(node) == 0
+            ]
+            # Get absolute paths from relative paths
+            for _, sink, data in output_edges:
+                for sub_node in sub_sink_nodes:
+                    data["files"] = [
+                        str(sub_graph.nodes[sub_node]["out_dir"] / file)
+                        for file in data["files"]
+                    ]
+                    sub_graph.add_edge(sub_node, sink, data=data)
+            # Remove the original node
+            sub_graph.remove_node(subgraph_node)
+        return sub_graph
+        
+
+
 class InputStep(AbstractStep):
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         sub_graph = MultiDiGraph()
