@@ -10,77 +10,82 @@ if TYPE_CHECKING:
     from easylink.configuration import Config
 
 
-class AbstractStep(ABC):
-    def __init__(self, name: str, input_validator: Callable, out_dir: Path) -> None:
-        self.name = name
-        self.input_validator = input_validator
-        self.out_dir = out_dir
-
+class Step(ABC):
     @abstractmethod
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         pass
 
-class GraphStep(AbstractStep):
-    
-    def __init__(self, name: str, input_validator: Callable, out_dir: Path, graph_params:dict) -> None:
-        self.name = name
-        self.input_validator = input_validator
-        self.graph = self._create_graph(graph_params)
 
-    def _create_graph(self, graph_params: dict) -> MultiDiGraph:
+class GraphStep(Step):
+    def __init__(self, name: str, **params) -> None:
+        self.name = name
+        self.out_dir = Path()
+        self.graph = self._create_graph(params)
+
+    def _create_graph(self, params: dict) -> MultiDiGraph:
         graph = MultiDiGraph()
-        for step_name, step_params in graph_params.items():
+        for step_name, graph_params in params.items():
+            step = graph_params["step_type"](
+                step_name,
+                **graph_params["step_params"],
+            )
             graph.add_node(
                 step_name,
-                step=step_params["step_type"](
-                    step_name,
-                    input_validator=step_params["input_validator"],
-                    out_dir=step_params["out_dir"],
-                ),
+                step=step,
+                out_dir=step.out_dir,
             )
-            for in_edge, edge_params in step_params["in_edges"].items():
+            for in_edge, edge_params in graph_params.get("in_edges", {}).items():
                 graph.add_edge(in_edge, step_name, **edge_params)
 
         return graph
 
-    def get_subgraph(self, config: Config) -> MultiDiGraph:
-        sub_graph = MultiDiGraph()
-        sub_graph.update(self.graph)
-        for subgraph_node in self.graph.nodes:
-            node_graph = self.graph.nodes[subgraph_node]["step"].get_subgraph(config)
-            sub_graph.update(node_graph)
-            sub_source_nodes = [
-                node for node in node_graph.nodes if node_graph.in_degree(node) == 0
-            ]
-            input_edges = [
-                (source, subgraph_node, data)
-                for source, _, data in sub_graph.in_edges(subgraph_node, data=True)
-            ]
-            for source, _, data in input_edges:
-                sub_graph.add_edges_from([(source, node, data) for node in sub_source_nodes])
+    def get_subgraph(self, config: "Config") -> MultiDiGraph:
+        curr_graph = MultiDiGraph(incoming_graph_data=self.graph)
 
-            output_edges = [
+        for subgraph_node in self.graph.nodes:
+            subgraph = self.graph.nodes[subgraph_node]["step"].get_subgraph(config)
+            curr_graph.update(subgraph)
+            subgraph_source_nodes = [
+                node for node in subgraph.nodes if subgraph.in_degree(node) == 0
+            ]
+
+            subgraph_sink_nodes = [
+                node for node in subgraph.nodes if subgraph.out_degree(node) == 0
+            ]
+            curr_input_edges = [
+                (source, subgraph_node, data)
+                for source, _, data in curr_graph.in_edges(subgraph_node, data=True)
+            ]
+
+            curr_output_edges = [
                 (subgraph_node, sink, data)
-                for _, sink, data in sub_graph.out_edges(subgraph_node, data=True)
+                for _, sink, data in curr_graph.out_edges(subgraph_node, data=True)
             ]
-            sub_sink_nodes = [
-                node for node in sub_graph.nodes if sub_graph.out_degree(node) == 0
-            ]
+
+            for source, _, data in curr_input_edges:
+                curr_graph.add_edges_from(
+                    [(source, node, data) for node in subgraph_source_nodes]
+                )
+
             # Get absolute paths from relative paths
-            for _, sink, data in output_edges:
-                for sub_node in sub_sink_nodes:
+            for _, sink, data in curr_output_edges:
+                for sub_node in subgraph_sink_nodes:
                     data["files"] = [
-                        str(sub_graph.nodes[sub_node]["out_dir"] / file)
+                        str(curr_graph.nodes[sub_node]["out_dir"] / file)
                         for file in data["files"]
                     ]
-                    sub_graph.add_edge(sub_node, sink, data=data)
+                    curr_graph.add_edge(sub_node, sink, **data)
             # Remove the original node
-            sub_graph.remove_node(subgraph_node)
-        return sub_graph
-        
+            curr_graph.remove_node(subgraph_node)
+        return curr_graph
 
 
-class InputStep(AbstractStep):
+class InputStep(Step):
+    def __init__(self, name: str, **params) -> None:
+        self.name = name
+        self.input_validator = params["input_validator"]
+        self.out_dir = params["out_dir"]
+
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         sub_graph = MultiDiGraph()
         sub_graph.add_node(
@@ -89,7 +94,12 @@ class InputStep(AbstractStep):
         return sub_graph
 
 
-class ResultStep(AbstractStep):
+class ResultStep(Step):
+    def __init__(self, name: str, **params) -> None:
+        self.name = name
+        self.input_validator = params["input_validator"]
+        self.out_dir = params["out_dir"]
+
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         sub_graph = MultiDiGraph()
         sub_graph.add_node(
@@ -98,7 +108,7 @@ class ResultStep(AbstractStep):
         return sub_graph
 
 
-class ImplementedStep(AbstractStep):
+class ImplementedStep(Step):
     """Steps contain information about the purpose of the interoperable elements of
     the sequence called a *Pipeline* and how those elements relate to one another.
     In turn, steps are implemented by Implementations, such that each step may have
@@ -106,10 +116,10 @@ class ImplementedStep(AbstractStep):
     In a sense, steps contain metadata about the implementations to which they relate.
     """
 
-    def __init__(self, name: str, input_validator: Callable, out_dir: Path) -> None:
+    def __init__(self, name: str, **params) -> None:
         self.name = name
-        self.input_validator = input_validator
-        self.out_dir = out_dir
+        self.input_validator = params["input_validator"]
+        self.out_dir = params["out_dir"]
 
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
         sub = MultiDiGraph()

@@ -5,25 +5,11 @@ import networkx as nx
 from networkx import MultiDiGraph
 
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import AbstractStep
+from easylink.step import GraphStep, Step
 
 
-class PipelineSchema(MultiDiGraph):
+class PipelineSchema(GraphStep):
     """Defines the allowable schema(s) for the pipeline."""
-
-    def __init__(self, name: str, schema_params: dict) -> None:
-        super().__init__(name=name)
-        for step_name, step_params in schema_params.items():
-            self.add_node(
-                step_name,
-                step=step_params["step_type"](
-                    step_name,
-                    input_validator=step_params["input_validator"],
-                    out_dir=step_params["out_dir"],
-                ),
-            )
-            for in_edge, edge_params in step_params["in_edges"].items():
-                self.add_edge(in_edge, step_name, **edge_params)
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
@@ -31,7 +17,7 @@ class PipelineSchema(MultiDiGraph):
     @property
     def step_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""
-        ordered_nodes = list(nx.topological_sort(self))
+        ordered_nodes = list(nx.topological_sort(self.graph))
         return [
             node
             for node in ordered_nodes
@@ -39,21 +25,22 @@ class PipelineSchema(MultiDiGraph):
         ]
 
     @property
-    def steps(self) -> List[AbstractStep]:
+    def steps(self) -> List[Step]:
         """Convenience property to get all steps in the graph."""
-        return [self.nodes[node]["step"] for node in self.step_nodes]
+        return [self.graph.nodes[node]["step"] for node in self.step_nodes]
 
     @classmethod
     def _get_schemas(cls) -> List["PipelineSchema"]:
         """Creates the allowable schema for the pipeline."""
         return [
-            cls(name, schema_params) for name, schema_params in ALLOWED_SCHEMA_PARAMS.items()
+            cls(name, **schema_params)
+            for name, schema_params in ALLOWED_SCHEMA_PARAMS.items()
         ]
 
     def validate_input(self, filepath: Path) -> Optional[List[str]]:
         "Wrap the output file validator for now, since it is the same"
         try:
-            self.nodes["input_data_schema"]["step"].input_validator(filepath)
+            self.graph.nodes["input_data_schema"]["step"].input_validator(filepath)
         except Exception as e:
             return [e.args[0]]
 
