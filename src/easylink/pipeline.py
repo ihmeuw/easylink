@@ -120,6 +120,8 @@ class Pipeline:
                 )
 
     def write_spark_module(self) -> None:
+        slurm_resources = self.config.slurm_resources
+        spark_resources = self.config.spark_resources
         with open(self.snakefile_path, "a") as f:
             module = f"""
 module spark_cluster:
@@ -133,24 +135,24 @@ use rule terminate_spark from spark_cluster with:
                 module += f"""
 use rule start_spark_master from spark_cluster with:
     resources:
-        slurm_account={self.config.slurm_resources['slurm_account']},
-        slurm_partition={self.config.slurm_resources['slurm_partition']},
-        mem_mb={self.config.spark_resources['slurm_mem_mb']},
-        runtime={self.config.spark_resources['runtime']},
-        cpus_per_task={self.config.spark_resources['cpus_per_task']},
+        slurm_account={slurm_resources['slurm_account']},
+        slurm_partition={slurm_resources['slurm_partition']},
+        mem_mb={spark_resources['slurm_mem_mb']},
+        runtime={spark_resources['runtime']},
+        cpus_per_task={spark_resources['cpus_per_task']},
         slurm_extra="--output 'spark_logs/start_spark_master-slurm-%j.log'"
 use rule start_spark_worker from spark_cluster with:
     resources:
-        slurm_account={self.config.slurm_resources['slurm_account']},
-        slurm_partition={self.config.slurm_resources['slurm_partition']},
-        mem_mb={self.config.spark_resources['slurm_mem_mb']},
-        runtime={self.config.spark_resources['runtime']},
-        cpus_per_task={self.config.spark_resources['cpus_per_task']},
+        slurm_account={slurm_resources['slurm_account']},
+        slurm_partition={slurm_resources['slurm_partition']},
+        mem_mb={spark_resources['slurm_mem_mb']},
+        runtime={spark_resources['runtime']},
+        cpus_per_task={spark_resources['cpus_per_task']},
         slurm_extra="--output 'spark_logs/start_spark_worker-slurm-%j.log'"
     params:
         terminate_file_name=rules.terminate_spark.output,
         user=os.environ["USER"],
-        cores={self.config.spark_resources['cpus_per_task']},
-        memory={self.config.spark_resources['mem_mb']}
+        cores={spark_resources['cpus_per_task']},
+        memory={spark_resources['mem_mb']}
                         """
             f.write(module)

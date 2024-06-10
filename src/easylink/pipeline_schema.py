@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Any, List, Optional
 
 import networkx as nx
-from networkx import MultiDiGraph
 
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import GraphStep, Step
