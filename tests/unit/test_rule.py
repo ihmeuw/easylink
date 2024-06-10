@@ -59,7 +59,10 @@ def test_implemented_rule_build_rule(computing_environment):
     rule = ImplementedRule(
         step_name="foo_step",
         implementation_name="foo",
-        execution_input=["foo", "bar"],
+        input_slots={
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": ["foo"],
+            "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": ["bar"],
+        },
         validation="bar",
         output=["baz"],
         resources=resources,

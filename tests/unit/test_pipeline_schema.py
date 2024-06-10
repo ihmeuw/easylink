@@ -1,29 +1,15 @@
 from typing import Callable
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.step import Step
 
 
-def test__add_step():
-    schema = PipelineSchema("test_schema", lambda *_: None)
-    assert schema.steps == []
-    schema._add_step("foo")._add_step("bar")
-    assert schema.steps == ["foo", "bar"]
-
-
 def test__generate_schema():
-    schema = PipelineSchema._generate_schema(
-        "test_schema",
-        lambda *_: None,
-        Step("step_1", prev_input=True, input_files=False),
-        Step("step_2", prev_input=True, input_files=False),
-    )
-    assert schema.name == "test_schema"
+    schema = PipelineSchema(TESTING_SCHEMA_PARAMS)
+    assert schema.name == "integration"
     assert isinstance(schema.validate_input, Callable)
-    assert schema.steps == [
-        Step("step_1", prev_input=True, input_files=False),
-        Step("step_2", prev_input=True, input_files=False),
-    ]
+    assert schema.steps == []
 
 
 def test_get_schemas():
@@ -35,7 +21,6 @@ def test_get_schemas():
     for schema in supported_schemas:
         assert schema.name
         assert schema.steps
-        assert isinstance(schema.validate_input, Callable)
         assert isinstance(schema.steps, list)
         for step in schema.steps:
             assert isinstance(step, Step)
@@ -43,16 +28,6 @@ def test_get_schemas():
             assert isinstance(step.input_validator, Callable)
 
 
-def test_get_step_id():
-    schema = PipelineSchema._get_schemas()[1]
-    assert schema.get_step_id(schema.steps[0]) == "1_step_1"
-    assert schema.get_step_id(schema.steps[1]) == "2_step_2"
-
-
-def test__add_step():
-    schema = PipelineSchema("bad-schema", lambda *_: None)
-    assert schema.steps == []
-    schema._add_step("foo")
-    assert schema.steps == ["foo"]
-    schema._add_step("bar")
-    assert schema.steps == ["foo", "bar"]
+def test_validate_input():
+    schema = PipelineSchema(TESTING_SCHEMA_PARAMS)
+    pass

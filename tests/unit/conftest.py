@@ -176,8 +176,8 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{tmp_path}/input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "file1.csv"),
-                "bar": str(input_dir2 / "file2.csv"),
+                "file1": str(input_dir1 / "file1.csv"),
+                "file2": str(input_dir2 / "file2.csv"),
             },
             file,
             sort_keys=False,

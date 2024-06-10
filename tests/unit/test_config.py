@@ -10,7 +10,7 @@ from easylink.configuration import (
     _load_computing_environment,
     _load_input_data_paths,
 )
-from easylink.step import Step
+from easylink.step import GraphStep, ImplementedStep, Step
 from easylink.utilities.data_utils import load_yaml
 
 
@@ -27,10 +27,10 @@ def test__spark_is_required(test_dir, requires_spark):
 def test__get_schema(default_config):
     """Test that the schema is correctly loaded from the pipeline.yaml"""
     assert default_config.schema.steps == [
-        Step("step_1", prev_input=False, input_files=True),
-        Step("step_2", prev_input=True, input_files=False),
-        Step("step_3", prev_input=True, input_files=False),
-        Step("step_4", prev_input=True, input_files=False),
+        GraphStep("step_1", **default_config.schema_params["step_1"]),
+        ImplementedStep("step_2", **default_config.schema_params["step_2"]),
+        ImplementedStep("step_3", **default_config.schema_params["step_3"]),
+        ImplementedStep("step_4", **default_config.schema_params["step_4"]),
     ]
 
 
@@ -42,7 +42,10 @@ def test_load_params_from_specification(test_dir, default_config_params):
             "step_3": {"implementation": {"name": "step_3_python_pandas"}},
             "step_4": {"implementation": {"name": "step_4_python_pandas"}},
         },
-        "input_data": [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]],
+        "input_data": {
+            "file1": Path(f"{test_dir}/input_data1/file1.csv"),
+            "file2": Path(f"{test_dir}/input_data2/file2.csv"),
+        },
         "environment": {
             "computing_environment": "local",
             "container_engine": "undefined",
@@ -53,7 +56,10 @@ def test_load_params_from_specification(test_dir, default_config_params):
 
 def test__load_input_data_paths(test_dir):
     paths = _load_input_data_paths(f"{test_dir}/input_data.yaml")
-    assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
+    assert paths == {
+        "file1": Path(f"{test_dir}/input_data1/file1.csv"),
+        "file2": Path(f"{test_dir}/input_data2/file2.csv"),
+    }
 
 
 @pytest.mark.parametrize(

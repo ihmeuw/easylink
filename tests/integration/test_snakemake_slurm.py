@@ -5,9 +5,9 @@ import tempfile
 
 import pytest
 
-from easylink.pipeline_schema import PipelineSchema, validate_dummy_input
+from easylink.pipeline_schema import PipelineSchema
+from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.runner import main
-from easylink.step import Step
 from easylink.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
@@ -19,13 +19,10 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 )
 def test_slurm(mocker, caplog):
     """Test that the pipeline runs on SLURM with appropriate resources."""
+
     mocker.patch(
         "easylink.configuration.Config._get_schema",
-        return_value=PipelineSchema._generate_schema(
-            "test",
-            validate_dummy_input,
-            Step("step_1", prev_input=False, input_files=True),
-        ),
+        return_value=PipelineSchema(TESTING_SCHEMA_PARAMS),
     )
     results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
     # give the tmpdir the same permissions as the parent directory so that

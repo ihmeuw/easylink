@@ -125,3 +125,41 @@ ALLOWED_SCHEMA_PARAMS = {
         },
     },
 }
+TESTING_SCHEMA_PARAMS = {
+    "integration": {
+        "input_data_schema": {
+            "step_type": InputStep,
+            "step_params": {
+                "input_validator": validate_input_file_dummy,
+                "out_dir": Path(),
+            },
+            "in_edges": {},
+        },
+        "step1": {
+            "step_type": ImplementedStep,
+            "step_params": {
+                "input_validator": validate_input_file_dummy,
+                "out_dir": Path("results"),
+            },
+            "in_edges": {
+                "input_data_schema": {
+                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    "files": ["file1"],
+                }
+            },
+        },
+        "results_schema": {
+            "step_type": ResultStep,
+            "step_params": {
+                "input_validator": validate_input_file_dummy,
+                "out_dir": Path(),
+            },
+            "in_edges": {
+                "step1": {
+                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    "files": ["result.parquet"],
+                },
+            },
+        },
+    },
+}

@@ -1,11 +1,13 @@
 from typing import Callable
 
 from easylink.implementation import Implementation
-from easylink.step import Step
+from easylink.step import ImplementedStep
 
 
 def test_step_instantiation():
-    step = Step("foo", prev_input=True, input_files=True)
+    step = ImplementedStep(
+        "foo",
+    )
     assert step.name == "foo"
     assert step.prev_input
     assert step.input_files
