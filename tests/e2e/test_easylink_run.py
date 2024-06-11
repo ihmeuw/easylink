@@ -12,7 +12,7 @@ from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
-RESULT_CHECKSUM ="9cf076f863b2ee73a11da982240f977a708d5ea87dd28e435afaa92790824e52"
+RESULT_CHECKSUM = "9cf076f863b2ee73a11da982240f977a708d5ea87dd28e435afaa92790824e52"
 
 
 @pytest.mark.slow
@@ -86,12 +86,23 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
 
         # Check that implementation configuration worked
         diagnostics_dir = results_dir / "diagnostics"
-        assert load_yaml(diagnostics_dir / "step_1_python_pandas" / "diagnostics.yaml")["increment"] == 1
         assert (
-            load_yaml(diagnostics_dir / "step_2_python_pyspark_distributed" / "diagnostics.yaml")["increment"] == 100
+            load_yaml(diagnostics_dir / "step_1_python_pandas" / "diagnostics.yaml")[
+                "increment"
+            ]
+            == 1
         )
         assert (
-            load_yaml(diagnostics_dir / "step_3_python_pandas" / "diagnostics.yaml")["increment"] == 702
+            load_yaml(
+                diagnostics_dir / "step_2_python_pyspark_distributed" / "diagnostics.yaml"
+            )["increment"]
+            == 100
+        )
+        assert (
+            load_yaml(diagnostics_dir / "step_3_python_pandas" / "diagnostics.yaml")[
+                "increment"
+            ]
+            == 702
         )
         assert (
             load_yaml(diagnostics_dir / "step_4_r" / "diagnostics.yaml")["increment"] == 912
