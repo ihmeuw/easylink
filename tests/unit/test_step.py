@@ -5,12 +5,13 @@ from easylink.step import ImplementedStep
 
 
 def test_step_instantiation():
-    step = ImplementedStep(
-        "foo",
-    )
+    params = {
+        "input_validator": lambda *_: None,
+        "out_dir": "results",
+    }
+    step = ImplementedStep("foo", **params)
     assert step.name == "foo"
-    assert step.prev_input
-    assert step.input_files
+    assert step.out_dir == "results"
     assert isinstance(step.input_validator, Callable)
 
 
@@ -20,7 +21,8 @@ def test_get_subgraph(default_config):
         subgraph = step.get_subgraph(default_config)
         assert len(subgraph.nodes) == 1
         assert len(subgraph.edges) == 0
-        implementation = subgraph.nodes[schema.get_step_id(step)]["implementation"]
+        imp_node = f"{step.name}_python_pandas"
+        implementation = subgraph.nodes[imp_node]["implementation"]
         assert isinstance(implementation, Implementation)
-        assert implementation.name == f"{step.name}_python_pandas"
+        assert implementation.name == imp_node
         assert implementation.schema_step_name == step.name

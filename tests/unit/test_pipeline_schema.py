@@ -1,15 +1,31 @@
-from typing import Callable
+from pathlib import Path
+from re import match
+
+import networkx as nx
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import Step
 
 
-def test__generate_schema():
-    schema = PipelineSchema(TESTING_SCHEMA_PARAMS)
-    assert schema.name == "integration"
-    assert isinstance(schema.validate_input, Callable)
-    assert schema.steps == []
+def test_schema_instantiation():
+    schema = PipelineSchema("development", **ALLOWED_SCHEMA_PARAMS["development"])
+    sorted_graph = nx.topological_sort(schema.graph)
+    """Test that the schema is correctly loaded from the pipeline.yaml"""
+    assert list(sorted_graph) == [
+        "input_data_schema",
+        "step_1",
+        "step_2",
+        "step_3",
+        "step_4",
+        "results_schema",
+    ]
+    step_types = [node["step"] for node in sorted_graph]
+    expected_step_types = [
+        step["step_type"] for step in ALLOWED_SCHEMA_PARAMS["development"].values()
+    ]
+    for step_type, expected_step_types in zip(step_types, expected_step_types):
+        assert isinstance(step_type, expected_step_types)
 
 
 def test_get_schemas():
@@ -25,9 +41,14 @@ def test_get_schemas():
         for step in schema.steps:
             assert isinstance(step, Step)
             assert step.name
-            assert isinstance(step.input_validator, Callable)
 
 
-def test_validate_input():
-    schema = PipelineSchema(TESTING_SCHEMA_PARAMS)
-    pass
+def test_validate_input(test_dir):
+    schema = PipelineSchema("development", **ALLOWED_SCHEMA_PARAMS["development"])
+    filepath = Path(test_dir) / "input_data1/file1.csv"
+    errors = schema.validate_input(filepath)
+    assert not errors
+    # Test with a bad file
+    filepath = Path(test_dir) / "input_data1/broken_file1.csv"
+    errors = schema.validate_input(filepath)
+    assert match("Data file .* is missing required column\\(s\\) .*", errors[0])

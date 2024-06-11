@@ -191,7 +191,7 @@ class Config(LayeredConfigTree):
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.
 
-        NOTE: this acts as the pipeline configurat file's validation method since
+        NOTE: this acts as the pipeline configuration file's validation method since
         we can only find a matching schema if the file is valid.
         """
         errors = defaultdict(dict)
