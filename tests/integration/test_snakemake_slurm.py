@@ -22,7 +22,7 @@ def test_slurm(mocker, caplog):
 
     mocker.patch(
         "easylink.configuration.Config._get_schema",
-        return_value=PipelineSchema(TESTING_SCHEMA_PARAMS),
+        return_value=PipelineSchema("integration", **TESTING_SCHEMA_PARAMS["integration"]),
     )
     results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
     # give the tmpdir the same permissions as the parent directory so that

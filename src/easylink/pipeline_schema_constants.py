@@ -135,7 +135,7 @@ TESTING_SCHEMA_PARAMS = {
             },
             "in_edges": {},
         },
-        "step1": {
+        "step_1": {
             "step_type": ImplementedStep,
             "step_params": {
                 "input_validator": validate_input_file_dummy,
@@ -155,7 +155,7 @@ TESTING_SCHEMA_PARAMS = {
                 "out_dir": Path(),
             },
             "in_edges": {
-                "step1": {
+                "step_1": {
                     "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     "files": ["result.parquet"],
                 },

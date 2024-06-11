@@ -14,7 +14,7 @@ def test_missing_results(mocker, caplog):
     """Test that the pipeline fails when a step is missing output files."""
     mocker.patch(
         "easylink.configuration.Config._get_schema",
-        return_value=PipelineSchema(TESTING_SCHEMA_PARAMS),
+        return_value=PipelineSchema("integration", **TESTING_SCHEMA_PARAMS["integration"]),
     )
 
     ## Mock implementation script call to wait 1s instead of running something
