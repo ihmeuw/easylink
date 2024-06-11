@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from easylink.step import GraphStep, ImplementedStep, InputStep, ResultStep
+from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 ALLOWED_SCHEMA_PARAMS = {
@@ -50,7 +50,7 @@ ALLOWED_SCHEMA_PARAMS = {
             "in_edges": {},
         },
         "step_1": {
-            "step_type": GraphStep,
+            "step_type": CompositeStep,
             "step_params": {
                 "step_1": {
                     "step_type": ImplementedStep,

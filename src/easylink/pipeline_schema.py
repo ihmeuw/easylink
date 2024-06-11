@@ -4,10 +4,10 @@ from typing import Any, List, Optional
 import networkx as nx
 
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import GraphStep, Step
+from easylink.step import CompositeStep, Step
 
 
-class PipelineSchema(GraphStep):
+class PipelineSchema(CompositeStep):
     """Defines the allowable schema(s) for the pipeline."""
 
     def __repr__(self) -> str:

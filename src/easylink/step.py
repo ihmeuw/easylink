@@ -16,7 +16,7 @@ class Step(ABC):
         pass
 
 
-class GraphStep(Step):
+class CompositeStep(Step):
     def __init__(self, name: str, **params) -> None:
         self.name = name
         self.out_dir = Path()

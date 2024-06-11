@@ -10,7 +10,7 @@ from easylink.configuration import (
     _load_computing_environment,
     _load_input_data_paths,
 )
-from easylink.step import GraphStep, ImplementedStep, Step
+from easylink.step import CompositeStep, ImplementedStep, Step
 from easylink.utilities.data_utils import load_yaml
 
 
@@ -27,7 +27,7 @@ def test__spark_is_required(test_dir, requires_spark):
 def test__get_schema(default_config):
     """Test that the schema is correctly loaded from the pipeline.yaml"""
     assert default_config.schema.steps == [
-        GraphStep("step_1", **default_config.schema_params["step_1"]),
+        CompositeStep("step_1", **default_config.schema_params["step_1"]),
         ImplementedStep("step_2", **default_config.schema_params["step_2"]),
         ImplementedStep("step_3", **default_config.schema_params["step_3"]),
         ImplementedStep("step_4", **default_config.schema_params["step_4"]),
