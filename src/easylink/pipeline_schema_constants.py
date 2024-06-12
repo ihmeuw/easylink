@@ -4,42 +4,6 @@ from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 ALLOWED_SCHEMA_PARAMS = {
-    "pvs_like_case_study": {
-        "input_data_schema": {
-            "step_type": InputStep,
-            "step_params": {
-                "input_validator": lambda *_: None,
-                "out_dir": Path(),
-            },
-            "in_edges": {},
-        },
-        "pvs_like_case_study": {
-            "step_type": ImplementedStep,
-            "step_params": {
-                "input_validator": lambda *_: None,
-                "out_dir": Path("results"),
-            },
-            "in_edges": {
-                "input_data_schema": {
-                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    "files": ["file1"],
-                }
-            },
-        },
-        "results_schema": {
-            "step_type": ResultStep,
-            "step_params": {
-                "input_validator": lambda *_: None,
-                "out_dir": Path(),
-            },
-            "in_edges": {
-                "pvs_like_case_study": {
-                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    "files": ["result.parquet"],
-                },
-            },
-        },
-    },
     "development": {
         "input_data_schema": {
             "step_type": InputStep,
