@@ -1,7 +1,8 @@
+from easylink.configuration import Config
 from easylink.pipeline_graph import PipelineGraph
 
 
-def test__create_graph(default_config, test_dir):
+def test__create_graph(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
     assert set(pipeline_graph.nodes) == {
         "input_data",
@@ -68,7 +69,7 @@ def test__create_graph(default_config, test_dir):
     assert list(pipeline_graph.edges(data=True)) == expected_edges
 
 
-def test_implementations(default_config):
+def test_implementations(default_config: Config) -> None:
     pipeline_graph = PipelineGraph(default_config)
     implementation_names = [
         implementation.name for implementation in pipeline_graph.implementations
@@ -83,7 +84,7 @@ def test_implementations(default_config):
     assert pipeline_graph.implementation_nodes == expected_names
 
 
-def test_get_input_output_files(default_config, test_dir):
+def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
     expected = {
         "step_1_python_pandas": (
             [

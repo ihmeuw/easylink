@@ -4,6 +4,7 @@ import subprocess
 import tempfile
 
 import pytest
+from pytest_mock import MockerFixture
 
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
@@ -17,7 +18,7 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
     not is_on_slurm(),
     reason="Must be on slurm to run this test.",
 )
-def test_slurm(mocker, caplog):
+def test_slurm(mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
     """Test that the pipeline runs on SLURM with appropriate resources."""
 
     mocker.patch(

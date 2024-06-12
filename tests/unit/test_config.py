@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 from layered_config_tree import LayeredConfigTree
@@ -24,12 +25,14 @@ def test__spark_is_required(test_dir, requires_spark):
     assert is_required == requires_spark
 
 
-def test__get_schema(default_config):
+def test__get_schema(default_config: Config) -> None:
     """Test default config gets "development schema", without errors"""
     assert default_config.schema == PIPELINE_SCHEMAS[1]
 
 
-def test_load_params_from_specification(test_dir, default_config_params):
+def test_load_params_from_specification(
+    test_dir: str, default_config_params: Dict[str, Dict[str, Any]]
+) -> None:
     assert default_config_params == {
         "pipeline": {
             "step_1": {"implementation": {"name": "step_1_python_pandas"}},
@@ -49,7 +52,7 @@ def test_load_params_from_specification(test_dir, default_config_params):
     }
 
 
-def test__load_input_data_paths(test_dir):
+def test__load_input_data_paths(test_dir: str) -> None:
     paths = _load_input_data_paths(f"{test_dir}/input_data.yaml")
     assert paths == {
         "file1": Path(f"{test_dir}/input_data1/file1.csv"),

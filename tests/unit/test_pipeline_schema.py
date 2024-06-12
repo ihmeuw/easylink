@@ -8,7 +8,7 @@ from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import Step
 
 
-def test_schema_instantiation():
+def test_schema_instantiation() -> None:
     schema = PipelineSchema("development", **ALLOWED_SCHEMA_PARAMS["development"])
     sorted_graph = nx.topological_sort(schema.graph)
     """Test that the schema is correctly loaded from the pipeline.yaml"""
@@ -28,7 +28,7 @@ def test_schema_instantiation():
         assert isinstance(step_type, expected_step_types)
 
 
-def test_get_schemas():
+def test_get_schemas() -> None:
     supported_schemas = PIPELINE_SCHEMAS
     assert isinstance(supported_schemas, list)
     # Ensure list is populated
@@ -43,7 +43,7 @@ def test_get_schemas():
             assert step.name
 
 
-def test_validate_input(test_dir):
+def test_validate_input(test_dir: str) -> None:
     schema = PipelineSchema("development", **ALLOWED_SCHEMA_PARAMS["development"])
     filepath = Path(test_dir) / "input_data1/file1.csv"
     errors = schema.validate_input(filepath)

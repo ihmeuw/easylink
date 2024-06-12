@@ -1,12 +1,13 @@
 from pathlib import Path
 from typing import Callable
 
+from easylink.configuration import Config
 from easylink.implementation import Implementation
 from easylink.pipeline_schema_constants import validate_input_file_dummy
 from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
 
 
-def test_input_step(default_config):
+def test_input_step(default_config: Config) -> None:
     params = {
         "input_validator": validate_input_file_dummy,
         "out_dir": Path("input"),
@@ -23,7 +24,7 @@ def test_input_step(default_config):
     assert subgraph.nodes["input_data"]["out_dir"] == Path("input")
 
 
-def test_result_step(default_config):
+def test_result_step(default_config: Config) -> None:
     params = {
         "input_validator": validate_input_file_dummy,
         "out_dir": Path("results"),
@@ -40,7 +41,7 @@ def test_result_step(default_config):
     assert subgraph.nodes["results"]["out_dir"] == Path("results")
 
 
-def test_implemented_step(default_config):
+def test_implemented_step(default_config: Config) -> None:
     params = {
         "input_validator": validate_input_file_dummy,
         "out_dir": Path("foo"),
@@ -64,7 +65,7 @@ def test_implemented_step(default_config):
     assert implementation.schema_step_name == step.name
 
 
-def test_composite_step(default_config):
+def test_composite_step(default_config: Config) -> None:
     params = {
         "step_1": {
             "step_type": ImplementedStep,
