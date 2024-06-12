@@ -11,18 +11,30 @@ if TYPE_CHECKING:
 
 
 class Step(ABC):
+    """Steps contain information about the purpose of the interoperable elements of
+    the sequence called a *Pipeline* and how those elements relate to one another.
+    In turn, steps are implemented by Implementations, such that each step may have
+    several implementations but each implementation must have exactly one step.
+    In a sense, steps contain metadata about the implementations to which they relate.
+    """
+
     @abstractmethod
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
+        """Resolve the Step into an Implementation graph."""
         pass
 
 
 class CompositeStep(Step):
+    """Composite Steps are Steps that contain other Steps. They allow operations to be
+    applied recursively on Steps or sequences of Steps."""
+
     def __init__(self, name: str, **params) -> None:
         self.name = name
         self.out_dir = Path()
         self.graph = self._create_graph(params)
 
     def _create_graph(self, params: dict) -> MultiDiGraph:
+        """Create a MultiDiGraph from the parameters passed in."""
         graph = MultiDiGraph()
         for step_name, graph_params in params.items():
             step = graph_params["step_type"](
@@ -40,6 +52,7 @@ class CompositeStep(Step):
         return graph
 
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
+        """Call get_subgraph on each subgraph node and update the graph."""
         curr_graph = MultiDiGraph(incoming_graph_data=self.graph)
 
         for subgraph_node in self.graph.nodes:
@@ -81,6 +94,8 @@ class CompositeStep(Step):
 
 
 class InputStep(Step):
+    """Basic Step for input data node."""
+
     def __init__(self, name: str, **params) -> None:
         self.name = name
         self.input_validator = params["input_validator"]
@@ -95,6 +110,8 @@ class InputStep(Step):
 
 
 class ResultStep(Step):
+    """Basic Step for result node."""
+
     def __init__(self, name: str, **params) -> None:
         self.name = name
         self.input_validator = params["input_validator"]
@@ -109,12 +126,7 @@ class ResultStep(Step):
 
 
 class ImplementedStep(Step):
-    """Steps contain information about the purpose of the interoperable elements of
-    the sequence called a *Pipeline* and how those elements relate to one another.
-    In turn, steps are implemented by Implementations, such that each step may have
-    several implementations but each implementation must have exactly one step.
-    In a sense, steps contain metadata about the implementations to which they relate.
-    """
+    """Step for leaf node tied to a specific single implementation"""
 
     def __init__(self, name: str, **params) -> None:
         self.name = name
@@ -122,6 +134,7 @@ class ImplementedStep(Step):
         self.out_dir = params["out_dir"]
 
     def get_subgraph(self, config: "Config") -> MultiDiGraph:
+        """Return a single node with an implementation attribute."""
         sub = MultiDiGraph()
         implementation_name = config.get_implementation_name(self.name)
         implementation_config = config.pipeline[self.name]["implementation"]["configuration"]

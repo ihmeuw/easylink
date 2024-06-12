@@ -9,7 +9,15 @@ from easylink.implementation import Implementation
 
 
 class PipelineGraph(MultiDiGraph):
-    def __init__(self, config: Config):
+    """
+    The Pipeline Graph is the structure of the pipeline. It is a DAG composed of
+    Implementations and their file dependencies. The Pipeline Graph is created by
+    "flattening" the Pipeline Schema (a nested Step Graph) with parameters set in
+    the configuration.
+
+    """
+
+    def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_subgraph(config))
         # Update input data edges to direct to correct filenames from config
         for source, schema_node, data in self.out_edges("input_data", data=True):

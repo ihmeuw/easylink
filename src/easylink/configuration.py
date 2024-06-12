@@ -52,6 +52,7 @@ def load_params_from_specification(
 def _load_input_data_paths(
     input_data_specification_path: Union[str, Path]
 ) -> Dict[str, List[Path]]:
+    """Create dictionary of input data paths from the input data yaml file."""
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(

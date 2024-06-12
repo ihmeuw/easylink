@@ -60,6 +60,7 @@ class Pipeline:
             f.write("from easylink.utilities import validation_utils")
 
     def write_target_rules(self) -> None:
+        """Write the rule for the final output and its validation"""
         final_output, _ = self.pipeline_graph.get_input_output_files("results")
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
@@ -79,6 +80,7 @@ class Pipeline:
         final_validation.write_to_snakefile(self.snakefile_path)
 
     def write_implementation_rules(self, node: str) -> None:
+        """Write the rules for each implemented step."""
         implementation = self.pipeline_graph.nodes[node]["implementation"]
         input_files, output_files = self.pipeline_graph.get_input_output_files(node)
         input_slots = self.pipeline_graph.get_input_slots(node)
@@ -120,6 +122,7 @@ class Pipeline:
                 )
 
     def write_spark_module(self) -> None:
+        "'Import' the spark .smk module into the Snakefile."
         slurm_resources = self.config.slurm_resources
         spark_resources = self.config.spark_resources
         with open(self.snakefile_path, "a") as f:

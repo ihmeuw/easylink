@@ -8,7 +8,11 @@ from easylink.step import CompositeStep, Step
 
 
 class PipelineSchema(CompositeStep):
-    """Defines the allowable schema(s) for the pipeline."""
+    """
+    A schema is a nested graph that determines all possible
+    allowable pipelines. The nodes of the graph are Steps, with
+    edges representing file dependencies between then.
+    """
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
@@ -30,7 +34,7 @@ class PipelineSchema(CompositeStep):
 
     @classmethod
     def _get_schemas(cls) -> List["PipelineSchema"]:
-        """Creates the allowable schema for the pipeline."""
+        """Creates the allowable schemas for the pipeline."""
         return [
             cls(name, **schema_params)
             for name, schema_params in ALLOWED_SCHEMA_PARAMS.items()

@@ -70,6 +70,7 @@ def main(
 
 
 def get_singularity_args(config: Config) -> str:
+    """Get the singularity arguments for the pipeline run."""
     input_file_paths = ",".join(
         file.as_posix() for file in config.input_data.to_dict().values()
     )
