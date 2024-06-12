@@ -95,11 +95,6 @@ def test_batch_validation():
                         "the provided pipeline specifies step_1. Check step order "
                         "and spelling in the pipeline configuration yaml."
                     ],
-                    "pvs_like_case_study": [
-                        "- Expected 1 steps but found 4 implementations. Check "
-                        "that all steps are accounted for \\(and there are no extraneous "
-                        "ones\\) in the pipeline configuration yaml."
-                    ],
                 },
             },
         ),
@@ -112,11 +107,6 @@ def test_batch_validation():
                         "- Expected 4 steps but found 1 implementations. Check that "
                         "all steps are accounted for \\(and there are no extraneous "
                         "ones\\) in the pipeline configuration yaml.",
-                    ],
-                    "pvs_like_case_study": [
-                        "- 'Step 1: the pipeline schema expects step 'pvs_like_case_study' "
-                        "but the provided pipeline specifies 'step_2'. Check step order "
-                        "and spelling in the pipeline configuration yaml.'",
                     ],
                 },
             },
@@ -158,11 +148,6 @@ def test_unsupported_step(default_config_params, caplog, mocker):
                     "- Expected 4 steps but found 1 implementations. Check that "
                     "all steps are accounted for \\(and there are no extraneous "
                     "ones\\) in the pipeline configuration yaml.",
-                ],
-                "pvs_like_case_study": [
-                    "- 'Step 1: the pipeline schema expects step 'pvs_like_case_study' "
-                    "but the provided pipeline specifies 'foo'. Check step order "
-                    "and spelling in the pipeline configuration yaml.'",
                 ],
             }
         },

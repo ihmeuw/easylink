@@ -27,7 +27,7 @@ def test__spark_is_required(test_dir, requires_spark):
 
 def test__get_schema(default_config: Config) -> None:
     """Test default config gets "development schema", without errors"""
-    assert default_config.schema == PIPELINE_SCHEMAS[1]
+    assert default_config.schema == PIPELINE_SCHEMAS[0]
 
 
 def test_load_params_from_specification(
