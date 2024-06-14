@@ -17,6 +17,13 @@ class PipelineSchema(CompositeStep):
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
 
+
+    def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> nx.MultiDiGraph:
+        """Resolve the PipelineSchema into a PipelineGraph."""
+        graph = nx.MultiDiGraph()
+        self.get_implementation_graph(graph, pipeline_config)
+        return graph
+
     @property
     def step_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""

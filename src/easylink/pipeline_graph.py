@@ -18,7 +18,9 @@ class PipelineGraph(MultiDiGraph):
     """
 
     def __init__(self, config: Config) -> None:
-        super().__init__(incoming_graph_data=config.schema.get_subgraph(config))
+        super().__init__(
+            incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
+        )
         # Update input data edges to direct to correct filenames from config
         for source, schema_node, data in self.out_edges("input_data", data=True):
             for edge_idx in self[source][schema_node]:
