@@ -18,6 +18,7 @@ class Pipeline:
     def __init__(self, config: Config):
         self.config = config
         self.pipeline_graph = PipelineGraph(config)
+        self.spark_is_required = self.pipeline_graph.spark_is_required()
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
 
@@ -49,7 +50,7 @@ class Pipeline:
         self.write_imports()
         self.write_config()
         self.write_target_rules()
-        if self.config.spark:
+        if self.spark_is_required:
             self.write_spark_module()
         for node in self.pipeline_graph.implementation_nodes:
             self.write_implementation_rules(node)
@@ -68,7 +69,7 @@ class Pipeline:
         target_rule = TargetRule(
             target_files=final_output,
             validation=validator_file,
-            requires_spark=bool(self.config.spark),
+            requires_spark=self.spark_is_required,
         )
         final_validation = InputValidationRule(
             name="results",
@@ -116,7 +117,7 @@ class Pipeline:
 
     def write_config(self) -> None:
         with open(self.snakefile_path, "a") as f:
-            if self.config.spark:
+            if self.spark_is_required:
                 f.write(
                     f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
                 )

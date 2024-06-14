@@ -62,3 +62,7 @@ class PipelineGraph(MultiDiGraph):
             )
         )
         return input_files, output_files
+
+    def spark_is_required(self) -> bool:
+        """Check if the pipeline requires spark resources."""
+        return any([implementation.requires_spark for implementation in self.implementations])

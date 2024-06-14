@@ -99,12 +99,7 @@ class Config(LayeredConfigTree):
                 {"pipeline": {step: {"implementation": {"configuration": {}}}}},
                 layer="default",
             )
-        if self._spark_is_required(self.pipeline):
-            self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
-        else:
-            # Remove spark params if not needed but set by user
-            del self.environment.spark
-            self.update({"environment": {"spark": {}}}, layer="default")
+        self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
         if self.environment.computing_environment == "slurm":
             # Set slurm defaults to empty dict instead of None so that we don't get errors
             # In slurm resources property
