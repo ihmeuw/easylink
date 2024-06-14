@@ -255,10 +255,9 @@ class Config(LayeredConfigTree):
         for file in missing:
             errors[INPUT_DATA_ERRORS_KEY][str(file)] = "File not found."
         # Check that input data files are valid
-        for file in [file for file in self.input_data.to_dict().values() if file.exists()]:
-            input_data_errors = self.schema.validate_input(file)
-            if input_data_errors:
-                errors[INPUT_DATA_ERRORS_KEY][str(file)] = input_data_errors
+        input_data_errors = self.schema.validate_inputs(self.input_data.to_dict())
+        if input_data_errors:
+            errors[INPUT_DATA_ERRORS_KEY][str(file)] = input_data_errors
         return errors
 
     def _validate_environment(self) -> Dict[Any, Any]:

@@ -40,12 +40,16 @@ class PipelineSchema(CompositeStep):
             for name, schema_params in ALLOWED_SCHEMA_PARAMS.items()
         ]
 
-    def validate_input(self, filepath: Path) -> Optional[List[str]]:
+    def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
         "Wrap the output file validator for now, since it is the same"
-        try:
-            self.graph.nodes["input_data_schema"]["step"].input_validator(filepath)
-        except Exception as e:
-            return [e.args[0]]
+        errors = []
+        for _, _, edge_data in self.graph.out_edges("input_data_schema", data=True):
+            try:
+                validator = edge_data["validator"]
+                slot_name = edge_data["output_slot"]
+                validator(input_data[slot_name])
+            except Exception as e:
+                errors.append(e.args[0])
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()
