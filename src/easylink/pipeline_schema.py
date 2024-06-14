@@ -43,8 +43,8 @@ class PipelineSchema(CompositeStep):
     def _get_schemas(cls) -> List["PipelineSchema"]:
         """Creates the allowable schemas for the pipeline."""
         return [
-            cls(name, **schema_params)
-            for name, schema_params in ALLOWED_SCHEMA_PARAMS.items()
+            cls(name, nodes=nodes, edges=edges)
+            for name, (nodes, edges) in ALLOWED_SCHEMA_PARAMS.items()
         ]
 
     def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
