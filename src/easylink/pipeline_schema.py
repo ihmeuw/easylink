@@ -1,7 +1,8 @@
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import networkx as nx
+from layered_config_tree import LayeredConfigTree
 
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import CompositeStep, Step
@@ -17,6 +18,9 @@ class PipelineSchema(CompositeStep):
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
 
+    def get_sub_config(self, pipeline_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Return the subconfig for this step."""
+        return pipeline_config
 
     def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> nx.MultiDiGraph:
         """Resolve the PipelineSchema into a PipelineGraph."""

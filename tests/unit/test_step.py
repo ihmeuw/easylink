@@ -17,7 +17,7 @@ def test_input_step(default_config: Config) -> None:
     assert step.out_dir == Path("input")
 
     # Test get_subgraph
-    subgraph = step.get_subgraph(default_config)
+    subgraph = step.get_implementation_graph(default_config)
     assert list(subgraph.nodes) == ["input_data"]
     assert list(subgraph.edges) == []
     assert subgraph.nodes["input_data"]["input_validator"] == validate_input_file_dummy
@@ -34,7 +34,7 @@ def test_result_step(default_config: Config) -> None:
     assert step.out_dir == Path("results")
 
     # Test get_subgraph
-    subgraph = step.get_subgraph(default_config)
+    subgraph = step.get_implementation_graph(default_config)
     assert list(subgraph.nodes) == ["results"]
     assert list(subgraph.edges) == []
     assert subgraph.nodes["results"]["input_validator"] == validate_input_file_dummy
@@ -53,7 +53,7 @@ def test_implemented_step(default_config: Config) -> None:
     assert isinstance(step.input_validator, Callable)
 
     # Test get_subgraph
-    subgraph = step.get_subgraph(default_config)
+    subgraph = step.get_implementation_graph(default_config)
     imp_node = f"{step.name}_python_pandas"
     assert list(subgraph.nodes) == [imp_node]
     assert list(subgraph.edges) == []
@@ -80,7 +80,7 @@ def test_composite_step(default_config: Config) -> None:
     assert step.out_dir == Path()
 
     # Test get_subgraph
-    subgraph = step.get_subgraph(default_config)
+    subgraph = step.get_implementation_graph(default_config)
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
     assert (
