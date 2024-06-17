@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
@@ -35,6 +36,7 @@ class TargetRule(Rule):
     requires_spark: bool
 
     def _build_rule(self) -> str:
+        outputs = [os.path.basename(file_path) for file_path in self.target_files]
         rulestring = f"""
 rule all:
     message: 'Grabbing final output'
@@ -46,7 +48,13 @@ rule all:
         term="spark_logs/spark_master_terminated.txt",
         master_log="spark_logs/spark_master_log.txt",
         worker_logs=gather.num_workers("spark_logs/spark_worker_log_{{scatteritem}}.txt",
-        ),
+        ),"""
+        rulestring += f"""
+    output: {outputs}
+    run:
+        import os
+        for input_path, output_path in zip(input.final_output, output):
+            os.symlink(input_path, output_path)
             """
         return rulestring
 
