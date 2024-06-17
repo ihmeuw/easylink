@@ -1,5 +1,3 @@
-from pathlib import Path
-
 from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
@@ -92,3 +90,28 @@ SCHEMA_EDGES = [
     ("step_4", "results_schema", "step_4_main_output", "result"),
 ]
 ALLOWED_SCHEMA_PARAMS = {"development": (SCHEMA_NODES, SCHEMA_EDGES)}
+
+TESTING_NODES = [
+    InputStep("input_data_schema", input_slots=[], output_slots=["file1"]),
+    ImplementedStep(
+        "step_1",
+        input_slots=[
+            (
+                "step_1_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            )
+        ],
+        output_slots=["step_1_main_output"],
+    ),
+    ResultStep(
+        "results_schema",
+        input_slots=[("result", None, validate_input_file_dummy)],
+        output_slots=[],
+    ),
+]
+TESTING_EDGES = [
+    ("input_data_schema", "step_1", "file1", "step_1_main_input"),
+    ("step_1", "results_schema", "step_1_main_output", "result"),
+]
+TESTING_SCHEMA_PARAMS = {"development": (TESTING_NODES, TESTING_EDGES)}
