@@ -72,7 +72,7 @@ class ImplementedRule(Rule):
     step_name: str
     implementation_name: str
     input_slots: Dict[str, List[str]]
-    validation: str
+    validations: List[str]
     output: List[str]
     resources: Optional[dict]
     envvars: dict
@@ -104,7 +104,7 @@ rule:
             input_str += f"""
         {slot_name.lower()}={slot_files},"""
         input_str += f"""
-        validation="{self.validation}", """
+        validations={self.validations}, """
         if self.requires_spark:
             input_str += f"""
         master_trigger=gather.num_workers(rules.wait_for_spark_worker.output),
@@ -173,7 +173,7 @@ rule:
     input: {self.input}
     output: touch("{self.output}")
     localrule: True         
-    message: "Validating {self.name} input"
+    message: "Validating {self.name}"
     run:
         for f in input:
             validation_utils.{self.validator.__name__}(f)"""

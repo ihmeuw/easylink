@@ -56,10 +56,6 @@ class Implementation:
         return logs
 
     @property
-    def validation_filename(self) -> str:
-        return self.name + "_validator"
-
-    @property
     def singularity_image_path(self) -> str:
         return self._metadata["image_path"]
 

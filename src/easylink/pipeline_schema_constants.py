@@ -7,17 +7,35 @@ SCHEMA_NODES = [
     InputStep("input_data_schema", input_slots=[], output_slots=["file1"]),
     CompositeStep(
         "step_1",
-        input_slots=[("step_1_main_input", None, validate_input_file_dummy)],
+        input_slots=[
+            (
+                "step_1_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            )
+        ],
         output_slots=["step_1_main_output"],
         nodes=[
             ImplementedStep(
                 "step_1a",
-                input_slots=[("step_1a_main_input", None, validate_input_file_dummy)],
+                input_slots=[
+                    (
+                        "step_1a_main_input",
+                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validate_input_file_dummy,
+                    )
+                ],
                 output_slots=["step_1a_main_output"],
             ),
             ImplementedStep(
                 "step_1b",
-                input_slots=[("step_1b_main_input", None, validate_input_file_dummy)],
+                input_slots=[
+                    (
+                        "step_1b_main_input",
+                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validate_input_file_dummy,
+                    )
+                ],
                 output_slots=["step_1b_main_output"],
             ),
         ],

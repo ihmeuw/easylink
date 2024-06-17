@@ -1,4 +1,5 @@
 import itertools
+from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 import networkx as nx
@@ -21,12 +22,7 @@ class PipelineGraph(MultiDiGraph):
         super().__init__(
             incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
         )
-        # Update input data edges to direct to correct filenames from config
-        for source, schema_node, data in self.out_edges("input_data", data=True):
-            for edge_idx in self[source][schema_node]:
-                self[source][schema_node][edge_idx]["files"] = [
-                    str(config.input_data[file]) for file in data["files"]
-                ]
+        self.update_slot_filepaths(config)
 
     @property
     def implementation_nodes(self) -> List[str]:
@@ -39,12 +35,33 @@ class PipelineGraph(MultiDiGraph):
         """Convenience property to get all implementations in the graph."""
         return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
 
+    def update_slot_filepaths(self, config: Config) -> None:
+        # Update input data edges to direct to correct filenames from config
+        for source, sink, edge_attrs in self.out_edges("input_data", data=True):
+            for edge_idx in self[source][sink]:
+                self[source][sink][edge_idx]["files"] = [
+                    str(config.input_data[edge_attrs["output_slot"]])
+                ]
+
+        # Update implementation nodes with yaml metadata
+        for node in self.implementation_nodes:
+            imp_outputs = self.nodes[node]["implementation"].outputs
+            for source, sink, edge_attrs in self.out_edges(node, data=True):
+                for edge_idx in self[node][sink]:
+                    self[source][sink][edge_idx]["files"] = [
+                        str(
+                            Path("intermediate")
+                            / node
+                            / imp_outputs[edge_attrs["output_slot"]]
+                        )
+                    ]
+
     def get_input_slots(self, node: str) -> Dict[str, List[str]]:
         """Get all of a node's input slots from edges."""
         input_slots = {}
-        for _, _, data in self.in_edges(node, data=True):
+        for _, _, edge_attrs in self.in_edges(node, data=True):
             # Consider whether we need duplicate variables to merge
-            env_var, files = data["env_var"], data["files"]
+            env_var, files = edge_attrs["input_slot"].env_var, edge_attrs["files"]
             if env_var in input_slots:
                 input_slots[env_var].extend(files)
             else:

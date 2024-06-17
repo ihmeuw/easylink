@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class StepInput:
+class InputSlot:
     """StepInput is a dataclass that represents a single input slot for a step."""
 
     name: str
@@ -33,7 +33,7 @@ class Step(ABC):
         self, name: str, input_slots: List[Tuple[str]] = [], output_slots: List[str] = []
     ) -> None:
         self.name = name
-        self.input_slots = [StepInput(*slot) for slot in input_slots]
+        self.input_slots = {slot[0]: InputSlot(*slot) for slot in input_slots}
         self.output_slots = output_slots
 
     @abstractmethod
@@ -73,7 +73,12 @@ class CompositeStep(Step):
                 step=step,
             )
         for in_node, out_node, output_slot, input_slot in edges:
-            graph.add_edge(in_node, out_node, input_slot=input_slot, output_slot=output_slot)
+            graph.add_edge(
+                in_node,
+                out_node,
+                input_slot=graph.nodes[out_node]["step"].input_slots[input_slot],
+                output_slot=output_slot,
+            )
 
         return graph
 
@@ -100,9 +105,9 @@ class CompositeStep(Step):
     def remap_slots(self, graph, pipeline_config: LayeredConfigTree) -> None:
         for child_node, parent_slot, child_slot in self.slot_mappings["input"]:
             parent_edge = [
-                (u, v, data)
-                for (u, v, data) in graph.in_edges(self.name, data=True)
-                if data.get("input_slot") == parent_slot
+                (u, v, edge_attrs)
+                for (u, v, edge_attrs) in graph.in_edges(self.name, data=True)
+                if edge_attrs.get("input_slot").name == parent_slot
             ]
             if not parent_edge:
                 raise ValueError(f"Edge not found for {self.name} input slot {parent_slot}")
@@ -110,20 +115,26 @@ class CompositeStep(Step):
                 raise ValueError(
                     f"Multiple edges found for {self.name} input slot {parent_slot}"
                 )
-            source, _, data = parent_edge[0]
+            source, _, edge_attrs = parent_edge[0]
             graph.add_edge(
-                source, child_node, input_slot=child_slot, output_slot=data["output_slot"]
+                source,
+                child_node,
+                input_slot=graph.nodes[child_node]["step"].input_slots[child_slot],
+                output_slot=edge_attrs["output_slot"],
             )
 
         for child_node, parent_slot, child_slot in self.slot_mappings["output"]:
             parent_edges = [
-                (u, v, data)
-                for (u, v, data) in graph.out_edges(self.name, data=True)
-                if data.get("output_slot") == parent_slot
+                (u, v, edge_attrs)
+                for (u, v, edge_attrs) in graph.out_edges(self.name, data=True)
+                if edge_attrs.get("output_slot") == parent_slot
             ]
-            for _, sink, data in parent_edges:
+            for _, sink, edge_attrs in parent_edges:
                 graph.add_edge(
-                    child_node, sink, input_slot=data["input_slot"], output_slot=child_slot
+                    child_node,
+                    sink,
+                    input_slot=edge_attrs["input_slot"],
+                    output_slot=child_slot,
                 )
 
 
@@ -136,20 +147,20 @@ class InputStep(Step):
         graph.add_node("input_data")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        for _, sink, data in graph.out_edges(self.name, data=True):
+        for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 "input_data",
                 sink,
-                input_slot=data["input_slot"],
-                output_slot=data["output_slot"],
+                input_slot=edge_attrs["input_slot"],
+                output_slot=edge_attrs["output_slot"],
             )
 
-        for source, _, data in graph.in_edges(self.name, data=True):
+        for source, _, edge_attrs in graph.in_edges(self.name, data=True):
             graph.add_edge(
                 source,
                 "input_data",
-                input_slot=data["input_slot"],
-                output_slot=data["output_slot"],
+                input_slot=edge_attrs["input_slot"],
+                output_slot=edge_attrs["output_slot"],
             )
 
 
@@ -162,20 +173,20 @@ class ResultStep(Step):
         graph.add_node("results")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        for _, sink, data in graph.out_edges(self.name, data=True):
+        for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 "results",
                 sink,
-                input_slot=data["input_slot"],
-                output_slot=data["output_slot"],
+                input_slot=edge_attrs["input_slot"],
+                output_slot=edge_attrs["output_slot"],
             )
 
-        for source, _, data in graph.in_edges(self.name, data=True):
+        for source, _, edge_attrs in graph.in_edges(self.name, data=True):
             graph.add_edge(
                 source,
                 "results",
-                input_slot=data["input_slot"],
-                output_slot=data["output_slot"],
+                input_slot=edge_attrs["input_slot"],
+                output_slot=edge_attrs["output_slot"],
             )
 
 
@@ -201,18 +212,18 @@ class ImplementedStep(Step):
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
         implementation_name = pipeline_config[self.name]["implementation"]["name"]
-        for _, sink, data in graph.out_edges(self.name, data=True):
+        for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 implementation_name,
                 sink,
-                input_slot=data["input_slot"],
-                output_slot=data["output_slot"],
+                input_slot=edge_attrs["input_slot"],
+                output_slot=edge_attrs["output_slot"],
             )
 
-        for source, _, data in graph.in_edges(self.name, data=True):
+        for source, _, edge_attrs in graph.in_edges(self.name, data=True):
             graph.add_edge(
                 source,
                 implementation_name,
-                input_slot=data["input_slot"],
-                output_slot=data["output_slot"],
+                input_slot=edge_attrs["input_slot"],
+                output_slot=edge_attrs["output_slot"],
             )

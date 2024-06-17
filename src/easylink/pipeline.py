@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Tuple
 
 from loguru import logger
 
@@ -87,23 +87,17 @@ class Pipeline:
         input_slots = self.pipeline_graph.get_input_slots(node)
         diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
-        validation_file = f"input_validations/{implementation.validation_filename}"
         resources = (
             self.config.slurm_resources
             if self.config.computing_environment == "slurm"
             else None
         )
-        validation_rule = InputValidationRule(
-            name=implementation.name,
-            input=input_files,
-            output=validation_file,
-            validator=self.pipeline_graph.nodes[node]["input_validator"],
-        )
+        validation_files, validation_rules = self.get_validations(node)
         implementation_rule = ImplementedRule(
             step_name=implementation.schema_step_name,
             implementation_name=implementation.name,
             input_slots=input_slots,
-            validation=validation_file,
+            validations=validation_files,
             output=output_files,
             resources=resources,
             envvars=implementation.environment_variables,
@@ -112,7 +106,8 @@ class Pipeline:
             script_cmd=implementation.script_cmd,
             requires_spark=implementation.requires_spark,
         )
-        validation_rule.write_to_snakefile(self.snakefile_path)
+        for validation_rule in validation_rules:
+            validation_rule.write_to_snakefile(self.snakefile_path)
         implementation_rule.write_to_snakefile(self.snakefile_path)
 
     def write_config(self) -> None:
@@ -160,3 +155,23 @@ use rule start_spark_worker from spark_cluster with:
         memory={spark_resources['mem_mb']}
                         """
             f.write(module)
+
+    def get_validations(self, node) -> Tuple[List[str], List[InputValidationRule]]:
+        """Get validator file and validation rule for each slot for a given node"""
+        validation_files = []
+        validation_rules = []
+
+        for _, _, edge_attrs in self.pipeline_graph.in_edges(node, data=True):
+            input_slot = edge_attrs["input_slot"]
+            input_files = edge_attrs["files"]
+            validation_file = f"input_validations/{input_slot.name}_validator"
+            validation_files.append(validation_file)
+            validation_rules.append(
+                InputValidationRule(
+                    name=input_slot.name,
+                    input=input_files,
+                    output=validation_file,
+                    validator=input_slot.validator,
+                )
+            )
+        return validation_files, validation_rules
