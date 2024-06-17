@@ -4,7 +4,7 @@ rule:
     input: ['foo', 'bar']
     output: touch("baz")
     localrule: True         
-    message: "Validating foo input"
+    message: "Validating foo"
     run:
         for f in input:
             validation_utils.bar(f)

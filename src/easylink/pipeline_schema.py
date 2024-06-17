@@ -56,11 +56,12 @@ class PipelineSchema(CompositeStep):
         errors = []
         for _, _, edge_data in self.graph.out_edges("input_data_schema", data=True):
             try:
-                validator = edge_data["validator"]
+                validator = edge_data["input_slot"].validator
                 slot_name = edge_data["output_slot"]
                 validator(input_data[slot_name])
             except Exception as e:
                 errors.append(e.args[0])
+        return errors
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()

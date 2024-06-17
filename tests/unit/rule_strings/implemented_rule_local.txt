@@ -5,7 +5,7 @@ rule:
     input:
         dummy_container_main_input_file_paths=['foo'],
         dummy_container_secondary_input_file_paths=['bar'],
-        validation="bar",
+        validations=['bar'],
     output: ['baz']
     log: "spam/foo-output.log"
     container: "Multipolarity.sif"

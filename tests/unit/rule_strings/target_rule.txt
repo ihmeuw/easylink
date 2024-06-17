@@ -2,5 +2,10 @@
 rule all:
     message: 'Grabbing final output' 
     input:
-        final_output=['foo', 'bar'],
+        final_output=['int/foo', 'int/bar'],
         validation='bar',
+    output: ['foo', 'bar']
+    run:
+        import os
+        for input_path, output_path in zip(input.final_output, output):
+            os.symlink(input_path, output_path)

@@ -29,7 +29,7 @@ def test_rule_interface():
 
 def test_target_rule_build_rule():
     rule = TargetRule(
-        target_files=["foo", "bar"],
+        target_files=["int/foo", "int/bar"],
         validation="bar",
         requires_spark=False,
     )
@@ -63,7 +63,7 @@ def test_implemented_rule_build_rule(computing_environment):
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": ["foo"],
             "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": ["bar"],
         },
-        validation="bar",
+        validations=['bar'],
         output=["baz"],
         resources=resources,
         envvars={"eggs": "coconut"},
