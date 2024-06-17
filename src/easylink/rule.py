@@ -54,8 +54,7 @@ rule all:
     run:
         import os
         for input_path, output_path in zip(input.final_output, output):
-            os.symlink(input_path, output_path)
-            """
+            os.symlink(input_path, output_path)"""
         return rulestring
 
 
@@ -129,8 +128,7 @@ rule:
         mem_mb={self.resources['mem_mb']},
         runtime={self.resources['runtime']},
         cpus_per_task={self.resources['cpus_per_task']},
-        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'"
-        """
+        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'" """
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
