@@ -66,3 +66,7 @@ class Implementation:
     @property
     def script_cmd(self) -> str:
         return self._metadata["script_cmd"]
+
+    @property
+    def outputs(self) -> Dict[str, List[str]]:
+        return self._metadata["outputs"]
