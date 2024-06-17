@@ -47,97 +47,6 @@ class Step(ABC):
         pass
 
 
-class CompositeStep(Step):
-    """Composite Steps are Steps that contain other Steps. They allow operations to be
-    applied recursively on Steps or sequences of Steps."""
-
-    def __init__(
-        self,
-        name: str,
-        input_slots: List[Tuple[str]] = [],
-        output_slots: List[str] = [],
-        nodes: List[Step] = [],
-        edges: List[Tuple[str]] = [],
-        slot_mappings: Dict[str, List[Tuple[str]]] = {"input": [], "output": []},
-    ) -> None:
-        super().__init__(name, input_slots, output_slots)
-        self.graph = self._create_graph(nodes, edges)
-        self.slot_mappings = slot_mappings
-
-    def _create_graph(self, nodes, edges) -> MultiDiGraph:
-        """Create a MultiDiGraph from the parameters passed in."""
-        graph = MultiDiGraph()
-        for step in nodes:
-            graph.add_node(
-                step.name,
-                step=step,
-            )
-        for in_node, out_node, output_slot, input_slot in edges:
-            graph.add_edge(
-                in_node,
-                out_node,
-                input_slot=graph.nodes[out_node]["step"].input_slots[input_slot],
-                output_slot=output_slot,
-            )
-
-        return graph
-
-    def get_sub_config(self, pipeline_config: LayeredConfigTree) -> LayeredConfigTree:
-        """Return the subconfig for this step."""
-        return pipeline_config[self.name]
-
-    def get_implementation_graph(
-        self, graph, pipeline_config: LayeredConfigTree
-    ) -> MultiDiGraph:
-        """Call get_subgraph on each subgraph node and update the graph."""
-        graph.update(self.graph)
-        self.remap_slots(graph, pipeline_config)
-        sub_config = self.get_sub_config(pipeline_config)
-        for node in self.graph.nodes:
-            step = self.graph.nodes[node]["step"]
-            step.get_implementation_graph(graph, sub_config)
-            step.update_edges(graph, sub_config)
-            graph.remove_node(node)
-
-    def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        pass
-
-    def remap_slots(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        for child_node, parent_slot, child_slot in self.slot_mappings["input"]:
-            parent_edge = [
-                (u, v, edge_attrs)
-                for (u, v, edge_attrs) in graph.in_edges(self.name, data=True)
-                if edge_attrs.get("input_slot").name == parent_slot
-            ]
-            if not parent_edge:
-                raise ValueError(f"Edge not found for {self.name} input slot {parent_slot}")
-            if len(parent_edge) > 1:
-                raise ValueError(
-                    f"Multiple edges found for {self.name} input slot {parent_slot}"
-                )
-            source, _, edge_attrs = parent_edge[0]
-            graph.add_edge(
-                source,
-                child_node,
-                input_slot=graph.nodes[child_node]["step"].input_slots[child_slot],
-                output_slot=edge_attrs["output_slot"],
-            )
-
-        for child_node, parent_slot, child_slot in self.slot_mappings["output"]:
-            parent_edges = [
-                (u, v, edge_attrs)
-                for (u, v, edge_attrs) in graph.out_edges(self.name, data=True)
-                if edge_attrs.get("output_slot") == parent_slot
-            ]
-            for _, sink, edge_attrs in parent_edges:
-                graph.add_edge(
-                    child_node,
-                    sink,
-                    input_slot=edge_attrs["input_slot"],
-                    output_slot=child_slot,
-                )
-
-
 class InputStep(Step):
     """Basic Step for input data node."""
 
@@ -227,3 +136,98 @@ class ImplementedStep(Step):
                 input_slot=edge_attrs["input_slot"],
                 output_slot=edge_attrs["output_slot"],
             )
+
+
+class CompositeStep(ImplementedStep):
+    """Composite Steps are Steps that contain other Steps. They allow operations to be
+    applied recursively on Steps or sequences of Steps."""
+
+    def __init__(
+        self,
+        name: str,
+        input_slots: List[Tuple[str]] = [],
+        output_slots: List[str] = [],
+        nodes: List[Step] = [],
+        edges: List[Tuple[str]] = [],
+        slot_mappings: Dict[str, List[Tuple[str]]] = {"input": [], "output": []},
+    ) -> None:
+        super().__init__(name, input_slots, output_slots)
+        self.graph = self._create_graph(nodes, edges)
+        self.slot_mappings = slot_mappings
+
+    def _create_graph(self, nodes, edges) -> MultiDiGraph:
+        """Create a MultiDiGraph from the parameters passed in."""
+        graph = MultiDiGraph()
+        for step in nodes:
+            graph.add_node(
+                step.name,
+                step=step,
+            )
+        for in_node, out_node, output_slot, input_slot in edges:
+            graph.add_edge(
+                in_node,
+                out_node,
+                input_slot=graph.nodes[out_node]["step"].input_slots[input_slot],
+                output_slot=output_slot,
+            )
+
+        return graph
+
+    def get_sub_config(self, pipeline_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Return the subconfig for this step."""
+        return pipeline_config[self.name]
+
+    def get_implementation_graph(
+        self, graph, pipeline_config: LayeredConfigTree
+    ) -> MultiDiGraph:
+        """Call get_subgraph on each subgraph node and update the graph."""
+        sub_config = self.get_sub_config(pipeline_config)
+        if "implementation" in sub_config and "name" in sub_config.implementation:
+            super().get_implementation_graph(graph, pipeline_config)
+            super().update_edges(graph, pipeline_config)
+        else:
+            graph.update(self.graph)
+            self.remap_slots(graph, pipeline_config)
+            for node in self.graph.nodes:
+                step = self.graph.nodes[node]["step"]
+                step.get_implementation_graph(graph, sub_config)
+                step.update_edges(graph, sub_config)
+                graph.remove_node(node)
+
+    def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        pass
+
+    def remap_slots(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        for child_node, parent_slot, child_slot in self.slot_mappings["input"]:
+            parent_edge = [
+                (u, v, edge_attrs)
+                for (u, v, edge_attrs) in graph.in_edges(self.name, data=True)
+                if edge_attrs.get("input_slot").name == parent_slot
+            ]
+            if not parent_edge:
+                raise ValueError(f"Edge not found for {self.name} input slot {parent_slot}")
+            if len(parent_edge) > 1:
+                raise ValueError(
+                    f"Multiple edges found for {self.name} input slot {parent_slot}"
+                )
+            source, _, edge_attrs = parent_edge[0]
+            graph.add_edge(
+                source,
+                child_node,
+                input_slot=graph.nodes[child_node]["step"].input_slots[child_slot],
+                output_slot=edge_attrs["output_slot"],
+            )
+
+        for child_node, parent_slot, child_slot in self.slot_mappings["output"]:
+            parent_edges = [
+                (u, v, edge_attrs)
+                for (u, v, edge_attrs) in graph.out_edges(self.name, data=True)
+                if edge_attrs.get("output_slot") == parent_slot
+            ]
+            for _, sink, edge_attrs in parent_edges:
+                graph.add_edge(
+                    child_node,
+                    sink,
+                    input_slot=edge_attrs["input_slot"],
+                    output_slot=child_slot,
+                )
