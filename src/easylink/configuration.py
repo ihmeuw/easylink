@@ -118,10 +118,7 @@ class Config(LayeredConfigTree):
 
     @property
     def spark(self) -> Dict[str, Any]:
-        if not self._spark_is_required(self.pipeline):
-            return {}
-        else:
-            return self.environment.spark.to_dict()
+        return self.environment.spark.to_dict()
 
     @property
     def slurm_resources(self) -> Dict[str, str]:

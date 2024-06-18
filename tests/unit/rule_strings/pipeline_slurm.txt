@@ -1,6 +1,7 @@
 from easylink.utilities import validation_utils
 rule all:
     message: 'Grabbing final output' 
+    localrule: True   
     input:
         final_output=['intermediate/step_4_python_pandas/result.parquet'],
         validation='input_validations/final_validator',

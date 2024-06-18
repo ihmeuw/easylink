@@ -120,4 +120,4 @@ TESTING_EDGES = [
     ("input_data_schema", "step_1", "file1", "step_1_main_input"),
     ("step_1", "results_schema", "step_1_main_output", "result"),
 ]
-TESTING_SCHEMA_PARAMS = {"development": (TESTING_NODES, TESTING_EDGES)}
+TESTING_SCHEMA_PARAMS = {"integration": (TESTING_NODES, TESTING_EDGES)}

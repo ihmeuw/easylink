@@ -40,6 +40,7 @@ class TargetRule(Rule):
         rulestring = f"""
 rule all:
     message: 'Grabbing final output'
+    localrule: True   
     input:
         final_output={self.target_files},
         validation='{self.validation}',"""

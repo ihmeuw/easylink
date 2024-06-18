@@ -1,6 +1,7 @@
 
 rule all:
     message: 'Grabbing final output' 
+    localrule: True   
     input:
         final_output=['int/foo', 'int/bar'],
         validation='bar',

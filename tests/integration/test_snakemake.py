@@ -12,9 +12,10 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 @pytest.mark.slow
 def test_missing_results(mocker, caplog):
     """Test that the pipeline fails when a step is missing output files."""
+    nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
     mocker.patch(
         "easylink.configuration.Config._get_schema",
-        return_value=PipelineSchema("integration", **TESTING_SCHEMA_PARAMS["integration"]),
+        return_value=PipelineSchema("integration", nodes=nodes, edges=edges),
     )
 
     ## Mock implementation script call to wait 1s instead of running something
