@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
 
+import networkx as nx
 from layered_config_tree import LayeredConfigTree
-from networkx import MultiDiGraph
 
 from easylink.implementation import Implementation
+from easylink.utilities import paths
+from easylink.utilities.data_utils import load_yaml
 
 if TYPE_CHECKING:
     from easylink.configuration import Config
@@ -37,7 +39,7 @@ class Step(ABC):
         self.output_slots = output_slots
 
     @abstractmethod
-    def get_implementation_graph(self, graph, pipeline_config) -> MultiDiGraph:
+    def get_implementation_graph(self, graph, pipeline_config) -> nx.MultiDiGraph:
         """Resolve the Step into an Implementation graph."""
         pass
 
@@ -46,13 +48,18 @@ class Step(ABC):
         """Update the edges of the graph."""
         pass
 
+    @abstractmethod
+    def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        """Validate the step."""
+        pass
+
 
 class InputStep(Step):
     """Basic Step for input data node."""
 
     def get_implementation_graph(
         self, graph, pipeline_config: LayeredConfigTree
-    ) -> MultiDiGraph:
+    ) -> nx.MultiDiGraph:
         graph.add_node("input_data")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
@@ -72,13 +79,16 @@ class InputStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
+    def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        return {}
+
 
 class ResultStep(Step):
     """Basic Step for result node."""
 
     def get_implementation_graph(
         self, graph, pipeline_config: LayeredConfigTree
-    ) -> MultiDiGraph:
+    ) -> nx.MultiDiGraph:
         graph.add_node("results")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
@@ -98,6 +108,9 @@ class ResultStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
+    def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        return {}
+
 
 class ImplementedStep(Step):
     """Step for leaf node tied to a specific single implementation"""
@@ -116,7 +129,7 @@ class ImplementedStep(Step):
         graph.add_node(
             implementation_name,
             implementation=implementation,
-            out_dir=Path("intermediate") / implementation_name,
+            # out_dir=Path("intermediate") / implementation_name,
         )
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
@@ -137,8 +150,26 @@ class ImplementedStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
+    def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        errors = {}
+        metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+        if not self.name in pipeline_config:
+            errors[f"step {self.name}"] = ["The step is not defined in the pipeline."]
+        elif not "implementation" in pipeline_config[self.name]:
+            errors[f"step {self.name}"] = [
+                "The step does not contain an 'implementation' key."
+            ]
+        elif not "name" in pipeline_config[self.name]["implementation"]:
+            errors[f"step {self.name}"] = ["The implementation does not contain a 'name'."]
+        elif not pipeline_config[self.name]["implementation"]["name"] in metadata:
+            errors[f"step {self.name}"] = [
+                f"Implementation '{pipeline_config[self.name]['implementation']['name']}' is not supported. "
+                f"Supported implementations are: {list(metadata.keys())}."
+            ]
+        return errors
 
-class CompositeStep(ImplementedStep):
+
+class CompositeStep(Step):
     """Composite Steps are Steps that contain other Steps. They allow operations to be
     applied recursively on Steps or sequences of Steps."""
 
@@ -155,9 +186,9 @@ class CompositeStep(ImplementedStep):
         self.graph = self._create_graph(nodes, edges)
         self.slot_mappings = slot_mappings
 
-    def _create_graph(self, nodes, edges) -> MultiDiGraph:
+    def _create_graph(self, nodes, edges) -> nx.MultiDiGraph:
         """Create a MultiDiGraph from the parameters passed in."""
-        graph = MultiDiGraph()
+        graph = nx.MultiDiGraph()
         for step in nodes:
             graph.add_node(
                 step.name,
@@ -173,29 +204,32 @@ class CompositeStep(ImplementedStep):
 
         return graph
 
-    def get_sub_config(self, pipeline_config: LayeredConfigTree) -> LayeredConfigTree:
-        """Return the subconfig for this step."""
-        return pipeline_config[self.name]
-
     def get_implementation_graph(
         self, graph, pipeline_config: LayeredConfigTree
-    ) -> MultiDiGraph:
+    ) -> nx.MultiDiGraph:
         """Call get_subgraph on each subgraph node and update the graph."""
-        sub_config = self.get_sub_config(pipeline_config)
-        if "implementation" in sub_config and "name" in sub_config.implementation:
-            super().get_implementation_graph(graph, pipeline_config)
-            super().update_edges(graph, pipeline_config)
-        else:
-            graph.update(self.graph)
-            self.remap_slots(graph, pipeline_config)
-            for node in self.graph.nodes:
-                step = self.graph.nodes[node]["step"]
-                step.get_implementation_graph(graph, sub_config)
-                step.update_edges(graph, sub_config)
-                graph.remove_node(node)
+        graph.update(self.graph)
+        self.remap_slots(graph, pipeline_config)
+        for node in self.graph.nodes:
+            step = self.graph.nodes[node]["step"]
+            step.get_implementation_graph(graph, pipeline_config)
+            step.update_edges(graph, pipeline_config)
+            graph.remove_node(node)
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
         pass
+
+    def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        errors = {}
+        for node in self.graph.nodes:
+            step = self.graph.nodes[node]["step"]
+            step_errors = step.validate_step(pipeline_config)
+            if step_errors:
+                errors.update(step_errors)
+        extra_steps = set(pipeline_config.keys()) - set(self.graph.nodes)
+        for extra_step in extra_steps:
+            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
+        return errors
 
     def remap_slots(self, graph, pipeline_config: LayeredConfigTree) -> None:
         for child_node, parent_slot, child_slot in self.slot_mappings["input"]:
@@ -231,3 +265,28 @@ class CompositeStep(ImplementedStep):
                     input_slot=edge_attrs["input_slot"],
                     output_slot=child_slot,
                 )
+
+
+class HierarchicalStep(CompositeStep, ImplementedStep):
+    @property
+    def config_key(self):
+        return "substeps"
+
+    def get_implementation_graph(
+        self, graph, pipeline_config: LayeredConfigTree
+    ) -> nx.MultiDiGraph:
+        """Call get_subgraph on each subgraph node and update the graph."""
+        sub_config = pipeline_config[self.name]
+        if not self.config_key in sub_config:
+            ImplementedStep.get_implementation_graph(self, graph, pipeline_config)
+            ImplementedStep.update_edges(self, graph, pipeline_config)
+        else:
+            sub_config = sub_config[self.config_key]
+            CompositeStep.get_implementation_graph(self, graph, sub_config)
+
+    def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        if not self.name in pipeline_config or not self.config_key in pipeline_config:
+            return ImplementedStep.validate_step(self, pipeline_config)
+        else:
+            sub_config = sub_config[self.name][self.config_key]
+            return CompositeStep.validate_step(self, sub_config)

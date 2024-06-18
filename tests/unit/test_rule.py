@@ -63,7 +63,7 @@ def test_implemented_rule_build_rule(computing_environment):
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": ["foo"],
             "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": ["bar"],
         },
-        validations=['bar'],
+        validations=["bar"],
         output=["baz"],
         resources=resources,
         envvars={"eggs": "coconut"},

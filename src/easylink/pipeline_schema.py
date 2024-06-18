@@ -53,14 +53,22 @@ class PipelineSchema(CompositeStep):
 
     def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
         "Wrap the output file validator for now, since it is the same"
-        errors = []
+        errors = {}
         for _, _, edge_data in self.graph.out_edges("input_data_schema", data=True):
+            validator = edge_data["input_slot"].validator
+            slot_name = edge_data["output_slot"]
             try:
-                validator = edge_data["input_slot"].validator
-                slot_name = edge_data["output_slot"]
-                validator(input_data[slot_name])
+                file = input_data[slot_name]
+            except KeyError:
+                errors[str(slot_name)] = ["Missing required input data"]
+                continue
+            if not file.exists():
+                errors[str(file)] = ["File not found."]
+                continue
+            try:
+                validator(file)
             except Exception as e:
-                errors.append(e.args[0])
+                errors[str(file)] = [e.args[0]]
         return errors
 
 

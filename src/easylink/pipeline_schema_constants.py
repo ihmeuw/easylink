@@ -1,9 +1,9 @@
-from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
+from easylink.step import HierarchicalStep, ImplementedStep, InputStep, ResultStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 SCHEMA_NODES = [
     InputStep("input_data_schema", input_slots=[], output_slots=["file1"]),
-    CompositeStep(
+    HierarchicalStep(
         "step_1",
         input_slots=[
             (
@@ -73,11 +73,11 @@ SCHEMA_NODES = [
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
             ),
-                        (
+            (
                 "step_4_secondary_input",
                 "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
-            )
+            ),
         ],
         output_slots=["step_4_main_output"],
     ),
@@ -89,10 +89,10 @@ SCHEMA_NODES = [
 ]
 SCHEMA_EDGES = [
     ("input_data_schema", "step_1", "file1", "step_1_main_input"),
+    ("input_data_schema", "step_4", "file1", "step_4_secondary_input"),
     ("step_1", "step_2", "step_1_main_output", "step_2_main_input"),
     ("step_2", "step_3", "step_2_main_output", "step_3_main_input"),
     ("step_3", "step_4", "step_3_main_output", "step_4_main_input"),
-    ("input_data_schema", "step_4", "file1", "step_4_secondary_input"),
     ("step_4", "results_schema", "step_4_main_output", "result"),
 ]
 ALLOWED_SCHEMA_PARAMS = {"development": (SCHEMA_NODES, SCHEMA_EDGES)}

@@ -34,14 +34,21 @@ def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
     msg = re.sub(" +", " ", msg).strip()
     # Remove single quotes from msg and expected b/c they're difficult to handle and not that important
     msg = re.sub("'+", "", msg)
+
+    def append_to_pattern(pattern, context):
+        for item, messages in context.items():
+            pattern.append(" " + item + ":")
+            if isinstance(messages, dict):
+                append_to_pattern(pattern, messages)
+            else:
+                for message in messages:
+                    message = re.sub("'+", "", message)
+                    pattern.append(" - " + message)
+        return pattern
+
     all_matches = []
     for error_type, context in expected_msg.items():
-        expected_pattern = [error_type + ":"]
-        for item, messages in context.items():
-            expected_pattern.append(" " + item + ":")
-            for message in messages:
-                message = re.sub("'+", "", message)
-                expected_pattern.append(" " + message)
+        expected_pattern = append_to_pattern([error_type + ":"], context)
         pattern = re.compile("".join(expected_pattern))
         match = pattern.search(msg)
         assert match
@@ -69,7 +76,9 @@ def test_batch_validation():
             "missing_implementations",
             {
                 PIPELINE_ERRORS_KEY: {
-                    "step step_1": ["The implementation does not contain a 'name'."]
+                    "development": {
+                        "step step_1": ["The step does not contain an 'implementation' key."]
+                    },
                 },
             },
         ),
@@ -78,43 +87,45 @@ def test_batch_validation():
             "missing_implementation_name",
             {
                 PIPELINE_ERRORS_KEY: {
-                    "step step_1": ["The implementation does not contain a 'name'."]
+                    "development": {
+                        "step step_1": ["The implementation does not contain a 'name'."]
+                    },
                 },
             },
         ),
         # steps are out of order
-        (
-            "out_of_order",
-            {
-                PIPELINE_ERRORS_KEY: {
-                    "development": [
-                        "- Step 1: the pipeline schema expects step step_1 but "
-                        "the provided pipeline specifies step_2. Check step order "
-                        "and spelling in the pipeline configuration yaml. "
-                        "- Step 2: the pipeline schema expects step step_2 but "
-                        "the provided pipeline specifies step_1. Check step order "
-                        "and spelling in the pipeline configuration yaml."
-                    ],
-                },
-            },
-        ),
+        ## TODO: Replace with more sensible validation for graph order
+        # (
+        #     "out_of_order",
+        #     {
+        #         PIPELINE_ERRORS_KEY: {
+        #             "development": [
+        #                 "- Step 1: the pipeline schema expects step step_1 but "
+        #                 "the provided pipeline specifies step_2. Check step order "
+        #                 "and spelling in the pipeline configuration yaml. "
+        #                 "- Step 2: the pipeline schema expects step step_2 but "
+        #                 "the provided pipeline specifies step_1. Check step order "
+        #                 "and spelling in the pipeline configuration yaml."
+        #             ],
+        #         },
+        #     },
+        # ),
         # missing a step
         (
             "missing_step",
             {
                 PIPELINE_ERRORS_KEY: {
-                    "development": [
-                        "- Expected 4 steps but found 1 implementations. Check that "
-                        "all steps are accounted for \\(and there are no extraneous "
-                        "ones\\) in the pipeline configuration yaml.",
-                    ],
+                    "development": {
+                        "step step_1": ["The step is not defined in the pipeline."],
+                        "step step_3": ["The step is not defined in the pipeline."],
+                        "step step_4": ["The step is not defined in the pipeline."],
+                    },
                 },
             },
         ),
     ],
 )
-def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog, mocker):
-    mocker.patch("easylink.configuration.Config._spark_is_required", return_value=False)
+def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):
     config_params = default_config_params
     config_params["pipeline"] = PIPELINE_CONFIG_DICT[pipeline]
 
@@ -144,11 +155,9 @@ def test_unsupported_step(default_config_params, caplog, mocker):
         error_no=errno.EINVAL,
         expected_msg={
             PIPELINE_ERRORS_KEY: {
-                "development": [
-                    "- Expected 4 steps but found 1 implementations. Check that "
-                    "all steps are accounted for \\(and there are no extraneous "
-                    "ones\\) in the pipeline configuration yaml.",
-                ],
+                "development": {
+                    "step foo": ["foo is not a valid step."],
+                }
             }
         },
     )
@@ -157,7 +166,6 @@ def test_unsupported_step(default_config_params, caplog, mocker):
 def test_unsupported_implementation(default_config_params, caplog, mocker):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    mocker.patch("easylink.configuration.Config._spark_is_required", return_value=False)
     config_params = default_config_params
     config_params["pipeline"] = PIPELINE_CONFIG_DICT["bad_implementation"]
 
@@ -174,9 +182,11 @@ def test_unsupported_implementation(default_config_params, caplog, mocker):
         error_no=errno.EINVAL,
         expected_msg={
             PIPELINE_ERRORS_KEY: {
-                "step step_1": [
-                    f"Implementation 'foo' is not supported. Supported implementations are: {supported_implementations}."
-                ],
+                "development": {
+                    "step step_1": [
+                        f"Implementation 'foo' is not supported. Supported implementations are: {supported_implementations}."
+                    ],
+                },
             }
         },
     )
@@ -197,8 +207,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
         error_no=errno.EINVAL,
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
-                ".*/file1.oops": ["- Data file type .oops is not supported. Convert to .*"],
-                ".*/file2.oops": ["- Data file type .oops is not supported. Convert to .*"],
+                ".*/file1.oops": ["Data file type .oops is not supported. Convert to .*"],
             },
         },
     )
@@ -222,12 +231,7 @@ def test_pipeline_schema_bad_input_data(default_config_paths, test_dir, caplog):
         error_no=errno.EINVAL,
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
-                ".*/broken_file1.csv": [
-                    "- Data file .* is missing required column\\(s\\) .*"
-                ],
-                ".*/broken_file2.csv": [
-                    "- Data file .* is missing required column\\(s\\) .*"
-                ],
+                ".*/broken_file1.csv": ["Data file .* is missing required column\\(s\\) .*"],
             }
         },
     )
@@ -249,7 +253,6 @@ def test_pipeline_schema_missing_input_file(default_config_paths, test_dir, capl
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
                 ".*/missing_file1.csv": ["File not found."],
-                ".*/missing_file2.csv": ["File not found."],
             },
         },
     )
@@ -318,16 +321,16 @@ def test_no_container(default_config, caplog, mocker):
         expected_msg={
             "IMPLEMENTATION ERRORS": {
                 "step_1_python_pandas": [
-                    "- Container 'some/path/with/no/container.sif' does not exist.",
+                    "Container 'some/path/with/no/container.sif' does not exist.",
                 ],
                 "step_2_python_pandas": [
-                    "- Container 'some/path/with/no/container_2.sif' does not exist.",
+                    "Container 'some/path/with/no/container_2.sif' does not exist.",
                 ],
                 "step_3_python_pandas": [
-                    "- Container 'some/path/with/no/container_3.sif' does not exist.",
+                    "Container 'some/path/with/no/container_3.sif' does not exist.",
                 ],
                 "step_4_python_pandas": [
-                    "- Container 'some/path/with/no/container_4.sif' does not exist.",
+                    "Container 'some/path/with/no/container_4.sif' does not exist.",
                 ],
             },
         },
@@ -354,10 +357,10 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
         expected_msg={
             "IMPLEMENTATION ERRORS": {
                 "step_1_python_pandas": [
-                    "- Implementaton metadata step 'not-the-step-1-name' does not match pipeline configuration step 'step_1'"
+                    "Implementaton metadata step 'not-the-step-1-name' does not match pipeline configuration step 'step_1'"
                 ],
                 "step_2_python_pandas": [
-                    "- Implementaton metadata step 'not-the-step-2-name' does not match pipeline configuration step 'step_2'"
+                    "Implementaton metadata step 'not-the-step-2-name' does not match pipeline configuration step 'step_2'"
                 ],
             },
         },

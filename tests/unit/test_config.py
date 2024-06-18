@@ -12,17 +12,6 @@ from easylink.configuration import (
     _load_input_data_paths,
 )
 from easylink.pipeline_schema import PIPELINE_SCHEMAS
-from easylink.utilities.data_utils import load_yaml
-
-
-@pytest.mark.parametrize("requires_spark", [True, False])
-def test__spark_is_required(test_dir, requires_spark):
-    pipeline = load_yaml(f"{test_dir}/pipeline.yaml")
-    if requires_spark:
-        # Change step 1's implementation to python_pyspark
-        pipeline["step_1"]["implementation"]["name"] = "step_1_python_pyspark_distributed"
-    is_required = Config._spark_is_required(pipeline)
-    assert is_required == requires_spark
 
 
 def test__get_schema(default_config: Config) -> None:
