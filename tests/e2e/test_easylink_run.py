@@ -73,7 +73,7 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
             stderr=sys.stderr,
             check=True,
         )
-        final_output = results_dir / "results" / "step_4_r" / "result.parquet"
+        final_output = results_dir / "result.parquet"
         assert final_output.exists()
         # Check that the results file checksum matches the expected value
         with open(final_output, "rb") as f:
