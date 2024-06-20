@@ -5,6 +5,7 @@ from easylink.configuration import Config
 from easylink.pipeline_schema_constants import validate_input_file_dummy
 from easylink.step import (
     CompositeStep,
+    Edge,
     ImplementedStep,
     InputSlot,
     InputStep,
@@ -40,7 +41,7 @@ def test_input_step(default_config: Config) -> None:
 
 def test_result_step(default_config: Config) -> None:
     params = {
-        "input_slots": [("result", None, validate_input_file_dummy)],
+        "input_slots": [InputSlot("result", None, validate_input_file_dummy)],
         "output_slots": [],
     }
     step = ResultStep("results", **params)
@@ -61,7 +62,7 @@ def test_result_step(default_config: Config) -> None:
 def test_implemented_step(default_config: Config) -> None:
     params = {
         "input_slots": [
-            (
+            InputSlot(
                 "step_1_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
@@ -88,7 +89,7 @@ def test_composite_step(default_config_params) -> None:
     params = {
         "name": "step_1",
         "input_slots": [
-            (
+            InputSlot(
                 "step_1_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
@@ -99,7 +100,7 @@ def test_composite_step(default_config_params) -> None:
             ImplementedStep(
                 "step_1a",
                 input_slots=[
-                    (
+                    InputSlot(
                         "step_1a_main_input",
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validate_input_file_dummy,
@@ -110,7 +111,7 @@ def test_composite_step(default_config_params) -> None:
             ImplementedStep(
                 "step_1b",
                 input_slots=[
-                    (
+                    InputSlot(
                         "step_1b_main_input",
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validate_input_file_dummy,
@@ -119,7 +120,7 @@ def test_composite_step(default_config_params) -> None:
                 output_slots=["step_1b_main_output"],
             ),
         ],
-        "edges": [("step_1a", "step_1b", "step_1a_main_output", "step_1b_main_input")],
+        "edges": [Edge("step_1a", "step_1b", "step_1a_main_output", "step_1b_main_input")],
         "slot_mappings": {
             "input": [("step_1a", "step_1_main_input", "step_1a_main_input")],
             "output": [("step_1b", "step_1_main_output", "step_1b_main_output")],

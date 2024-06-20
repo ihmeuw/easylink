@@ -77,7 +77,9 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_1": ["The step does not contain an 'implementation' key."]
+                        "step step_1": [
+                            "The step configuration does not contain an 'implementation' key."
+                        ]
                     },
                 },
             },
@@ -88,7 +90,9 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_1": ["The implementation does not contain a 'name'."]
+                        "step step_1": [
+                            "The implementation configuration does not contain a 'name' key."
+                        ]
                     },
                 },
             },
@@ -116,9 +120,9 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_1": ["The step is not defined in the pipeline."],
-                        "step step_3": ["The step is not defined in the pipeline."],
-                        "step step_4": ["The step is not defined in the pipeline."],
+                        "step step_1": ["The step is not configured."],
+                        "step step_3": ["The step is not configured."],
+                        "step step_4": ["The step is not configured."],
                     },
                 },
             },

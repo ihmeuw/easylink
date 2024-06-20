@@ -23,6 +23,16 @@ class InputSlot:
     validator: Callable
 
 
+@dataclass
+class Edge:
+    """Edge is a dataclass that represents an edge between two nodes in a graph."""
+
+    in_node: str
+    out_node: str
+    output_slot: str
+    input_slot: str
+
+
 class Step(ABC):
     """Steps contain information about the purpose of the interoperable elements of
     the sequence called a *Pipeline* and how those elements relate to one another.
@@ -32,25 +42,25 @@ class Step(ABC):
     """
 
     def __init__(
-        self, name: str, input_slots: List[Tuple[str]] = [], output_slots: List[str] = []
+        self, name: str, input_slots: List[InputSlot] = [], output_slots: List[str] = []
     ) -> None:
         self.name = name
-        self.input_slots = {slot[0]: InputSlot(*slot) for slot in input_slots}
+        self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = output_slots
 
     @abstractmethod
     def update_implementation_graph(self, graph, pipeline_config) -> None:
-        """Resolve the Step graph into an Implementation graph."""
+        """Resolve the graph composted of Steps into a graph composed of Implementations."""
         pass
 
     @abstractmethod
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        """Update the edges of the graph."""
+        """Update the edges of the graph to replace Step graph edges with Implementation graph edges."""
         pass
 
     @abstractmethod
     def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
-        """Validate the step."""
+        """Validate the step against the pipeline configuration."""
         pass
 
 
@@ -58,9 +68,11 @@ class InputStep(Step):
     """Basic Step for input data node."""
 
     def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        """Add a single node to the graph with the name 'input_data'."""
         graph.add_node("input_data")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        """Add edges to/from "input_data" to replace the edges from the current step"""
         for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 "input_data",
@@ -85,9 +97,11 @@ class ResultStep(Step):
     """Basic Step for result node."""
 
     def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        """Add a single node to the graph with the name 'results'."""
         graph.add_node("results")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        """Add edges to/from "results" to replace the edges from the current step"""
         for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 "results",
@@ -126,6 +140,7 @@ class ImplementedStep(Step):
         )
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        """Add edges to/from the implementation node to replace the edges from the current step"""
         implementation_name = pipeline_config[self.name]["implementation"]["name"]
         for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
@@ -144,6 +159,7 @@ class ImplementedStep(Step):
             )
 
     def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        """Return error strings if the step configuration is incorrect."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         if not self.name in pipeline_config:
@@ -171,10 +187,10 @@ class CompositeStep(Step):
     def __init__(
         self,
         name: str,
-        input_slots: List[Tuple[str]] = [],
+        input_slots: List[InputSlot] = [],
         output_slots: List[str] = [],
         nodes: List[Step] = [],
-        edges: List[Tuple[str]] = [],
+        edges: List[Edge] = [],
         slot_mappings: Dict[str, List[Tuple[str]]] = {"input": [], "output": []},
     ) -> None:
         super().__init__(name, input_slots, output_slots)
@@ -182,25 +198,25 @@ class CompositeStep(Step):
         self.slot_mappings = slot_mappings
 
     def _create_graph(self, nodes, edges) -> nx.MultiDiGraph:
-        """Create a MultiDiGraph from the parameters passed in."""
+        """Create a MultiDiGraph from the nodes and edges the step was initialized with."""
         graph = nx.MultiDiGraph()
         for step in nodes:
             graph.add_node(
                 step.name,
                 step=step,
             )
-        for in_node, out_node, output_slot, input_slot in edges:
+        for edge in edges:
             graph.add_edge(
-                in_node,
-                out_node,
-                input_slot=graph.nodes[out_node]["step"].input_slots[input_slot],
-                output_slot=output_slot,
+                edge.in_node,
+                edge.out_node,
+                input_slot=graph.nodes[edge.out_node]["step"].input_slots[edge.input_slot],
+                output_slot=edge.output_slot,
             )
 
         return graph
 
     def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        """Call get_subgraph on each subgraph node and update the graph."""
+        """Call update_implementation_graph on each subgraph node and update the graph."""
         graph.update(self.graph)
         self.remap_slots(graph, pipeline_config)
         for node in self.graph.nodes:
@@ -213,6 +229,7 @@ class CompositeStep(Step):
         pass
 
     def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
         errors = {}
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
@@ -225,6 +242,7 @@ class CompositeStep(Step):
         return errors
 
     def remap_slots(self, graph, pipeline_config: LayeredConfigTree) -> None:
+        """Update edges to reflect mapping between parent and child nodes for input and output slots."""
         for child_node, parent_slot, child_slot in self.slot_mappings["input"]:
             parent_edge = [
                 (u, v, edge_attrs)
@@ -261,12 +279,15 @@ class CompositeStep(Step):
 
 
 class HierarchicalStep(CompositeStep, ImplementedStep):
+    """A HierarchicalStep can be a single implementation or several 'substeps'. This requires
+    a "substeps" key in the step configuration. If no substeps key is present, it will be treated as
+    a single implemented step."""
+
     @property
     def config_key(self):
         return "substeps"
 
     def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
-        """Call get_subgraph on each subgraph node and update the graph."""
         sub_config = pipeline_config[self.name]
         if not self.config_key in sub_config:
             ImplementedStep.update_implementation_graph(self, graph, pipeline_config)
