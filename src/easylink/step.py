@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class InputSlot:
-    """StepInput is a dataclass that represents a single input slot for a step."""
+    """InputSlot is a dataclass that represents a single input slot for a step."""
 
     name: str
     env_var: Optional[str]
