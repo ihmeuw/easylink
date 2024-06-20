@@ -62,6 +62,7 @@ class Pipeline:
 
     def write_target_rules(self) -> None:
         """Write the rule for the final output and its validation"""
+        ## The "input" files to the result node/the target rule are the final output themselves.
         final_output, _ = self.pipeline_graph.get_input_output_files("results")
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
@@ -163,7 +164,7 @@ use rule start_spark_worker from spark_cluster with:
 
         for _, _, edge_attrs in self.pipeline_graph.in_edges(node, data=True):
             input_slot = edge_attrs["input_slot"]
-            input_files = edge_attrs["files"]
+            input_files = edge_attrs["filepaths"]
             validation_file = f"input_validations/{input_slot.name}_validator"
             validation_files.append(validation_file)
             validation_rules.append(

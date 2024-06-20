@@ -39,7 +39,7 @@ class PipelineGraph(MultiDiGraph):
         # Update input data edges to direct to correct filenames from config
         for source, sink, edge_attrs in self.out_edges("input_data", data=True):
             for edge_idx in self[source][sink]:
-                self[source][sink][edge_idx]["files"] = [
+                self[source][sink][edge_idx]["filepaths"] = [
                     str(config.input_data[edge_attrs["output_slot"]])
                 ]
 
@@ -48,7 +48,7 @@ class PipelineGraph(MultiDiGraph):
             imp_outputs = self.nodes[node]["implementation"].outputs
             for source, sink, edge_attrs in self.out_edges(node, data=True):
                 for edge_idx in self[node][sink]:
-                    self[source][sink][edge_idx]["files"] = [
+                    self[source][sink][edge_idx]["filepaths"] = [
                         str(
                             Path("intermediate")
                             / node
@@ -61,7 +61,7 @@ class PipelineGraph(MultiDiGraph):
         input_slots = {}
         for _, _, edge_attrs in self.in_edges(node, data=True):
             # Consider whether we need duplicate variables to merge
-            env_var, files = edge_attrs["input_slot"].env_var, edge_attrs["files"]
+            env_var, files = edge_attrs["input_slot"].env_var, edge_attrs["filepaths"]
             if env_var in input_slots:
                 input_slots[env_var].extend(files)
             else:
@@ -72,12 +72,18 @@ class PipelineGraph(MultiDiGraph):
         """Get all of a node's input and output files from edges."""
         input_files = list(
             itertools.chain.from_iterable(
-                [data["files"] for _, _, data in self.in_edges(node, data=True)]
+                [
+                    edge_attrs["filepaths"]
+                    for _, _, edge_attrs in self.in_edges(node, data=True)
+                ]
             )
         )
         output_files = list(
             itertools.chain.from_iterable(
-                [data["files"] for _, _, data in self.out_edges(node, data=True)]
+                [
+                    edge_attrs["filepaths"]
+                    for _, _, edge_attrs in self.out_edges(node, data=True)
+                ]
             )
         )
         return input_files, output_files
