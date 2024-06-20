@@ -1,4 +1,4 @@
-from easylink.step import HierarchicalStep, ImplementedStep, InputStep, ResultStep, In
+from easylink.step import HierarchicalStep, ImplementedStep, In, InputStep, ResultStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 SCHEMA_NODES = [
