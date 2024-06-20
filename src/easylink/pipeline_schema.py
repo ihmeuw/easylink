@@ -54,9 +54,9 @@ class PipelineSchema(CompositeStep):
     def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
         "Wrap the output file validator for now, since it is the same"
         errors = {}
-        for _, _, edge_data in self.graph.out_edges("input_data_schema", data=True):
-            validator = edge_data["input_slot"].validator
-            slot_name = edge_data["output_slot"]
+        for _, _, edge_attrs in self.graph.out_edges("input_data_schema", data=True):
+            validator = edge_attrs["input_slot"].validator
+            slot_name = edge_attrs["output_slot"]
             try:
                 file = input_data[slot_name]
             except KeyError:
