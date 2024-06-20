@@ -1,4 +1,4 @@
-from easylink.step import HierarchicalStep, ImplementedStep, InputStep, ResultStep
+from easylink.step import HierarchicalStep, ImplementedStep, InputStep, ResultStep, In
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 SCHEMA_NODES = [
@@ -108,6 +108,7 @@ TESTING_NODES = [
                 validate_input_file_dummy,
             )
         ],
+        # {"step_1_main_input": InputSlot("step_1_main_input", "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", validate_input_file_dummy)},
         output_slots=["step_1_main_output"],
     ),
     ResultStep(

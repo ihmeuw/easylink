@@ -39,8 +39,8 @@ class Step(ABC):
         self.output_slots = output_slots
 
     @abstractmethod
-    def get_implementation_graph(self, graph, pipeline_config) -> nx.MultiDiGraph:
-        """Resolve the Step into an Implementation graph."""
+    def update_implementation_graph(self, graph, pipeline_config) -> None:
+        """Resolve the Step graph into an Implementation graph."""
         pass
 
     @abstractmethod
@@ -57,9 +57,7 @@ class Step(ABC):
 class InputStep(Step):
     """Basic Step for input data node."""
 
-    def get_implementation_graph(
-        self, graph, pipeline_config: LayeredConfigTree
-    ) -> nx.MultiDiGraph:
+    def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
         graph.add_node("input_data")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
@@ -86,9 +84,7 @@ class InputStep(Step):
 class ResultStep(Step):
     """Basic Step for result node."""
 
-    def get_implementation_graph(
-        self, graph, pipeline_config: LayeredConfigTree
-    ) -> nx.MultiDiGraph:
+    def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
         graph.add_node("results")
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
@@ -115,9 +111,7 @@ class ResultStep(Step):
 class ImplementedStep(Step):
     """Step for leaf node tied to a specific single implementation"""
 
-    def get_implementation_graph(
-        self, graph, pipeline_config: LayeredConfigTree
-    ) -> Implementation:
+    def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
         """Return a single node with an implementation attribute."""
         implementation_name = pipeline_config[self.name]["implementation"]["name"]
         implementation_config = pipeline_config[self.name]["implementation"]["configuration"]
@@ -129,7 +123,6 @@ class ImplementedStep(Step):
         graph.add_node(
             implementation_name,
             implementation=implementation,
-            # out_dir=Path("intermediate") / implementation_name,
         )
 
     def update_edges(self, graph, pipeline_config: LayeredConfigTree) -> None:
@@ -154,13 +147,15 @@ class ImplementedStep(Step):
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         if not self.name in pipeline_config:
-            errors[f"step {self.name}"] = ["The step is not defined in the pipeline."]
+            errors[f"step {self.name}"] = ["The step is not configured."]
         elif not "implementation" in pipeline_config[self.name]:
             errors[f"step {self.name}"] = [
-                "The step does not contain an 'implementation' key."
+                "The step configuration does not contain an 'implementation' key."
             ]
         elif not "name" in pipeline_config[self.name]["implementation"]:
-            errors[f"step {self.name}"] = ["The implementation does not contain a 'name'."]
+            errors[f"step {self.name}"] = [
+                "The implementation configuration does not contain a 'name' key."
+            ]
         elif not pipeline_config[self.name]["implementation"]["name"] in metadata:
             errors[f"step {self.name}"] = [
                 f"Implementation '{pipeline_config[self.name]['implementation']['name']}' is not supported. "
@@ -204,15 +199,13 @@ class CompositeStep(Step):
 
         return graph
 
-    def get_implementation_graph(
-        self, graph, pipeline_config: LayeredConfigTree
-    ) -> nx.MultiDiGraph:
+    def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
         """Call get_subgraph on each subgraph node and update the graph."""
         graph.update(self.graph)
         self.remap_slots(graph, pipeline_config)
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
-            step.get_implementation_graph(graph, pipeline_config)
+            step.update_implementation_graph(graph, pipeline_config)
             step.update_edges(graph, pipeline_config)
             graph.remove_node(node)
 
@@ -272,17 +265,15 @@ class HierarchicalStep(CompositeStep, ImplementedStep):
     def config_key(self):
         return "substeps"
 
-    def get_implementation_graph(
-        self, graph, pipeline_config: LayeredConfigTree
-    ) -> nx.MultiDiGraph:
+    def update_implementation_graph(self, graph, pipeline_config: LayeredConfigTree) -> None:
         """Call get_subgraph on each subgraph node and update the graph."""
         sub_config = pipeline_config[self.name]
         if not self.config_key in sub_config:
-            ImplementedStep.get_implementation_graph(self, graph, pipeline_config)
+            ImplementedStep.update_implementation_graph(self, graph, pipeline_config)
             ImplementedStep.update_edges(self, graph, pipeline_config)
         else:
             sub_config = sub_config[self.config_key]
-            CompositeStep.get_implementation_graph(self, graph, sub_config)
+            CompositeStep.update_implementation_graph(self, graph, sub_config)
 
     def validate_step(self, pipeline_config: LayeredConfigTree) -> Dict[str, List[str]]:
         if not self.name in pipeline_config or not self.config_key in pipeline_config:

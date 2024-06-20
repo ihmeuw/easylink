@@ -31,9 +31,9 @@ def test_input_step(default_config: Config) -> None:
     assert step.output_slots == ["file1"]
     assert step.input_slots == {}
 
-    # Test get_subgraph
+    # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
-    step.get_implementation_graph(subgraph, default_config["pipeline"])
+    step.update_implementation_graph(subgraph, default_config["pipeline"])
     assert list(subgraph.nodes) == ["input_data"]
     assert list(subgraph.edges) == []
 
@@ -51,9 +51,9 @@ def test_result_step(default_config: Config) -> None:
     assert input_slot.env_var is None
     assert input_slot.validator == validate_input_file_dummy
 
-    # Test get_subgraph
+    # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
-    step.get_implementation_graph(subgraph, default_config["pipeline"])
+    step.update_implementation_graph(subgraph, default_config["pipeline"])
     assert list(subgraph.nodes) == ["results"]
     assert list(subgraph.edges) == []
 
@@ -77,9 +77,9 @@ def test_implemented_step(default_config: Config) -> None:
     assert input_slot.env_var == "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
     assert input_slot.validator == validate_input_file_dummy
 
-    # Test get_subgraph
+    # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
-    step.get_implementation_graph(subgraph, default_config["pipeline"])
+    step.update_implementation_graph(subgraph, default_config["pipeline"])
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -141,7 +141,7 @@ def test_composite_step(default_config_params) -> None:
             },
         }
     )
-    # Test get_subgraph
+    # Test update_implementation_graph
     subgraph = nx.MultiDiGraph(
         [
             (
@@ -156,7 +156,7 @@ def test_composite_step(default_config_params) -> None:
             )
         ]
     )
-    step.get_implementation_graph(subgraph, pipeline_params)
+    step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data_schema",
         "step_1",
