@@ -41,6 +41,8 @@ SLURM_SPARK_MEM_BUFFER = 500
 def load_params_from_specification(
     pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
 ) -> Dict[str, Any]:
+    """Gather together the pipeline, input data, and computing environment specifications
+    into a single dictionary for insertion into the Config object."""
     return {
         "pipeline": load_yaml(pipeline_specification),
         "input_data": _load_input_data_paths(input_data),
@@ -107,10 +109,12 @@ class Config(LayeredConfigTree):
 
     @property
     def computing_environment(self) -> Dict[str, Any]:
+        """Generally either 'local' or 'slurm'."""
         return self.environment.computing_environment
 
     @property
     def slurm(self) -> Dict[str, Any]:
+        """A dictionary of Slurm configuration settings."""
         if not self.environment.computing_environment == "slurm":
             return {}
         else:
@@ -118,10 +122,12 @@ class Config(LayeredConfigTree):
 
     @property
     def spark(self) -> Dict[str, Any]:
+        """A dictionary of spark configuration settings."""
         return self.environment.spark.to_dict()
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
+        """Return the slurm resources as a flat dictionary in format required by snakemake."""
         if not self.computing_environment == "slurm":
             return {}
         raw_slurm_resources = {
@@ -138,7 +144,7 @@ class Config(LayeredConfigTree):
 
     @property
     def spark_resources(self) -> Dict[str, Any]:
-        """Return the spark resources as a flat dictionary"""
+        """Return the spark resources as a flat dictionary in format rquired by snakemake."""
         spark_workers_raw = self.spark["workers"]
         spark_workers = {
             "num_workers": spark_workers_raw.get("num_workers"),
@@ -159,6 +165,7 @@ class Config(LayeredConfigTree):
     # Setup Methods #
     #################
     def update_implementation_configs(self, level: LayeredConfigTree):
+        """Recursively add empty configuration dictionaries to each implementation configuration"""
         if "implementation" in level:
             level.implementation.update({"configuration": {}}, layer="default")
         else:

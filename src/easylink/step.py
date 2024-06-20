@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
@@ -9,9 +8,6 @@ from layered_config_tree import LayeredConfigTree
 from easylink.implementation import Implementation
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-
-if TYPE_CHECKING:
-    from easylink.configuration import Config
 
 
 @dataclass

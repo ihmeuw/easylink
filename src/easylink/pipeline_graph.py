@@ -36,6 +36,7 @@ class PipelineGraph(MultiDiGraph):
         return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
 
     def update_slot_filepaths(self, config: Config) -> None:
+        """Fill graph edges with appropriate filepath information."""
         # Update input data edges to direct to correct filenames from config
         for source, sink, edge_attrs in self.out_edges("input_data", data=True):
             for edge_idx in self[source][sink]:

@@ -19,7 +19,7 @@ class PipelineSchema(CompositeStep):
         return f"PipelineSchema.{self.name}"
 
     def get_sub_config(self, pipeline_config: LayeredConfigTree) -> LayeredConfigTree:
-        """Return the subconfig for this step."""
+        """Return the subconfig for this step. For the pipeline schema, this is the entire config."""
         return pipeline_config
 
     def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> nx.MultiDiGraph:

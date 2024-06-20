@@ -112,6 +112,8 @@ class Pipeline:
         implementation_rule.write_to_snakefile(self.snakefile_path)
 
     def write_config(self) -> None:
+        """Write any configuration settings to the Snakefile.
+        Currently only applicable for spark-dependent rules."""
         with open(self.snakefile_path, "a") as f:
             if self.spark_is_required:
                 f.write(
