@@ -22,7 +22,7 @@ rule:
 rule:
     name: "step_1_main_input_validator"
     input: ['{test_dir}/input_data1/file1.csv']
-    output: touch("input_validations/step_1_main_input_validator")
+    output: touch("input_validations/step_1_python_pandas/step_1_main_input_validator")
     localrule: True         
     message: "Validating step_1_main_input"
     run:
@@ -33,7 +33,7 @@ rule:
     message: "Running step_1 implementation: step_1_python_pandas"
     input:
         dummy_container_main_input_file_paths=['{test_dir}/input_data1/file1.csv'],
-        validations=['input_validations/step_1_main_input_validator'],
+        validations=['input_validations/step_1_python_pandas/step_1_main_input_validator'],
     output: ['intermediate/step_1_python_pandas/result.parquet']
     log: "diagnostics/step_1_python_pandas/step_1_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
@@ -53,7 +53,7 @@ rule:
 rule:
     name: "step_2_main_input_validator"
     input: ['intermediate/step_1_python_pandas/result.parquet']
-    output: touch("input_validations/step_2_main_input_validator")
+    output: touch("input_validations/step_2_python_pandas/step_2_main_input_validator")
     localrule: True         
     message: "Validating step_2_main_input"
     run:
@@ -64,7 +64,7 @@ rule:
     message: "Running step_2 implementation: step_2_python_pandas"
     input:
         dummy_container_main_input_file_paths=['intermediate/step_1_python_pandas/result.parquet'],
-        validations=['input_validations/step_2_main_input_validator'],
+        validations=['input_validations/step_2_python_pandas/step_2_main_input_validator'],
     output: ['intermediate/step_2_python_pandas/result.parquet']
     log: "diagnostics/step_2_python_pandas/step_2_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
@@ -84,7 +84,7 @@ rule:
 rule:
     name: "step_3_main_input_validator"
     input: ['intermediate/step_2_python_pandas/result.parquet']
-    output: touch("input_validations/step_3_main_input_validator")
+    output: touch("input_validations/step_3_python_pandas/step_3_main_input_validator")
     localrule: True         
     message: "Validating step_3_main_input"
     run:
@@ -95,7 +95,7 @@ rule:
     message: "Running step_3 implementation: step_3_python_pandas"
     input:
         dummy_container_main_input_file_paths=['intermediate/step_2_python_pandas/result.parquet'],
-        validations=['input_validations/step_3_main_input_validator'],
+        validations=['input_validations/step_3_python_pandas/step_3_main_input_validator'],
     output: ['intermediate/step_3_python_pandas/result.parquet']
     log: "diagnostics/step_3_python_pandas/step_3_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
@@ -115,7 +115,7 @@ rule:
 rule:
     name: "step_4_secondary_input_validator"
     input: ['{test_dir}/input_data1/file1.csv']
-    output: touch("input_validations/step_4_secondary_input_validator")
+    output: touch("input_validations/step_4_python_pandas/step_4_secondary_input_validator")
     localrule: True         
     message: "Validating step_4_secondary_input"
     run:
@@ -124,7 +124,7 @@ rule:
 rule:
     name: "step_4_main_input_validator"
     input: ['intermediate/step_3_python_pandas/result.parquet']
-    output: touch("input_validations/step_4_main_input_validator")
+    output: touch("input_validations/step_4_python_pandas/step_4_main_input_validator")
     localrule: True         
     message: "Validating step_4_main_input"
     run:
@@ -136,7 +136,7 @@ rule:
     input:
         dummy_container_secondary_input_file_paths=['{test_dir}/input_data1/file1.csv'],
         dummy_container_main_input_file_paths=['intermediate/step_3_python_pandas/result.parquet'],
-        validations=['input_validations/step_4_secondary_input_validator', 'input_validations/step_4_main_input_validator'],
+        validations=['input_validations/step_4_python_pandas/step_4_secondary_input_validator', 'input_validations/step_4_python_pandas/step_4_main_input_validator'],
     output: ['intermediate/step_4_python_pandas/result.parquet']
     log: "diagnostics/step_4_python_pandas/step_4_python_pandas-output.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"

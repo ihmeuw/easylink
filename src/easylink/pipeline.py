@@ -167,7 +167,7 @@ use rule start_spark_worker from spark_cluster with:
         for _, _, edge_attrs in self.pipeline_graph.in_edges(node, data=True):
             input_slot = edge_attrs["input_slot"]
             input_files = edge_attrs["filepaths"]
-            validation_file = f"input_validations/{input_slot.name}_validator"
+            validation_file = f"input_validations/{node}/{input_slot.name}_validator"
             validation_files.append(validation_file)
             validation_rules.append(
                 InputValidationRule(
