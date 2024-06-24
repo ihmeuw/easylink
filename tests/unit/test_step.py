@@ -4,43 +4,22 @@ from layered_config_tree import LayeredConfigTree
 from easylink.configuration import Config
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.pipeline_schema_constants import validate_input_file_dummy
-from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
+from easylink.step import CompositeStep, ImplementedStep, IOStep
 
-
-def test_input_step(default_config: Config) -> None:
-    params = {
-        "input_slots": [],
-        "output_slots": [OutputSlot("file1")],
-    }
-    step = InputStep("input", **params)
-    assert step.name == "input"
-    assert step.output_slots == {"file1": OutputSlot("file1")}
-    assert step.input_slots == {}
-
-    # Test update_implementation_graph
-    subgraph = nx.MultiDiGraph()
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
-    assert list(subgraph.nodes) == ["input_data"]
-    assert list(subgraph.edges) == []
-
-
-def test_result_step(default_config: Config) -> None:
+def test_io_step(default_config: Config) -> None:
     params = {
         "input_slots": [InputSlot("result", None, validate_input_file_dummy)],
-        "output_slots": [],
+        "output_slots": [OutputSlot("file1")],
     }
-    step = ResultStep("results", **params)
-    assert step.name == "results"
-    assert step.output_slots == {}
-    assert set(step.input_slots.keys()) == {"result"}
-    input_slot = step.input_slots["result"]
-    assert input_slot.env_var is None
-    assert input_slot.validator == validate_input_file_dummy
-
+    step = IOStep("io", **params)
+    assert step.name == "io"
+    assert step.input_slots == {"result": InputSlot("result", None, validate_input_file_dummy)}
+    assert step.output_slots == {"file1": OutputSlot("file1")}
+    
     # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
     step.update_implementation_graph(subgraph, default_config["pipeline"])
-    assert list(subgraph.nodes) == ["results"]
+    assert list(subgraph.nodes) == ["pipeline_graph_io"]
     assert list(subgraph.edges) == []
 
 
@@ -141,7 +120,7 @@ def test_composite_step(default_config_params) -> None:
     subgraph = nx.MultiDiGraph(
         [
             (
-                "input_data_schema",
+                "input_data",
                 "step_1",
                 {
                     "input_slot": InputSlot(
@@ -154,19 +133,19 @@ def test_composite_step(default_config_params) -> None:
     )
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
-        "input_data_schema",
+        "input_data",
         "step_1",
         "step_1a_python_pandas",
         "step_1b_python_pandas",
     ]
     expected_edges = {
-        ("input_data_schema", "step_1"): {
+        ("input_data", "step_1"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "file1",
             "validator": validate_input_file_dummy,
             "env_var": None,
         },
-        ("input_data_schema", "step_1a_python_pandas"): {
+        ("input_data", "step_1a_python_pandas"): {
             "input_slot_name": "step_1a_main_input",
             "output_slot_name": "file1",
             "validator": validate_input_file_dummy,

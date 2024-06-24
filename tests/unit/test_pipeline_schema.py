@@ -14,12 +14,12 @@ def test_schema_instantiation() -> None:
     sorted_graph = nx.topological_sort(schema.graph)
     """Test that the schema is correctly loaded from the pipeline.yaml"""
     assert list(sorted_graph) == [
-        "input_data_schema",
+        "input_data",
         "step_1",
         "step_2",
         "step_3",
         "step_4",
-        "results_schema",
+        "results",
     ]
     step_types = [node["step"] for node in sorted_graph]
     expected_step_types = [type(step) for step in ALLOWED_SCHEMA_PARAMS["development"]]

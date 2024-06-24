@@ -40,22 +40,25 @@ class Step(ABC):
         """Validate the step against the pipeline configuration."""
         pass
 
-
-class InputStep(Step):
-    """Basic Step for input data node."""
-
+class IOStep(Step):
+    """"""
+    
+    @property
+    def pipeline_graph_node_name(self):
+        return "pipeline_graph_" + self.name
+    
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
-        """Add a single node to the graph with the name 'input_data'."""
-        graph.add_node("input_data")
+        """Add a single node to the graph based on step name."""
+        graph.add_node(self.pipeline_graph_node_name)
         self.update_edges(graph, step_config)
-
+    
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
-        """Add edges to/from "input_data" to replace the edges from the current step"""
+        """Add edges to/from self to replace the edges from the current step"""
         for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
-                "input_data",
+                self.pipeline_graph_node_name,
                 sink,
                 input_slot=edge_attrs["input_slot"],
                 output_slot=edge_attrs["output_slot"],
@@ -64,46 +67,13 @@ class InputStep(Step):
         for source, _, edge_attrs in graph.in_edges(self.name, data=True):
             graph.add_edge(
                 source,
-                "input_data",
+                self.pipeline_graph_node_name,
                 input_slot=edge_attrs["input_slot"],
                 output_slot=edge_attrs["output_slot"],
             )
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         return {}
-
-
-class ResultStep(Step):
-    """Basic Step for result node."""
-
-    def update_implementation_graph(
-        self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
-    ) -> None:
-        """Add a single node to the graph with the name 'results'."""
-        graph.add_node("results")
-        self.update_edges(graph, step_config)
-
-    def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
-        """Add edges to/from "results" to replace the edges from the current step"""
-        for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
-            graph.add_edge(
-                "results",
-                sink,
-                input_slot=edge_attrs["input_slot"],
-                output_slot=edge_attrs["output_slot"],
-            )
-
-        for source, _, edge_attrs in graph.in_edges(self.name, data=True):
-            graph.add_edge(
-                source,
-                "results",
-                input_slot=edge_attrs["input_slot"],
-                output_slot=edge_attrs["output_slot"],
-            )
-
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
-        return {}
-
 
 class ImplementedStep(Step):
     """Step for leaf node tied to a specific single implementation"""

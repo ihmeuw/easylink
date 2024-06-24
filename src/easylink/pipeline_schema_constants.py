@@ -3,13 +3,12 @@ from easylink.step import (
     HierarchicalStep,
     ImplementedStep,
     InputSlot,
-    InputStep,
-    ResultStep,
+    IOStep,
 )
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 SCHEMA_NODES = [
-    InputStep("input_data_schema", input_slots=[], output_slots=[OutputSlot("file1")]),
+    IOStep("input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
     HierarchicalStep(
         "step_1",
         input_slots=[
@@ -111,8 +110,8 @@ SCHEMA_NODES = [
         ],
         output_slots=[OutputSlot("step_4_main_output")],
     ),
-    ResultStep(
-        "results_schema",
+    IOStep(
+        "results",
         input_slots=[
             InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
         ],
@@ -121,13 +120,13 @@ SCHEMA_NODES = [
 ]
 SCHEMA_EDGES = [
     Edge(
-        in_node="input_data_schema",
+        in_node="input_data",
         out_node="step_1",
         output_slot="file1",
         input_slot="step_1_main_input",
     ),
     Edge(
-        in_node="input_data_schema",
+        in_node="input_data",
         out_node="step_4",
         output_slot="file1",
         input_slot="step_4_secondary_input",
@@ -152,7 +151,7 @@ SCHEMA_EDGES = [
     ),
     Edge(
         in_node="step_4",
-        out_node="results_schema",
+        out_node="results",
         output_slot="step_4_main_output",
         input_slot="result",
     ),
@@ -160,7 +159,7 @@ SCHEMA_EDGES = [
 ALLOWED_SCHEMA_PARAMS = {"development": (SCHEMA_NODES, SCHEMA_EDGES)}
 
 TESTING_NODES = [
-    InputStep("input_data_schema", input_slots=[], output_slots=[OutputSlot("file1")]),
+    IOStep("input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
     ImplementedStep(
         "step_1",
         input_slots=[
@@ -172,8 +171,8 @@ TESTING_NODES = [
         ],
         output_slots=[OutputSlot("step_1_main_output")],
     ),
-    ResultStep(
-        "results_schema",
+    IOStep(
+        "results",
         input_slots=[
             InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
         ],
@@ -182,14 +181,14 @@ TESTING_NODES = [
 ]
 TESTING_EDGES = [
     Edge(
-        in_node="input_data_schema",
+        in_node="input_data",
         out_node="step_1",
         output_slot="file1",
         input_slot="step_1_main_input",
     ),
     Edge(
         in_node="step_1",
-        out_node="results_schema",
+        out_node="results",
         output_slot="step_1_main_output",
         input_slot="result",
     ),

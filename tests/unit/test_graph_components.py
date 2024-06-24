@@ -18,12 +18,12 @@ def test_output_slot() -> None:
 
 def test_edge() -> None:
     edge = Edge(
-        in_node="input_data_schema",
+        in_node="input_data",
         out_node="step_1",
         output_slot="file1",
         input_slot="step_1_main_input",
     )
-    assert edge.in_node == "input_data_schema"
+    assert edge.in_node == "input_data"
     assert edge.out_node == "step_1"
     assert edge.output_slot == "file1"
     assert edge.input_slot == "step_1_main_input"
