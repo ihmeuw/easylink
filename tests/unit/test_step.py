@@ -3,7 +3,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import CompositeStep, ImplementedStep, IOStep
+from easylink.step import BasicStep, CompositeStep, IOStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -37,7 +37,7 @@ def test_implemented_step(default_config: Config) -> None:
         ],
         "output_slots": [OutputSlot("step_1_main_output")],
     }
-    step = ImplementedStep("step_1", **params)
+    step = BasicStep("step_1", **params)
     assert step.name == "step_1"
     assert set(step.input_slots.keys()) == {"step_1_main_input"}
     input_slot = step.input_slots["step_1_main_input"]
@@ -65,7 +65,7 @@ def test_composite_step(default_config_params) -> None:
         ],
         "output_slots": [OutputSlot("step_1_main_output")],
         "nodes": [
-            ImplementedStep(
+            BasicStep(
                 "step_1a",
                 input_slots=[
                     InputSlot(
@@ -76,7 +76,7 @@ def test_composite_step(default_config_params) -> None:
                 ],
                 output_slots=[OutputSlot("step_1a_main_output")],
             ),
-            ImplementedStep(
+            BasicStep(
                 "step_1b",
                 input_slots=[
                     InputSlot(

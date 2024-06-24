@@ -1,10 +1,10 @@
 from easylink.graph_components import Edge, InputSlot, OutputSlot
-from easylink.step import ImplementedStep, InputSlot, IOStep
+from easylink.step import BasicStep, InputSlot, IOStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
     IOStep("input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
-    ImplementedStep(
+    BasicStep(
         "step_1",
         input_slots=[
             InputSlot(

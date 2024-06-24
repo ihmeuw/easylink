@@ -77,7 +77,7 @@ class IOStep(Step):
         return {}
 
 
-class ImplementedStep(Step):
+class BasicStep(Step):
     """Step for leaf node tied to a specific single implementation"""
 
     def update_implementation_graph(
@@ -240,7 +240,7 @@ class CompositeStep(Step):
                 )
 
 
-class HierarchicalStep(CompositeStep, ImplementedStep):
+class HierarchicalStep(CompositeStep, BasicStep):
     """A HierarchicalStep can be a single implementation or several 'substeps'. This requires
     a "substeps" key in the step configuration. If no substeps key is present, it will be treated as
     a single implemented step."""
@@ -254,14 +254,14 @@ class HierarchicalStep(CompositeStep, ImplementedStep):
     ) -> None:
         sub_config = step_config[self.name]
         if not self.config_key in sub_config:
-            ImplementedStep.update_implementation_graph(self, graph, step_config)
+            BasicStep.update_implementation_graph(self, graph, step_config)
         else:
             sub_config = sub_config[self.config_key]
             CompositeStep.update_implementation_graph(self, graph, sub_config)
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         if not self.name in step_config or not self.config_key in step_config:
-            return ImplementedStep.validate_step(self, step_config)
+            return BasicStep.validate_step(self, step_config)
         else:
             sub_config = sub_config[self.name][self.config_key]
             return CompositeStep.validate_step(self, sub_config)
