@@ -1,32 +1,13 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List
 
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
+from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.implementation import Implementation
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-
-
-@dataclass
-class InputSlot:
-    """InputSlot is a dataclass that represents a single input slot for a step."""
-
-    name: str
-    env_var: Optional[str]
-    validator: Callable
-
-
-@dataclass
-class Edge:
-    """Edge is a dataclass that represents an edge between two nodes in a graph."""
-
-    in_node: str
-    out_node: str
-    output_slot: str
-    input_slot: str
 
 
 class Step(ABC):
@@ -38,22 +19,20 @@ class Step(ABC):
     """
 
     def __init__(
-        self, name: str, input_slots: List[InputSlot] = [], output_slots: List[str] = []
+        self,
+        name: str,
+        input_slots: List[InputSlot] = [],
+        output_slots: List[OutputSlot] = [],
     ) -> None:
         self.name = name
         self.input_slots = {slot.name: slot for slot in input_slots}
-        self.output_slots = output_slots
+        self.output_slots = {slot.name: slot for slot in output_slots}
 
     @abstractmethod
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
-        """Resolve the graph composted of Steps into a graph composed of Implementations."""
-        pass
-
-    @abstractmethod
-    def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
-        """Update the edges of the graph to replace Step graph edges with Implementation graph edges."""
+        """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
 
     @abstractmethod
@@ -70,6 +49,7 @@ class InputStep(Step):
     ) -> None:
         """Add a single node to the graph with the name 'input_data'."""
         graph.add_node("input_data")
+        self.update_edges(graph, step_config)
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from "input_data" to replace the edges from the current step"""
@@ -101,6 +81,7 @@ class ResultStep(Step):
     ) -> None:
         """Add a single node to the graph with the name 'results'."""
         graph.add_node("results")
+        self.update_edges(graph, step_config)
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from "results" to replace the edges from the current step"""
@@ -142,6 +123,7 @@ class ImplementedStep(Step):
             implementation_name,
             implementation=implementation,
         )
+        self.update_edges(graph, step_config)
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from the implementation node to replace the edges from the current step"""
@@ -192,10 +174,10 @@ class CompositeStep(Step):
         self,
         name: str,
         input_slots: List[InputSlot] = [],
-        output_slots: List[str] = [],
+        output_slots: List[OutputSlot] = [],
         nodes: List[Step] = [],
         edges: List[Edge] = [],
-        slot_mappings: Dict[str, List[Tuple[str]]] = {"input": [], "output": []},
+        slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
     ) -> None:
         super().__init__(name, input_slots, output_slots)
         self.graph = self._create_graph(nodes, edges)
@@ -214,7 +196,7 @@ class CompositeStep(Step):
                 edge.in_node,
                 edge.out_node,
                 input_slot=graph.nodes[edge.out_node]["step"].input_slots[edge.input_slot],
-                output_slot=edge.output_slot,
+                output_slot=graph.nodes[edge.in_node]["step"].output_slots[edge.output_slot],
             )
 
         return graph
@@ -228,11 +210,7 @@ class CompositeStep(Step):
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
             step.update_implementation_graph(graph, step_config)
-            step.update_edges(graph, step_config)
             graph.remove_node(node)
-
-    def update_edges(self, graph, step_config: LayeredConfigTree) -> None:
-        pass
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
@@ -249,7 +227,10 @@ class CompositeStep(Step):
 
     def remap_slots(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Update edges to reflect mapping between parent and child nodes for input and output slots."""
-        for child_node, parent_slot, child_slot in self.slot_mappings["input"]:
+        for input_mapping in self.slot_mappings["input"]:
+            parent_slot = input_mapping.parent_slot
+            child_node = input_mapping.child_node
+            child_slot = input_mapping.child_slot
             parent_edge = [
                 (u, v, edge_attrs)
                 for (u, v, edge_attrs) in graph.in_edges(self.name, data=True)
@@ -269,7 +250,10 @@ class CompositeStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
-        for child_node, parent_slot, child_slot in self.slot_mappings["output"]:
+        for output_mapping in self.slot_mappings["output"]:
+            parent_slot = output_mapping.parent_slot
+            child_node = output_mapping.child_node
+            child_slot = output_mapping.child_slot
             parent_edges = [
                 (u, v, edge_attrs)
                 for (u, v, edge_attrs) in graph.out_edges(self.name, data=True)
@@ -280,7 +264,7 @@ class CompositeStep(Step):
                     child_node,
                     sink,
                     input_slot=edge_attrs["input_slot"],
-                    output_slot=child_slot,
+                    output_slot=graph.nodes[child_node]["step"].output_slots[child_slot],
                 )
 
 
@@ -299,7 +283,6 @@ class HierarchicalStep(CompositeStep, ImplementedStep):
         sub_config = step_config[self.name]
         if not self.config_key in sub_config:
             ImplementedStep.update_implementation_graph(self, graph, step_config)
-            ImplementedStep.update_edges(self, graph, step_config)
         else:
             sub_config = sub_config[self.config_key]
             CompositeStep.update_implementation_graph(self, graph, sub_config)

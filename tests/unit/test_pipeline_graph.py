@@ -1,12 +1,9 @@
 from pathlib import Path
 
-import networkx as nx
 import pytest
 
 from easylink.configuration import Config
 from easylink.pipeline_graph import PipelineGraph
-from easylink.pipeline_schema_constants import SCHEMA_EDGES, SCHEMA_NODES
-from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -73,7 +70,10 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
         assert (
             edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
         )
-        assert edge_attrs["output_slot"] == expected_edges[(source, sink)]["output_slot_name"]
+        assert (
+            edge_attrs["output_slot"].name
+            == expected_edges[(source, sink)]["output_slot_name"]
+        )
         assert edge_attrs["filepaths"] == [
             str(file) for file in expected_edges[(source, sink)]["filepaths"]
         ]

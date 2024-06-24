@@ -1,5 +1,5 @@
+from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.step import (
-    Edge,
     HierarchicalStep,
     ImplementedStep,
     InputSlot,
@@ -9,90 +9,113 @@ from easylink.step import (
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 SCHEMA_NODES = [
-    InputStep("input_data_schema", input_slots=[], output_slots=["file1"]),
+    InputStep("input_data_schema", input_slots=[], output_slots=[OutputSlot("file1")]),
     HierarchicalStep(
         "step_1",
         input_slots=[
             InputSlot(
-                "step_1_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
+                name="step_1_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
             )
         ],
-        output_slots=["step_1_main_output"],
+        output_slots=[OutputSlot("step_1_main_output")],
         nodes=[
             ImplementedStep(
                 "step_1a",
                 input_slots=[
                     InputSlot(
-                        "step_1a_main_input",
-                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                        validate_input_file_dummy,
+                        name="step_1a_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
                     )
                 ],
-                output_slots=["step_1a_main_output"],
+                output_slots=[OutputSlot("step_1a_main_output")],
             ),
             ImplementedStep(
                 "step_1b",
                 input_slots=[
                     InputSlot(
-                        "step_1b_main_input",
-                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                        validate_input_file_dummy,
+                        name="step_1b_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
                     )
                 ],
-                output_slots=["step_1b_main_output"],
+                output_slots=[OutputSlot("step_1b_main_output")],
             ),
         ],
         edges=[
-            Edge("step_1a", "step_1b", "step_1a_main_output", "step_1b_main_input"),
+            Edge(
+                in_node="step_1a",
+                out_node="step_1b",
+                output_slot="step_1a_main_output",
+                input_slot="step_1b_main_input",
+            ),
         ],
         slot_mappings={
-            "input": [("step_1a", "step_1_main_input", "step_1a_main_input")],
-            "output": [("step_1b", "step_1_main_output", "step_1b_main_output")],
+            "input": [
+                SlotMapping(
+                    slot_type="input",
+                    parent_node="step_1",
+                    parent_slot="step_1_main_input",
+                    child_node="step_1a",
+                    child_slot="step_1a_main_input",
+                )
+            ],
+            "output": [
+                SlotMapping(
+                    slot_type="output",
+                    parent_node="step_1",
+                    parent_slot="step_1_main_output",
+                    child_node="step_1b",
+                    child_slot="step_1b_main_output",
+                )
+            ],
         },
     ),
     ImplementedStep(
         "step_2",
         input_slots=[
             InputSlot(
-                "step_2_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
+                name="step_2_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
             )
         ],
-        output_slots=["step_2_main_output"],
+        output_slots=[OutputSlot("step_2_main_output")],
     ),
     ImplementedStep(
         "step_3",
         input_slots=[
             InputSlot(
-                "step_3_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
+                name="step_3_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
             )
         ],
-        output_slots=["step_3_main_output"],
+        output_slots=[OutputSlot("step_3_main_output")],
     ),
     ImplementedStep(
         "step_4",
         input_slots=[
             InputSlot(
-                "step_4_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
+                name="step_4_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
             ),
             InputSlot(
-                "step_4_secondary_input",
-                "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
+                name="step_4_secondary_input",
+                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
             ),
         ],
-        output_slots=["step_4_main_output"],
+        output_slots=[OutputSlot("step_4_main_output")],
     ),
     ResultStep(
         "results_schema",
-        input_slots=[InputSlot("result", None, validate_input_file_dummy)],
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ],
         output_slots=[],
     ),
 ]
@@ -137,21 +160,23 @@ SCHEMA_EDGES = [
 ALLOWED_SCHEMA_PARAMS = {"development": (SCHEMA_NODES, SCHEMA_EDGES)}
 
 TESTING_NODES = [
-    InputStep("input_data_schema", input_slots=[], output_slots=["file1"]),
+    InputStep("input_data_schema", input_slots=[], output_slots=[OutputSlot("file1")]),
     ImplementedStep(
         "step_1",
         input_slots=[
             InputSlot(
-                "step_1_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
+                name="step_1_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
             )
         ],
-        output_slots=["step_1_main_output"],
+        output_slots=[OutputSlot("step_1_main_output")],
     ),
     ResultStep(
         "results_schema",
-        input_slots=[InputSlot("result", None, validate_input_file_dummy)],
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ],
         output_slots=[],
     ),
 ]

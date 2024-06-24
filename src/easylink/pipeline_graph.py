@@ -1,6 +1,6 @@
 import itertools
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import networkx as nx
 from networkx import MultiDiGraph
@@ -41,7 +41,7 @@ class PipelineGraph(MultiDiGraph):
         for source, sink, edge_attrs in self.out_edges("input_data", data=True):
             for edge_idx in self[source][sink]:
                 self[source][sink][edge_idx]["filepaths"] = [
-                    str(config.input_data[edge_attrs["output_slot"]])
+                    str(config.input_data[edge_attrs["output_slot"].name])
                 ]
 
         # Update implementation nodes with yaml metadata
@@ -53,7 +53,7 @@ class PipelineGraph(MultiDiGraph):
                         str(
                             Path("intermediate")
                             / node
-                            / imp_outputs[edge_attrs["output_slot"]]
+                            / imp_outputs[edge_attrs["output_slot"].name]
                         )
                     ]
 

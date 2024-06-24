@@ -2,34 +2,19 @@ import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
+from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.pipeline_schema_constants import validate_input_file_dummy
-from easylink.step import (
-    CompositeStep,
-    Edge,
-    ImplementedStep,
-    InputSlot,
-    InputStep,
-    ResultStep,
-)
-
-
-def test_input_slot() -> None:
-    input_slot = InputSlot(
-        "file1", "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", validate_input_file_dummy
-    )
-    assert input_slot.name == "file1"
-    assert input_slot.env_var == "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
-    assert input_slot.validator == validate_input_file_dummy
+from easylink.step import CompositeStep, ImplementedStep, InputStep, ResultStep
 
 
 def test_input_step(default_config: Config) -> None:
     params = {
         "input_slots": [],
-        "output_slots": ["file1"],
+        "output_slots": [OutputSlot("file1")],
     }
     step = InputStep("input", **params)
     assert step.name == "input"
-    assert step.output_slots == ["file1"]
+    assert step.output_slots == {"file1": OutputSlot("file1")}
     assert step.input_slots == {}
 
     # Test update_implementation_graph
@@ -46,7 +31,7 @@ def test_result_step(default_config: Config) -> None:
     }
     step = ResultStep("results", **params)
     assert step.name == "results"
-    assert step.output_slots == []
+    assert step.output_slots == {}
     assert set(step.input_slots.keys()) == {"result"}
     input_slot = step.input_slots["result"]
     assert input_slot.env_var is None
@@ -68,15 +53,16 @@ def test_implemented_step(default_config: Config) -> None:
                 validate_input_file_dummy,
             )
         ],
-        "output_slots": ["step_1_main_output"],
+        "output_slots": [OutputSlot("step_1_main_output")],
     }
     step = ImplementedStep("step_1", **params)
     assert step.name == "step_1"
-    assert step.output_slots == ["step_1_main_output"]
     assert set(step.input_slots.keys()) == {"step_1_main_input"}
     input_slot = step.input_slots["step_1_main_input"]
     assert input_slot.env_var == "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
     assert input_slot.validator == validate_input_file_dummy
+
+    assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
     # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
@@ -95,7 +81,7 @@ def test_composite_step(default_config_params) -> None:
                 validate_input_file_dummy,
             )
         ],
-        "output_slots": ["step_1_main_output"],
+        "output_slots": [OutputSlot("step_1_main_output")],
         "nodes": [
             ImplementedStep(
                 "step_1a",
@@ -106,7 +92,7 @@ def test_composite_step(default_config_params) -> None:
                         validate_input_file_dummy,
                     )
                 ],
-                output_slots=["step_1a_main_output"],
+                output_slots=[OutputSlot("step_1a_main_output")],
             ),
             ImplementedStep(
                 "step_1b",
@@ -117,21 +103,30 @@ def test_composite_step(default_config_params) -> None:
                         validate_input_file_dummy,
                     )
                 ],
-                output_slots=["step_1b_main_output"],
+                output_slots=[OutputSlot("step_1b_main_output")],
             ),
         ],
         "edges": [Edge("step_1a", "step_1b", "step_1a_main_output", "step_1b_main_input")],
         "slot_mappings": {
-            "input": [("step_1a", "step_1_main_input", "step_1a_main_input")],
-            "output": [("step_1b", "step_1_main_output", "step_1b_main_output")],
+            "input": [
+                SlotMapping(
+                    "input", "step_1", "step_1_main_input", "step_1a", "step_1a_main_input"
+                )
+            ],
+            "output": [
+                SlotMapping(
+                    "output", "step_1", "step_1_main_output", "step_1b", "step_1b_main_output"
+                )
+            ],
         },
     }
     step = CompositeStep(**params)
     assert step.name == "step_1"
-    assert step.output_slots == ["step_1_main_output"]
     input_slot = step.input_slots["step_1_main_input"]
     assert input_slot.env_var == "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
     assert input_slot.validator == validate_input_file_dummy
+
+    assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
     pipeline_params = LayeredConfigTree(
         {
             "step_1a": {
@@ -152,7 +147,7 @@ def test_composite_step(default_config_params) -> None:
                     "input_slot": InputSlot(
                         "step_1_main_input", None, validate_input_file_dummy
                     ),
-                    "output_slot": "file1",
+                    "output_slot": OutputSlot("file1"),
                 },
             )
         ]
@@ -194,4 +189,7 @@ def test_composite_step(default_config_params) -> None:
         assert (
             edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
         )
-        assert edge_attrs["output_slot"] == expected_edges[(source, sink)]["output_slot_name"]
+        assert (
+            edge_attrs["output_slot"].name
+            == expected_edges[(source, sink)]["output_slot_name"]
+        )

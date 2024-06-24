@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Union
 from layered_config_tree import LayeredConfigTree
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import exit_with_validation_error
 

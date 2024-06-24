@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
@@ -56,7 +56,7 @@ class PipelineSchema(CompositeStep):
         errors = {}
         for _, _, edge_attrs in self.graph.out_edges("input_data_schema", data=True):
             validator = edge_attrs["input_slot"].validator
-            slot_name = edge_attrs["output_slot"]
+            slot_name = edge_attrs["output_slot"].name
             try:
                 file = input_data[slot_name]
             except KeyError:
