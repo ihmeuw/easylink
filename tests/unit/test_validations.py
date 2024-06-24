@@ -6,7 +6,6 @@ maintain.
 
 import errno
 import re
-from pathlib import Path
 
 import pytest
 
@@ -20,7 +19,7 @@ from easylink.configuration import (
 from easylink.pipeline import Pipeline
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from tests.unit.conftest import ENV_CONFIG_DICT, PIPELINE_CONFIG_DICT
+from tests.unit.conftest import PIPELINE_CONFIG_DICT
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
@@ -97,23 +96,6 @@ def test_batch_validation():
                 },
             },
         ),
-        # steps are out of order
-        ## TODO: Replace with more sensible validation for graph order
-        # (
-        #     "out_of_order",
-        #     {
-        #         PIPELINE_ERRORS_KEY: {
-        #             "development": [
-        #                 "- Step 1: the pipeline schema expects step step_1 but "
-        #                 "the provided pipeline specifies step_2. Check step order "
-        #                 "and spelling in the pipeline configuration yaml. "
-        #                 "- Step 2: the pipeline schema expects step step_2 but "
-        #                 "the provided pipeline specifies step_1. Check step order "
-        #                 "and spelling in the pipeline configuration yaml."
-        #             ],
-        #         },
-        #     },
-        # ),
         # missing a step
         (
             "missing_step",
@@ -142,6 +124,13 @@ def test_pipeline_validation(pipeline, default_config_params, expected_msg, capl
         error_no=errno.EINVAL,
         expected_msg=expected_msg,
     )
+
+
+def test_out_of_order_steps(default_config_params):
+    # Make sure we DON'T raise an exception even if the steps are out of order
+    config_params = default_config_params
+    config_params["pipeline"] = PIPELINE_CONFIG_DICT["out_of_order"]
+    Config(config_params)
 
 
 def test_unsupported_step(default_config_params, caplog, mocker):
