@@ -40,20 +40,21 @@ class Step(ABC):
         """Validate the step against the pipeline configuration."""
         pass
 
+
 class IOStep(Step):
     """"""
-    
+
     @property
     def pipeline_graph_node_name(self):
         return "pipeline_graph_" + self.name
-    
+
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
         """Add a single node to the graph based on step name."""
         graph.add_node(self.pipeline_graph_node_name)
         self.update_edges(graph, step_config)
-    
+
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from self to replace the edges from the current step"""
         for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
@@ -74,6 +75,7 @@ class IOStep(Step):
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         return {}
+
 
 class ImplementedStep(Step):
     """Step for leaf node tied to a specific single implementation"""

@@ -6,6 +6,7 @@ from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.pipeline_schema_constants import validate_input_file_dummy
 from easylink.step import CompositeStep, ImplementedStep, IOStep
 
+
 def test_io_step(default_config: Config) -> None:
     params = {
         "input_slots": [InputSlot("result", None, validate_input_file_dummy)],
@@ -13,9 +14,11 @@ def test_io_step(default_config: Config) -> None:
     }
     step = IOStep("io", **params)
     assert step.name == "io"
-    assert step.input_slots == {"result": InputSlot("result", None, validate_input_file_dummy)}
+    assert step.input_slots == {
+        "result": InputSlot("result", None, validate_input_file_dummy)
+    }
     assert step.output_slots == {"file1": OutputSlot("file1")}
-    
+
     # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
     step.update_implementation_graph(subgraph, default_config["pipeline"])
