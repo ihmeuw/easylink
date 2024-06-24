@@ -105,10 +105,45 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_1_python_pandas",
             },
         },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
     },
     "missing_implementations": {
         "step_1": {
             "foo": "bar",  # Missing implementation key
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
         },
     },
     "missing_implementation_name": {
@@ -117,11 +152,41 @@ PIPELINE_CONFIG_DICT = {
                 "foo": "bar",  # Missing name key
             },
         },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
     },
     "bad_implementation": {
         "step_1": {
             "implementation": {
                 "name": "foo",  # Not a supported implementation
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
             },
         },
     },
@@ -176,8 +241,8 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{tmp_path}/input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "file1.csv"),
-                "bar": str(input_dir2 / "file2.csv"),
+                "file1": str(input_dir1 / "file1.csv"),
+                "file2": str(input_dir2 / "file2.csv"),
             },
             file,
             sort_keys=False,
@@ -196,8 +261,8 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{tmp_path}/missing_input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "missing_file1.csv"),
-                "bar": str(input_dir2 / "missing_file2.csv"),
+                "file1": str(input_dir1 / "missing_file1.csv"),
+                "file2": str(input_dir2 / "missing_file2.csv"),
             },
             file,
             sort_keys=False,
@@ -206,8 +271,8 @@ def test_dir(tmpdir_factory) -> str:
     with open(f"{tmp_path}/bad_columns_input_data.yaml", "w") as file:
         yaml.dump(
             {
-                "foo": str(input_dir1 / "broken_file1.csv"),
-                "bar": str(input_dir2 / "broken_file2.csv"),
+                "file1": str(input_dir1 / "broken_file1.csv"),
+                "file2": str(input_dir2 / "broken_file2.csv"),
             },
             file,
             sort_keys=False,

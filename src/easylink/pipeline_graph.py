@@ -1,6 +1,6 @@
 import itertools
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Dict, List, Tuple
 
 import networkx as nx
 from networkx import MultiDiGraph
@@ -10,72 +10,91 @@ from easylink.implementation import Implementation
 
 
 class PipelineGraph(MultiDiGraph):
-    def __init__(self, config):
-        super().__init__()
-        self._create_graph(config)
+    """
+    The Pipeline Graph is the structure of the pipeline. It is a DAG composed of
+    Implementations and their file dependencies. The Pipeline Graph is created by
+    "flattening" the Pipeline Schema (a nested Step Graph) with parameters set in
+    the configuration.
 
-    def _create_graph(self, config: Config) -> None:
-        """Create a graph from the pipeline configuration."""
-        self.config = config
-        self.add_node("input_data")
-        prev_nodes = None
+    """
 
-        for step in config.schema.steps:
-            step_graph = step.get_subgraph(config)
-            # Source nodes are nodes with no incoming edges ('in_degree' = 0)
-            step_source_nodes = [node for node, deg in step_graph.in_degree() if deg == 0]
-            # Add step graph to current graph without connections
-            self.update(step_graph)
-            for source_node in step_source_nodes:
-                # Connect new source nodes to old sink nodes
-                if step.prev_input:
-                    for prev_node in prev_nodes:
-                        self.add_edge(
-                            prev_node,
-                            source_node,
-                            files=[str(Path("intermediate") / prev_node / "result.parquet")],
-                        )
-                # Add input data to the first step
-                # This will probably need to be a node attribute in #TODO: [MIC-4774]
-                if step.input_files:
-                    self.add_edge(
-                        "input_data",
-                        source_node,
-                        files=[str(file) for file in config.input_data],
-                    )
-
-            # Set prev_nodes to the sink nodes of the current step
-            prev_nodes = [node for node, deg in self.out_degree() if deg == 0]
-        # Add results node and connect to final sink nodes
-        self.add_node("results")
-        for node in prev_nodes:
-            self.add_edge(node, "results", files=["result.parquet"])
+    def __init__(self, config: Config) -> None:
+        super().__init__(
+            incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
+        )
+        self.update_slot_filepaths(config)
 
     @property
     def implementation_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""
         ordered_nodes = list(nx.topological_sort(self))
-        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
+        return [
+            node
+            for node in ordered_nodes
+            if node != "pipeline_graph_input_data" and node != "pipeline_graph_results"
+        ]
 
     @property
     def implementations(self) -> List[Implementation]:
         """Convenience property to get all implementations in the graph."""
-        return [self.get_attr(node, "implementation") for node in self.implementation_nodes]
+        return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
 
-    def get_attr(self, node: str, attr: str) -> Any:
-        """Convenience method to get a particular attribute from a node"""
-        return self.nodes[node][attr]
+    def update_slot_filepaths(self, config: Config) -> None:
+        """Fill graph edges with appropriate filepath information."""
+        # Update input data edges to direct to correct filenames from config
+        for source, sink, edge_attrs in self.out_edges(
+            "pipeline_graph_input_data", data=True
+        ):
+            for edge_idx in self[source][sink]:
+                self[source][sink][edge_idx]["filepaths"] = [
+                    str(config.input_data[edge_attrs["output_slot"].name])
+                ]
+
+        # Update implementation nodes with yaml metadata
+        for node in self.implementation_nodes:
+            imp_outputs = self.nodes[node]["implementation"].outputs
+            for source, sink, edge_attrs in self.out_edges(node, data=True):
+                for edge_idx in self[node][sink]:
+                    self[source][sink][edge_idx]["filepaths"] = [
+                        str(
+                            Path("intermediate")
+                            / node
+                            / imp_outputs[edge_attrs["output_slot"].name]
+                        )
+                    ]
+
+    def get_input_slots(self, node: str) -> Dict[str, List[str]]:
+        """Get all of a node's input slots from edges."""
+        input_slots = {}
+        for _, _, edge_attrs in self.in_edges(node, data=True):
+            # Consider whether we need duplicate variables to merge
+            env_var, files = edge_attrs["input_slot"].env_var, edge_attrs["filepaths"]
+            if env_var in input_slots:
+                input_slots[env_var].extend(files)
+            else:
+                input_slots[env_var] = files
+        return input_slots
 
     def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
         """Get all of a node's input and output files from edges."""
         input_files = list(
             itertools.chain.from_iterable(
-                [data["files"] for _, _, data in self.in_edges(node, data=True)]
+                [
+                    edge_attrs["filepaths"]
+                    for _, _, edge_attrs in self.in_edges(node, data=True)
+                ]
             )
         )
         output_files = list(
             itertools.chain.from_iterable(
-                [data["files"] for _, _, data in self.out_edges(node, data=True)]
+                [
+                    edge_attrs["filepaths"]
+                    for _, _, edge_attrs in self.out_edges(node, data=True)
+                ]
             )
         )
         return input_files, output_files
+
+    def spark_is_required(self) -> bool:
+        """Check if the pipeline requires spark resources."""
+        return any([implementation.requires_spark for implementation in self.implementations])

@@ -1,32 +1,33 @@
-from typing import Callable
+from pathlib import Path
+from re import match
+
+import networkx as nx
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import Step
 
 
-def test__add_step():
-    schema = PipelineSchema("test_schema", lambda *_: None)
-    assert schema.steps == []
-    schema._add_step("foo")._add_step("bar")
-    assert schema.steps == ["foo", "bar"]
-
-
-def test__generate_schema():
-    schema = PipelineSchema._generate_schema(
-        "test_schema",
-        lambda *_: None,
-        Step("step_1", prev_input=True, input_files=False),
-        Step("step_2", prev_input=True, input_files=False),
-    )
-    assert schema.name == "test_schema"
-    assert isinstance(schema.validate_input, Callable)
-    assert schema.steps == [
-        Step("step_1", prev_input=True, input_files=False),
-        Step("step_2", prev_input=True, input_files=False),
+def test_schema_instantiation() -> None:
+    nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
+    schema = PipelineSchema("development", nodes=nodes, edges=edges)
+    sorted_graph = nx.topological_sort(schema.graph)
+    """Test that the schema is correctly loaded from the pipeline.yaml"""
+    assert list(sorted_graph) == [
+        "input_data",
+        "step_1",
+        "step_2",
+        "step_3",
+        "step_4",
+        "results",
     ]
+    step_types = [node["step"] for node in sorted_graph]
+    expected_step_types = [type(step) for step in ALLOWED_SCHEMA_PARAMS["development"]]
+    for step_type, expected_step_types in zip(step_types, expected_step_types):
+        assert isinstance(step_type, expected_step_types)
 
 
-def test_get_schemas():
+def test_get_schemas() -> None:
     supported_schemas = PIPELINE_SCHEMAS
     assert isinstance(supported_schemas, list)
     # Ensure list is populated
@@ -35,24 +36,23 @@ def test_get_schemas():
     for schema in supported_schemas:
         assert schema.name
         assert schema.steps
-        assert isinstance(schema.validate_input, Callable)
         assert isinstance(schema.steps, list)
         for step in schema.steps:
             assert isinstance(step, Step)
             assert step.name
-            assert isinstance(step.input_validator, Callable)
 
 
-def test_get_step_id():
-    schema = PipelineSchema._get_schemas()[1]
-    assert schema.get_step_id(schema.steps[0]) == "1_step_1"
-    assert schema.get_step_id(schema.steps[1]) == "2_step_2"
-
-
-def test__add_step():
-    schema = PipelineSchema("bad-schema", lambda *_: None)
-    assert schema.steps == []
-    schema._add_step("foo")
-    assert schema.steps == ["foo"]
-    schema._add_step("bar")
-    assert schema.steps == ["foo", "bar"]
+def test_validate_input(test_dir: str) -> None:
+    nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
+    schema = PipelineSchema("development", nodes=nodes, edges=edges)
+    input_data = {"file1": Path(test_dir) / "input_data1/file1.csv"}
+    errors = schema.validate_inputs(input_data)
+    assert not errors
+    # Test with a bad file
+    file_name = Path(test_dir) / "input_data1/broken_file1.csv"
+    input_data = {"file1": file_name}
+    errors = schema.validate_inputs(input_data)
+    assert errors
+    assert match(
+        "Data file .* is missing required column\\(s\\) .*", errors[str(file_name)][0]
+    )

@@ -3,16 +3,18 @@ rule:
     name: "foo"
     message: "Running foo_step implementation: foo"
     input:
-        implementation_inputs=['foo', 'bar'],
-        validation="bar",
+        dummy_container_main_input_file_paths=['foo'],
+        dummy_container_secondary_input_file_paths=['bar'],
+        validations=['bar'],
     output: ['baz']
     log: "spam/foo-output.log"
     container: "Multipolarity.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=foo,bar
         export DUMMY_CONTAINER_OUTPUT_PATHS=baz
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=foo
+        export DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS=bar
         export eggs=coconut
         echo hello world > {log} 2>&1
         '''

@@ -12,7 +12,7 @@ from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
-RESULT_CHECKSUM = "9f9cc43beef9e688d809ff4f1cc9d569c51a276fb6dd277fa7d6ca5d57f81eb0"
+RESULT_CHECKSUM = "9cf076f863b2ee73a11da982240f977a708d5ea87dd28e435afaa92790824e52"
 
 
 @pytest.mark.slow
@@ -73,10 +73,10 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
             stderr=sys.stderr,
             check=True,
         )
-
-        assert (results_dir / "result.parquet").exists()
+        final_output = results_dir / "result.parquet"
+        assert final_output.exists()
         # Check that the results file checksum matches the expected value
-        with open(results_dir / "result.parquet", "rb") as f:
+        with open(final_output, "rb") as f:
             actual_checksum = hashlib.sha256(f.read()).hexdigest()
         assert actual_checksum == RESULT_CHECKSUM
 
@@ -86,15 +86,26 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
 
         # Check that implementation configuration worked
         diagnostics_dir = results_dir / "diagnostics"
-        assert load_yaml(diagnostics_dir / "1_step_1" / "diagnostics.yaml")["increment"] == 1
         assert (
-            load_yaml(diagnostics_dir / "2_step_2" / "diagnostics.yaml")["increment"] == 100
+            load_yaml(diagnostics_dir / "step_1_python_pandas" / "diagnostics.yaml")[
+                "increment"
+            ]
+            == 1
         )
         assert (
-            load_yaml(diagnostics_dir / "3_step_3" / "diagnostics.yaml")["increment"] == 702
+            load_yaml(
+                diagnostics_dir / "step_2_python_pyspark_distributed" / "diagnostics.yaml"
+            )["increment"]
+            == 100
         )
         assert (
-            load_yaml(diagnostics_dir / "4_step_4" / "diagnostics.yaml")["increment"] == 912
+            load_yaml(diagnostics_dir / "step_3_python_pandas" / "diagnostics.yaml")[
+                "increment"
+            ]
+            == 702
+        )
+        assert (
+            load_yaml(diagnostics_dir / "step_4_r" / "diagnostics.yaml")["increment"] == 912
         )
         # If it made it through all this, print some diagnostics and delete the results_dir
         final_diagnostics = load_yaml(

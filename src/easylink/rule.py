@@ -1,6 +1,7 @@
+import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class Rule(ABC):
@@ -35,9 +36,11 @@ class TargetRule(Rule):
     requires_spark: bool
 
     def _build_rule(self) -> str:
+        outputs = [os.path.basename(file_path) for file_path in self.target_files]
         rulestring = f"""
 rule all:
     message: 'Grabbing final output'
+    localrule: True   
     input:
         final_output={self.target_files},
         validation='{self.validation}',"""
@@ -46,8 +49,13 @@ rule all:
         term="spark_logs/spark_master_terminated.txt",
         master_log="spark_logs/spark_master_log.txt",
         worker_logs=gather.num_workers("spark_logs/spark_worker_log_{{scatteritem}}.txt",
-        ),
-            """
+        ),"""
+        rulestring += f"""
+    output: {outputs}
+    run:
+        import os
+        for input_path, output_path in zip(input.final_output, output):
+            os.symlink(input_path, output_path)"""
         return rulestring
 
 
@@ -71,8 +79,8 @@ class ImplementedRule(Rule):
 
     step_name: str
     implementation_name: str
-    execution_input: List[str]
-    validation: str
+    input_slots: Dict[str, List[str]]
+    validations: List[str]
     output: List[str]
     resources: Optional[dict]
     envvars: dict
@@ -99,9 +107,12 @@ rule:
 
     def _build_input(self) -> str:
         input_str = f"""
-    input:
-        implementation_inputs={self.execution_input},
-        validation="{self.validation}", """
+    input:"""
+        for slot_name, slot_files in self.input_slots.items():
+            input_str += f"""
+        {slot_name.lower()}={slot_files},"""
+        input_str += f"""
+        validations={self.validations}, """
         if self.requires_spark:
             input_str += f"""
         master_trigger=gather.num_workers(rules.wait_for_spark_worker.output),
@@ -118,16 +129,17 @@ rule:
         mem_mb={self.resources['mem_mb']},
         runtime={self.resources['runtime']},
         cpus_per_task={self.resources['cpus_per_task']},
-        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'"
-        """
+        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'" """
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
     shell:
         '''
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS={",".join(self.execution_input)}
         export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
+        for slot_name, slot_files in self.input_slots.items():
+            shell_cmd += f"""
+        export {slot_name}={",".join(slot_files)}"""
         if self.requires_spark:
             shell_cmd += f"""
         read -r DUMMY_CONTAINER_SPARK_MASTER_URL < {{input.master_url}}
@@ -168,7 +180,7 @@ rule:
     input: {self.input}
     output: touch("{self.output}")
     localrule: True         
-    message: "Validating {self.name} input"
+    message: "Validating {self.name}"
     run:
         for f in input:
             validation_utils.{self.validator.__name__}(f)"""

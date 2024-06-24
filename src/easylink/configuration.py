@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Optional, Union
 from layered_config_tree import LayeredConfigTree
 
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import exit_with_validation_error
 
@@ -41,6 +40,8 @@ SLURM_SPARK_MEM_BUFFER = 500
 def load_params_from_specification(
     pipeline_specification: str, input_data: str, computing_environment: str, results_dir: str
 ) -> Dict[str, Any]:
+    """Gather together the pipeline, input data, and computing environment specifications
+    into a single dictionary for insertion into the Config object."""
     return {
         "pipeline": load_yaml(pipeline_specification),
         "input_data": _load_input_data_paths(input_data),
@@ -49,15 +50,20 @@ def load_params_from_specification(
     }
 
 
-def _load_input_data_paths(input_data_specification_path: Union[str, Path]) -> List[Path]:
+def _load_input_data_paths(
+    input_data_specification_path: Union[str, Path]
+) -> Dict[str, List[Path]]:
+    """Create dictionary of input data paths from the input data yaml file."""
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(
             "Input data should be submitted like 'key': path/to/file. "
             f"Input was: '{input_data_paths}'"
         )
-    file_list = [Path(filepath).resolve() for filepath in input_data_paths.values()]
-    return file_list
+    filepath_dict = {
+        filename: Path(filepath).resolve() for filename, filepath in input_data_paths.items()
+    }
+    return filepath_dict
 
 
 def _load_computing_environment(
@@ -89,17 +95,7 @@ class Config(LayeredConfigTree):
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
-        for step in self.pipeline:
-            self.update(
-                {"pipeline": {step: {"implementation": {"configuration": {}}}}},
-                layer="default",
-            )
-        if self._spark_is_required(self.pipeline):
-            self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
-        else:
-            # Remove spark params if not needed but set by user
-            del self.environment.spark
-            self.update({"environment": {"spark": {}}}, layer="default")
+        self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
         if self.environment.computing_environment == "slurm":
             # Set slurm defaults to empty dict instead of None so that we don't get errors
             # In slurm resources property
@@ -107,14 +103,17 @@ class Config(LayeredConfigTree):
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
         self._validate()
+        self.update_implementation_configs(self.pipeline)
         self.freeze()
 
     @property
     def computing_environment(self) -> Dict[str, Any]:
+        """Generally either 'local' or 'slurm'."""
         return self.environment.computing_environment
 
     @property
     def slurm(self) -> Dict[str, Any]:
+        """A dictionary of Slurm configuration settings."""
         if not self.environment.computing_environment == "slurm":
             return {}
         else:
@@ -122,13 +121,12 @@ class Config(LayeredConfigTree):
 
     @property
     def spark(self) -> Dict[str, Any]:
-        if not self._spark_is_required(self.pipeline):
-            return {}
-        else:
-            return self.environment.spark.to_dict()
+        """A dictionary of spark configuration settings."""
+        return self.environment.spark.to_dict()
 
     @property
     def slurm_resources(self) -> Dict[str, str]:
+        """Return the slurm resources as a flat dictionary in format required by snakemake."""
         if not self.computing_environment == "slurm":
             return {}
         raw_slurm_resources = {
@@ -145,7 +143,7 @@ class Config(LayeredConfigTree):
 
     @property
     def spark_resources(self) -> Dict[str, Any]:
-        """Return the spark resources as a flat dictionary"""
+        """Return the spark resources as a flat dictionary in format rquired by snakemake."""
         spark_workers_raw = self.spark["workers"]
         spark_workers = {
             "num_workers": spark_workers_raw.get("num_workers"),
@@ -162,72 +160,30 @@ class Config(LayeredConfigTree):
             **{k: v for k, v in self.spark.items() if k != "workers"},
         }
 
-    def get_implementation_name(self, step_name: str) -> str:
-        return self.pipeline[step_name].implementation.name
-
     #################
     # Setup Methods #
     #################
-    @staticmethod
-    def _spark_is_required(pipeline: Dict[str, Any]) -> bool:
-        """Check if the pipeline requires spark resources."""
-        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        try:
-            implementations = [step["implementation"]["name"] for step in pipeline.values()]
-        except Exception as e:
-            raise KeyError(
-                "The pipeline specification should contain keys for each step "
-                "and each step should contain an 'implementation' key with a 'name' key."
-            ) from e
-        for implementation in implementations:
-            if implementation_metadata[implementation].get("requires_spark", False):
-                return True
-        return False
+    def update_implementation_configs(self, level: LayeredConfigTree):
+        """Recursively add empty configuration dictionaries to each implementation configuration.
+        'Level' should be set such that its keys are steps (which may have implementations).
+        """
+        for step in level.values():
+            if "implementation" in step:
+                step.implementation.update({"configuration": {}}, layer="default")
+
+            elif "substeps" in step:
+                self.update_implementation_configs(step.substeps)
 
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.
 
-        NOTE: this acts as the pipeline configurat file's validation method since
+        NOTE: this acts as the pipeline configuration file's validation method since
         we can only find a matching schema if the file is valid.
         """
         errors = defaultdict(dict)
-
-        # Check that each of the pipeline steps also contains an implementation
-        metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        for step, step_config in self.pipeline.items():
-            if not "name" in step_config["implementation"]:
-                errors[PIPELINE_ERRORS_KEY][
-                    f"step {step}"
-                ] = "The implementation does not contain a 'name'."
-            elif not step_config["implementation"]["name"] in metadata:
-                errors[PIPELINE_ERRORS_KEY][f"step {step}"] = (
-                    f"Implementation '{step_config['implementation']['name']}' is not supported. "
-                    f"Supported implementations are: {list(metadata.keys())}."
-                )
-        if errors:
-            exit_with_validation_error(dict(errors))
-
         # Try each schema until one is validated
         for schema in PIPELINE_SCHEMAS:
-            logs = []
-            config_steps = self.pipeline.keys()
-            # Check that number of schema steps matches number of implementations
-            if len(schema.steps) != len(config_steps):
-                logs.append(
-                    f"Expected {len(schema.steps)} steps but found {len(config_steps)} implementations. "
-                    "Check that all steps are accounted for (and there are no "
-                    "extraneous ones) in the pipeline configuration yaml."
-                )
-            else:
-                for idx, config_step in enumerate(config_steps):
-                    # Check that all steps are accounted for and in the correct order
-                    schema_step = schema.steps[idx].name
-                    if config_step != schema_step:
-                        logs.append(
-                            f"Step {idx + 1}: the pipeline schema expects step '{schema_step}' "
-                            f"but the provided pipeline specifies '{config_step}'. "
-                            "Check step order and spelling in the pipeline configuration yaml."
-                        )
+            logs = schema.validate_step(self.pipeline)
             if logs:
                 errors[PIPELINE_ERRORS_KEY][schema.name] = logs
                 pass  # try the next schema
@@ -248,28 +204,22 @@ class Config(LayeredConfigTree):
 
     def _validate_input_data(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
-        # Check that input data files exist
-        missing = [str(file) for file in self.input_data if not file.exists()]
-        for file in missing:
-            errors[INPUT_DATA_ERRORS_KEY][str(file)] = "File not found."
-        # Check that input data files are valid
-        for file in [file for file in self.input_data if file.exists()]:
-            input_data_errors = self.schema.validate_input(file)
-            if input_data_errors:
-                errors[INPUT_DATA_ERRORS_KEY][str(file)] = input_data_errors
+        input_data_errors = self.schema.validate_inputs(self.input_data.to_dict())
+        if input_data_errors:
+            errors[INPUT_DATA_ERRORS_KEY] = input_data_errors
         return errors
 
     def _validate_environment(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
         if not self.environment.container_engine in ["docker", "singularity", "undefined"]:
-            errors[ENVIRONMENT_ERRORS_KEY][
-                "container_engine"
-            ] = f"The value '{self.environment.container_engine}' is not supported."
+            errors[ENVIRONMENT_ERRORS_KEY]["container_engine"] = [
+                f"The value '{self.environment.container_engine}' is not supported."
+            ]
 
         if self.environment.computing_environment == "slurm" and not self.environment.slurm:
-            errors[ENVIRONMENT_ERRORS_KEY]["slurm"] = (
+            errors[ENVIRONMENT_ERRORS_KEY]["slurm"] = [
                 "The environment configuration file must include a 'slurm' key "
                 "defining slurm resources if the computing_environment is 'slurm'."
-            )
+            ]
 
         return errors

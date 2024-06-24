@@ -1,77 +1,67 @@
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Dict, List, Optional
 
-from easylink.step import Step
-from easylink.utilities.validation_utils import validate_input_file_dummy
+import networkx as nx
+from layered_config_tree import LayeredConfigTree
+
+from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
+from easylink.step import CompositeStep, Step
 
 
-class PipelineSchema:
-    """Defines the allowable schema(s) for the pipeline."""
-
-    def __init__(self, name: str, validate_input: Callable) -> None:
-        self.name = name
-        self.validate_input = validate_input
-        self.steps = []
+class PipelineSchema(CompositeStep):
+    """
+    A schema is a nested graph that determines all possible
+    allowable pipelines. The nodes of the graph are Steps, with
+    edges representing file dependencies between then.
+    """
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
 
+    def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> nx.MultiDiGraph:
+        """Resolve the PipelineSchema into a PipelineGraph."""
+        graph = nx.MultiDiGraph()
+        self.update_implementation_graph(graph, pipeline_config)
+        return graph
+
+    @property
+    def step_nodes(self) -> List[str]:
+        """Return list of nodes tied to specific implementations."""
+        ordered_nodes = list(nx.topological_sort(self.graph))
+        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
+
+    @property
+    def steps(self) -> List[Step]:
+        """Convenience property to get all steps in the graph."""
+        return [self.graph.nodes[node]["step"] for node in self.step_nodes]
+
     @classmethod
     def _get_schemas(cls) -> List["PipelineSchema"]:
-        """Creates the allowable schema for the pipeline."""
-        schemas = []
+        """Creates the allowable schemas for the pipeline."""
+        return [
+            cls(name, nodes=nodes, edges=edges)
+            for name, (nodes, edges) in ALLOWED_SCHEMA_PARAMS.items()
+        ]
 
-        # pvs-like case study
-        schemas.append(
-            PipelineSchema._generate_schema(
-                "pvs_like_case_study",
-                # TODO: Make a real validator for
-                # pvs_like_case_study and/or remove this hack
-                lambda x: None,
-                Step("pvs_like_case_study", prev_input=False, input_files=[]),
-            )
-        )
-
-        # development dummy
-        schemas.append(
-            PipelineSchema._generate_schema(
-                "development",
-                validate_dummy_input,
-                Step("step_1", prev_input=False, input_files=True),
-                Step("step_2", prev_input=True, input_files=False),
-                Step("step_3", prev_input=True, input_files=False),
-                Step("step_4", prev_input=True, input_files=False),
-            )
-        )
-
-        return schemas
-
-    def _add_step(self, step: Step) -> None:
-        self.steps.append(step)
-
-    @classmethod
-    def _generate_schema(cls, name: str, validate_input: Callable, *steps: Step) -> None:
-        schema = cls(name, validate_input)
-        for step in steps:
-            schema._add_step(step)
-        return schema
-
-    def __len__(self) -> int:
-        # Later this might be the number of leaf nodes
-        return len(self.steps)
-
-    def get_step_id(self, step: Step) -> str:
-        idx = self.steps.index(step)
-        step_number = str(idx + 1).zfill(len(str(len(self))))
-        return f"{step_number}_{step.name}"
-
-
-def validate_dummy_input(filepath: Path) -> Optional[List[str]]:
-    "Wrap the output file validator for now, since it is the same"
-    try:
-        validate_input_file_dummy(filepath)
-    except Exception as e:
-        return [e.args[0]]
+    def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
+        "For each file slot used from the input data, validate that the file's existence and properties."
+        errors = {}
+        for _, _, edge_attrs in self.graph.out_edges("input_data", data=True):
+            validator = edge_attrs["input_slot"].validator
+            slot_name = edge_attrs["output_slot"].name
+            try:
+                file = input_data[slot_name]
+            except KeyError:
+                errors[str(slot_name)] = ["Missing required input data"]
+                continue
+            if not file.exists():
+                errors[str(file)] = ["File not found."]
+                continue
+            try:
+                validator(file)
+            except Exception as e:
+                errors[str(file)] = [e.args[0]]
+        return errors
 
 
 PIPELINE_SCHEMAS = PipelineSchema._get_schemas()

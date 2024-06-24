@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 from layered_config_tree import LayeredConfigTree
@@ -10,31 +11,17 @@ from easylink.configuration import (
     _load_computing_environment,
     _load_input_data_paths,
 )
-from easylink.step import Step
-from easylink.utilities.data_utils import load_yaml
+from easylink.pipeline_schema import PIPELINE_SCHEMAS
 
 
-@pytest.mark.parametrize("requires_spark", [True, False])
-def test__spark_is_required(test_dir, requires_spark):
-    pipeline = load_yaml(f"{test_dir}/pipeline.yaml")
-    if requires_spark:
-        # Change step 1's implementation to python_pyspark
-        pipeline["step_1"]["implementation"]["name"] = "step_1_python_pyspark_distributed"
-    is_required = Config._spark_is_required(pipeline)
-    assert is_required == requires_spark
+def test__get_schema(default_config: Config) -> None:
+    """Test default config gets "development schema", without errors"""
+    assert default_config.schema == PIPELINE_SCHEMAS[0]
 
 
-def test__get_schema(default_config):
-    """Test that the schema is correctly loaded from the pipeline.yaml"""
-    assert default_config.schema.steps == [
-        Step("step_1", prev_input=False, input_files=True),
-        Step("step_2", prev_input=True, input_files=False),
-        Step("step_3", prev_input=True, input_files=False),
-        Step("step_4", prev_input=True, input_files=False),
-    ]
-
-
-def test_load_params_from_specification(test_dir, default_config_params):
+def test_load_params_from_specification(
+    test_dir: str, default_config_params: Dict[str, Dict[str, Any]]
+) -> None:
     assert default_config_params == {
         "pipeline": {
             "step_1": {"implementation": {"name": "step_1_python_pandas"}},
@@ -42,7 +29,10 @@ def test_load_params_from_specification(test_dir, default_config_params):
             "step_3": {"implementation": {"name": "step_3_python_pandas"}},
             "step_4": {"implementation": {"name": "step_4_python_pandas"}},
         },
-        "input_data": [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]],
+        "input_data": {
+            "file1": Path(f"{test_dir}/input_data1/file1.csv"),
+            "file2": Path(f"{test_dir}/input_data2/file2.csv"),
+        },
         "environment": {
             "computing_environment": "local",
             "container_engine": "undefined",
@@ -51,9 +41,12 @@ def test_load_params_from_specification(test_dir, default_config_params):
     }
 
 
-def test__load_input_data_paths(test_dir):
+def test__load_input_data_paths(test_dir: str) -> None:
     paths = _load_input_data_paths(f"{test_dir}/input_data.yaml")
-    assert paths == [Path(f"{test_dir}/input_data{n}/file{n}.csv") for n in [1, 2]]
+    assert paths == {
+        "file1": Path(f"{test_dir}/input_data1/file1.csv"),
+        "file2": Path(f"{test_dir}/input_data2/file2.csv"),
+    }
 
 
 @pytest.mark.parametrize(
@@ -194,16 +187,10 @@ def test_spark_requests(default_config_params, input, requires_spark):
         config_params["environment"][key] = input
     retrieved = Config(config_params).environment[key].to_dict()
     expected_env_dict = {key: input.copy()} if input else {}
-    if requires_spark:
-        # It's tricky to get the exact right behavior here without appealing to configtree
-        # "workers" is a nested dictionary, so the normal dict update method doesn't work
-        # for a partially specified environment here
-        expected = LayeredConfigTree(SPARK_DEFAULTS, layers=["initial_data", "user"])
-        if input:
-            expected.update(expected_env_dict[key], layer="user")
-        expected = expected.to_dict()
-    else:
-        expected = {}
+    expected = LayeredConfigTree(SPARK_DEFAULTS, layers=["initial_data", "user"])
+    if input:
+        expected.update(expected_env_dict[key], layer="user")
+    expected = expected.to_dict()
     assert retrieved == expected
 
 
