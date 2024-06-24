@@ -95,7 +95,6 @@ class Config(LayeredConfigTree):
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
-        self.update_implementation_configs(self.pipeline)
         self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
         if self.environment.computing_environment == "slurm":
             # Set slurm defaults to empty dict instead of None so that we don't get errors
@@ -104,6 +103,7 @@ class Config(LayeredConfigTree):
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
         self._validate()
+        self.update_implementation_configs(self.pipeline)
         self.freeze()
 
     @property
@@ -164,13 +164,15 @@ class Config(LayeredConfigTree):
     # Setup Methods #
     #################
     def update_implementation_configs(self, level: LayeredConfigTree):
-        """Recursively add empty configuration dictionaries to each implementation configuration"""
-        if "implementation" in level:
-            level.implementation.update({"configuration": {}}, layer="default")
-        else:
-            for sub_level in level.values():
-                if isinstance(sub_level, LayeredConfigTree):
-                    self.update_implementation_configs(sub_level)
+        """Recursively add empty configuration dictionaries to each implementation configuration.
+        'Level' should be set such that its keys are steps (which may have implementations).
+        """
+        for step in level.values():
+            if "implementation" in step:
+                step.implementation.update({"configuration": {}}, layer="default")
+
+            elif "substeps" in step:
+                self.update_implementation_configs(step.substeps)
 
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.
