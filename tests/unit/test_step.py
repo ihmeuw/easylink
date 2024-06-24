@@ -3,8 +3,8 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.pipeline_schema_constants import validate_input_file_dummy
 from easylink.step import CompositeStep, ImplementedStep, IOStep
+from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 def test_io_step(default_config: Config) -> None:

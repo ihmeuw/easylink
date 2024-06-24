@@ -2,7 +2,7 @@ from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.step import HierarchicalStep, ImplementedStep, InputSlot, IOStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
-SCHEMA_NODES = [
+NODES = [
     IOStep("input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
     HierarchicalStep(
         "step_1",
@@ -113,7 +113,7 @@ SCHEMA_NODES = [
         output_slots=[],
     ),
 ]
-SCHEMA_EDGES = [
+EDGES = [
     Edge(
         in_node="input_data",
         out_node="step_1",
@@ -151,41 +151,4 @@ SCHEMA_EDGES = [
         input_slot="result",
     ),
 ]
-ALLOWED_SCHEMA_PARAMS = {"development": (SCHEMA_NODES, SCHEMA_EDGES)}
-
-TESTING_NODES = [
-    IOStep("input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
-    ImplementedStep(
-        "step_1",
-        input_slots=[
-            InputSlot(
-                name="step_1_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            )
-        ],
-        output_slots=[OutputSlot("step_1_main_output")],
-    ),
-    IOStep(
-        "results",
-        input_slots=[
-            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
-        ],
-        output_slots=[],
-    ),
-]
-TESTING_EDGES = [
-    Edge(
-        in_node="input_data",
-        out_node="step_1",
-        output_slot="file1",
-        input_slot="step_1_main_input",
-    ),
-    Edge(
-        in_node="step_1",
-        out_node="results",
-        output_slot="step_1_main_output",
-        input_slot="result",
-    ),
-]
-TESTING_SCHEMA_PARAMS = {"integration": (TESTING_NODES, TESTING_EDGES)}
+SCHEMA_PARAMS = (NODES, EDGES)

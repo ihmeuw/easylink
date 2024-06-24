@@ -1,5 +1,5 @@
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.pipeline_schema_constants import validate_input_file_dummy
+from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 def test_input_slot() -> None:

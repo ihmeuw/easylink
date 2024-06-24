@@ -204,8 +204,8 @@ class CompositeStep(Step):
             child_node = input_mapping.child_node
             child_slot = input_mapping.child_slot
             parent_edge = [
-                (u, v, edge_attrs)
-                for (u, v, edge_attrs) in graph.in_edges(self.name, data=True)
+                (_source, _sink, edge_attrs)
+                for (_source, _sink, edge_attrs) in graph.in_edges(self.name, data=True)
                 if edge_attrs.get("input_slot").name == parent_slot
             ]
             if not parent_edge:
@@ -214,7 +214,7 @@ class CompositeStep(Step):
                 raise ValueError(
                     f"Multiple edges found for {self.name} input slot {parent_slot}"
                 )
-            source, _, edge_attrs = parent_edge[0]
+            source, _sink, edge_attrs = parent_edge[0]
             graph.add_edge(
                 source,
                 child_node,
@@ -227,11 +227,11 @@ class CompositeStep(Step):
             child_node = output_mapping.child_node
             child_slot = output_mapping.child_slot
             parent_edges = [
-                (u, v, edge_attrs)
-                for (u, v, edge_attrs) in graph.out_edges(self.name, data=True)
+                (_source, _sink, edge_attrs)
+                for (_source, _sink, edge_attrs) in graph.out_edges(self.name, data=True)
                 if edge_attrs.get("output_slot") == parent_slot
             ]
-            for _, sink, edge_attrs in parent_edges:
+            for _source, sink, edge_attrs in parent_edges:
                 graph.add_edge(
                     child_node,
                     sink,
