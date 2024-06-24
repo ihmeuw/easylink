@@ -100,7 +100,7 @@ class BasicStep(Step):
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from the implementation node to replace the edges from the current step"""
         implementation_name = step_config[self.name]["implementation"]["name"]
-        for _, sink, edge_attrs in graph.out_edges(self.name, data=True):
+        for _source, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 implementation_name,
                 sink,
@@ -108,7 +108,7 @@ class BasicStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
-        for source, _, edge_attrs in graph.in_edges(self.name, data=True):
+        for source, _sink, edge_attrs in graph.in_edges(self.name, data=True):
             graph.add_edge(
                 source,
                 implementation_name,
@@ -229,7 +229,7 @@ class CompositeStep(Step):
             parent_edges = [
                 (_source, _sink, edge_attrs)
                 for (_source, _sink, edge_attrs) in graph.out_edges(self.name, data=True)
-                if edge_attrs.get("output_slot") == parent_slot
+                if edge_attrs.get("output_slot").name == parent_slot
             ]
             for _source, sink, edge_attrs in parent_edges:
                 graph.add_edge(
@@ -252,16 +252,15 @@ class HierarchicalStep(CompositeStep, BasicStep):
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
-        sub_config = step_config[self.name]
-        if not self.config_key in sub_config:
+        if not self.name in step_config or not self.config_key in step_config[self.name]:
             BasicStep.update_implementation_graph(self, graph, step_config)
         else:
-            sub_config = sub_config[self.config_key]
+            sub_config = step_config[self.name][self.config_key]
             CompositeStep.update_implementation_graph(self, graph, sub_config)
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
-        if not self.name in step_config or not self.config_key in step_config:
+        if not self.name in step_config or not self.config_key in step_config[self.name]:
             return BasicStep.validate_step(self, step_config)
         else:
-            sub_config = sub_config[self.name][self.config_key]
+            sub_config = step_config[self.name][self.config_key]
             return CompositeStep.validate_step(self, sub_config)
