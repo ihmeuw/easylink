@@ -1,5 +1,5 @@
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import BasicStep, HierarchicalStep, InputSlot, IOStep
+from easylink.step import BasicStep, HierarchicalStep, InputSlot, IOStep, LoopStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
@@ -78,7 +78,7 @@ NODES = [
         ],
         output_slots=[OutputSlot("step_2_main_output")],
     ),
-    BasicStep(
+    LoopStep(
         "step_3",
         input_slots=[
             InputSlot(
@@ -88,6 +88,10 @@ NODES = [
             )
         ],
         output_slots=[OutputSlot("step_3_main_output")],
+        slot_mappings={
+            "input": [SlotMapping("input", "step_3", "step_3_main_output", "step_3", "step_3_main_input")],
+            "output": [SlotMapping("output", "step_3", "step_3_main_output", "step_3", "step_3_main_input")],
+        }
     ),
     BasicStep(
         "step_4",

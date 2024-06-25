@@ -85,6 +85,7 @@ class BasicStep(Step):
     ) -> None:
         """Return a single node with an implementation attribute."""
         implementation_name = step_config[self.name]["implementation"]["name"]
+        node_name = f"{self.name}_{implementation_name}"
         implementation_config = step_config[self.name]["implementation"]["configuration"]
         implementation = Implementation(
             name=implementation_name,
@@ -92,7 +93,7 @@ class BasicStep(Step):
             environment_variables=implementation_config.to_dict(),
         )
         graph.add_node(
-            implementation_name,
+            node_name,
             implementation=implementation,
         )
         self.update_edges(graph, step_config)
@@ -100,9 +101,10 @@ class BasicStep(Step):
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from the implementation node to replace the edges from the current step"""
         implementation_name = step_config[self.name]["implementation"]["name"]
+        node_name = f"{self.name}_{implementation_name}"
         for _source, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
-                implementation_name,
+                node_name,
                 sink,
                 input_slot=edge_attrs["input_slot"],
                 output_slot=edge_attrs["output_slot"],
@@ -111,7 +113,7 @@ class BasicStep(Step):
         for source, _sink, edge_attrs in graph.in_edges(self.name, data=True):
             graph.add_edge(
                 source,
-                implementation_name,
+                node_name,
                 input_slot=edge_attrs["input_slot"],
                 output_slot=edge_attrs["output_slot"],
             )
@@ -261,6 +263,60 @@ class HierarchicalStep(CompositeStep, BasicStep):
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         if not self.name in step_config or not self.config_key in step_config[self.name]:
             return BasicStep.validate_step(self, step_config)
+        sub_config = step_config[self.name][self.config_key]
+        return CompositeStep.validate_step(self, sub_config)
+
+
+class LoopStep(CompositeStep, BasicStep):
+    """A LoopStep allows a user to loop a step or sequence of steps a user-configured number of times."""
+
+    @property
+    def config_key(self):
+        return "iterate"
+
+    def update_implementation_graph(
+        self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
+    ) -> None:
+        if not self.name in step_config or not self.config_key in step_config[self.name]:
+            BasicStep.update_implementation_graph(self, graph, step_config)
         else:
             sub_config = step_config[self.name][self.config_key]
-            return CompositeStep.validate_step(self, sub_config)
+            num_implementations = len(sub_config)
+            loop_graph = nx.MultiDiGraph()
+            if not self.graph.nodes:
+                for i in range(1, num_implementations+ 1):
+                    loop_graph.add_node(f"{self.name}_loop_{i}", step=BasicStep(self.name, input_slots=self.input_slots.values(), output_slots=self.output_slots.values()))
+                for i in range(1, num_implementations):
+                    for slot_mapping in self.slot_mappings["input"]:
+                        loop_graph.add_edge(f"{self.name}_loop_{i}", f"{self.name}_loop_{i+1}", output_slot=slot_mapping.parent_slot, input_slot=slot_mapping.child_slot)
+            else:
+                for i in range(1, num_implementations):
+                    for node in self.graph.nodes:
+                        loop_graph.add_node(f"{node}_loop_{i+1}", step=self.graph.nodes[node]["step"])
+            
+            self.graph = loop_graph
+            CompositeStep.update_implementation_graph(self, graph, sub_config)
+            
+            
+
+    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        if not self.name in step_config or not self.config_key in step_config[self.name]:
+            return BasicStep.validate_step(self, step_config)
+        
+        sub_config = step_config[self.name][self.config_key]
+        num_implementations = len(sub_config)
+        if num_implementations == 0:
+            return {f"step {self.name}": ["No loops configured under iterate key."]}
+        
+        errors = {}
+        for i, loop in enumerate(sub_config):
+            if not self.graph.nodes:
+                loop_errors = BasicStep.validate_step(self, {self.name: loop})
+                loop_errors = loop_errors.get(f"step {self.name}", [])
+            else:
+                loop_errors = CompositeStep.validate_step(self, loop)
+            if loop_errors:
+                errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
+        return errors
+        
+        
