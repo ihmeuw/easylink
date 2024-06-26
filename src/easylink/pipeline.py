@@ -95,6 +95,7 @@ class Pipeline:
         )
         validation_files, validation_rules = self.get_validations(node)
         implementation_rule = ImplementedRule(
+            name=node,
             step_name=implementation.schema_step_name,
             implementation_name=implementation.name,
             input_slots=input_slots,
@@ -171,7 +172,7 @@ use rule start_spark_worker from spark_cluster with:
             validation_files.append(validation_file)
             validation_rules.append(
                 InputValidationRule(
-                    name=input_slot.name,
+                    name=f"{node}_{input_slot.name}",
                     input=input_files,
                     output=validation_file,
                     validator=input_slot.validator,

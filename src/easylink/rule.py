@@ -77,6 +77,7 @@ class ImplementedRule(Rule):
     script_cmd: Command to execute
     """
 
+    name: str
     step_name: str
     implementation_name: str
     input_slots: Dict[str, List[str]]
@@ -96,12 +97,12 @@ class ImplementedRule(Rule):
         return (
             f"""
 rule:
-    name: "{self.implementation_name}"
+    name: "{self.name}"
     message: "Running {self.step_name} implementation: {self.implementation_name}" """
             + self._build_input()
             + f"""        
     output: {self.output}
-    log: "{self.diagnostics_dir}/{self.implementation_name}-output.log"
+    log: "{self.diagnostics_dir}/{self.name}-output.log"
     container: "{self.image_path}" """
         )
 
@@ -129,7 +130,7 @@ rule:
         mem_mb={self.resources['mem_mb']},
         runtime={self.resources['runtime']},
         cpus_per_task={self.resources['cpus_per_task']},
-        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'" """
+        slurm_extra="--output '{self.diagnostics_dir}/{self.name}-slurm-%j.log'" """
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
