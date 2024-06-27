@@ -186,6 +186,19 @@ class CompositeStep(Step):
             step.update_implementation_graph(graph, step_config)
         graph.remove_node(self.name)
 
+    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
+        errors = {}
+        for node in self.graph.nodes:
+            step = self.graph.nodes[node]["step"]
+            step_errors = step.validate_step(step_config)
+            if step_errors:
+                errors.update(step_errors)
+        extra_steps = set(step_config.keys()) - set(self.graph.nodes)
+        for extra_step in extra_steps:
+            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
+        return errors
+
     def remap_slots(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Update edges to reflect mapping between parent and child nodes for input and output slots."""
         for input_mapping in self.slot_mappings["input"]:
@@ -227,19 +240,6 @@ class CompositeStep(Step):
                     input_slot=edge_attrs["input_slot"],
                     output_slot=graph.nodes[child_node]["step"].output_slots[child_slot],
                 )
-
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
-        """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
-        errors = {}
-        for node in self.graph.nodes:
-            step = self.graph.nodes[node]["step"]
-            step_errors = step.validate_step(step_config)
-            if step_errors:
-                errors.update(step_errors)
-        extra_steps = set(step_config.keys()) - set(self.graph.nodes)
-        for extra_step in extra_steps:
-            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
-        return errors
 
 
 class HierarchicalStep(CompositeStep, BasicStep):
