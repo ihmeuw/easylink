@@ -190,6 +190,46 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "missing_loop_nodes": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "iterate": [],
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
+    },
+    "bad_loop_formatting": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "iterate": {"implementation": "step_3_python_pandas"},
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {

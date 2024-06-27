@@ -339,6 +339,14 @@ class LoopStep(CompositeStep, BasicStep):
             return BasicStep.validate_step(self, step_config)
 
         sub_config = step_config[self.name][self.config_key]
+
+        if not isinstance(sub_config, list):
+            return {
+                f"step {self.name}": [
+                    "Loops must be formatted as a sequence in the pipeline configuration."
+                ]
+            }
+
         if len(sub_config) == 0:
             return {f"step {self.name}": ["No loops configured under iterate key."]}
 
