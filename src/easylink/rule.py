@@ -65,6 +65,7 @@ class ImplementedRule(Rule):
     A rule that defines the execution of an implementation
 
     Parameters:
+    name: Name to give rule
     step_name: Name of step
     implementation_name: Name of implementation
     execution_input: List of file paths required by implementation
@@ -170,6 +171,7 @@ class InputValidationRule(Rule):
     """
 
     name: str
+    slot_name: str
     input: List[str]
     output: str
     validator: Callable
@@ -177,11 +179,11 @@ class InputValidationRule(Rule):
     def _build_rule(self) -> str:
         return f"""
 rule:
-    name: "{self.name}_validator"
+    name: "{self.name}_{self.slot_name}_validator"
     input: {self.input}
     output: touch("{self.output}")
     localrule: True         
-    message: "Validating {self.name}"
+    message: "Validating {self.name} input slot {self.slot_name}"
     run:
         for f in input:
             validation_utils.{self.validator.__name__}(f)"""

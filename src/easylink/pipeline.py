@@ -74,6 +74,7 @@ class Pipeline:
         )
         final_validation = InputValidationRule(
             name="results",
+            slot_name="main_input",
             input=final_output,
             output=validator_file,
             validator=validate_input_file_dummy,
@@ -172,7 +173,8 @@ use rule start_spark_worker from spark_cluster with:
             validation_files.append(validation_file)
             validation_rules.append(
                 InputValidationRule(
-                    name=f"{node}_{input_slot.name}",
+                    name=node,
+                    slot_name=input_slot.name,
                     input=input_files,
                     output=validation_file,
                     validator=input_slot.validator,
