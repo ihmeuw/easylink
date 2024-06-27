@@ -21,6 +21,7 @@ def test_io_step(default_config: Config) -> None:
 
     # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
+    subgraph.add_node(step.name, step=step)
     step.update_implementation_graph(subgraph, default_config["pipeline"])
     assert list(subgraph.nodes) == ["pipeline_graph_io"]
     assert list(subgraph.edges) == []
@@ -48,6 +49,7 @@ def test_implemented_step(default_config: Config) -> None:
 
     # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
+    subgraph.add_node(step.name, step=step)
     step.update_implementation_graph(subgraph, default_config["pipeline"])
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
@@ -137,17 +139,10 @@ def test_composite_step(default_config_params) -> None:
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
-        "step_1",
         "step_1a_python_pandas",
         "step_1b_python_pandas",
     ]
     expected_edges = {
-        ("input_data", "step_1"): {
-            "input_slot_name": "step_1_main_input",
-            "output_slot_name": "file1",
-            "validator": validate_input_file_dummy,
-            "env_var": None,
-        },
         ("input_data", "step_1a_python_pandas"): {
             "input_slot_name": "step_1a_main_input",
             "output_slot_name": "file1",

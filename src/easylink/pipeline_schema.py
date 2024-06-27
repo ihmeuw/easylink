@@ -24,6 +24,10 @@ class PipelineSchema(CompositeStep):
         self.update_implementation_graph(graph, pipeline_config)
         return graph
 
+    def remove_node(self, graph: nx.MultiDiGraph) -> None:
+        """Remove the step node from the graph."""
+        pass
+
     @property
     def step_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""
