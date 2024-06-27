@@ -48,7 +48,7 @@ def test_implemented_step(default_config: Config) -> None:
 
     # Test update_implementation_graph
     subgraph = nx.MultiDiGraph()
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 

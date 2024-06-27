@@ -28,6 +28,10 @@ class Step(ABC):
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
 
+    @property
+    def step_key(self) -> str:
+        return self.name
+
     @abstractmethod
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
@@ -47,6 +51,10 @@ class IOStep(Step):
     @property
     def pipeline_graph_node_name(self):
         return "pipeline_graph_" + self.name
+
+    @property
+    def step_key(self) -> str:
+        return None
 
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
@@ -84,8 +92,8 @@ class BasicStep(Step):
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
         """Return a single node with an implementation attribute."""
-        implementation_name = step_config[self.name]["implementation"]["name"]
-        implementation_config = step_config[self.name]["implementation"]["configuration"]
+        implementation_name = step_config["implementation"]["name"]
+        implementation_config = step_config["implementation"]["configuration"]
         implementation = Implementation(
             name=implementation_name,
             step_name=self.name,
@@ -99,7 +107,7 @@ class BasicStep(Step):
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from the implementation node to replace the edges from the current step"""
-        implementation_name = step_config[self.name]["implementation"]["name"]
+        implementation_name = step_config["implementation"]["name"]
         for _source, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 implementation_name,
@@ -120,19 +128,17 @@ class BasicStep(Step):
         """Return error strings if the step configuration is incorrect."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        if not self.name in step_config:
-            errors[f"step {self.name}"] = ["The step is not configured."]
-        elif not "implementation" in step_config[self.name]:
+        if not "implementation" in step_config:
             errors[f"step {self.name}"] = [
                 "The step configuration does not contain an 'implementation' key."
             ]
-        elif not "name" in step_config[self.name]["implementation"]:
+        elif not "name" in step_config["implementation"]:
             errors[f"step {self.name}"] = [
                 "The implementation configuration does not contain a 'name' key."
             ]
-        elif not step_config[self.name]["implementation"]["name"] in metadata:
+        elif not step_config["implementation"]["name"] in metadata:
             errors[f"step {self.name}"] = [
-                f"Implementation '{step_config[self.name]['implementation']['name']}' is not supported. "
+                f"Implementation '{step_config['implementation']['name']}' is not supported. "
                 f"Supported implementations are: {list(metadata.keys())}."
             ]
         return errors
@@ -181,7 +187,10 @@ class CompositeStep(Step):
         self.remap_slots(graph, step_config)
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
-            step.update_implementation_graph(graph, step_config)
+            sub_config = step_config
+            if step.step_key:
+                sub_config = step_config[step.step_key]
+            step.update_implementation_graph(graph, sub_config)
             graph.remove_node(node)
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
@@ -189,7 +198,12 @@ class CompositeStep(Step):
         errors = {}
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
-            step_errors = step.validate_step(step_config)
+            if not step.step_key:
+                step_errors = step.validate_step(step_config)
+            elif step.step_key not in step_config:
+                step_errors = {f"step {step.name}": [f"The step is not configured."]}
+            else:
+                step_errors = step.validate_step(step_config[step.step_key])
             if step_errors:
                 errors.update(step_errors)
         extra_steps = set(step_config.keys()) - set(self.graph.nodes)
@@ -252,15 +266,15 @@ class HierarchicalStep(CompositeStep, BasicStep):
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
-        if not self.name in step_config or not self.config_key in step_config[self.name]:
+        if not self.config_key in step_config:
             BasicStep.update_implementation_graph(self, graph, step_config)
         else:
-            sub_config = step_config[self.name][self.config_key]
-            CompositeStep.update_implementation_graph(self, graph, sub_config)
+            CompositeStep.update_implementation_graph(
+                self, graph, step_config[self.config_key]
+            )
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
-        if not self.name in step_config or not self.config_key in step_config[self.name]:
+        if not self.config_key in step_config:
             return BasicStep.validate_step(self, step_config)
         else:
-            sub_config = step_config[self.name][self.config_key]
-            return CompositeStep.validate_step(self, sub_config)
+            return CompositeStep.validate_step(self, step_config[self.config_key])
