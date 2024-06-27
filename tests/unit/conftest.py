@@ -192,9 +192,6 @@ PIPELINE_CONFIG_DICT = {
     },
     "missing_substep_keys": {
         "step_1": {
-            "implementation": {
-                "name": "step_1_python_pandas",
-            },
             "substeps": {
                 "step_1a": {
                     "implementation": {},
