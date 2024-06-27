@@ -3,8 +3,11 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import BasicStep, CompositeStep, IOStep
+from easylink.pipeline_schema_constants.development import NODES
+from easylink.step import BasicStep, CompositeStep, IOStep, LoopStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
+
+STEP_KEYS = {step.name: step for step in NODES}
 
 
 def test_io_step(default_config: Config) -> None:
@@ -13,7 +16,7 @@ def test_io_step(default_config: Config) -> None:
         "output_slots": [OutputSlot("file1")],
     }
     step = IOStep("io", **params)
-    assert step.name == "io"
+    assert step.name == step.step_name == "io"
     assert step.input_slots == {
         "result": InputSlot("result", None, validate_input_file_dummy)
     }
@@ -38,7 +41,7 @@ def test_implemented_step(default_config: Config) -> None:
         "output_slots": [OutputSlot("step_1_main_output")],
     }
     step = BasicStep("step_1", **params)
-    assert step.name == "step_1"
+    assert step.name == step.step_name == "step_1"
     assert set(step.input_slots.keys()) == {"step_1_main_input"}
     input_slot = step.input_slots["step_1_main_input"]
     assert input_slot.env_var == "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
@@ -55,7 +58,7 @@ def test_implemented_step(default_config: Config) -> None:
 
 def test_composite_step(default_config_params) -> None:
     params = {
-        "name": "step_1",
+        "step_name": "step_1",
         "input_slots": [
             InputSlot(
                 "step_1_main_input",
@@ -103,7 +106,7 @@ def test_composite_step(default_config_params) -> None:
         },
     }
     step = CompositeStep(**params)
-    assert step.name == "step_1"
+    assert step.name == step.step_name == "step_1"
     input_slot = step.input_slots["step_1_main_input"]
     assert input_slot.env_var == "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
     assert input_slot.validator == validate_input_file_dummy
