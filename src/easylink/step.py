@@ -300,7 +300,7 @@ class LoopStep(CompositeStep, BasicStep):
         # slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
-        # TODO: Make loopstep compatible with sequence of steps using step hierarchy (composite steps)
+        # TODO [MIC-5135]: Make loopstep compatible with sequence of steps using step hierarchy (composite steps)
         if len(nodes) != 1 or nodes[0].name != step_name:
             raise NotImplementedError(
                 f"LoopStep {self.name} must be initialized with a single node with the same name."
@@ -356,7 +356,6 @@ class LoopStep(CompositeStep, BasicStep):
             updated_step = copy.deepcopy(self.unlooped_node)
             updated_step.name = f"{self.name}_loop_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
-
             if i > 0:
                 for edge in self.edges:
                     source = f"{self.name}_loop_{i}"
