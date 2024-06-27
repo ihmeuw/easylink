@@ -178,3 +178,136 @@ def test_composite_step(default_config_params) -> None:
             edge_attrs["output_slot"].name
             == expected_edges[(source, sink)]["output_slot_name"]
         )
+
+
+def test_loop_step() -> None:
+    step = STEP_KEYS["step_3"]
+    assert step.name == step.step_name == "step_3"
+    assert isinstance(step, LoopStep)
+    assert step.input_slots == {
+        "step_3_main_input": InputSlot(
+            "step_3_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        )
+    }
+    assert step.output_slots == {"step_3_main_output": OutputSlot("step_3_main_output")}
+    assert isinstance(step.unlooped_node, BasicStep)
+    assert step.unlooped_node.name == step.name
+    assert step.unlooped_node.input_slots == step.input_slots
+    assert step.unlooped_node.output_slots == step.output_slots
+    assert step.edges == [
+        Edge(step.name, step.name, "step_3_main_output", "step_3_main_input")
+    ]
+
+
+def test_loop_update_implementation_graph(default_config: Config) -> None:
+    step = STEP_KEYS["step_3"]
+    subgraph = nx.MultiDiGraph()
+    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    assert list(subgraph.nodes) == ["step_3_python_pandas"]
+    assert list(subgraph.edges) == []
+
+    pipeline_params = LayeredConfigTree(
+        {
+            "step_3": {
+                "iterate": [
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_3_python_pandas",
+                                "configuration": {},
+                            }
+                        }
+                    ),
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_3_python_pandas",
+                                "configuration": {},
+                            }
+                        }
+                    ),
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_3_python_pandas",
+                                "configuration": {},
+                            }
+                        }
+                    ),
+                ],
+            }
+        }
+    )
+    subgraph = nx.MultiDiGraph(
+        [
+            (
+                "input_data",
+                "step_3",
+                {
+                    "input_slot": InputSlot(
+                        "step_3_main_input", None, validate_input_file_dummy
+                    ),
+                    "output_slot": OutputSlot("file1"),
+                },
+            )
+        ]
+    )
+    step.update_implementation_graph(subgraph, pipeline_params)
+    assert list(subgraph.nodes) == [
+        "input_data",
+        "step_3",
+        "step_3_loop_1_step_3_python_pandas",
+        "step_3_loop_2_step_3_python_pandas",
+        "step_3_loop_3_step_3_python_pandas",
+    ]
+    expected_edges = [
+        (
+            "input_data",
+            "step_3",
+            {
+                "input_slot": InputSlot("step_3_main_input", None, validate_input_file_dummy),
+                "output_slot": OutputSlot("file1"),
+            },
+        ),
+        (
+            "input_data",
+            "step_3_loop_1_step_3_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("file1"),
+            },
+        ),
+        (
+            "step_3_loop_1_step_3_python_pandas",
+            "step_3_loop_2_step_3_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_3_main_output"),
+            },
+        ),
+        (
+            "step_3_loop_2_step_3_python_pandas",
+            "step_3_loop_3_step_3_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_3_main_output"),
+            },
+        ),
+    ]
+    assert len(subgraph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in subgraph.edges(data=True)
