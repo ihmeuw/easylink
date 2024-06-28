@@ -25,10 +25,6 @@ class PipelineSchema(CompositeStep):
         return graph
 
     @property
-    def step_key(self) -> str:
-        return None
-
-    @property
     def step_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""
         ordered_nodes = list(nx.topological_sort(self.graph))
