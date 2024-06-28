@@ -190,6 +190,30 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "missing_substep_keys": {
+        "step_1": {
+            "substeps": {
+                "step_1a": {
+                    "implementation": {},
+                },
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {
