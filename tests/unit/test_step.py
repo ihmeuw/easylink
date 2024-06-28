@@ -285,7 +285,7 @@ def test_hierarchical_step_update_implementation_graph(
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     pipeline_params = LayeredConfigTree(
-        {"step_1": {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}}
+        {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}
     )
     subgraph = nx.MultiDiGraph()
     step.update_implementation_graph(subgraph, pipeline_params)
@@ -295,23 +295,21 @@ def test_hierarchical_step_update_implementation_graph(
     # Test update_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
         {
-            "step_1": {
-                "substeps": {
-                    "step_1a": {
-                        "implementation": {
-                            "name": "step_1a_python_pandas",
-                            "configuration": {},
-                        }
-                    },
-                    "step_1b": {
-                        "implementation": {
-                            "name": "step_1b_python_pandas",
-                            "configuration": {},
-                        }
-                    },
+            "substeps": {
+                "step_1a": {
+                    "implementation": {
+                        "name": "step_1a_python_pandas",
+                        "configuration": {},
+                    }
+                },
+                "step_1b": {
+                    "implementation": {
+                        "name": "step_1b_python_pandas",
+                        "configuration": {},
+                    }
                 },
             },
-        }
+        },
     )
     subgraph = nx.MultiDiGraph(
         [
