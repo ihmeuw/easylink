@@ -12,10 +12,11 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 
 STEP_KEYS = {step.name: step for step in NODES}
 
+
 @pytest.fixture
 def io_step_params() -> Dict[str, Any]:
     return {
-        "name": "io",
+        "step_name": "io",
         "input_slots": [InputSlot("result", None, validate_input_file_dummy)],
         "output_slots": [OutputSlot("file1")],
     }
@@ -43,7 +44,7 @@ def test_io_update_implementation_graph(
 @pytest.fixture
 def implemented_step_params() -> Dict[str, Any]:
     return {
-        "name": "step_1",
+        "step_name": "step_1",
         "input_slots": [
             InputSlot(
                 "step_1_main_input",
@@ -220,7 +221,7 @@ def test_composite_step_update_implementation_graph(
 @pytest.fixture
 def hierarchical_step_params() -> Dict[str, Any]:
     return {
-        "name": "step_1",
+        "step_name": "step_1",
         "input_slots": [
             InputSlot(
                 "step_1_main_input",
