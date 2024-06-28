@@ -192,3 +192,21 @@ def test_spark_requests(default_config_params, input, requires_spark):
         expected.update(expected_env_dict[key], layer="user")
     expected = expected.to_dict()
     assert retrieved == expected
+
+
+@pytest.mark.parametrize("includes_implementation_configuration", [False, True])
+def test_get_implementation_specific_configuration(
+    default_config_params, includes_implementation_configuration
+):
+    config_params = default_config_params
+    step_1_config = {}
+    step_2_config = {}
+    if includes_implementation_configuration:
+        step_2_config = {
+            "SOME-CONFIGURATION": "some-value",
+            "SOME-OTHER-CONFIGURATION": "some-other-value",
+        }
+        config_params["pipeline"]["step_2"]["implementation"]["configuration"] = step_2_config
+    config = Config(config_params)
+    assert config.pipeline.step_1.implementation.configuration.to_dict() == step_1_config
+    assert config.pipeline.step_2.implementation.configuration.to_dict() == step_2_config

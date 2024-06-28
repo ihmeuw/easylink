@@ -87,16 +87,17 @@ class BasicStep(Step):
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
         """Return a single node with an implementation attribute."""
-        implementation_config = step_config[self.name]["implementation"]
-        implementation_name = implementation_config["name"]
+        implementation_name = step_config[self.name]["implementation"]["name"]
+        implementation_config = step_config[self.name]["implementation"]["configuration"]
         implementation_node_name = (
             implementation_name
             if self.name == self.step_name
             else f"{self.name}_{implementation_name}"
         )
         implementation = Implementation(
+            name=implementation_name,
             step_name=self.step_name,
-            implementation_config=implementation_config.to_dict(),
+            environment_variables=implementation_config.to_dict(),
         )
         graph.add_node(
             implementation_node_name,
@@ -390,8 +391,8 @@ class LoopStep(CompositeStep, BasicStep):
 
     def get_loop_config(
         self, iterate_config: LayeredConfigTree
-    ) -> LayeredConfigTree:
-        loop_config = LayeredConfigTree()
+    ) -> Dict[str, LayeredConfigTree]:
+        loop_config = {}
         for i, loop in enumerate(iterate_config):
-            loop_config.update({f"{self.name}_loop_{i+1}": loop})
+            loop_config[f"{self.name}_loop_{i+1}"] = loop
         return loop_config

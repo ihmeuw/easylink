@@ -1,8 +1,6 @@
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from layered_config_tree import LayeredConfigTree
-
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
@@ -15,12 +13,12 @@ class Implementation:
     inside the container, and some metadata about the container.
     """
 
-    def __init__(self, step_name: str, implementation_config: Dict[str, Union[str, Dict[str, str]]]):
-        self.name = implementation_config["name"]
-        self.environment_variables = implementation_config.get("configuration", {})
-        self.schema_step_name = step_name
+    def __init__(self, name: str, step_name: str, environment_variables: Dict[str, str]):
+        self.name = name
+        self.environment_variables = environment_variables
         self._metadata = self._load_metadata()
         self.metadata_step_name = self._metadata["step"]
+        self.schema_step_name = step_name
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
