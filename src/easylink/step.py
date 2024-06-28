@@ -28,10 +28,6 @@ class Step(ABC):
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
 
-    @property
-    def step_key(self) -> str:
-        return self.name
-
     @abstractmethod
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
@@ -51,10 +47,6 @@ class IOStep(Step):
     @property
     def pipeline_graph_node_name(self):
         return "pipeline_graph_" + self.name
-
-    @property
-    def step_key(self) -> str:
-        return None
 
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
@@ -188,8 +180,8 @@ class CompositeStep(Step):
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
             sub_config = step_config
-            if step.step_key:
-                sub_config = step_config[step.step_key]
+            if not isinstance(step, IOStep):
+                sub_config = step_config[step.name]
             step.update_implementation_graph(graph, sub_config)
             graph.remove_node(node)
 
@@ -198,12 +190,12 @@ class CompositeStep(Step):
         errors = {}
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
-            if not step.step_key:
-                step_errors = step.validate_step(step_config)
-            elif step.step_key not in step_config:
+            if isinstance(step, IOStep):
+                continue
+            if step.name not in step_config:
                 step_errors = {f"step {step.name}": [f"The step is not configured."]}
             else:
-                step_errors = step.validate_step(step_config[step.step_key])
+                step_errors = step.validate_step(step_config[step.name])
             if step_errors:
                 errors.update(step_errors)
         extra_steps = set(step_config.keys()) - set(self.graph.nodes)
