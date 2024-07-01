@@ -179,9 +179,7 @@ class CompositeStep(Step):
         self.remap_slots(graph, step_config)
         for node in self.graph.nodes:
             step = self.graph.nodes[node]["step"]
-            sub_config = step_config
-            if not isinstance(step, IOStep):
-                sub_config = step_config[step.name]
+            sub_config = step_config if isinstance(step, IOStep) else step_config[step.name]
             step.update_implementation_graph(graph, sub_config)
             graph.remove_node(node)
 
