@@ -36,6 +36,7 @@ def test_io_update_implementation_graph(
 ) -> None:
     step = IOStep(**io_step_params)
     subgraph = nx.MultiDiGraph()
+    subgraph.add_node(step.name, step=step)
     step.update_implementation_graph(subgraph, default_config["pipeline"])
     assert list(subgraph.nodes) == ["pipeline_graph_io"]
     assert list(subgraph.edges) == []
@@ -74,7 +75,8 @@ def test_implemented_step_update_implementation_graph(
 ) -> None:
     step = BasicStep(**implemented_step_params)
     subgraph = nx.MultiDiGraph()
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    subgraph.add_node(step.name, step=step)
+    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -175,19 +177,10 @@ def test_composite_step_update_implementation_graph(
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
-        "step_1",
         "step_1a_python_pandas",
         "step_1b_python_pandas",
     ]
     expected_edges = [
-        (
-            "input_data",
-            "step_1",
-            {
-                "input_slot": InputSlot("step_1_main_input", None, validate_input_file_dummy),
-                "output_slot": OutputSlot("file1"),
-            },
-        ),
         (
             "input_data",
             "step_1a_python_pandas",
@@ -288,9 +281,10 @@ def test_hierarchical_step_update_implementation_graph(
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     pipeline_params = LayeredConfigTree(
-        {"step_1": {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}}
+        {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}
     )
     subgraph = nx.MultiDiGraph()
+    subgraph.add_node(step.name, step=step)
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
@@ -298,23 +292,21 @@ def test_hierarchical_step_update_implementation_graph(
     # Test update_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
         {
-            "step_1": {
-                "substeps": {
-                    "step_1a": {
-                        "implementation": {
-                            "name": "step_1a_python_pandas",
-                            "configuration": {},
-                        }
-                    },
-                    "step_1b": {
-                        "implementation": {
-                            "name": "step_1b_python_pandas",
-                            "configuration": {},
-                        }
-                    },
+            "substeps": {
+                "step_1a": {
+                    "implementation": {
+                        "name": "step_1a_python_pandas",
+                        "configuration": {},
+                    }
+                },
+                "step_1b": {
+                    "implementation": {
+                        "name": "step_1b_python_pandas",
+                        "configuration": {},
+                    }
                 },
             },
-        }
+        },
     )
     subgraph = nx.MultiDiGraph(
         [
@@ -333,19 +325,10 @@ def test_hierarchical_step_update_implementation_graph(
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
-        "step_1",
         "step_1a_python_pandas",
         "step_1b_python_pandas",
     ]
     expected_edges = [
-        (
-            "input_data",
-            "step_1",
-            {
-                "input_slot": InputSlot("step_1_main_input", None, validate_input_file_dummy),
-                "output_slot": OutputSlot("file1"),
-            },
-        ),
         (
             "input_data",
             "step_1a_python_pandas",
