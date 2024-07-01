@@ -85,15 +85,12 @@ class BasicStep(Step):
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
         """Return a single node with an implementation attribute."""
-        implementation_name = step_config["implementation"]["name"]
-        implementation_config = step_config["implementation"]["configuration"]
         implementation = Implementation(
-            name=implementation_name,
             step_name=self.name,
-            environment_variables=implementation_config.to_dict(),
+            implementation_config=step_config["implementation"],
         )
         graph.add_node(
-            implementation_name,
+            step_config["implementation"]["name"],
             implementation=implementation,
         )
         self.update_edges(graph, step_config)

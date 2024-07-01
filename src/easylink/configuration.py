@@ -103,7 +103,6 @@ class Config(LayeredConfigTree):
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
         self._validate()
-        self.update_implementation_configs(self.pipeline)
         self.freeze()
 
     @property
@@ -163,17 +162,6 @@ class Config(LayeredConfigTree):
     #################
     # Setup Methods #
     #################
-    def update_implementation_configs(self, level: LayeredConfigTree):
-        """Recursively add empty configuration dictionaries to each implementation configuration.
-        'Level' should be set such that its keys are steps (which may have implementations).
-        """
-        for step in level.values():
-            if "implementation" in step:
-                step.implementation.update({"configuration": {}}, layer="default")
-
-            elif "substeps" in step:
-                self.update_implementation_configs(step.substeps)
-
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.
 
