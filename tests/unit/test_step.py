@@ -73,7 +73,7 @@ def test_implemented_step_update_implementation_graph(
     step = BasicStep(**implemented_step_params)
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -278,7 +278,7 @@ def test_hierarchical_step_update_implementation_graph(
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     pipeline_params = LayeredConfigTree(
-        {"step_1": {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}}
+        {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}
     )
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
@@ -289,23 +289,21 @@ def test_hierarchical_step_update_implementation_graph(
     # Test update_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
         {
-            "step_1": {
-                "substeps": {
-                    "step_1a": {
-                        "implementation": {
-                            "name": "step_1a_python_pandas",
-                            "configuration": {},
-                        }
-                    },
-                    "step_1b": {
-                        "implementation": {
-                            "name": "step_1b_python_pandas",
-                            "configuration": {},
-                        }
-                    },
+            "substeps": {
+                "step_1a": {
+                    "implementation": {
+                        "name": "step_1a_python_pandas",
+                        "configuration": {},
+                    }
+                },
+                "step_1b": {
+                    "implementation": {
+                        "name": "step_1b_python_pandas",
+                        "configuration": {},
+                    }
                 },
             },
-        }
+        },
     )
     subgraph = nx.MultiDiGraph(
         [
