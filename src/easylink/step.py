@@ -284,7 +284,7 @@ class HierarchicalStep(CompositeStep, BasicStep):
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
             return BasicStep.validate_step(self, step_config)
-        sub_config = step_config[self.name][self.config_key]
+        sub_config = step_config[self.config_key]
         return CompositeStep.validate_step(self, sub_config)
 
 

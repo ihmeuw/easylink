@@ -383,40 +383,39 @@ def test_loop_step() -> None:
 def test_loop_update_implementation_graph(default_config: Config) -> None:
     step = STEP_KEYS["step_3"]
     subgraph = nx.MultiDiGraph()
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    subgraph.add_node(step.name, step=step)
+    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
 
     pipeline_params = LayeredConfigTree(
         {
-            "step_3": {
-                "iterate": [
-                    LayeredConfigTree(
-                        {
-                            "implementation": {
-                                "name": "step_3_python_pandas",
-                                "configuration": {},
-                            }
+            "iterate": [
+                LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
                         }
-                    ),
-                    LayeredConfigTree(
-                        {
-                            "implementation": {
-                                "name": "step_3_python_pandas",
-                                "configuration": {},
-                            }
+                    }
+                ),
+                LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
                         }
-                    ),
-                    LayeredConfigTree(
-                        {
-                            "implementation": {
-                                "name": "step_3_python_pandas",
-                                "configuration": {},
-                            }
+                    }
+                ),
+                LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
                         }
-                    ),
-                ],
-            }
+                    }
+                ),
+            ],
         }
     )
     subgraph = nx.MultiDiGraph(
@@ -436,20 +435,11 @@ def test_loop_update_implementation_graph(default_config: Config) -> None:
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
-        "step_3",
         "step_3_loop_1_step_3_python_pandas",
         "step_3_loop_2_step_3_python_pandas",
         "step_3_loop_3_step_3_python_pandas",
     ]
     expected_edges = [
-        (
-            "input_data",
-            "step_3",
-            {
-                "input_slot": InputSlot("step_3_main_input", None, validate_input_file_dummy),
-                "output_slot": OutputSlot("file1"),
-            },
-        ),
         (
             "input_data",
             "step_3_loop_1_step_3_python_pandas",
