@@ -54,6 +54,7 @@ class IOStep(Step):
         """Add a single node to the graph based on step name."""
         graph.add_node(self.pipeline_graph_node_name)
         self.update_edges(graph, step_config)
+        graph.remove_node(self.name)
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from self to replace the edges from the current step"""
@@ -96,6 +97,7 @@ class BasicStep(Step):
             implementation=implementation,
         )
         self.update_edges(graph, step_config)
+        graph.remove_node(self.name)
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from the implementation node to replace the edges from the current step"""
@@ -181,7 +183,7 @@ class CompositeStep(Step):
             step = self.graph.nodes[node]["step"]
             sub_config = step_config if isinstance(step, IOStep) else step_config[step.name]
             step.update_implementation_graph(graph, sub_config)
-            graph.remove_node(node)
+        graph.remove_node(self.name)
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
         """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
