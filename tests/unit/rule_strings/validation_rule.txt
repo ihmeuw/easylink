@@ -1,10 +1,10 @@
 
 rule:
-    name: "foo_validator"
+    name: "foo_foo_input_validator"
     input: ['foo', 'bar']
     output: touch("baz")
     localrule: True         
-    message: "Validating foo"
+    message: "Validating foo input slot foo_input"
     run:
         for f in input:
             validation_utils.bar(f)

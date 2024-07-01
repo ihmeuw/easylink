@@ -1,13 +1,13 @@
 
 rule:
-    name: "foo"
-    message: "Running foo_step implementation: foo"
+    name: "foo_rule"
+    message: "Running foo_step implementation: foo_imp"
     input:
         dummy_container_main_input_file_paths=['foo'],
         dummy_container_secondary_input_file_paths=['bar'],
         validations=['bar'],
     output: ['baz']
-    log: "spam/foo-output.log"
+    log: "spam/foo_rule-output.log"
     container: "Multipolarity.sif"
     shell:
         '''

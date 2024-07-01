@@ -57,8 +57,9 @@ def test_implemented_rule_build_rule(computing_environment):
         resources = None
 
     rule = ImplementedRule(
+        name="foo_rule",
         step_name="foo_step",
-        implementation_name="foo",
+        implementation_name="foo_imp",
         input_slots={
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": ["foo"],
             "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": ["bar"],
@@ -92,7 +93,9 @@ def bar():
 
 
 def test_validation_rule_build_rule():
-    rule = InputValidationRule(name="foo", input=["foo", "bar"], output="baz", validator=bar)
+    rule = InputValidationRule(
+        name="foo", slot_name="foo_input", input=["foo", "bar"], output="baz", validator=bar
+    )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["validation_rule"]
     with open(file_path) as expected_file:
         expected = expected_file.read()

@@ -173,6 +173,14 @@ class Config(LayeredConfigTree):
 
             elif "substeps" in step:
                 self.update_implementation_configs(step.substeps)
+            elif "iterate" in step:
+                for idx, loop in enumerate(step.iterate):
+                    loop = LayeredConfigTree(loop)
+                    step.iterate[idx].update(loop)
+                    if "implementation" in loop:
+                        loop.implementation.update({"configuration": {}}, layer="default")
+                    else:
+                        self.update_implementation_configs(loop)
 
     def _get_schema(self) -> Optional[PipelineSchema]:
         """Validates the pipeline against supported schemas.

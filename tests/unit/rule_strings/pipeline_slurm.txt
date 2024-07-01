@@ -11,20 +11,20 @@ rule all:
         for input_path, output_path in zip(input.final_output, output):
             os.symlink(input_path, output_path)
 rule:
-    name: "results_validator"
+    name: "results_main_input_validator"
     input: ['intermediate/step_4_python_pandas/result.parquet']
     output: touch("input_validations/final_validator")
     localrule: True         
-    message: "Validating results"
+    message: "Validating results input slot main_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
 rule:
-    name: "step_1_main_input_validator"
+    name: "step_1_python_pandas_step_1_main_input_validator"
     input: ['{test_dir}/input_data1/file1.csv']
     output: touch("input_validations/step_1_python_pandas/step_1_main_input_validator")
     localrule: True         
-    message: "Validating step_1_main_input"
+    message: "Validating step_1_python_pandas input slot step_1_main_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
@@ -51,11 +51,11 @@ rule:
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
-    name: "step_2_main_input_validator"
+    name: "step_2_python_pandas_step_2_main_input_validator"
     input: ['intermediate/step_1_python_pandas/result.parquet']
     output: touch("input_validations/step_2_python_pandas/step_2_main_input_validator")
     localrule: True         
-    message: "Validating step_2_main_input"
+    message: "Validating step_2_python_pandas input slot step_2_main_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
@@ -82,11 +82,11 @@ rule:
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
-    name: "step_3_main_input_validator"
+    name: "step_3_python_pandas_step_3_main_input_validator"
     input: ['intermediate/step_2_python_pandas/result.parquet']
     output: touch("input_validations/step_3_python_pandas/step_3_main_input_validator")
     localrule: True         
-    message: "Validating step_3_main_input"
+    message: "Validating step_3_python_pandas input slot step_3_main_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
@@ -113,20 +113,20 @@ rule:
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
-    name: "step_4_secondary_input_validator"
+    name: "step_4_python_pandas_step_4_secondary_input_validator"
     input: ['{test_dir}/input_data1/file1.csv']
     output: touch("input_validations/step_4_python_pandas/step_4_secondary_input_validator")
     localrule: True         
-    message: "Validating step_4_secondary_input"
+    message: "Validating step_4_python_pandas input slot step_4_secondary_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
 rule:
-    name: "step_4_main_input_validator"
+    name: "step_4_python_pandas_step_4_main_input_validator"
     input: ['intermediate/step_3_python_pandas/result.parquet']
     output: touch("input_validations/step_4_python_pandas/step_4_main_input_validator")
     localrule: True         
-    message: "Validating step_4_main_input"
+    message: "Validating step_4_python_pandas input slot step_4_main_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
