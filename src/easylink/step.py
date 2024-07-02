@@ -304,7 +304,7 @@ class LoopStep(CompositeStep, BasicStep):
         input_slots: List[InputSlot] = [],
         output_slots: List[OutputSlot] = [],
         iterated_node: Step = None,
-        iterated_edges: List[Edge] = [],
+        self_edges: List[Edge] = [],
         # slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
@@ -318,12 +318,12 @@ class LoopStep(CompositeStep, BasicStep):
                 f"LoopStep {self.name} can currently only loop a single implementation."
             )
         self.iterated_node = iterated_node
-        for edge in iterated_edges:
+        for edge in self_edges:
             if not edge.source_node == edge.target_node == step_name:
                 raise NotImplementedError(
                     f"LoopStep {self.name} must be initialized with only self-loops as edges"
                 )
-        self.iterated_edges = iterated_edges
+        self.self_edges = self_edges
 
     @property
     def config_key(self):
@@ -373,7 +373,7 @@ class LoopStep(CompositeStep, BasicStep):
             updated_step.name = f"{self.name}_loop_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
             if i > 0:
-                for edge in self.iterated_edges:
+                for edge in self.self_edges:
                     source = f"{self.name}_loop_{i}"
                     sink = f"{self.name}_loop_{i+1}"
                     input_slot = graph.nodes[sink]["step"].input_slots[edge.input_slot]
@@ -387,10 +387,22 @@ class LoopStep(CompositeStep, BasicStep):
         return graph
 
     def get_loop_slot_mappings(self, num_loops: int) -> nx.MultiDiGraph:
-        input_mappings = [
-            SlotMapping("input", self.name, slot, f"{self.name}_loop_1", slot)
-            for slot in self.input_slots
-        ]
+        input_mappings = []
+        self_edge_input_slots = [edge.input_slot for edge in self.self_edges]
+        external_input_slots = self.input_slots - self_edge_input_slots
+        for input_slot in self_edge_input_slots:
+            input_mappings.append(
+                SlotMapping("input", self.name, input_slot, f"{self.name}_loop_1", input_slot)
+            )
+        for input_slot in external_input_slots:
+            input_mappings.extend(
+                [
+                    SlotMapping(
+                        "input", self.name, input_slot, f"{self.name}_loop_{n+1}", input_slot
+                    )
+                    for n in range(num_loops)
+                ]
+            )
         output_mappings = [
             SlotMapping("output", self.name, slot, f"{self.name}_loop_{num_loops}", slot)
             for slot in self.output_slots

@@ -95,11 +95,16 @@ NODES = [
                     name="step_3_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
-                )
+                ),
+                InputSlot(
+                    name="step_3_secondary_input",
+                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
             ],
             output_slots=[OutputSlot("step_3_main_output")],
         ),
-        iterated_edges=[
+        self_edges=[
             Edge(
                 source_node="step_3",
                 target_node="step_3",
@@ -144,6 +149,12 @@ EDGES = [
         target_node="step_4",
         output_slot="file1",
         input_slot="step_4_secondary_input",
+    ),
+    Edge(
+        source_node="input_data",
+        target_node="step_3",
+        output_slot="file1",
+        input_slot="step_3_secondary_input",
     ),
     Edge(
         source_node="step_1",
