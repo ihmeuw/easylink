@@ -85,7 +85,12 @@ NODES = [
                 name="step_3_main_input",
                 env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validator=validate_input_file_dummy,
-            )
+            ),
+            InputSlot(
+                name="step_3_secondary_input",
+                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            ),
         ],
         output_slots=[OutputSlot("step_3_main_output")],
         iterated_node=BasicStep(

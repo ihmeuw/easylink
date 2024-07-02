@@ -1,5 +1,6 @@
 import copy
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import Dict, List
 
 import networkx as nx
@@ -358,9 +359,9 @@ class LoopStep(CompositeStep, BasicStep):
         if len(sub_config) == 0:
             return {f"step {self.name}": ["No loops configured under iterate key."]}
 
-        errors = {}
+        errors = defaultdict(dict)
         for i, loop in enumerate(sub_config):
-            loop_errors = self.iterated_node.validate_step({self.name: loop})
+            loop_errors = self.iterated_node.validate_step(loop)
             if loop_errors:
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
@@ -388,8 +389,8 @@ class LoopStep(CompositeStep, BasicStep):
 
     def get_loop_slot_mappings(self, num_loops: int) -> nx.MultiDiGraph:
         input_mappings = []
-        self_edge_input_slots = [edge.input_slot for edge in self.self_edges]
-        external_input_slots = self.input_slots - self_edge_input_slots
+        self_edge_input_slots = {edge.input_slot for edge in self.self_edges}
+        external_input_slots = self.input_slots.keys() - self_edge_input_slots
         for input_slot in self_edge_input_slots:
             input_mappings.append(
                 SlotMapping("input", self.name, input_slot, f"{self.name}_loop_1", input_slot)
@@ -415,4 +416,4 @@ class LoopStep(CompositeStep, BasicStep):
         loop_config = {}
         for i, loop in enumerate(iterate_config):
             loop_config[f"{self.name}_loop_{i+1}"] = loop
-        return loop_config
+        return LayeredConfigTree(loop_config)
