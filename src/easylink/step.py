@@ -1,5 +1,6 @@
 import copy
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import Dict, List
 
 import networkx as nx
@@ -358,9 +359,9 @@ class LoopStep(CompositeStep, BasicStep):
         if len(sub_config) == 0:
             return {f"step {self.name}": ["No loops configured under iterate key."]}
 
-        errors = {}
+        errors = defaultdict(dict)
         for i, loop in enumerate(sub_config):
-            loop_errors = self.iterated_node.validate_step({self.name: loop})
+            loop_errors = self.iterated_node.validate_step(loop)
             if loop_errors:
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
@@ -397,10 +398,8 @@ class LoopStep(CompositeStep, BasicStep):
         ]
         return {"input": input_mappings, "output": output_mappings}
 
-    def _get_loop_config(
-        self, iterate_config: LayeredConfigTree
-    ) -> Dict[str, LayeredConfigTree]:
+    def _get_loop_config(self, iterate_config: List[Dict]) -> LayeredConfigTree:
         loop_config = {}
         for i, loop in enumerate(iterate_config):
             loop_config[f"{self.name}_loop_{i+1}"] = loop
-        return loop_config
+        return LayeredConfigTree(loop_config)
