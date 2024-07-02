@@ -25,14 +25,14 @@ NODES = [
 ]
 EDGES = [
     Edge(
-        in_node="input_data",
-        out_node="step_1",
+        source_node="input_data",
+        target_node="step_1",
         output_slot="file1",
         input_slot="step_1_main_input",
     ),
     Edge(
-        in_node="step_1",
-        out_node="results",
+        source_node="step_1",
+        target_node="results",
         output_slot="step_1_main_output",
         input_slot="result",
     ),

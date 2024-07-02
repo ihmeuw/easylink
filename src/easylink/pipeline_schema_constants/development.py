@@ -40,8 +40,8 @@ NODES = [
         ],
         edges=[
             Edge(
-                in_node="step_1a",
-                out_node="step_1b",
+                source_node="step_1a",
+                target_node="step_1b",
                 output_slot="step_1a_main_output",
                 input_slot="step_1b_main_input",
             ),
@@ -103,8 +103,8 @@ NODES = [
         ],
         edges=[
             Edge(
-                in_node="step_3",
-                out_node="step_3",
+                source_node="step_3",
+                target_node="step_3",
                 output_slot="step_3_main_output",
                 input_slot="step_3_main_input",
             )
@@ -136,38 +136,38 @@ NODES = [
 ]
 EDGES = [
     Edge(
-        in_node="input_data",
-        out_node="step_1",
+        source_node="input_data",
+        target_node="step_1",
         output_slot="file1",
         input_slot="step_1_main_input",
     ),
     Edge(
-        in_node="input_data",
-        out_node="step_4",
+        source_node="input_data",
+        target_node="step_4",
         output_slot="file1",
         input_slot="step_4_secondary_input",
     ),
     Edge(
-        in_node="step_1",
-        out_node="step_2",
+        source_node="step_1",
+        target_node="step_2",
         output_slot="step_1_main_output",
         input_slot="step_2_main_input",
     ),
     Edge(
-        in_node="step_2",
-        out_node="step_3",
+        source_node="step_2",
+        target_node="step_3",
         output_slot="step_2_main_output",
         input_slot="step_3_main_input",
     ),
     Edge(
-        in_node="step_3",
-        out_node="step_4",
+        source_node="step_3",
+        target_node="step_4",
         output_slot="step_3_main_output",
         input_slot="step_4_main_input",
     ),
     Edge(
-        in_node="step_4",
-        out_node="results",
+        source_node="step_4",
+        target_node="results",
         output_slot="step_4_main_output",
         input_slot="result",
     ),

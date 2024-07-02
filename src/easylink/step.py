@@ -180,10 +180,10 @@ class CompositeStep(Step):
             )
         for edge in edges:
             graph.add_edge(
-                edge.in_node,
-                edge.out_node,
-                input_slot=graph.nodes[edge.out_node]["step"].input_slots[edge.input_slot],
-                output_slot=graph.nodes[edge.in_node]["step"].output_slots[edge.output_slot],
+                edge.source_node,
+                edge.target_node,
+                input_slot=graph.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
+                output_slot=graph.nodes[edge.source_node]["step"].output_slots[edge.output_slot],
             )
 
         return graph
@@ -317,7 +317,7 @@ class LoopStep(CompositeStep, BasicStep):
             )
         self.unlooped_node = nodes[0]
         for edge in edges:
-            if not edge.in_node == edge.out_node == step_name:
+            if not edge.source_node == edge.target_node == step_name:
                 raise NotImplementedError(
                     f"LoopStep {self.name} must be initialized with only self-loops as edges"
                 )
