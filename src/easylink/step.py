@@ -89,7 +89,7 @@ class BasicStep(Step):
     ) -> None:
         """Return a single node with an implementation attribute."""
         implementation_name = step_config["implementation"]["name"]
-        implementation_config = step_config["implementation"]["configuration"]
+        implementation_config = step_config["implementation"]
         implementation_node_name = (
             implementation_name
             if self.name == self.step_name
