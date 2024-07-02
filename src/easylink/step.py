@@ -96,9 +96,8 @@ class BasicStep(Step):
             else f"{self.name}_{implementation_name}"
         )
         implementation = Implementation(
-            name=implementation_name,
             step_name=self.step_name,
-            environment_variables=implementation_config.to_dict(),
+            implementation_config=implementation_config,
         )
         graph.add_node(
             implementation_node_name,
