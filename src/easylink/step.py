@@ -338,8 +338,8 @@ class LoopStep(CompositeStep, BasicStep):
             sub_config = step_config[self.config_key]
             num_loops = len(sub_config)
             self.graph = self._create_looped_graph(num_loops)
-            self.slot_mappings = self.get_loop_slot_mappings(num_loops)
-            loop_config = self.get_loop_config(sub_config)
+            self.slot_mappings = self._get_loop_slot_mappings(num_loops)
+            loop_config = self._get_loop_config(sub_config)
             CompositeStep.update_implementation_graph(self, graph, loop_config)
 
     def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
@@ -386,7 +386,7 @@ class LoopStep(CompositeStep, BasicStep):
                     )
         return graph
 
-    def get_loop_slot_mappings(self, num_loops: int) -> nx.MultiDiGraph:
+    def _get_loop_slot_mappings(self, num_loops: int) -> nx.MultiDiGraph:
         input_mappings = [
             SlotMapping("input", self.name, slot, f"{self.name}_loop_1", slot)
             for slot in self.input_slots
@@ -397,7 +397,7 @@ class LoopStep(CompositeStep, BasicStep):
         ]
         return {"input": input_mappings, "output": output_mappings}
 
-    def get_loop_config(
+    def _get_loop_config(
         self, iterate_config: LayeredConfigTree
     ) -> Dict[str, LayeredConfigTree]:
         loop_config = {}
