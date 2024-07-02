@@ -183,7 +183,9 @@ class CompositeStep(Step):
                 edge.source_node,
                 edge.target_node,
                 input_slot=graph.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
-                output_slot=graph.nodes[edge.source_node]["step"].output_slots[edge.output_slot],
+                output_slot=graph.nodes[edge.source_node]["step"].output_slots[
+                    edge.output_slot
+                ],
             )
 
         return graph
@@ -301,27 +303,27 @@ class LoopStep(CompositeStep, BasicStep):
         name: str = None,
         input_slots: List[InputSlot] = [],
         output_slots: List[OutputSlot] = [],
-        nodes: List[Step] = [],
-        edges: List[Edge] = [],
+        iterated_node: Step = None,
+        iterated_edges: List[Edge] = [],
         # slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
         # TODO [MIC-5135]: Make loopstep compatible with sequence of steps using step hierarchy (composite steps)
-        if len(nodes) != 1 or nodes[0].name != step_name:
+        if not iterated_node or iterated_node.name != step_name:
             raise NotImplementedError(
                 f"LoopStep {self.name} must be initialized with a single node with the same name."
             )
-        if not isinstance(nodes[0], BasicStep):
+        if not isinstance(iterated_node, BasicStep):
             raise NotImplementedError(
                 f"LoopStep {self.name} can currently only loop a single implementation."
             )
-        self.unlooped_node = nodes[0]
-        for edge in edges:
+        self.iterated_node = iterated_node
+        for edge in iterated_edges:
             if not edge.source_node == edge.target_node == step_name:
                 raise NotImplementedError(
                     f"LoopStep {self.name} must be initialized with only self-loops as edges"
                 )
-        self.edges = edges
+        self.iterated_edges = iterated_edges
 
     @property
     def config_key(self):
@@ -358,7 +360,7 @@ class LoopStep(CompositeStep, BasicStep):
 
         errors = {}
         for i, loop in enumerate(sub_config):
-            loop_errors = self.unlooped_node.validate_step({self.name: loop})
+            loop_errors = self.iterated_node.validate_step({self.name: loop})
             if loop_errors:
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
@@ -367,11 +369,11 @@ class LoopStep(CompositeStep, BasicStep):
         graph = nx.MultiDiGraph()
 
         for i in range(num_loops):
-            updated_step = copy.deepcopy(self.unlooped_node)
+            updated_step = copy.deepcopy(self.iterated_node)
             updated_step.name = f"{self.name}_loop_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
             if i > 0:
-                for edge in self.edges:
+                for edge in self.iterated_edges:
                     source = f"{self.name}_loop_{i}"
                     sink = f"{self.name}_loop_{i+1}"
                     input_slot = graph.nodes[sink]["step"].input_slots[edge.input_slot]

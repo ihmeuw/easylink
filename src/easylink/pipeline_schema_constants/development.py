@@ -88,20 +88,18 @@ NODES = [
             )
         ],
         output_slots=[OutputSlot("step_3_main_output")],
-        nodes=[
-            BasicStep(
-                "step_3",
-                input_slots=[
-                    InputSlot(
-                        name="step_3_main_input",
-                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                        validator=validate_input_file_dummy,
-                    )
-                ],
-                output_slots=[OutputSlot("step_3_main_output")],
-            )
-        ],
-        edges=[
+        iterated_node=BasicStep(
+            "step_3",
+            input_slots=[
+                InputSlot(
+                    name="step_3_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                )
+            ],
+            output_slots=[OutputSlot("step_3_main_output")],
+        ),
+        iterated_edges=[
             Edge(
                 source_node="step_3",
                 target_node="step_3",

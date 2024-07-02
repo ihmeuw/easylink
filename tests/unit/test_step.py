@@ -371,11 +371,11 @@ def test_loop_step() -> None:
         )
     }
     assert step.output_slots == {"step_3_main_output": OutputSlot("step_3_main_output")}
-    assert isinstance(step.unlooped_node, BasicStep)
-    assert step.unlooped_node.name == step.name
-    assert step.unlooped_node.input_slots == step.input_slots
-    assert step.unlooped_node.output_slots == step.output_slots
-    assert step.edges == [
+    assert isinstance(step.iterated_node, BasicStep)
+    assert step.iterated_node.name == step.name
+    assert step.iterated_node.input_slots == step.input_slots
+    assert step.iterated_node.output_slots == step.output_slots
+    assert step.iterated_edges == [
         Edge(step.name, step.name, "step_3_main_output", "step_3_main_input")
     ]
 
