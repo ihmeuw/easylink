@@ -57,7 +57,7 @@ def basic_step_params() -> Dict[str, Any]:
     }
 
 
-def test_basic_step(basic_step_params) -> None:
+def test_basic_step(basic_step_params: Dict[str, Any]) -> None:
     step = BasicStep(**basic_step_params)
     assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
@@ -71,7 +71,7 @@ def test_basic_step(basic_step_params) -> None:
 
 
 def test_basic_step_update_implementation_graph(
-    basic_step_params, default_config: Config
+    basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
     subgraph = nx.MultiDiGraph()
@@ -81,7 +81,7 @@ def test_basic_step_update_implementation_graph(
     assert list(subgraph.edges) == []
 
 
-def test_basic_step_get_implementation_node_name(basic_step_params, default_config: Config):
+def test_basic_step_get_implementation_node_name(basic_step_params: Dict[str, Any], default_config: Config) -> None:
     step = BasicStep(**basic_step_params)
     node_name = step.get_implementation_node_name(default_config["pipeline"][step.name])
     assert node_name == "step_1_python_pandas"

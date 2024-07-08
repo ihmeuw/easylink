@@ -1,12 +1,5 @@
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import (
-    BasicStep,
-    CompositeStep,
-    HierarchicalStep,
-    InputSlot,
-    IOStep,
-    LoopStep,
-)
+from easylink.step import BasicStep, HierarchicalStep, InputSlot, IOStep, LoopStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
