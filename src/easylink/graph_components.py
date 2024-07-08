@@ -20,10 +20,11 @@ class OutputSlot:
 
 @dataclass
 class Edge:
-    """Edge represents an edge between two nodes in a graph."""
+    """An edge between two nodes in a graph. Edges connect the output slot of
+    the source node to the input slot of the target node."""
 
-    in_node: str
-    out_node: str
+    source_node: str
+    target_node: str
     output_slot: str
     input_slot: str
 

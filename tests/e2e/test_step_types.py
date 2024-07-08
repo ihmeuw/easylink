@@ -24,12 +24,13 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
         ),
         # Substeps
         (
-            "e2e/pipeline_hierarchical.yaml",
+            "e2e/pipeline_expanded.yaml",
             [
                 "step_1a_python_pandas",
                 "step_1b_python_pandas",
                 "step_2_python_pandas",
-                "step_3_python_pandas",
+                "step_3_loop_1_step_3_python_pandas",
+                "step_3_loop_2_step_3_python_pandas",
                 "step_4_python_pandas",
             ],
         ),

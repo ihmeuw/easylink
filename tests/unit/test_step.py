@@ -6,14 +6,17 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import BasicStep, CompositeStep, HierarchicalStep, IOStep
+from easylink.pipeline_schema_constants.development import NODES
+from easylink.step import BasicStep, CompositeStep, HierarchicalStep, IOStep, LoopStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
+
+STEP_KEYS = {step.name: step for step in NODES}
 
 
 @pytest.fixture
 def io_step_params() -> Dict[str, Any]:
     return {
-        "name": "io",
+        "step_name": "io",
         "input_slots": [InputSlot("result", None, validate_input_file_dummy)],
         "output_slots": [OutputSlot("file1")],
     }
@@ -21,7 +24,7 @@ def io_step_params() -> Dict[str, Any]:
 
 def test_io_step(io_step_params: Dict[str, Any]) -> None:
     step = IOStep(**io_step_params)
-    assert step.name == "io"
+    assert step.name == step.step_name == "io"
     assert step.input_slots == {
         "result": InputSlot("result", None, validate_input_file_dummy)
     }
@@ -42,7 +45,7 @@ def test_io_update_implementation_graph(
 @pytest.fixture
 def implemented_step_params() -> Dict[str, Any]:
     return {
-        "name": "step_1",
+        "step_name": "step_1",
         "input_slots": [
             InputSlot(
                 "step_1_main_input",
@@ -56,7 +59,7 @@ def implemented_step_params() -> Dict[str, Any]:
 
 def test_implemented_step(implemented_step_params) -> None:
     step = BasicStep(**implemented_step_params)
-    assert step.name == "step_1"
+    assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
             "step_1_main_input",
@@ -81,7 +84,7 @@ def test_implemented_step_update_implementation_graph(
 @pytest.fixture
 def composite_step_params() -> Dict[str, Any]:
     return {
-        "name": "step_1",
+        "step_name": "step_1",
         "input_slots": [
             InputSlot(
                 "step_1_main_input",
@@ -132,7 +135,7 @@ def composite_step_params() -> Dict[str, Any]:
 
 def test_composite_step(composite_step_params: Dict[str, Any]) -> None:
     step = CompositeStep(**composite_step_params)
-    assert step.name == "step_1"
+    assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
             "step_1_main_input",
@@ -211,7 +214,7 @@ def test_composite_step_update_implementation_graph(
 @pytest.fixture
 def hierarchical_step_params() -> Dict[str, Any]:
     return {
-        "name": "step_1",
+        "step_name": "step_1",
         "input_slots": [
             InputSlot(
                 "step_1_main_input",
@@ -348,6 +351,129 @@ def test_hierarchical_step_update_implementation_graph(
                     validate_input_file_dummy,
                 ),
                 "output_slot": OutputSlot("step_1a_main_output"),
+            },
+        ),
+    ]
+    assert len(subgraph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in subgraph.edges(data=True)
+
+
+def test_loop_step() -> None:
+    step = STEP_KEYS["step_3"]
+    assert step.name == step.step_name == "step_3"
+    assert isinstance(step, LoopStep)
+    assert step.input_slots == {
+        "step_3_main_input": InputSlot(
+            "step_3_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        )
+    }
+    assert step.output_slots == {"step_3_main_output": OutputSlot("step_3_main_output")}
+    assert isinstance(step.iterated_node, BasicStep)
+    assert step.iterated_node.name == step.name
+    assert step.iterated_node.input_slots == step.input_slots
+    assert step.iterated_node.output_slots == step.output_slots
+    assert step.iterated_edges == [
+        Edge(step.name, step.name, "step_3_main_output", "step_3_main_input")
+    ]
+
+
+def test_loop_update_implementation_graph(default_config: Config) -> None:
+    step = STEP_KEYS["step_3"]
+    subgraph = nx.MultiDiGraph()
+    subgraph.add_node(step.name, step=step)
+    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
+    assert list(subgraph.nodes) == ["step_3_python_pandas"]
+    assert list(subgraph.edges) == []
+
+    pipeline_params = LayeredConfigTree(
+        {
+            "iterate": [
+                LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
+                        }
+                    }
+                ),
+                LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
+                        }
+                    }
+                ),
+                LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
+                        }
+                    }
+                ),
+            ],
+        }
+    )
+    subgraph = nx.MultiDiGraph(
+        [
+            (
+                "input_data",
+                "step_3",
+                {
+                    "input_slot": InputSlot(
+                        "step_3_main_input", None, validate_input_file_dummy
+                    ),
+                    "output_slot": OutputSlot("file1"),
+                },
+            )
+        ]
+    )
+    step.update_implementation_graph(subgraph, pipeline_params)
+    assert list(subgraph.nodes) == [
+        "input_data",
+        "step_3_loop_1_step_3_python_pandas",
+        "step_3_loop_2_step_3_python_pandas",
+        "step_3_loop_3_step_3_python_pandas",
+    ]
+    expected_edges = [
+        (
+            "input_data",
+            "step_3_loop_1_step_3_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("file1"),
+            },
+        ),
+        (
+            "step_3_loop_1_step_3_python_pandas",
+            "step_3_loop_2_step_3_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_3_main_output"),
+            },
+        ),
+        (
+            "step_3_loop_2_step_3_python_pandas",
+            "step_3_loop_3_step_3_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_3_main_output"),
             },
         ),
     ]

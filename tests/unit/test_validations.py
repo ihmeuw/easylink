@@ -110,6 +110,28 @@ def test_batch_validation():
             },
         ),
         (
+            "missing_loop_nodes",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_3": ["No loops configured under iterate key."],
+                    },
+                },
+            },
+        ),
+        (
+            "bad_loop_formatting",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_3": [
+                            "Loops must be formatted as a sequence in the pipeline configuration."
+                        ],
+                    },
+                },
+            },
+        ),
+        (
             "missing_substep_keys",
             {
                 PIPELINE_ERRORS_KEY: {

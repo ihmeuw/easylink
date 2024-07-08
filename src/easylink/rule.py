@@ -65,6 +65,7 @@ class ImplementedRule(Rule):
     A rule that defines the execution of an implementation
 
     Parameters:
+    name: Name to give rule
     step_name: Name of step
     implementation_name: Name of implementation
     execution_input: List of file paths required by implementation
@@ -77,6 +78,7 @@ class ImplementedRule(Rule):
     script_cmd: Command to execute
     """
 
+    name: str
     step_name: str
     implementation_name: str
     input_slots: Dict[str, List[str]]
@@ -96,12 +98,12 @@ class ImplementedRule(Rule):
         return (
             f"""
 rule:
-    name: "{self.implementation_name}"
+    name: "{self.name}"
     message: "Running {self.step_name} implementation: {self.implementation_name}" """
             + self._build_input()
             + f"""        
     output: {self.output}
-    log: "{self.diagnostics_dir}/{self.implementation_name}-output.log"
+    log: "{self.diagnostics_dir}/{self.name}-output.log"
     container: "{self.image_path}" """
         )
 
@@ -129,7 +131,7 @@ rule:
         mem_mb={self.resources['mem_mb']},
         runtime={self.resources['runtime']},
         cpus_per_task={self.resources['cpus_per_task']},
-        slurm_extra="--output '{self.diagnostics_dir}/{self.implementation_name}-slurm-%j.log'" """
+        slurm_extra="--output '{self.diagnostics_dir}/{self.name}-slurm-%j.log'" """
 
     def _build_shell_command(self) -> str:
         shell_cmd = f"""
@@ -169,6 +171,7 @@ class InputValidationRule(Rule):
     """
 
     name: str
+    slot_name: str
     input: List[str]
     output: str
     validator: Callable
@@ -176,11 +179,11 @@ class InputValidationRule(Rule):
     def _build_rule(self) -> str:
         return f"""
 rule:
-    name: "{self.name}_validator"
+    name: "{self.name}_{self.slot_name}_validator"
     input: {self.input}
     output: touch("{self.output}")
     localrule: True         
-    message: "Validating {self.name}"
+    message: "Validating {self.name} input slot {self.slot_name}"
     run:
         for f in input:
             validation_utils.{self.validator.__name__}(f)"""
