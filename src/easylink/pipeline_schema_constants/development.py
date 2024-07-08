@@ -93,24 +93,14 @@ NODES = [
                 env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validator=validate_input_file_dummy,
             ),
-            InputSlot(
-                name="step_3_secondary_input",
-                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
         ],
         output_slots=[OutputSlot("step_3_main_output")],
-        iterated_node=CompositeStep(
+        iterated_node=HierarchicalStep(
             "step_3",
             input_slots=[
                 InputSlot(
                     name="step_3_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=validate_input_file_dummy,
-                ),
-                InputSlot(
-                    name="step_3_secondary_input",
-                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
                 ),
             ],
@@ -124,11 +114,6 @@ NODES = [
                             env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                             validator=validate_input_file_dummy,
                         ),
-                        InputSlot(
-                            name="step_3a_secondary_input",
-                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
                     ],
                     output_slots=[OutputSlot("step_3a_main_output")],
                 ),
@@ -138,11 +123,6 @@ NODES = [
                         InputSlot(
                             name="step_3b_main_input",
                             env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                        InputSlot(
-                            name="step_3b_secondary_input",
-                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                             validator=validate_input_file_dummy,
                         ),
                     ],
@@ -165,20 +145,6 @@ NODES = [
                         parent_slot="step_3_main_input",
                         child_node="step_3a",
                         child_slot="step_3a_main_input",
-                    ),
-                    SlotMapping(
-                        slot_type="input",
-                        parent_node="step_3",
-                        parent_slot="step_3_secondary_input",
-                        child_node="step_3a",
-                        child_slot="step_3a_secondary_input",
-                    ),
-                    SlotMapping(
-                        slot_type="input",
-                        parent_node="step_3",
-                        parent_slot="step_3_secondary_input",
-                        child_node="step_3b",
-                        child_slot="step_3b_secondary_input",
                     ),
                 ],
                 "output": [
@@ -237,12 +203,6 @@ EDGES = [
         target_node="step_4",
         output_slot="file1",
         input_slot="step_4_secondary_input",
-    ),
-    Edge(
-        source_node="input_data",
-        target_node="step_3",
-        output_slot="file1",
-        input_slot="step_3_secondary_input",
     ),
     Edge(
         source_node="step_1",
