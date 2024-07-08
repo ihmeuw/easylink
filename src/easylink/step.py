@@ -94,7 +94,7 @@ class BasicStep(Step):
     ) -> None:
         """Return a single node with an implementation attribute."""
         implementation_config = step_config["implementation"]
-        implementation_node_name = self.get_implementation_name(step_config)
+        implementation_node_name = self.get_implementation_node_name(step_config)
         implementation = Implementation(
             step_name=self.step_name,
             implementation_config=implementation_config,
@@ -108,7 +108,7 @@ class BasicStep(Step):
 
     def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         """Add edges to/from the implementation node to replace the edges from the current step"""
-        implementation_node_name = self.get_implementation_name(step_config)
+        implementation_node_name = self.get_implementation_node_name(step_config)
         for _source, sink, edge_attrs in graph.out_edges(self.name, data=True):
             graph.add_edge(
                 implementation_node_name,
@@ -144,7 +144,14 @@ class BasicStep(Step):
             ]
         return errors
 
-    def get_implementation_name(self, step_config):
+    def get_implementation_node_name(self, step_config):
+        """Resolve a sensible unique node name for the implementation graph.
+        This method compares the step node names with the step names through the step hierarchy and
+        uses the full suffix of step names starting from wherever the two first differ. For example,
+        if we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
+        will be step_3_loop_1_step_3_python_pandas. If all the node names and step names match, we have not
+        introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
+        name."""
         step = self
         node_names = []
         step_names = []
@@ -306,12 +313,7 @@ class HierarchicalStep(CompositeStep, BasicStep):
 
 
 class LoopStep(CompositeStep, BasicStep):
-    """A LoopStep allows a user to loop a single step a user-configured number of times."""
-
-    # The first version of LoopStep relies on several (not-generalizable) assumptions
-    # First, that LoopStep is initialized with only one node with the same name
-    # as the LoopStep. It also assumes that there is only one input and output slot.
-    # We use a self-loop to represent how one loop feeds into the next.
+    """A LoopStep allows a user to loop a single step or a sequence of steps a user-configured number of times."""
 
     def __init__(
         self,
@@ -321,10 +323,8 @@ class LoopStep(CompositeStep, BasicStep):
         output_slots: List[OutputSlot] = [],
         iterated_node: Step = None,
         self_edges: List[Edge] = [],
-        # slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
-        # TODO [MIC-5135]: Make loopstep compatible with sequence of steps using step hierarchy (composite steps)
         if not iterated_node or iterated_node.name != step_name:
             raise NotImplementedError(
                 f"LoopStep {self.name} must be initialized with a single node with the same name."
@@ -379,6 +379,8 @@ class LoopStep(CompositeStep, BasicStep):
         return errors
 
     def _create_looped_graph(self, num_loops: int) -> nx.MultiDiGraph:
+        """Make N copies of the iterated graph and chain them together according
+        to the self edges."""
         graph = nx.MultiDiGraph()
 
         for i in range(num_loops):
@@ -400,6 +402,8 @@ class LoopStep(CompositeStep, BasicStep):
         return graph
 
     def get_loop_slot_mappings(self, num_loops: int) -> nx.MultiDiGraph:
+        """Get the appropriate slot mappings for the CompositeStep based on the number of loops
+        and the non-self-edge input and output slots."""
         input_mappings = []
         self_edge_input_slots = {edge.input_slot for edge in self.self_edges}
         external_input_slots = self.input_slots.keys() - self_edge_input_slots
@@ -425,6 +429,8 @@ class LoopStep(CompositeStep, BasicStep):
     def get_loop_config(
         self, iterate_config: LayeredConfigTree
     ) -> Dict[str, LayeredConfigTree]:
+        """Get the dictionary for the looped graph based on the sequence
+        of sub-yamls."""
         loop_config = {}
         for i, loop in enumerate(iterate_config):
             loop_config[f"{self.name}_loop_{i+1}"] = loop
