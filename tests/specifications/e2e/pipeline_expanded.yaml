@@ -13,8 +13,13 @@ step_3:
   iterate:
     - implementation:
         name: step_3_python_pandas
-    - implementation:
-        name: step_3_python_pandas
+    - substeps:
+        step_3a:
+          implementation: 
+            name: step_3a_python_pandas
+        step_3b:
+          implementation: 
+            name: step_3b_python_pandas
 step_4:
   implementation:
     name: step_4_python_pandas

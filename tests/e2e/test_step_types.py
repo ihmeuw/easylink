@@ -22,7 +22,7 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
                 "step_4_python_pandas",
             ],
         ),
-        # Substeps
+        # Expanded pipeline with loops and hierarchy
         (
             "e2e/pipeline_expanded.yaml",
             [
@@ -30,7 +30,8 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
                 "step_1b_python_pandas",
                 "step_2_python_pandas",
                 "step_3_loop_1_step_3_python_pandas",
-                "step_3_loop_2_step_3_python_pandas",
+                "step_3_loop_2_step_3a_step_3a_python_pandas",
+                "step_3_loop_2_step_3b_step_3b_python_pandas",
                 "step_4_python_pandas",
             ],
         ),
