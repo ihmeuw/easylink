@@ -144,11 +144,12 @@ class BasicStep(Step):
             ]
         return errors
 
-    def get_implementation_node_name(self, step_config):
+    def get_implementation_node_name(self, step_config: LayeredConfigTree) -> str:
         """Resolve a sensible unique node name for the implementation graph.
         This method compares the step node names with the step names through the step hierarchy and
         uses the full suffix of step names starting from wherever the two first differ. For example,
-        if we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
+        loop steps may have multiple loops with the same implementation and step, e.g. "step_3" and "step_3_python_pandas".
+        If we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
         will be step_3_loop_1_step_3_python_pandas. If all the node names and step names match, we have not
         introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
         name."""
@@ -402,7 +403,7 @@ class LoopStep(CompositeStep, BasicStep):
         return graph
 
     def _get_loop_slot_mappings(self, num_loops: int) -> nx.MultiDiGraph:
-        """Get the appropriate slot mappings for the CompositeStep based on the number of loops
+        """Get the appropriate slot mappings based on the number of loops
         and the non-self-edge input and output slots."""
         input_mappings = []
         self_edge_input_slots = {edge.input_slot for edge in self.self_edges}
