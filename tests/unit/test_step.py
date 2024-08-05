@@ -96,49 +96,49 @@ def test_basic_step_get_implementation_node_name(
 @pytest.fixture
 def composite_step_params() -> Dict[str, Any]:
     return {
-        "step_name": "step_1",
+        "step_name": "step_4",
         "input_slots": [
             InputSlot(
-                "step_1_main_input",
+                "step_4_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
             )
         ],
-        "output_slots": [OutputSlot("step_1_main_output")],
+        "output_slots": [OutputSlot("step_4_main_output")],
         "nodes": [
             BasicStep(
-                "step_1a",
+                "step_4a",
                 input_slots=[
                     InputSlot(
-                        "step_1a_main_input",
+                        "step_4a_main_input",
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validate_input_file_dummy,
                     )
                 ],
-                output_slots=[OutputSlot("step_1a_main_output")],
+                output_slots=[OutputSlot("step_4a_main_output")],
             ),
             BasicStep(
-                "step_1b",
+                "step_4b",
                 input_slots=[
                     InputSlot(
-                        "step_1b_main_input",
+                        "step_4b_main_input",
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validate_input_file_dummy,
                     )
                 ],
-                output_slots=[OutputSlot("step_1b_main_output")],
+                output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [Edge("step_1a", "step_1b", "step_1a_main_output", "step_1b_main_input")],
+        "edges": [Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
         "slot_mappings": {
             "input": [
                 SlotMapping(
-                    "input", "step_1", "step_1_main_input", "step_1a", "step_1a_main_input"
+                    "input", "step_4", "step_4_main_input", "step_4a", "step_4a_main_input"
                 )
             ],
             "output": [
                 SlotMapping(
-                    "output", "step_1", "step_1_main_output", "step_1b", "step_1b_main_output"
+                    "output", "step_4", "step_4_main_output", "step_4b", "step_4b_main_output"
                 )
             ],
         },
@@ -147,15 +147,15 @@ def composite_step_params() -> Dict[str, Any]:
 
 def test_composite_step(composite_step_params: Dict[str, Any]) -> None:
     step = CompositeStep(**composite_step_params)
-    assert step.name == step.step_name == "step_1"
+    assert step.name == step.step_name == "step_4"
     assert step.input_slots == {
-        "step_1_main_input": InputSlot(
-            "step_1_main_input",
+        "step_4_main_input": InputSlot(
+            "step_4_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
         )
     }
-    assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
+    assert step.output_slots == {"step_4_main_output": OutputSlot("step_4_main_output")}
 
 
 def test_composite_step_update_implementation_graph(
@@ -164,11 +164,11 @@ def test_composite_step_update_implementation_graph(
     step = CompositeStep(**composite_step_params)
     pipeline_params = LayeredConfigTree(
         {
-            "step_1a": {
-                "implementation": {"name": "step_1a_python_pandas", "configuration": {}}
+            "step_4a": {
+                "implementation": {"name": "step_4a_python_pandas", "configuration": {}}
             },
-            "step_1b": {
-                "implementation": {"name": "step_1b_python_pandas", "configuration": {}}
+            "step_4b": {
+                "implementation": {"name": "step_4b_python_pandas", "configuration": {}}
             },
         }
     )
@@ -176,10 +176,10 @@ def test_composite_step_update_implementation_graph(
         [
             (
                 "input_data",
-                "step_1",
+                "step_4",
                 {
                     "input_slot": InputSlot(
-                        "step_1_main_input", None, validate_input_file_dummy
+                        "step_4_main_input", None, validate_input_file_dummy
                     ),
                     "output_slot": OutputSlot("file1"),
                 },
@@ -189,16 +189,16 @@ def test_composite_step_update_implementation_graph(
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
-        "step_1a_python_pandas",
-        "step_1b_python_pandas",
+        "step_4a_python_pandas",
+        "step_4b_python_pandas",
     ]
     expected_edges = [
         (
             "input_data",
-            "step_1a_python_pandas",
+            "step_4a_python_pandas",
             {
                 "input_slot": InputSlot(
-                    "step_1a_main_input",
+                    "step_4a_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
                 ),
@@ -206,15 +206,15 @@ def test_composite_step_update_implementation_graph(
             },
         ),
         (
-            "step_1a_python_pandas",
-            "step_1b_python_pandas",
+            "step_4a_python_pandas",
+            "step_4b_python_pandas",
             {
                 "input_slot": InputSlot(
-                    "step_1b_main_input",
+                    "step_4b_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
                 ),
-                "output_slot": OutputSlot("step_1a_main_output"),
+                "output_slot": OutputSlot("step_4a_main_output"),
             },
         ),
     ]
@@ -226,49 +226,49 @@ def test_composite_step_update_implementation_graph(
 @pytest.fixture
 def hierarchical_step_params() -> Dict[str, Any]:
     return {
-        "step_name": "step_1",
+        "step_name": "step_4",
         "input_slots": [
             InputSlot(
-                "step_1_main_input",
+                "step_4_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
             )
         ],
-        "output_slots": [OutputSlot("step_1_main_output")],
+        "output_slots": [OutputSlot("step_4_main_output")],
         "nodes": [
             BasicStep(
-                "step_1a",
+                "step_4a",
                 input_slots=[
                     InputSlot(
-                        "step_1a_main_input",
+                        "step_4a_main_input",
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validate_input_file_dummy,
                     )
                 ],
-                output_slots=[OutputSlot("step_1a_main_output")],
+                output_slots=[OutputSlot("step_4a_main_output")],
             ),
             BasicStep(
-                "step_1b",
+                "step_4b",
                 input_slots=[
                     InputSlot(
-                        "step_1b_main_input",
+                        "step_4b_main_input",
                         "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validate_input_file_dummy,
                     )
                 ],
-                output_slots=[OutputSlot("step_1b_main_output")],
+                output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [Edge("step_1a", "step_1b", "step_1a_main_output", "step_1b_main_input")],
+        "edges": [Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
         "slot_mappings": {
             "input": [
                 SlotMapping(
-                    "input", "step_1", "step_1_main_input", "step_1a", "step_1a_main_input"
+                    "input", "step_4", "step_4_main_input", "step_4a", "step_4a_main_input"
                 )
             ],
             "output": [
                 SlotMapping(
-                    "output", "step_1", "step_1_main_output", "step_1b", "step_1b_main_output"
+                    "output", "step_4", "step_4_main_output", "step_4b", "step_4b_main_output"
                 )
             ],
         },
@@ -277,15 +277,15 @@ def hierarchical_step_params() -> Dict[str, Any]:
 
 def test_hierarchical_step(hierarchical_step_params: Dict[str, Any]) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
-    assert step.name == "step_1"
+    assert step.name == "step_4"
     assert step.input_slots == {
-        "step_1_main_input": InputSlot(
-            "step_1_main_input",
+        "step_4_main_input": InputSlot(
+            "step_4_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
         )
     }
-    assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
+    assert step.output_slots == {"step_4_main_output": OutputSlot("step_4_main_output")}
 
 
 def test_hierarchical_step_update_implementation_graph(
@@ -293,27 +293,27 @@ def test_hierarchical_step_update_implementation_graph(
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     pipeline_params = LayeredConfigTree(
-        {"implementation": {"name": "step_1_python_pandas", "configuration": {}}}
+        {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}
     )
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
     step.update_implementation_graph(subgraph, pipeline_params)
-    assert list(subgraph.nodes) == ["step_1_python_pandas"]
+    assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
     # Test update_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
         {
             "substeps": {
-                "step_1a": {
+                "step_4a": {
                     "implementation": {
-                        "name": "step_1a_python_pandas",
+                        "name": "step_4a_python_pandas",
                         "configuration": {},
                     }
                 },
-                "step_1b": {
+                "step_4b": {
                     "implementation": {
-                        "name": "step_1b_python_pandas",
+                        "name": "step_4b_python_pandas",
                         "configuration": {},
                     }
                 },
@@ -324,10 +324,10 @@ def test_hierarchical_step_update_implementation_graph(
         [
             (
                 "input_data",
-                "step_1",
+                "step_4",
                 {
                     "input_slot": InputSlot(
-                        "step_1_main_input", None, validate_input_file_dummy
+                        "step_4_main_input", None, validate_input_file_dummy
                     ),
                     "output_slot": OutputSlot("file1"),
                 },
@@ -337,16 +337,16 @@ def test_hierarchical_step_update_implementation_graph(
     step.update_implementation_graph(subgraph, pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
-        "step_1a_python_pandas",
-        "step_1b_python_pandas",
+        "step_4a_python_pandas",
+        "step_4b_python_pandas",
     ]
     expected_edges = [
         (
             "input_data",
-            "step_1a_python_pandas",
+            "step_4a_python_pandas",
             {
                 "input_slot": InputSlot(
-                    "step_1a_main_input",
+                    "step_4a_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
                 ),
@@ -354,15 +354,15 @@ def test_hierarchical_step_update_implementation_graph(
             },
         ),
         (
-            "step_1a_python_pandas",
-            "step_1b_python_pandas",
+            "step_4a_python_pandas",
+            "step_4b_python_pandas",
             {
                 "input_slot": InputSlot(
-                    "step_1b_main_input",
+                    "step_4b_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
                 ),
-                "output_slot": OutputSlot("step_1a_main_output"),
+                "output_slot": OutputSlot("step_4a_main_output"),
             },
         ),
     ]
