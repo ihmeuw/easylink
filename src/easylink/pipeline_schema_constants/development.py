@@ -1,10 +1,10 @@
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import BasicStep, HierarchicalStep, InputSlot, IOStep, LoopStep
+from easylink.step import BasicStep, HierarchicalStep, InputSlot, IOStep, LoopStep, ParallelStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
     IOStep(step_name="input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
-    BasicStep(
+    ParallelStep(
         step_name="step_1",
         input_slots=[
             InputSlot(
@@ -19,6 +19,68 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_1_main_output")],
+                nodes=[
+            BasicStep(
+                step_name="step_1a",
+                input_slots=[
+                    InputSlot(
+                        name="step_1a_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                    InputSlot(
+                        name="step_1a_secondary_input",
+                        env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                ],
+                output_slots=[OutputSlot("step_1a_main_output")],
+            ),
+            BasicStep(
+                step_name="step_1b",
+                input_slots=[
+                    InputSlot(
+                        name="step_1b_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                    InputSlot(
+                        name="step_1b_secondary_input",
+                        env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                ],
+                output_slots=[OutputSlot("step_1b_main_output")],
+            ),
+        ],
+        edges=[
+            Edge(
+                source_node="step_1a",
+                target_node="step_1b",
+                output_slot="step_1a_main_output",
+                input_slot="step_1b_main_input",
+            ),
+        ],
+        slot_mappings={
+            "input": [
+                SlotMapping(
+                    slot_type="input",
+                    parent_node="step_1",
+                    parent_slot="step_1_main_input",
+                    child_node="step_1a",
+                    child_slot="step_1a_main_input",
+                )
+            ],
+            "output": [
+                SlotMapping(
+                    slot_type="output",
+                    parent_node="step_1",
+                    parent_slot="step_1_main_output",
+                    child_node="step_1b",
+                    child_slot="step_1b_main_output",
+                )
+            ],
+        },
     ),
     BasicStep(
         step_name="step_2",
