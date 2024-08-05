@@ -231,9 +231,9 @@ PIPELINE_CONFIG_DICT = {
         },
     },
     "missing_substep_keys": {
-        "step_4": {
+        "step_1": {
             "substeps": {
-                "step_4a": {
+                "step_1a": {
                     "implementation": {},
                 },
             },
@@ -248,9 +248,9 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_1": {
+        "step_4": {
             "implementation": {
-                "name": "step_1_python_pandas",
+                "name": "step_4_python_pandas",
             },
         },
     },

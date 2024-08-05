@@ -5,6 +5,18 @@ step_1_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
+step_1a_python_pandas:
+  step: step_1a
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_1a_main_output: result.parquet
+step_1b_python_pandas:
+  step: step_1b
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_1b_main_output: result.parquet
 step_2_python_pandas:
   step: step_2
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
@@ -35,18 +47,6 @@ step_4_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_4_main_output: result.parquet
-step_4a_python_pandas:
-  step: step_4a
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
-  script_cmd: python /dummy_step.py
-  outputs:
-    step_4a_main_output: result.parquet
-step_4b_python_pandas:
-  step: step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
-  script_cmd: python /dummy_step.py
-  outputs:
-    step_4b_main_output: result.parquet
 step_1_python_pyspark_distributed:
   step: step_1
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif

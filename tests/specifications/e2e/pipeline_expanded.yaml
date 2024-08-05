@@ -1,6 +1,11 @@
 step_1:
-  implementation:
-    name: step_1_python_pandas
+  substeps:
+    step_1a:
+      implementation:
+        name: step_1a_python_pandas
+    step_1b:
+      implementation:
+        name: step_1b_python_pandas
 step_2:
   implementation:
     name: step_2_python_pandas
@@ -16,10 +21,5 @@ step_3:
           implementation: 
             name: step_3b_python_pandas
 step_4:
-  substeps:
-    step_4a:
-      implementation:
-        name: step_4a_python_pandas
-    step_4b:
-      implementation:
-        name: step_4b_python_pandas
+  implementation:
+    name: step_4_python_pandas
