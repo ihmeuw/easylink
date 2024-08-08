@@ -773,48 +773,53 @@ def test_parallel_step_update_implementation_graph(
     step = ParallelStep(**parallel_step_params)
     pipeline_params = LayeredConfigTree(
         {
-            "input_file_1": {
-                "substeps": {
-                    "step_1a": {
-                        "implementation": {
-                            "name": "step_1a_python_pandas",
-                        }
+            "parallel": [
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {
+                                "name": "step_1a_python_pandas",
+                            },
+                        },
+                        "step_1b": {
+                            "implementation": {
+                                "name": "step_1b_python_pandas",
+                            },
+                        },
                     },
-                    "step_1b": {
-                        "implementation": {
-                            "name": "step_1b_python_pandas",
-                        }
+                    "input_data_file": "input_file_1",
+                },
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {
+                                "name": "step_1a_python_pandas",
+                            },
+                        },
+                        "step_1b": {
+                            "implementation": {
+                                "name": "step_1b_python_pandas",
+                            },
+                        },
                     },
-                }
-            },
-            "input_file_2": {
-                "substeps": {
-                    "step_1a": {
-                        "implementation": {
-                            "name": "step_1a_python_pandas",
-                        }
+                    "input_data_file": "input_file_2",
+                },
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {
+                                "name": "step_1a_python_pandas",
+                            },
+                        },
+                        "step_1b": {
+                            "implementation": {
+                                "name": "step_1b_python_pandas",
+                            },
+                        },
                     },
-                    "step_1b": {
-                        "implementation": {
-                            "name": "step_1b_python_pandas",
-                        }
-                    },
-                }
-            },
-            "input_file_3": {
-                "substeps": {
-                    "step_1a": {
-                        "implementation": {
-                            "name": "step_1a_python_pandas",
-                        }
-                    },
-                    "step_1b": {
-                        "implementation": {
-                            "name": "step_1b_python_pandas",
-                        }
-                    },
-                }
-            },
+                    "input_data_file": "input_file_3",
+                },
+            ],
         }
     )
     subgraph = nx.MultiDiGraph(
@@ -842,18 +847,18 @@ def test_parallel_step_update_implementation_graph(
     step.update_implementation_graph(subgraph, pipeline_params)
     assert set(subgraph.nodes) == {
         "pipeline_graph_input_data",
-        "step_1_multiple_1_step_1a_step_1a_python_pandas",
-        "step_1_multiple_1_step_1b_step_1b_python_pandas",
-        "step_1_multiple_2_step_1a_step_1a_python_pandas",
-        "step_1_multiple_2_step_1b_step_1b_python_pandas",
-        "step_1_multiple_3_step_1a_step_1a_python_pandas",
-        "step_1_multiple_3_step_1b_step_1b_python_pandas",
+        "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
+        "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+        "step_1_parallel_split_2_step_1a_step_1a_python_pandas",
+        "step_1_parallel_split_2_step_1b_step_1b_python_pandas",
+        "step_1_parallel_split_3_step_1a_step_1a_python_pandas",
+        "step_1_parallel_split_3_step_1b_step_1b_python_pandas",
         "results",
     }
     expected_edges = [
         (
             "pipeline_graph_input_data",
-            "step_1_multiple_1_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1a_main_input",
@@ -864,8 +869,8 @@ def test_parallel_step_update_implementation_graph(
             },
         ),
         (
-            "step_1_multiple_1_step_1a_step_1a_python_pandas",
-            "step_1_multiple_1_step_1b_step_1b_python_pandas",
+            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -877,7 +882,7 @@ def test_parallel_step_update_implementation_graph(
         ),
         (
             "pipeline_graph_input_data",
-            "step_1_multiple_2_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_2_step_1a_step_1a_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1a_main_input",
@@ -888,8 +893,8 @@ def test_parallel_step_update_implementation_graph(
             },
         ),
         (
-            "step_1_multiple_2_step_1a_step_1a_python_pandas",
-            "step_1_multiple_2_step_1b_step_1b_python_pandas",
+            "step_1_parallel_split_2_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_2_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -901,7 +906,7 @@ def test_parallel_step_update_implementation_graph(
         ),
         (
             "pipeline_graph_input_data",
-            "step_1_multiple_3_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_3_step_1a_step_1a_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1a_main_input",
@@ -912,8 +917,8 @@ def test_parallel_step_update_implementation_graph(
             },
         ),
         (
-            "step_1_multiple_3_step_1a_step_1a_python_pandas",
-            "step_1_multiple_3_step_1b_step_1b_python_pandas",
+            "step_1_parallel_split_3_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_3_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -924,7 +929,7 @@ def test_parallel_step_update_implementation_graph(
             },
         ),
         (
-            "step_1_multiple_1_step_1b_step_1b_python_pandas",
+            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
             "results",
             {
                 "input_slot": InputSlot("all", None, validate_input_file_dummy),
@@ -932,7 +937,7 @@ def test_parallel_step_update_implementation_graph(
             },
         ),
         (
-            "step_1_multiple_2_step_1b_step_1b_python_pandas",
+            "step_1_parallel_split_2_step_1b_step_1b_python_pandas",
             "results",
             {
                 "input_slot": InputSlot("all", None, validate_input_file_dummy),
@@ -940,7 +945,7 @@ def test_parallel_step_update_implementation_graph(
             },
         ),
         (
-            "step_1_multiple_3_step_1b_step_1b_python_pandas",
+            "step_1_parallel_split_3_step_1b_step_1b_python_pandas",
             "results",
             {
                 "input_slot": InputSlot("all", None, validate_input_file_dummy),

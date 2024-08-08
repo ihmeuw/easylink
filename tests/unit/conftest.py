@@ -254,13 +254,16 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
-    "wrong_multiple_keys": {
+    "wrong_parallel_split_keys": {
         "step_1": {
-            "foo": {
-                "implementation": {
-                    "name": "step_1_python_pandas",
+            "parallel": [
+                {
+                    "implementation": {
+                        "name": "step_1_python_pandas",
+                    },
+                    "input_data_file": "foo",
                 },
-            },
+            ]
         },
         "step_2": {
             "implementation": {

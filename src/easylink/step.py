@@ -469,64 +469,78 @@ class ParallelStep(CompositeStep, BasicStep):
         self.split_node = split_node
         self.split_node.set_parent_step(self)
 
+    @property
+    def config_key(self):
+        return "parallel"
+
     def update_implementation_graph(
         self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
     ) -> None:
-        if "implementation" in step_config:
+        if not self.config_key in step_config:
             BasicStep.update_implementation_graph(self, graph, step_config)
         else:
-            num_loops = len(step_config)
-            self.graph = self._create_parallel_graph(num_loops)
-            self.slot_mappings = self._get_parallel_slot_mappings(num_loops)
-            parallel_config = self._get_parallel_config(step_config)
+            sub_config = step_config[self.config_key]
+            num_splits = len(sub_config)
+            self.graph = self._create_parallel_graph(num_splits)
+            self.slot_mappings = self._get_parallel_slot_mappings(num_splits)
+            parallel_config = self._get_parallel_config(sub_config)
             CompositeStep.update_implementation_graph(self, graph, parallel_config)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
-        if "implementation" in step_config:
+        if not self.config_key in step_config:
             return BasicStep.validate_step(self, step_config, input_data_config)
 
-        if len(step_config.keys()) == 0:
-            return {f"step {self.name}": ["No parallel steps configured under parallel key."]}
+        sub_config = step_config[self.config_key]
+
+        if not isinstance(sub_config, list):
+            return {
+                f"step {self.name}": [
+                    "Loops must be formatted as a sequence in the pipeline configuration."
+                ]
+            }
+
+        if len(sub_config) == 0:
+            return {f"step {self.name}": ["No loops configured under iterate key."]}
 
         errors = defaultdict(dict)
-        for i, (file_name, parallel_config) in enumerate(step_config.items()):
+        for i, parallel_config in enumerate(sub_config):
             parallel_errors = {}
-            if not file_name in input_data_config:
+            input_data_file = parallel_config.get("input_data_file")
+            if input_data_file and not input_data_file in input_data_config:
                 parallel_errors["Input Data Key"] = [
-                    f"Input data file '{file_name}' not found in input data configuration."
+                    f"Input data file '{input_data_file}' not found in input data configuration."
                 ]
-
             parallel_errors.update(
                 self.split_node.validate_step(parallel_config, input_data_config)
             )
             if parallel_errors:
-                errors[f"step {self.name}"][f"multiple {i+1}"] = parallel_errors
+                errors[f"step {self.name}"][f"parallel_split_{i+1}"] = parallel_errors
         return errors
 
-    def _create_parallel_graph(self, num_loops: int) -> nx.MultiDiGraph:
+    def _create_parallel_graph(self, num_splits: int) -> nx.MultiDiGraph:
         """Make N copies of the iterated graph and chain them together according
         to the self edges."""
         graph = nx.MultiDiGraph()
 
-        for i in range(num_loops):
+        for i in range(num_splits):
             updated_step = copy.deepcopy(self.split_node)
-            updated_step.name = f"{self.name}_multiple_{i+1}"
+            updated_step.name = f"{self.name}_parallel_split_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
         return graph
 
-    def _get_parallel_slot_mappings(self, num_loops) -> nx.MultiDiGraph:
+    def _get_parallel_slot_mappings(self, num_splits) -> nx.MultiDiGraph:
         """Get the appropriate slot mappings based on the number of loops
         and the non-self-edge input and output slots."""
         input_mappings = [
-            SlotMapping("input", self.name, slot, f"{self.name}_multiple_{n+1}", slot)
-            for n in range(num_loops)
+            SlotMapping("input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
+            for n in range(num_splits)
             for slot in self.input_slots
         ]
         output_mappings = [
-            SlotMapping("output", self.name, slot, f"{self.name}_multiple_{n+1}", slot)
-            for n in range(num_loops)
+            SlotMapping("output", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
+            for n in range(num_splits)
             for slot in self.output_slots
         ]
         return {"input": input_mappings, "output": output_mappings}
@@ -537,16 +551,15 @@ class ParallelStep(CompositeStep, BasicStep):
         """Get the dictionary for the parallel graph based on the sequence
         of sub-yamls."""
         parallel_step_config = {}
-        for i, (file_name, config) in enumerate(step_config.items()):
-            config = config.to_dict()
-            config["input_data_file"] = file_name
-            parallel_step_config[f"{self.name}_multiple_{i+1}"] = config
+        for i, config in enumerate(step_config):
+            parallel_step_config[f"{self.name}_parallel_split_{i+1}"] = config
         return LayeredConfigTree(parallel_step_config)
 
     def remap_slots(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
         super().remap_slots(graph, step_config)
         for step_name, config in step_config.items():
-            for edge_idx in graph["pipeline_graph_input_data"][step_name]:
-                graph["pipeline_graph_input_data"][step_name][edge_idx][
-                    "output_slot"
-                ] = OutputSlot(name=config["input_data_file"])
+            if "input_data_file" in config:
+                for edge_idx in graph["pipeline_graph_input_data"][step_name]:
+                    graph["pipeline_graph_input_data"][step_name][edge_idx][
+                        "output_slot"
+                    ] = OutputSlot(name=config["input_data_file"])

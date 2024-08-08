@@ -145,12 +145,12 @@ def test_batch_validation():
             },
         ),
         (
-            "wrong_multiple_keys",
+            "wrong_parallel_split_keys",
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
                         "step step_1": {
-                            "multiple 1": {
+                            "parallel_split_1": {
                                 "Input Data Key": [
                                     "Input data file 'foo' not found in input data configuration."
                                 ],
