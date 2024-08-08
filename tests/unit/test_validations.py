@@ -76,7 +76,7 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_1": [
+                        "step step_2": [
                             "The step configuration does not contain an 'implementation' key."
                         ]
                     },
@@ -140,6 +140,22 @@ def test_batch_validation():
                             "The implementation configuration does not contain a 'name' key."
                         ],
                         "step step_4b": ["The step is not configured."],
+                    },
+                },
+            },
+        ),
+        (
+            "wrong_multiple_keys",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_1": {
+                            "multiple 1": {
+                                "Input Data Key": [
+                                    "Input data file 'foo' not found in input data configuration."
+                                ],
+                            },
+                        },
                     },
                 },
             },

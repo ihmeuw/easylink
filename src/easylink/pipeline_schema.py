@@ -53,7 +53,7 @@ class PipelineSchema(CompositeStep):
                 try:
                     validator(file)
                 except FileNotFoundError as e:
-                    errors[str(file)] = ["Missing required input data"]
+                    errors[str(file)] = ["File not found."]
                 except Exception as e:
                     errors[str(file)] = [e.args[0]]
         return errors
