@@ -1,4 +1,16 @@
 # development dummies
+step_1a_python_pandas:
+  step: step_1a
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_1a_main_output: result.parquet
+step_1b_python_pandas:
+  step: step_1b
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_1b_main_output: result.parquet
 step_1_python_pandas:
   step: step_1
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif

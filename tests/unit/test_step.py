@@ -7,7 +7,14 @@ from layered_config_tree import LayeredConfigTree
 from easylink.configuration import Config
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
 from easylink.pipeline_schema_constants.development import NODES
-from easylink.step import BasicStep, CompositeStep, HierarchicalStep, IOStep, LoopStep
+from easylink.step import (
+    BasicStep,
+    CompositeStep,
+    HierarchicalStep,
+    IOStep,
+    LoopStep,
+    ParallelStep,
+)
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 STEP_KEYS = {step.name: step for step in NODES}
@@ -661,6 +668,283 @@ def test_loop_update_implementation_graph(
                     validate_input_file_dummy,
                 ),
                 "output_slot": OutputSlot("step_3a_main_output"),
+            },
+        ),
+    ]
+    assert len(subgraph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in subgraph.edges(data=True)
+
+
+@pytest.fixture
+def parallel_step_params() -> Dict[str, Any]:
+    return {
+        "step_name": "step_1",
+        "input_slots": [
+            InputSlot(
+                "step_1_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            )
+        ],
+        "output_slots": [OutputSlot("step_1_main_output")],
+        "split_node": HierarchicalStep(
+            "step_1",
+            input_slots=[
+                InputSlot(
+                    name="step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+            ],
+            output_slots=[OutputSlot("step_1_main_output")],
+            nodes=[
+                BasicStep(
+                    step_name="step_1a",
+                    input_slots=[
+                        InputSlot(
+                            name="step_1a_main_input",
+                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[OutputSlot("step_1a_main_output")],
+                ),
+                BasicStep(
+                    step_name="step_1b",
+                    input_slots=[
+                        InputSlot(
+                            name="step_1b_main_input",
+                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[OutputSlot("step_1b_main_output")],
+                ),
+            ],
+            edges=[
+                Edge(
+                    source_node="step_1a",
+                    target_node="step_1b",
+                    output_slot="step_1a_main_output",
+                    input_slot="step_1b_main_input",
+                ),
+            ],
+            slot_mappings={
+                "input": [
+                    SlotMapping(
+                        slot_type="input",
+                        parent_node="step_1",
+                        parent_slot="step_1_main_input",
+                        child_node="step_1a",
+                        child_slot="step_1a_main_input",
+                    )
+                ],
+                "output": [
+                    SlotMapping(
+                        slot_type="output",
+                        parent_node="step_1",
+                        parent_slot="step_1_main_output",
+                        child_node="step_1b",
+                        child_slot="step_1b_main_output",
+                    )
+                ],
+            },
+        ),
+    }
+
+
+def test_parallel_step(parallel_step_params: Dict[str, Any]) -> None:
+    step = ParallelStep(**parallel_step_params)
+    assert step.name == "step_1"
+    assert step.input_slots == {
+        "step_1_main_input": InputSlot(
+            "step_1_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        )
+    }
+    assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
+
+
+def test_parallel_step_update_implementation_graph(
+    parallel_step_params: Dict[str, Any]
+) -> None:
+    step = ParallelStep(**parallel_step_params)
+    pipeline_params = LayeredConfigTree(
+        {
+            "input_file_1": {
+                "substeps": {
+                    "step_1a": {
+                        "implementation": {
+                            "name": "step_1a_python_pandas",
+                        }
+                    },
+                    "step_1b": {
+                        "implementation": {
+                            "name": "step_1b_python_pandas",
+                        }
+                    },
+                }
+            },
+            "input_file_2": {
+                "substeps": {
+                    "step_1a": {
+                        "implementation": {
+                            "name": "step_1a_python_pandas",
+                        }
+                    },
+                    "step_1b": {
+                        "implementation": {
+                            "name": "step_1b_python_pandas",
+                        }
+                    },
+                }
+            },
+            "input_file_3": {
+                "substeps": {
+                    "step_1a": {
+                        "implementation": {
+                            "name": "step_1a_python_pandas",
+                        }
+                    },
+                    "step_1b": {
+                        "implementation": {
+                            "name": "step_1b_python_pandas",
+                        }
+                    },
+                }
+            },
+        }
+    )
+    subgraph = nx.MultiDiGraph(
+        [
+            (
+                "pipeline_graph_input_data",
+                "step_1",
+                {
+                    "input_slot": InputSlot(
+                        "step_1_main_input", None, validate_input_file_dummy
+                    ),
+                    "output_slot": OutputSlot("all"),
+                },
+            ),
+            (
+                "step_1",
+                "results",
+                {
+                    "input_slot": InputSlot("all", None, validate_input_file_dummy),
+                    "output_slot": OutputSlot("step_1_main_output"),
+                },
+            ),
+        ]
+    )
+    step.update_implementation_graph(subgraph, pipeline_params)
+    assert set(subgraph.nodes) == {
+        "pipeline_graph_input_data",
+        "step_1_multiple_1_step_1a_step_1a_python_pandas",
+        "step_1_multiple_1_step_1b_step_1b_python_pandas",
+        "step_1_multiple_2_step_1a_step_1a_python_pandas",
+        "step_1_multiple_2_step_1b_step_1b_python_pandas",
+        "step_1_multiple_3_step_1a_step_1a_python_pandas",
+        "step_1_multiple_3_step_1b_step_1b_python_pandas",
+        "results",
+    }
+    expected_edges = [
+        (
+            "pipeline_graph_input_data",
+            "step_1_multiple_1_step_1a_step_1a_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1a_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("input_file_1"),
+            },
+        ),
+        (
+            "step_1_multiple_1_step_1a_step_1a_python_pandas",
+            "step_1_multiple_1_step_1b_step_1b_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1b_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1a_main_output"),
+            },
+        ),
+        (
+            "pipeline_graph_input_data",
+            "step_1_multiple_2_step_1a_step_1a_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1a_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("input_file_2"),
+            },
+        ),
+        (
+            "step_1_multiple_2_step_1a_step_1a_python_pandas",
+            "step_1_multiple_2_step_1b_step_1b_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1b_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1a_main_output"),
+            },
+        ),
+        (
+            "pipeline_graph_input_data",
+            "step_1_multiple_3_step_1a_step_1a_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1a_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("input_file_3"),
+            },
+        ),
+        (
+            "step_1_multiple_3_step_1a_step_1a_python_pandas",
+            "step_1_multiple_3_step_1b_step_1b_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1b_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1a_main_output"),
+            },
+        ),
+        (
+            "step_1_multiple_1_step_1b_step_1b_python_pandas",
+            "results",
+            {
+                "input_slot": InputSlot("all", None, validate_input_file_dummy),
+                "output_slot": OutputSlot("step_1b_main_output"),
+            },
+        ),
+        (
+            "step_1_multiple_2_step_1b_step_1b_python_pandas",
+            "results",
+            {
+                "input_slot": InputSlot("all", None, validate_input_file_dummy),
+                "output_slot": OutputSlot("step_1b_main_output"),
+            },
+        ),
+        (
+            "step_1_multiple_3_step_1b_step_1b_python_pandas",
+            "results",
+            {
+                "input_slot": InputSlot("all", None, validate_input_file_dummy),
+                "output_slot": OutputSlot("step_1b_main_output"),
             },
         ),
     ]
