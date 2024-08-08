@@ -171,7 +171,7 @@ class Config(LayeredConfigTree):
         errors = defaultdict(dict)
         # Try each schema until one is validated
         for schema in PIPELINE_SCHEMAS:
-            logs = schema.validate_step(self.pipeline)
+            logs = schema.validate_step(self.pipeline, self.input_data)
             if logs:
                 errors[PIPELINE_ERRORS_KEY][schema.name] = logs
                 pass  # try the next schema

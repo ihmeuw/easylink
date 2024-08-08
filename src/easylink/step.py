@@ -44,7 +44,7 @@ class Step(ABC):
         pass
 
     @abstractmethod
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
         """Validate the step against the pipeline configuration."""
         pass
 
@@ -82,7 +82,7 @@ class IOStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
         return {}
 
 
@@ -125,7 +125,7 @@ class BasicStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
         """Return error strings if the step configuration is incorrect."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
@@ -226,7 +226,7 @@ class CompositeStep(Step):
             step.update_implementation_graph(graph, sub_config)
         graph.remove_node(self.name)
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
         """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
         errors = {}
         for node in self.graph.nodes:
@@ -236,7 +236,7 @@ class CompositeStep(Step):
             if step.name not in step_config:
                 step_errors = {f"step {step.name}": [f"The step is not configured."]}
             else:
-                step_errors = step.validate_step(step_config[step.name])
+                step_errors = step.validate_step(step_config[step.name], input_data_config)
             if step_errors:
                 errors.update(step_errors)
         extra_steps = set(step_config.keys()) - set(self.graph.nodes)
@@ -306,11 +306,11 @@ class HierarchicalStep(CompositeStep, BasicStep):
                 self, graph, step_config[self.config_key]
             )
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
-            return BasicStep.validate_step(self, step_config)
+            return BasicStep.validate_step(self, step_config, input_data_config)
         sub_config = step_config[self.config_key]
-        return CompositeStep.validate_step(self, sub_config)
+        return CompositeStep.validate_step(self, sub_config, input_data_config)
 
 
 class LoopStep(CompositeStep, BasicStep):
@@ -356,9 +356,9 @@ class LoopStep(CompositeStep, BasicStep):
             loop_config = self._get_loop_config(sub_config)
             CompositeStep.update_implementation_graph(self, graph, loop_config)
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
-            return BasicStep.validate_step(self, step_config)
+            return BasicStep.validate_step(self, step_config, input_data_config)
 
         sub_config = step_config[self.config_key]
 
@@ -374,7 +374,7 @@ class LoopStep(CompositeStep, BasicStep):
 
         errors = defaultdict(dict)
         for i, loop in enumerate(sub_config):
-            loop_errors = self.iterated_node.validate_step(loop)
+            loop_errors = self.iterated_node.validate_step(loop, input_data_config)
             if loop_errors:
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
@@ -469,29 +469,25 @@ class ParallelStep(CompositeStep, BasicStep):
             parallel_config = self._get_parallel_config(step_config)
             CompositeStep.update_implementation_graph(self, graph, parallel_config)
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
-        # if not self.config_key in step_config:
-        #     return BasicStep.validate_step(self, step_config)
+    def validate_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> Dict[str, List[str]]:
+        if "implementation" in step_config:
+            return BasicStep.validate_step(self, step_config, input_data_config)
 
-        # sub_config = step_config[self.config_key]
+        if len(step_config.keys()) == 0:
+            return {f"step {self.name}": ["No parallel steps configured under parallel key."]}
 
-        # if not isinstance(sub_config, list):
-        #     return {
-        #         f"step {self.name}": [
-        #             "Parallel steps must be formatted as a sequence in the pipeline configuration."
-        #         ]
-        #     }
-
-        # if len(sub_config) == 0:
-        #     return {f"step {self.name}": ["No parallel steps configured under parallel key."]}
-
-        # errors = defaultdict(dict)
-        # for i, parallel_step in enumerate(sub_config):
-        #     parallel_errors = self.iterated_node.validate_step(parallel_step)
-        #     if parallel_errors:
-        #         errors[f"step {self.name}"][f"parallel step {i+1}"] = parallel_errors
-        # return errors
-        return {}
+        errors = defaultdict(dict)
+        for i, (file_name, parallel_config) in enumerate(step_config.items()):
+            parallel_errors = {}
+            if not file_name in input_data_config:
+                parallel_errors["Input Data Key"] = [
+                    f"Input data file '{file_name}' not found in input data configuration."
+                ]
+            
+            parallel_errors.update(self.split_node.validate_step(parallel_config, input_data_config))
+            if parallel_errors:
+                errors[f"step {self.name}"][f"multiple {i+1}"] = parallel_errors
+        return errors
 
     def _create_parallel_graph(self, num_loops: int) -> nx.MultiDiGraph:
         """Make N copies of the iterated graph and chain them together according
