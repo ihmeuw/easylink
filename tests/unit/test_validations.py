@@ -76,7 +76,7 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_2": [
+                        "step step_1": [
                             "The step configuration does not contain an 'implementation' key."
                         ]
                     },

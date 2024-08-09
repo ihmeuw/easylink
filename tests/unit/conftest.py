@@ -128,12 +128,12 @@ PIPELINE_CONFIG_DICT = {
     },
     "missing_implementations": {
         "step_1": {
+            "foo": "bar",  # Missing implementation key
+        },
+        "step_2": {
             "implementation": {
                 "name": "step_2_python_pandas",
             },  # Missing implementation key
-        },
-        "step_2": {
-            "foo": "bar",  # Missing implementation key
         },
         "step_3": {
             "implementation": {
