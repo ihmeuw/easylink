@@ -12,7 +12,7 @@ from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
 from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 
-RESULT_CHECKSUM = "9cf076f863b2ee73a11da982240f977a708d5ea87dd28e435afaa92790824e52"
+RESULT_CHECKSUM = "d56f3d12c0c9ca89b6ce0f42810bb79cd16772535f73807722e5430819b6bc08"
 
 
 @pytest.mark.slow

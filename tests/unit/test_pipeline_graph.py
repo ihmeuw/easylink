@@ -20,17 +20,23 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
     expected_edges = {
         ("pipeline_graph_input_data", "step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
-            "output_slot_name": "file1",
+            "output_slot_name": "all",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": [Path(f"{test_dir}/input_data1/file1.csv")],
+            "filepaths": [
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ],
         },
         ("pipeline_graph_input_data", "step_4_python_pandas"): {
             "input_slot_name": "step_4_secondary_input",
-            "output_slot_name": "file1",
+            "output_slot_name": "all",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-            "filepaths": [Path(f"{test_dir}/input_data1/file1.csv")],
+            "filepaths": [
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ],
         },
         ("step_1_python_pandas", "step_2_python_pandas"): {
             "input_slot_name": "step_2_main_input",
@@ -99,6 +105,7 @@ def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
         "step_1_python_pandas": (
             [
                 f"{test_dir}/input_data1/file1.csv",
+                f"{test_dir}/input_data2/file2.csv",
             ],
             ["intermediate/step_1_python_pandas/result.parquet"],
         ),
@@ -113,6 +120,7 @@ def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
         "step_4_python_pandas": (
             [
                 f"{test_dir}/input_data1/file1.csv",
+                f"{test_dir}/input_data2/file2.csv",
                 "intermediate/step_3_python_pandas/result.parquet",
             ],
             ["intermediate/step_4_python_pandas/result.parquet"],

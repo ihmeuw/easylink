@@ -46,9 +46,14 @@ class PipelineGraph(MultiDiGraph):
             "pipeline_graph_input_data", data=True
         ):
             for edge_idx in self[source][sink]:
-                self[source][sink][edge_idx]["filepaths"] = [
-                    str(config.input_data[edge_attrs["output_slot"].name])
-                ]
+                if edge_attrs["output_slot"].name == "all":
+                    self[source][sink][edge_idx]["filepaths"] = [
+                        str(path) for path in config.input_data.to_dict().values()
+                    ]
+                else:
+                    self[source][sink][edge_idx]["filepaths"] = [
+                        str(config.input_data[edge_attrs["output_slot"].name])
+                    ]
 
         # Update implementation nodes with yaml metadata
         for node in self.implementation_nodes:

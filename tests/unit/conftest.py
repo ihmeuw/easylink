@@ -254,6 +254,33 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "wrong_parallel_split_keys": {
+        "step_1": {
+            "parallel": [
+                {
+                    "implementation": {
+                        "name": "step_1_python_pandas",
+                    },
+                    "input_data_file": "foo",
+                },
+            ]
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {
@@ -326,7 +353,6 @@ def test_dir(tmpdir_factory) -> str:
         yaml.dump(
             {
                 "file1": str(input_dir1 / "missing_file1.csv"),
-                "file2": str(input_dir2 / "missing_file2.csv"),
             },
             file,
             sort_keys=False,

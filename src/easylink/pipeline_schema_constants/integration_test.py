@@ -3,7 +3,7 @@ from easylink.step import BasicStep, InputSlot, IOStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
-    IOStep("input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
+    IOStep("input_data", input_slots=[], output_slots=[OutputSlot("all")]),
     BasicStep(
         "step_1",
         input_slots=[
@@ -27,7 +27,7 @@ EDGES = [
     Edge(
         source_node="input_data",
         target_node="step_1",
-        output_slot="file1",
+        output_slot="all",
         input_slot="step_1_main_input",
     ),
     Edge(

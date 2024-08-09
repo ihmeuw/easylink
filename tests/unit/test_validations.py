@@ -144,6 +144,22 @@ def test_batch_validation():
                 },
             },
         ),
+        (
+            "wrong_parallel_split_keys",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_1": {
+                            "parallel_split_1": {
+                                "Input Data Key": [
+                                    "Input data file 'foo' not found in input data configuration."
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        ),
     ],
 )
 def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):
