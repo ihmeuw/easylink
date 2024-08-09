@@ -45,7 +45,7 @@ class PipelineSchema(CompositeStep):
         ]
 
     def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
-        "For each file slot used from the input data, validate that the file's existence and properties."
+        "For each file slot used from the input data, validate the file's existence and properties."
         errors = {}
         for _, _, edge_attrs in self.graph.out_edges("input_data", data=True):
             validator = edge_attrs["input_slot"].validator
