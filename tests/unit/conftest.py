@@ -277,7 +277,7 @@ PIPELINE_CONFIG_DICT = {
         },
         "step_4": {
             "implementation": {
-                "name": "step_4_python_pandas",
+                "name": "step_1_python_pandas",
             },
         },
     },
