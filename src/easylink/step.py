@@ -502,7 +502,11 @@ class ParallelStep(CompositeStep, BasicStep):
             }
 
         if len(sub_config) == 0:
-            return {f"step {self.name}": ["No parallel instances configured under 'parallel' key."]}
+            return {
+                f"step {self.name}": [
+                    "No parallel instances configured under 'parallel' key."
+                ]
+            }
 
         errors = defaultdict(dict)
         for i, parallel_config in enumerate(sub_config):
@@ -520,7 +524,7 @@ class ParallelStep(CompositeStep, BasicStep):
         return errors
 
     def _create_parallel_graph(self, num_splits: int) -> nx.MultiDiGraph:
-        """Make N copies of the template step that are mutually independent 
+        """Make N copies of the template step that are mutually independent
         and contain the same edges as the current step"""
         graph = nx.MultiDiGraph()
 
