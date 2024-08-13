@@ -497,12 +497,12 @@ class ParallelStep(CompositeStep, BasicStep):
         if not isinstance(sub_config, list):
             return {
                 f"step {self.name}": [
-                    "Loops must be formatted as a sequence in the pipeline configuration."
+                    "Parallel instances must be formatted as a sequence in the pipeline configuration."
                 ]
             }
 
         if len(sub_config) == 0:
-            return {f"step {self.name}": ["No loops configured under iterate key."]}
+            return {f"step {self.name}": ["No parallel instances configured under 'parallel' key."]}
 
         errors = defaultdict(dict)
         for i, parallel_config in enumerate(sub_config):
@@ -520,8 +520,8 @@ class ParallelStep(CompositeStep, BasicStep):
         return errors
 
     def _create_parallel_graph(self, num_splits: int) -> nx.MultiDiGraph:
-        """Make N copies of the iterated graph and chain them together according
-        to the self edges."""
+        """Make N copies of the template step that are mutually independent 
+        and contain the same edges as the current step"""
         graph = nx.MultiDiGraph()
 
         for i in range(num_splits):
@@ -531,8 +531,8 @@ class ParallelStep(CompositeStep, BasicStep):
         return graph
 
     def _get_parallel_slot_mappings(self, num_splits) -> nx.MultiDiGraph:
-        """Get the appropriate slot mappings based on the number of loops
-        and the non-self-edge input and output slots."""
+        """Get the appropriate slot mappings based on the number of parallel copies
+        and the existing input and output slots."""
         input_mappings = [
             SlotMapping("input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
             for n in range(num_splits)
