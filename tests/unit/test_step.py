@@ -395,7 +395,7 @@ def loop_step_params() -> Dict[str, Any]:
             ),
         ],
         "output_slots": [OutputSlot("step_3_main_output")],
-        "iterated_node": HierarchicalStep(
+        "template_step": HierarchicalStep(
             "step_3",
             input_slots=[
                 InputSlot(
@@ -515,10 +515,10 @@ def test_loop_step(loop_step_params: Dict[str, Any]) -> None:
         ),
     }
     assert step.output_slots == {"step_3_main_output": OutputSlot("step_3_main_output")}
-    assert isinstance(step.iterated_node, HierarchicalStep)
-    assert step.iterated_node.name == step.name
-    assert step.iterated_node.input_slots == step.input_slots
-    assert step.iterated_node.output_slots == step.output_slots
+    assert isinstance(step.template_step, HierarchicalStep)
+    assert step.template_step.name == step.name
+    assert step.template_step.input_slots == step.input_slots
+    assert step.template_step.output_slots == step.output_slots
     assert step.self_edges == [
         Edge(step.name, step.name, "step_3_main_output", "step_3_main_input")
     ]
@@ -688,7 +688,7 @@ def parallel_step_params() -> Dict[str, Any]:
             )
         ],
         "output_slots": [OutputSlot("step_1_main_output")],
-        "split_node": HierarchicalStep(
+        "template_step": HierarchicalStep(
             "step_1",
             input_slots=[
                 InputSlot(

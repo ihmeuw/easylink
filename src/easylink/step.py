@@ -332,16 +332,16 @@ class LoopStep(CompositeStep, BasicStep):
         name: str = None,
         input_slots: List[InputSlot] = [],
         output_slots: List[OutputSlot] = [],
-        iterated_node: Step = None,
+        template_step: Step = None,
         self_edges: List[Edge] = [],
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
-        if not iterated_node or iterated_node.name != step_name:
+        if not template_step or template_step.name != step_name:
             raise NotImplementedError(
                 f"LoopStep {self.name} must be initialized with a single node with the same name."
             )
-        self.iterated_node = iterated_node
-        self.iterated_node.set_parent_step(self)
+        self.template_step = template_step
+        self.template_step.set_parent_step(self)
         for edge in self_edges:
             if not edge.source_node == edge.target_node == step_name:
                 raise NotImplementedError(
@@ -386,7 +386,7 @@ class LoopStep(CompositeStep, BasicStep):
 
         errors = defaultdict(dict)
         for i, loop in enumerate(sub_config):
-            loop_errors = self.iterated_node.validate_step(loop, input_data_config)
+            loop_errors = self.template_step.validate_step(loop, input_data_config)
             if loop_errors:
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
@@ -397,7 +397,7 @@ class LoopStep(CompositeStep, BasicStep):
         graph = nx.MultiDiGraph()
 
         for i in range(num_loops):
-            updated_step = copy.deepcopy(self.iterated_node)
+            updated_step = copy.deepcopy(self.template_step)
             updated_step.name = f"{self.name}_loop_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
             if i > 0:
@@ -459,15 +459,15 @@ class ParallelStep(CompositeStep, BasicStep):
         name: str = None,
         input_slots: List[InputSlot] = [],
         output_slots: List[OutputSlot] = [],
-        split_node: Step = None,
+        template_step: Step = None,
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
-        if not split_node or split_node.name != step_name:
+        if not template_step or template_step.name != step_name:
             raise NotImplementedError(
                 f"ParallelStep {self.name} must be initialized with a single node with the same name."
             )
-        self.split_node = split_node
-        self.split_node.set_parent_step(self)
+        self.template_step = template_step
+        self.template_step.set_parent_step(self)
 
     @property
     def config_key(self):
@@ -517,19 +517,19 @@ class ParallelStep(CompositeStep, BasicStep):
                     f"Input data file '{input_data_file}' not found in input data configuration."
                 ]
             parallel_errors.update(
-                self.split_node.validate_step(parallel_config, input_data_config)
+                self.template_step.validate_step(parallel_config, input_data_config)
             )
             if parallel_errors:
                 errors[f"step {self.name}"][f"parallel_split_{i+1}"] = parallel_errors
         return errors
 
     def _create_parallel_graph(self, num_splits: int) -> nx.MultiDiGraph:
-        """Make N copies of the template step that are mutually independent
-        and contain the same edges as the current step"""
+        """Make N copies of the template step that are independent and contain the same edges as the
+        current step"""
         graph = nx.MultiDiGraph()
 
         for i in range(num_splits):
-            updated_step = copy.deepcopy(self.split_node)
+            updated_step = copy.deepcopy(self.template_step)
             updated_step.name = f"{self.name}_parallel_split_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
         return graph

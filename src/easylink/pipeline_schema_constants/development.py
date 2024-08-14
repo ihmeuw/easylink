@@ -21,7 +21,7 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_1_main_output")],
-        split_node=HierarchicalStep(
+        template_step=HierarchicalStep(
             "step_1",
             input_slots=[
                 InputSlot(
@@ -106,7 +106,7 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_3_main_output")],
-        iterated_node=HierarchicalStep(
+        template_step=HierarchicalStep(
             "step_3",
             input_slots=[
                 InputSlot(
