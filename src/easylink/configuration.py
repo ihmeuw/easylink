@@ -192,9 +192,13 @@ class Config(LayeredConfigTree):
 
     def _validate_input_data(self) -> Dict[Any, Any]:
         errors = defaultdict(dict)
-        input_data_errors = self.schema.validate_inputs(self.input_data.to_dict())
-        if input_data_errors:
-            errors[INPUT_DATA_ERRORS_KEY] = input_data_errors
+        input_data_dict = self.input_data.to_dict()
+        if not input_data_dict:
+            errors[INPUT_DATA_ERRORS_KEY] = ["No input data is configured."]
+        else:
+            input_data_errors = self.schema.validate_inputs(self.input_data.to_dict())
+            if input_data_errors:
+                errors[INPUT_DATA_ERRORS_KEY] = input_data_errors
         return errors
 
     def _validate_environment(self) -> Dict[Any, Any]:
