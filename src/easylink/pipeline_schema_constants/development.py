@@ -21,19 +21,8 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_1_main_output")],
-        template_step=HierarchicalStep(
-            "step_1",
-            input_slots=[
-                InputSlot(
-                    name="step_1_main_input",
-                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=validate_input_file_dummy,
-                ),
-            ],
-            output_slots=[OutputSlot("step_1_main_output")],
-            nodes=[
-                BasicStep(
-                    step_name="step_1a",
+        template_step=BasicStep(
+                    step_name="step_1",
                     input_slots=[
                         InputSlot(
                             name="step_1a_main_input",
@@ -43,47 +32,6 @@ NODES = [
                     ],
                     output_slots=[OutputSlot("step_1a_main_output")],
                 ),
-                BasicStep(
-                    step_name="step_1b",
-                    input_slots=[
-                        InputSlot(
-                            name="step_1b_main_input",
-                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("step_1b_main_output")],
-                ),
-            ],
-            edges=[
-                Edge(
-                    source_node="step_1a",
-                    target_node="step_1b",
-                    output_slot="step_1a_main_output",
-                    input_slot="step_1b_main_input",
-                ),
-            ],
-            slot_mappings={
-                "input": [
-                    SlotMapping(
-                        slot_type="input",
-                        parent_node="step_1",
-                        parent_slot="step_1_main_input",
-                        child_node="step_1a",
-                        child_slot="step_1a_main_input",
-                    )
-                ],
-                "output": [
-                    SlotMapping(
-                        slot_type="output",
-                        parent_node="step_1",
-                        parent_slot="step_1_main_output",
-                        child_node="step_1b",
-                        child_slot="step_1b_main_output",
-                    )
-                ],
-            },
-        ),
     ),
     BasicStep(
         step_name="step_2",
@@ -106,69 +54,17 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_3_main_output")],
-        template_step=HierarchicalStep(
-            "step_3",
-            input_slots=[
-                InputSlot(
-                    name="step_3_main_input",
-                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=validate_input_file_dummy,
-                ),
-            ],
-            output_slots=[OutputSlot("step_3_main_output")],
-            nodes=[
-                BasicStep(
-                    step_name="step_3a",
+        template_step=BasicStep(
+                    step_name="step_3",
                     input_slots=[
                         InputSlot(
-                            name="step_3a_main_input",
+                            name="step_3_main_input",
                             env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                             validator=validate_input_file_dummy,
                         ),
                     ],
                     output_slots=[OutputSlot("step_3a_main_output")],
                 ),
-                BasicStep(
-                    step_name="step_3b",
-                    input_slots=[
-                        InputSlot(
-                            name="step_3b_main_input",
-                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("step_3b_main_output")],
-                ),
-            ],
-            edges=[
-                Edge(
-                    source_node="step_3a",
-                    target_node="step_3b",
-                    output_slot="step_3a_main_output",
-                    input_slot="step_3b_main_input",
-                ),
-            ],
-            slot_mappings={
-                "input": [
-                    SlotMapping(
-                        slot_type="input",
-                        parent_node="step_3",
-                        parent_slot="step_3_main_input",
-                        child_node="step_3a",
-                        child_slot="step_3a_main_input",
-                    ),
-                ],
-                "output": [
-                    SlotMapping(
-                        slot_type="output",
-                        parent_node="step_3",
-                        parent_slot="step_3_main_output",
-                        child_node="step_3b",
-                        child_slot="step_3b_main_output",
-                    )
-                ],
-            },
-        ),
         self_edges=[
             Edge(
                 source_node="step_3",
