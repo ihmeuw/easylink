@@ -22,16 +22,16 @@ NODES = [
         ],
         output_slots=[OutputSlot("step_1_main_output")],
         template_step=BasicStep(
-                    step_name="step_1",
-                    input_slots=[
-                        InputSlot(
-                            name="step_1a_main_input",
-                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("step_1a_main_output")],
+            step_name="step_1",
+            input_slots=[
+                InputSlot(
+                    name="step_1a_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
                 ),
+            ],
+            output_slots=[OutputSlot("step_1a_main_output")],
+        ),
     ),
     BasicStep(
         step_name="step_2",
@@ -55,16 +55,16 @@ NODES = [
         ],
         output_slots=[OutputSlot("step_3_main_output")],
         template_step=BasicStep(
-                    step_name="step_3",
-                    input_slots=[
-                        InputSlot(
-                            name="step_3_main_input",
-                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("step_3a_main_output")],
+            step_name="step_3",
+            input_slots=[
+                InputSlot(
+                    name="step_3_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
                 ),
+            ],
+            output_slots=[OutputSlot("step_3a_main_output")],
+        ),
         self_edges=[
             Edge(
                 source_node="step_3",

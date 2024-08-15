@@ -524,8 +524,8 @@ def test_loop_step(loop_step_params: Dict[str, Any]) -> None:
     ]
 
 
-def test_loop_update_implementation_graph(mocker, 
-    loop_step_params: Dict[str, Any], default_config: Config
+def test_loop_update_implementation_graph(
+    mocker, loop_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
@@ -769,8 +769,8 @@ def test_parallel_step(parallel_step_params: Dict[str, Any]) -> None:
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
 
-def test_parallel_step_update_implementation_graph(mocker,
-    parallel_step_params: Dict[str, Any]
+def test_parallel_step_update_implementation_graph(
+    mocker, parallel_step_params: Dict[str, Any]
 ) -> None:
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
