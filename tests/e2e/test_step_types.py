@@ -26,12 +26,12 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
         (
             "e2e/pipeline_expanded.yaml",
             [
-                "step_1_parallel_split_1_step_1_step_1_python_pandas",
-                "step_1_parallel_split_2_step_1_step_1_python_pandas",
-                "step_1_parallel_split_3_step_1_step_1_python_pandas",
+                "step_1_parallel_split_1_step_1_python_pandas",
+                "step_1_parallel_split_2_step_1_python_pandas",
+                "step_1_parallel_split_3_step_1_python_pandas",
                 "step_2_python_pandas",
                 "step_3_loop_1_step_3_python_pandas",
-                "step_3_loop_2_step_3_step_3_python_pandas",
+                "step_3_loop_2_step_3_python_pandas",
                 "step_4a_python_pandas",
                 "step_4b_python_pandas",
             ],

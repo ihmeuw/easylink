@@ -25,12 +25,12 @@ NODES = [
             step_name="step_1",
             input_slots=[
                 InputSlot(
-                    name="step_1a_main_input",
+                    name="step_1_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
                 ),
             ],
-            output_slots=[OutputSlot("step_1a_main_output")],
+            output_slots=[OutputSlot("step_1_main_output")],
         ),
     ),
     BasicStep(
@@ -63,7 +63,7 @@ NODES = [
                     validator=validate_input_file_dummy,
                 ),
             ],
-            output_slots=[OutputSlot("step_3a_main_output")],
+            output_slots=[OutputSlot("step_3_main_output")],
         ),
         self_edges=[
             Edge(
