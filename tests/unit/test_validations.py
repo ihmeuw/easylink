@@ -144,6 +144,22 @@ def test_batch_validation():
                 },
             },
         ),
+        (
+            "wrong_parallel_split_keys",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_1": {
+                            "parallel_split_1": {
+                                "Input Data Key": [
+                                    "Input data file 'foo' not found in input data configuration."
+                                ],
+                            },
+                        },
+                    },
+                },
+            },
+        ),
     ],
 )
 def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):
@@ -217,6 +233,21 @@ def test_unsupported_implementation(default_config_params, caplog, mocker):
                 },
             }
         },
+    )
+
+
+def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, caplog):
+    config_paths = default_config_paths
+    config_params = load_params_from_specification(**config_paths)
+    config_params["input_data"] = {}
+    with pytest.raises(SystemExit) as e:
+        Config(config_params)
+
+    _check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={INPUT_DATA_ERRORS_KEY: ["No input data is configured."]},
     )
 
 

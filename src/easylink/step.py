@@ -44,7 +44,9 @@ class Step(ABC):
         pass
 
     @abstractmethod
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
         """Validate the step against the pipeline configuration."""
         pass
 
@@ -82,7 +84,9 @@ class IOStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
         return {}
 
 
@@ -125,7 +129,9 @@ class BasicStep(Step):
                 output_slot=edge_attrs["output_slot"],
             )
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
         """Return error strings if the step configuration is incorrect."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
@@ -226,7 +232,9 @@ class CompositeStep(Step):
             step.update_implementation_graph(graph, sub_config)
         graph.remove_node(self.name)
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
         """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
         errors = {}
         for node in self.graph.nodes:
@@ -236,7 +244,7 @@ class CompositeStep(Step):
             if step.name not in step_config:
                 step_errors = {f"step {step.name}": [f"The step is not configured."]}
             else:
-                step_errors = step.validate_step(step_config[step.name])
+                step_errors = step.validate_step(step_config[step.name], input_data_config)
             if step_errors:
                 errors.update(step_errors)
         extra_steps = set(step_config.keys()) - set(self.graph.nodes)
@@ -306,11 +314,13 @@ class HierarchicalStep(CompositeStep, BasicStep):
                 self, graph, step_config[self.config_key]
             )
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
-            return BasicStep.validate_step(self, step_config)
+            return BasicStep.validate_step(self, step_config, input_data_config)
         sub_config = step_config[self.config_key]
-        return CompositeStep.validate_step(self, sub_config)
+        return CompositeStep.validate_step(self, sub_config, input_data_config)
 
 
 class LoopStep(CompositeStep, BasicStep):
@@ -322,16 +332,16 @@ class LoopStep(CompositeStep, BasicStep):
         name: str = None,
         input_slots: List[InputSlot] = [],
         output_slots: List[OutputSlot] = [],
-        iterated_node: Step = None,
+        template_step: Step = None,
         self_edges: List[Edge] = [],
     ) -> None:
         super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
-        if not iterated_node or iterated_node.name != step_name:
+        if not template_step or template_step.name != step_name:
             raise NotImplementedError(
                 f"LoopStep {self.name} must be initialized with a single node with the same name."
             )
-        self.iterated_node = iterated_node
-        self.iterated_node.set_parent_step(self)
+        self.template_step = template_step
+        self.template_step.set_parent_step(self)
         for edge in self_edges:
             if not edge.source_node == edge.target_node == step_name:
                 raise NotImplementedError(
@@ -356,9 +366,11 @@ class LoopStep(CompositeStep, BasicStep):
             loop_config = self._get_loop_config(sub_config)
             CompositeStep.update_implementation_graph(self, graph, loop_config)
 
-    def validate_step(self, step_config: LayeredConfigTree) -> Dict[str, List[str]]:
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
-            return BasicStep.validate_step(self, step_config)
+            return BasicStep.validate_step(self, step_config, input_data_config)
 
         sub_config = step_config[self.config_key]
 
@@ -374,7 +386,7 @@ class LoopStep(CompositeStep, BasicStep):
 
         errors = defaultdict(dict)
         for i, loop in enumerate(sub_config):
-            loop_errors = self.iterated_node.validate_step(loop)
+            loop_errors = self.template_step.validate_step(loop, input_data_config)
             if loop_errors:
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
@@ -385,7 +397,7 @@ class LoopStep(CompositeStep, BasicStep):
         graph = nx.MultiDiGraph()
 
         for i in range(num_loops):
-            updated_step = copy.deepcopy(self.iterated_node)
+            updated_step = copy.deepcopy(self.template_step)
             updated_step.name = f"{self.name}_loop_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
             if i > 0:
@@ -436,3 +448,122 @@ class LoopStep(CompositeStep, BasicStep):
         for i, loop in enumerate(iterate_config):
             loop_config[f"{self.name}_loop_{i+1}"] = loop
         return LayeredConfigTree(loop_config)
+
+
+class ParallelStep(CompositeStep, BasicStep):
+    """A ParallelStep allows a user to run a sequence of steps in parallel."""
+
+    def __init__(
+        self,
+        step_name: str,
+        name: str = None,
+        input_slots: List[InputSlot] = [],
+        output_slots: List[OutputSlot] = [],
+        template_step: Step = None,
+    ) -> None:
+        super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
+        if not template_step or template_step.name != step_name:
+            raise NotImplementedError(
+                f"ParallelStep {self.name} must be initialized with a single node with the same name."
+            )
+        self.template_step = template_step
+        self.template_step.set_parent_step(self)
+
+    @property
+    def config_key(self):
+        return "parallel"
+
+    def update_implementation_graph(
+        self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree
+    ) -> None:
+        if not self.config_key in step_config:
+            BasicStep.update_implementation_graph(self, graph, step_config)
+        else:
+            sub_config = step_config[self.config_key]
+            num_splits = len(sub_config)
+            self.graph = self._create_parallel_graph(num_splits)
+            self.slot_mappings = self._get_parallel_slot_mappings(num_splits)
+            parallel_config = self._get_parallel_config(sub_config)
+            CompositeStep.update_implementation_graph(self, graph, parallel_config)
+
+    def validate_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> Dict[str, List[str]]:
+        if not self.config_key in step_config:
+            return BasicStep.validate_step(self, step_config, input_data_config)
+
+        sub_config = step_config[self.config_key]
+
+        if not isinstance(sub_config, list):
+            return {
+                f"step {self.name}": [
+                    "Parallel instances must be formatted as a sequence in the pipeline configuration."
+                ]
+            }
+
+        if len(sub_config) == 0:
+            return {
+                f"step {self.name}": [
+                    "No parallel instances configured under 'parallel' key."
+                ]
+            }
+
+        errors = defaultdict(dict)
+        for i, parallel_config in enumerate(sub_config):
+            parallel_errors = {}
+            input_data_file = parallel_config.get("input_data_file")
+            if input_data_file and not input_data_file in input_data_config:
+                parallel_errors["Input Data Key"] = [
+                    f"Input data file '{input_data_file}' not found in input data configuration."
+                ]
+            parallel_errors.update(
+                self.template_step.validate_step(parallel_config, input_data_config)
+            )
+            if parallel_errors:
+                errors[f"step {self.name}"][f"parallel_split_{i+1}"] = parallel_errors
+        return errors
+
+    def _create_parallel_graph(self, num_splits: int) -> nx.MultiDiGraph:
+        """Make N copies of the template step that are independent and contain the same edges as the
+        current step"""
+        graph = nx.MultiDiGraph()
+
+        for i in range(num_splits):
+            updated_step = copy.deepcopy(self.template_step)
+            updated_step.name = f"{self.name}_parallel_split_{i+1}"
+            graph.add_node(updated_step.name, step=updated_step)
+        return graph
+
+    def _get_parallel_slot_mappings(self, num_splits) -> nx.MultiDiGraph:
+        """Get the appropriate slot mappings based on the number of parallel copies
+        and the existing input and output slots."""
+        input_mappings = [
+            SlotMapping("input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
+            for n in range(num_splits)
+            for slot in self.input_slots
+        ]
+        output_mappings = [
+            SlotMapping("output", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
+            for n in range(num_splits)
+            for slot in self.output_slots
+        ]
+        return {"input": input_mappings, "output": output_mappings}
+
+    def _get_parallel_config(
+        self, step_config: LayeredConfigTree
+    ) -> Dict[str, LayeredConfigTree]:
+        """Get the dictionary for the parallel graph based on the sequence
+        of sub-yamls."""
+        parallel_step_config = {}
+        for i, config in enumerate(step_config):
+            parallel_step_config[f"{self.name}_parallel_split_{i+1}"] = config
+        return LayeredConfigTree(parallel_step_config)
+
+    def remap_slots(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
+        super().remap_slots(graph, step_config)
+        for step_name, config in step_config.items():
+            if "input_data_file" in config:
+                for edge_idx in graph["pipeline_graph_input_data"][step_name]:
+                    graph["pipeline_graph_input_data"][step_name][edge_idx][
+                        "output_slot"
+                    ] = OutputSlot(name=config["input_data_file"])

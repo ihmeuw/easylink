@@ -1,10 +1,17 @@
 from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
-from easylink.step import BasicStep, HierarchicalStep, InputSlot, IOStep, LoopStep
+from easylink.step import (
+    BasicStep,
+    HierarchicalStep,
+    InputSlot,
+    IOStep,
+    LoopStep,
+    ParallelStep,
+)
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
-    IOStep(step_name="input_data", input_slots=[], output_slots=[OutputSlot("file1")]),
-    BasicStep(
+    IOStep(step_name="input_data", input_slots=[], output_slots=[OutputSlot("all")]),
+    ParallelStep(
         step_name="step_1",
         input_slots=[
             InputSlot(
@@ -12,13 +19,19 @@ NODES = [
                 env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validator=validate_input_file_dummy,
             ),
-            InputSlot(
-                name="step_1_secondary_input",
-                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
         ],
         output_slots=[OutputSlot("step_1_main_output")],
+        template_step=BasicStep(
+            step_name="step_1",
+            input_slots=[
+                InputSlot(
+                    name="step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+            ],
+            output_slots=[OutputSlot("step_1_main_output")],
+        ),
     ),
     BasicStep(
         step_name="step_2",
@@ -41,8 +54,8 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_3_main_output")],
-        iterated_node=HierarchicalStep(
-            "step_3",
+        template_step=BasicStep(
+            step_name="step_3",
             input_slots=[
                 InputSlot(
                     name="step_3_main_input",
@@ -51,58 +64,6 @@ NODES = [
                 ),
             ],
             output_slots=[OutputSlot("step_3_main_output")],
-            nodes=[
-                BasicStep(
-                    step_name="step_3a",
-                    input_slots=[
-                        InputSlot(
-                            name="step_3a_main_input",
-                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("step_3a_main_output")],
-                ),
-                BasicStep(
-                    step_name="step_3b",
-                    input_slots=[
-                        InputSlot(
-                            name="step_3b_main_input",
-                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                            validator=validate_input_file_dummy,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("step_3b_main_output")],
-                ),
-            ],
-            edges=[
-                Edge(
-                    source_node="step_3a",
-                    target_node="step_3b",
-                    output_slot="step_3a_main_output",
-                    input_slot="step_3b_main_input",
-                ),
-            ],
-            slot_mappings={
-                "input": [
-                    SlotMapping(
-                        slot_type="input",
-                        parent_node="step_3",
-                        parent_slot="step_3_main_input",
-                        child_node="step_3a",
-                        child_slot="step_3a_main_input",
-                    ),
-                ],
-                "output": [
-                    SlotMapping(
-                        slot_type="output",
-                        parent_node="step_3",
-                        parent_slot="step_3_main_output",
-                        child_node="step_3b",
-                        child_slot="step_3b_main_output",
-                    )
-                ],
-            },
         ),
         self_edges=[
             Edge(
@@ -203,13 +164,13 @@ EDGES = [
     Edge(
         source_node="input_data",
         target_node="step_1",
-        output_slot="file1",
+        output_slot="all",
         input_slot="step_1_main_input",
     ),
     Edge(
         source_node="input_data",
         target_node="step_4",
-        output_slot="file1",
+        output_slot="all",
         input_slot="step_4_secondary_input",
     ),
     Edge(
