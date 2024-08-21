@@ -95,5 +95,5 @@ cascade_clustering_splink:
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/pvs_census_demo/cascade_clustering/cascade_clustering.sif
   script_cmd: python3 /cascade_clustering.py 
   outputs:
-    main: result.parquet
+    piked_census: result.parquet
   requires_spark: false

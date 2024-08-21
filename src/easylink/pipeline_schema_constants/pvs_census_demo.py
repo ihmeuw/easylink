@@ -16,39 +16,39 @@ NODES = [
         step_name="cascade_clustering",
         input_slots=[
             InputSlot(
-                name="main",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                name="simulated_census",
+                env_var="SIMULATED_CENSUS",
                 validator=demo_validator,
             ),
             InputSlot(
-                name="secondary",
-                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                name="reference_file",
+                env_var="REFERENCE_FILE",
                 validator=demo_validator,
             ),
         ],
-        output_slots=[OutputSlot("main")],
+        output_slots=[OutputSlot("piked_census")],
         template_step=BasicStep(
             step_name="cascade_clustering",
             input_slots=[
-                InputSlot(
-                    name="main",
-                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=demo_validator,
-                ),
-                InputSlot(
-                    name="secondary",
-                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                    validator=demo_validator,
-                ),
+            InputSlot(
+                name="simulated_census",
+                env_var="SIMULATED_CENSUS",
+                validator=demo_validator,
+            ),
+            InputSlot(
+                name="reference_file",
+                env_var="REFERENCE_FILE",
+                validator=demo_validator,
+            ),
             ],
-            output_slots=[OutputSlot("main")],
+            output_slots=[OutputSlot("piked_census")],
         ),
         self_edges=[
             Edge(
                 source_node="cascade_clustering",
                 target_node="cascade_clustering",
-                output_slot="main",
-                input_slot="main",
+                output_slot="piked_census",
+                input_slot="simulated_census",
             )
         ],
     ),
@@ -64,18 +64,18 @@ EDGES = [
         source_node="input_data",
         target_node="cascade_clustering",
         output_slot="all",
-        input_slot="main",
+        input_slot="simulated_census",
     ),
     Edge(
         source_node="input_data",
         target_node="cascade_clustering",
         output_slot="all",
-        input_slot="secondary",
+        input_slot="reference_file",
     ),
     Edge(
         source_node="cascade_clustering",
         target_node="results",
-        output_slot="main",
+        output_slot="piked_census",
         input_slot="result",
     ),
 ]

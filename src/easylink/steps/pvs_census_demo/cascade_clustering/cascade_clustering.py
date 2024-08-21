@@ -15,8 +15,8 @@ def load_file(file_path, file_format=None):
     raise ValueError()
 
 
-census_2030_path = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")[0]
-reference_file_path = os.environ["DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"].split(",")[1]
+census_2030_path = os.environ["SIMULATED_CENSUS"].split(",")[0]
+reference_file_path = os.environ["REFERENCE_FILE"].split(",")[1]
 census_2030 = load_file(census_2030_path)
 reference_file = load_file(reference_file_path)
 
