@@ -21,3 +21,7 @@ def validate_input_file_dummy(filepath: str) -> None:
         raise LookupError(
             f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
+
+
+def demo_validator(filepath: str) -> None:
+    pass
