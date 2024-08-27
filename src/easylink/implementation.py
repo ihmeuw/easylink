@@ -24,7 +24,7 @@ class Implementation:
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
-        return f"Implementation.{self.step_name}.{self.name}"
+        return f"Implementation.{self.schema_step_name}.{self.name}"
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be

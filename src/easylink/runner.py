@@ -2,6 +2,9 @@ import os
 import socket
 from pathlib import Path
 from typing import List
+import subprocess
+from graphviz import Source
+
 
 from loguru import logger
 from snakemake.cli import main as snake_main
@@ -34,6 +37,8 @@ def main(
         Path(results_dir),
     )
     snakefile = pipeline.build_snakefile()
+    pipeline.save_graph_plot(Path(results_dir))
+    # save_dag_image(snakefile, results_dir)
     environment_args = get_environment_args(config)
     singularity_args = get_singularity_args(config)
     # Set source cache in appropriate location to avoid jenkins failures
@@ -105,3 +110,11 @@ def get_environment_args(config: Config) -> List[str]:
             "only computing_environment 'local' and 'slurm' are supported; "
             f"provided {config.computing_environment}"
         )
+        
+def save_dag_image(snakefile, results_dir) -> None:
+    process = subprocess.run(["snakemake", "--snakefile",
+        str(snakefile), "--dag"], capture_output=True, text=True, check=True)
+    dot_output = process.stdout
+    source = Source(dot_output)
+    # Render the graph to a file
+    source.render('DAG', directory=results_dir, format='png', cleanup=True)
