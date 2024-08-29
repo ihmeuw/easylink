@@ -1,10 +1,10 @@
 import os
 import socket
 import subprocess
-from graphviz import Source
 from pathlib import Path
 from typing import List
 
+from graphviz import Source
 from loguru import logger
 from snakemake.cli import main as snake_main
 
