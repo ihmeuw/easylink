@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from easylink.configuration import Config
+from easylink.graph_components import InputSlot
 from easylink.pipeline_graph import PipelineGraph
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
@@ -98,6 +99,168 @@ def test_implementations(default_config: Config) -> None:
     ]
     assert implementation_names == expected_names
     assert pipeline_graph.implementation_nodes == expected_names
+
+
+def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
+    pipeline_graph = PipelineGraph(default_config)
+    pipeline_graph.update_slot_filepaths(default_config)
+    expected_filepaths = {
+        ("pipeline_graph_input_data", "step_1_python_pandas"): [
+            str(Path(f"{test_dir}/input_data1/file1.csv")),
+            str(Path(f"{test_dir}/input_data2/file2.csv")),
+        ],
+        ("pipeline_graph_input_data", "step_4_python_pandas"): [
+            str(Path(f"{test_dir}/input_data1/file1.csv")),
+            str(Path(f"{test_dir}/input_data2/file2.csv")),
+        ],
+        ("step_1_python_pandas", "step_2_python_pandas"): [
+            str(Path("intermediate/step_1_python_pandas/result.parquet")),
+        ],
+        ("step_2_python_pandas", "step_3_python_pandas"): [
+            str(Path("intermediate/step_2_python_pandas/result.parquet")),
+        ],
+        ("step_3_python_pandas", "step_4_python_pandas"): [
+            str(Path("intermediate/step_3_python_pandas/result.parquet")),
+        ],
+        ("step_4_python_pandas", "pipeline_graph_results"): [
+            str(Path("intermediate/step_4_python_pandas/result.parquet")),
+        ],
+    }
+    for source, sink, edge_attrs in pipeline_graph.edges(data=True):
+        assert edge_attrs["filepaths"] == expected_filepaths[(source, sink)]
+
+
+def test_get_input_slots(default_config: Config, test_dir: str) -> None:
+    expected = {
+        "step_1_python_pandas": {
+            "step_1_main_input": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "validator": validate_input_file_dummy,
+                "files": [
+                    Path(f"{test_dir}/input_data1/file1.csv"),
+                    Path(f"{test_dir}/input_data2/file2.csv"),
+                ],
+            }
+        },
+        "step_2_python_pandas": {
+            "step_2_main_input": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "validator": validate_input_file_dummy,
+                "files": [Path("intermediate/step_1_python_pandas/result.parquet")],
+            }
+        },
+        "step_3_python_pandas": {
+            "step_3_main_input": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "validator": validate_input_file_dummy,
+                "files": [Path("intermediate/step_2_python_pandas/result.parquet")],
+            }
+        },
+        "step_4_python_pandas": {
+            "step_4_main_input": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "validator": validate_input_file_dummy,
+                "files": [Path("intermediate/step_3_python_pandas/result.parquet")],
+            }
+        },
+    }
+    pipeline_graph = PipelineGraph(default_config)
+    for node, expected_slots in expected.items():
+        slots = pipeline_graph.get_input_slots(node)
+        for slot_name, expected_slot in expected_slots.items():
+            slot = slots[slot_name]
+            assert slot["env_var"] == expected_slot["env_var"]
+            assert slot["validator"] == expected_slot["validator"]
+            assert slot["filepaths"] == [str(file) for file in expected_slot["files"]]
+
+
+def test_condense_input_slots() -> None:
+    input_slots = [
+        InputSlot(
+            "step_1_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+        InputSlot(
+            "step_1_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+        InputSlot(
+            "step_2_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+        InputSlot(
+            "step_2_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+    ]
+    filepaths_by_slot = [
+        ["file1", "file2"],
+        ["file3", "file4"],
+        ["file5", "file6"],
+        ["file7", "file8"],
+    ]
+    expected = {
+        "step_1_main_input": {
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "validator": validate_input_file_dummy,
+            "filepaths": ["file1", "file2", "file3", "file4"],
+        },
+        "step_2_main_input": {
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "validator": validate_input_file_dummy,
+            "filepaths": ["file5", "file6", "file7", "file8"],
+        },
+    }
+    condensed_slots = PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+    for slot_name, expected_slot in expected.items():
+        slot = condensed_slots[slot_name]
+        assert slot["env_var"] == expected_slot["env_var"]
+        assert slot["validator"] == expected_slot["validator"]
+        assert slot["filepaths"] == expected_slot["filepaths"]
+
+
+def test_condense_input_slots_duplicate_slots() -> None:
+    input_slots = [
+        InputSlot(
+            "step_1_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+        InputSlot(
+            "step_1_main_input",
+            "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+    ]
+    filepaths_by_slot = [
+        ["file1", "file2"],
+        ["file3", "file4"],
+    ]
+    with pytest.raises(ValueError):
+        PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+
+
+def test_condense_input_slots_duplicate_slots() -> None:
+    input_slots = [
+        InputSlot(
+            "step_1_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+        InputSlot(
+            "step_1_main_input", "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS", lambda x: None
+        ),
+    ]
+    filepaths_by_slot = [
+        ["file1", "file2"],
+        ["file3", "file4"],
+    ]
+    with pytest.raises(ValueError):
+        PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
