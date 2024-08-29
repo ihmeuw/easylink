@@ -7,7 +7,14 @@ import itertools
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
-from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping, StepGraph, ImplementationGraph
+from easylink.graph_components import (
+    Edge,
+    InputSlot,
+    OutputSlot,
+    SlotMapping,
+    StepGraph,
+    ImplementationGraph,
+)
 from easylink.implementation import Implementation
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
@@ -34,13 +41,13 @@ class Step(ABC):
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.parent_step = None
         self._config = None
-    
+
     @property
     def config(self):
         if self._config is None:
             raise ValueError(f"Step {self.name}'s config was invoked before being set")
         return self._config
-    
+
     @abstractmethod
     def set_step_config(self, parent_config: LayeredConfigTree):
         pass
@@ -49,8 +56,7 @@ class Step(ABC):
         self.parent_step = step
 
     @abstractmethod
-    def get_implementation_graph(
-        self) -> None:
+    def get_implementation_graph(self) -> None:
         """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
 
@@ -61,6 +67,7 @@ class Step(ABC):
         """Validate the step against the pipeline configuration."""
         pass
 
+
 class IOStep(Step):
     """"""
 
@@ -68,17 +75,30 @@ class IOStep(Step):
     def implementation_graph_node_name(self):
         return "pipeline_graph_" + self.name
 
-    def get_implementation_graph(
-        self) -> ImplementationGraph:
+    def set_step_config(self, parent_config: LayeredConfigTree):
+        self._config = parent_config
+
+    def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
         implementation_graph = ImplementationGraph()
         implementation_graph.add_node(self.implementation_graph_node_name)
         return implementation_graph
-    
-    def slot_mappings(self) -> Dict[str, List[SlotMapping]]:
-        return {"input": [SlotMapping("input",self.name,slot,self.implementation_graph_node_name,slot) for slot in self.input_slots],
-                "output": [SlotMapping("output",self.name,slot,self.implementation_graph_node_name,slot) for slot in self.output_slots]}
 
+    def slot_mappings(self) -> Dict[str, List[SlotMapping]]:
+        return {
+            "input": [
+                SlotMapping(
+                    "input", self.name, slot, self.implementation_graph_node_name, slot
+                )
+                for slot in self.input_slots
+            ],
+            "output": [
+                SlotMapping(
+                    "output", self.name, slot, self.implementation_graph_node_name, slot
+                )
+                for slot in self.output_slots
+            ],
+        }
 
     # def update_edges(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
     #     """Add edges to/from self to replace the edges from the current step"""
@@ -106,6 +126,7 @@ class IOStep(Step):
 
 class BasicStep(Step):
     """Step for leaf node tied to a specific single implementation"""
+
     def __init__(
         self,
         step_name: str,
@@ -119,7 +140,7 @@ class BasicStep(Step):
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.parent_step = None
         self._config = None
-    
+
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config[self.name]
 
@@ -137,10 +158,22 @@ class BasicStep(Step):
             implementation=implementation,
         )
         return implementation_graph
-    
+
     def slot_mappings(self) -> Dict[str, List[SlotMapping]]:
-        return {"input": [SlotMapping("input",self.name,slot,self.get_implementation_node_name(self.config),slot) for slot in self.input_slots],
-                "output": [SlotMapping("output",self.name,slot,self.get_implementation_node_name(self.config),slot) for slot in self.output_slots]}
+        return {
+            "input": [
+                SlotMapping(
+                    "input", self.name, slot, self.get_implementation_node_name(), slot
+                )
+                for slot in self.input_slots
+            ],
+            "output": [
+                SlotMapping(
+                    "output", self.name, slot, self.get_implementation_node_name(), slot
+                )
+                for slot in self.output_slots
+            ],
+        }
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -213,6 +246,9 @@ class CompositeStep(Step):
         self.step_graph = self._create_graph(nodes, edges)
         self.step_slot_mappings = slot_mappings
 
+    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
+        self._config = parent_config[self.name]
+
     def _create_graph(self, nodes: List[Step], edges: List[Edge]) -> StepGraph:
         """Create a MultiDiGraph from the nodes and edges the step was initialized with."""
         step_graph = StepGraph()
@@ -225,7 +261,9 @@ class CompositeStep(Step):
             step_graph.add_edge(
                 edge.source_node,
                 edge.target_node,
-                input_slot=step_graph.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
+                input_slot=step_graph.nodes[edge.target_node]["step"].input_slots[
+                    edge.input_slot
+                ],
                 output_slot=step_graph.nodes[edge.source_node]["step"].output_slots[
                     edge.output_slot
                 ],
@@ -247,25 +285,36 @@ class CompositeStep(Step):
             parent_output_slot_name = edge_attrs["output_slot"].name
             parent_source_mappings = parent_source_step.slot_mappings()["output"]
             parent_target_mappings = parent_target_step.slot_mappings()["input"]
-            
-            source_children = [(slot.child_node, slot.child_slot) for slot in parent_source_mappings if slot.parent_slot == parent_output_slot_name]
-            target_children = [(slot.child_node, slot.child_slot) for slot in parent_target_mappings if slot.parent_slot == parent_input_slot_name]
-            
+
+            source_children = [
+                (slot.child_node, slot.child_slot)
+                for slot in parent_source_mappings
+                if slot.parent_slot == parent_output_slot_name
+            ]
+            target_children = [
+                (slot.child_node, slot.child_slot)
+                for slot in parent_target_mappings
+                if slot.parent_slot == parent_input_slot_name
+            ]
+
             for source, target in itertools.product(source_children, target_children):
-                source_node, output_slot = source
-                target_node, input_slot = target
-                implementation_graph.add_edge(source_node,target_node,output_slot=output_slot,input_slot=input_slot)
-        
+                source_node, output_slot_name = source
+                target_node, input_slot_name = target
+                output_slot = parent_source_step.output_slots[output_slot_name]
+                input_slot = parent_target_step.input_slots[input_slot_name]
+                implementation_graph.add_edge(
+                    source_node, target_node, output_slot=output_slot, input_slot=input_slot
+                )
+
         return implementation_graph
-            
-            
+
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
         """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
         errors = {}
-        for node in self.graph.nodes:
-            step = self.graph.nodes[node]["step"]
+        for node in self.step_graph.nodes:
+            step = self.step_graph.nodes[node]["step"]
             if isinstance(step, IOStep):
                 continue
             if step.name not in step_config:
@@ -274,11 +323,11 @@ class CompositeStep(Step):
                 step_errors = step.validate_step(step_config[step.name], input_data_config)
             if step_errors:
                 errors.update(step_errors)
-        extra_steps = set(step_config.keys()) - set(self.graph.nodes)
+        extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
         for extra_step in extra_steps:
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
-    
+
     def slot_mappings(self):
         slot_mappings = {"input": [], "output": []}
         for mapping_type in ("input", "output"):
@@ -288,14 +337,21 @@ class CompositeStep(Step):
                 child_node = input_mapping.child_node
                 child_slot = input_mapping.child_slot
                 child_step = self.step_graph.nodes[child_node]["step"]
-                child_step_config = self.config if isinstance(child_step, IOStep) else self.config[child_step.name]
-                child_slot_mappings = child_step.slot_mappings(child_step_config)[mapping_type]
-                new_mappings = [SlotMapping(mapping_type,parent_node,parent_slot,child_slot_mapping.child_node, child_slot_mapping.child_slot) for child_slot_mapping in child_slot_mappings if child_slot_mapping.parent_slot ==child_slot]
+                child_slot_mappings = child_step.slot_mappings()[mapping_type]
+                new_mappings = [
+                    SlotMapping(
+                        mapping_type,
+                        parent_node,
+                        parent_slot,
+                        child_slot_mapping.child_node,
+                        child_slot_mapping.child_slot,
+                    )
+                    for child_slot_mapping in child_slot_mappings
+                    if child_slot_mapping.parent_slot == child_slot
+                ]
                 slot_mappings[mapping_type].extend(new_mappings)
-        
+
         return slot_mappings
-            
-        
 
     # def remap_slots(self, graph: nx.MultiDiGraph, step_config: LayeredConfigTree) -> None:
     #     """Update edges to reflect mapping between parent and child nodes for input and output slots."""
@@ -348,13 +404,16 @@ class HierarchicalStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "substeps"
-    
-    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        step_config =  parent_config[self.name]
-        self._config = step_config if not self.config_key in step_config else step_config[self.config_key]
 
-    def get_implementation_graph(
-        self) -> ImplementationGraph:
+    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
+        step_config = parent_config[self.name]
+        self._config = (
+            step_config
+            if not self.config_key in step_config
+            else step_config[self.config_key]
+        )
+
+    def get_implementation_graph(self) -> ImplementationGraph:
         if len(self.config) > 1:
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
@@ -397,17 +456,15 @@ class LoopStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "iterate"
-    
+
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        step_config =  parent_config[self.name]
+        step_config = parent_config[self.name]
         if not self.config_key in step_config:
-            self._config = step_config 
+            self._config = step_config
         else:
             self._config = self._get_loop_config(step_config[self.config_key])
-        
-    def get_implementation_graph(
-        self, step_config: LayeredConfigTree
-    ) -> None:
+
+    def get_implementation_graph(self) -> None:
         if len(self.config) > 1:
             num_loops = len(self.config)
             self.step_graph = self._create_looped_graph(num_loops)
@@ -446,7 +503,9 @@ class LoopStep(CompositeStep, BasicStep):
         graph = nx.MultiDiGraph()
 
         for i in range(num_loops):
+            self.template_step.parent_step = None
             updated_step = copy.deepcopy(self.template_step)
+            updated_step.set_parent_step(self)
             updated_step.name = f"{self.name}_loop_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
             if i > 0:
@@ -521,16 +580,15 @@ class ParallelStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "parallel"
-    
+
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        step_config =  parent_config[self.name]
+        step_config = parent_config[self.name]
         if not self.config_key in step_config:
-            self._config = step_config 
+            self._config = step_config
         else:
             self._config = self._get_parallel_config(step_config[self.config_key])
 
-    def get_implementation_graph(
-        self) -> None:
+    def get_implementation_graph(self) -> None:
         if len(self.config) > 1:
             num_splits = len(self.config)
             self.step_graph = self._create_parallel_graph(num_splits)
@@ -581,7 +639,9 @@ class ParallelStep(CompositeStep, BasicStep):
         graph = nx.MultiDiGraph()
 
         for i in range(num_splits):
+            self.template_step.parent_step = None
             updated_step = copy.deepcopy(self.template_step)
+            updated_step.set_parent_step(self)
             updated_step.name = f"{self.name}_parallel_split_{i+1}"
             graph.add_node(updated_step.name, step=updated_step)
         return graph
@@ -616,6 +676,6 @@ class ParallelStep(CompositeStep, BasicStep):
         for step_name, config in step_config.items():
             if "input_data_file" in config:
                 for edge_idx in graph["pipeline_graph_input_data"][step_name]:
-                    graph["pipeline_graph_input_data"][step_name][edge_idx][
-                        "output_slot"
-                    ] = OutputSlot(name=config["input_data_file"])
+                    graph["pipeline_graph_input_data"][step_name][edge_idx]["output_slot"] = (
+                        OutputSlot(name=config["input_data_file"])
+                    )
