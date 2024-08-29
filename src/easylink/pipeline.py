@@ -183,11 +183,3 @@ use rule start_spark_worker from spark_cluster with:
                 )
             )
         return validation_files, validation_rules
-    
-    
-    def save_graph_plot(self, results_dir):
-        plt.figure(figsize=(15, 15)) 
-        pos = nx.nx_agraph.graphviz_layout(self.pipeline_graph, prog='dot')
-        nx.draw(self.pipeline_graph, pos=pos, with_labels=True, node_size=20000, font_size=10, arrowsize=25, node_color='white', edgecolors='black')
-        plt.tight_layout()
-        plt.savefig(results_dir / "pipeline_graph.png", format="PNG")
