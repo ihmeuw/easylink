@@ -165,19 +165,18 @@ use rule start_spark_worker from spark_cluster with:
         """Get validator file and validation rule for each slot for a given node"""
         validation_files = []
         validation_rules = []
+        input_slots = self.pipeline_graph.get_input_slots(node)
 
-        for _, _, edge_attrs in self.pipeline_graph.in_edges(node, data=True):
-            input_slot = edge_attrs["input_slot"]
-            input_files = edge_attrs["filepaths"]
-            validation_file = f"input_validations/{node}/{input_slot.name}_validator"
+        for input_slot_name, input_slot_attrs in input_slots.items():
+            validation_file = f"input_validations/{node}/{input_slot_name}_validator"
             validation_files.append(validation_file)
             validation_rules.append(
                 InputValidationRule(
                     name=node,
-                    slot_name=input_slot.name,
-                    input=input_files,
+                    slot_name=input_slot_name,
+                    input=input_slot_attrs["filepaths"],
                     output=validation_file,
-                    validator=input_slot.validator,
+                    validator=input_slot_attrs["validator"],
                 )
             )
         return validation_files, validation_rules

@@ -73,11 +73,29 @@ class PipelineGraph(MultiDiGraph):
         input_slots = {}
         for _, _, edge_attrs in self.in_edges(node, data=True):
             # Consider whether we need duplicate variables to merge
-            env_var, files = edge_attrs["input_slot"].env_var, edge_attrs["filepaths"]
-            if env_var in input_slots:
-                input_slots[env_var].extend(files)
+            input_slot = edge_attrs["input_slot"]
+            slot_name, env_var, validator = (
+                input_slot.name,
+                input_slot.env_var,
+                input_slot.validator,
+            )
+            files = edge_attrs["filepaths"]
+            if slot_name in input_slots:
+                if env_var != input_slots[slot_name]["env_var"]:
+                    raise ValueError(
+                        f"Duplicate slot name {slot_name} with different env vars."
+                    )
+                if validator != input_slots[slot_name]["validator"]:
+                    raise ValueError(
+                        f"Duplicate slot name {slot_name} with different validators."
+                    )
+                input_slots[slot_name]["filepaths"].extend(files)
             else:
-                input_slots[env_var] = files
+                input_slots[slot_name] = {
+                    "env_var": env_var,
+                    "validator": validator,
+                    "filepaths": files,
+                }
         return input_slots
 
     def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
