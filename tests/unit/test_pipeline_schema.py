@@ -11,7 +11,7 @@ from easylink.step import Step
 def test_schema_instantiation() -> None:
     nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
-    sorted_graph = nx.topological_sort(schema.graph)
+    sorted_graph = nx.topological_sort(schema.step_graph)
     """Test that the schema is correctly loaded from the pipeline.yaml"""
     assert list(sorted_graph) == [
         "input_data",

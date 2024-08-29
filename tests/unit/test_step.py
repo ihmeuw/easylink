@@ -42,9 +42,7 @@ def test_io_update_implementation_graph(
     io_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = IOStep(**io_step_params)
-    subgraph = nx.MultiDiGraph()
-    subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    subgraph = step.get_implementation_graph(default_config["pipeline"])
     assert list(subgraph.nodes) == ["pipeline_graph_io"]
     assert list(subgraph.edges) == []
 
@@ -81,9 +79,7 @@ def test_basic_step_update_implementation_graph(
     basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
-    subgraph = nx.MultiDiGraph()
-    subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
+    subgraph = step.get_implementation_graph(default_config["pipeline"][step.name])
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -179,21 +175,7 @@ def test_composite_step_update_implementation_graph(
             },
         }
     )
-    subgraph = nx.MultiDiGraph(
-        [
-            (
-                "input_data",
-                "step_4",
-                {
-                    "input_slot": InputSlot(
-                        "step_4_main_input", None, validate_input_file_dummy
-                    ),
-                    "output_slot": OutputSlot("file1"),
-                },
-            )
-        ]
-    )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    subgraph = step.get_implementation_graph(pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
         "step_4a_python_pandas",
@@ -302,9 +284,7 @@ def test_hierarchical_step_update_implementation_graph(
     pipeline_params = LayeredConfigTree(
         {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}
     )
-    subgraph = nx.MultiDiGraph()
-    subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, pipeline_params)
+    subgraph = step.get_implementation_graph(pipeline_params)
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -327,21 +307,8 @@ def test_hierarchical_step_update_implementation_graph(
             },
         },
     )
-    subgraph = nx.MultiDiGraph(
-        [
-            (
-                "input_data",
-                "step_4",
-                {
-                    "input_slot": InputSlot(
-                        "step_4_main_input", None, validate_input_file_dummy
-                    ),
-                    "output_slot": OutputSlot("file1"),
-                },
-            )
-        ]
-    )
-    step.update_implementation_graph(subgraph, pipeline_params)
+
+    subgraph = step.get_implementation_graph(pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
         "step_4a_python_pandas",
@@ -530,9 +497,7 @@ def test_loop_update_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
-    subgraph = nx.MultiDiGraph()
-    subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
+    subgraph = step.get_implementation_graph(default_config["pipeline"][step.name])
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -568,31 +533,7 @@ def test_loop_update_implementation_graph(
             ],
         }
     )
-    subgraph = nx.MultiDiGraph(
-        [
-            (
-                "input_data",
-                "step_3",
-                {
-                    "input_slot": InputSlot(
-                        "step_3_main_input", None, validate_input_file_dummy
-                    ),
-                    "output_slot": OutputSlot("file1"),
-                },
-            ),
-            (
-                "input_data",
-                "step_3",
-                {
-                    "input_slot": InputSlot(
-                        "step_3_secondary_input", None, validate_input_file_dummy
-                    ),
-                    "output_slot": OutputSlot("file1"),
-                },
-            ),
-        ]
-    )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    subgraph = step.get_implementation_graph(pipeline_params)
     assert list(subgraph.nodes) == [
         "input_data",
         "step_3_loop_1_step_3_python_pandas",
@@ -826,29 +767,7 @@ def test_parallel_step_update_implementation_graph(
             ],
         }
     )
-    subgraph = nx.MultiDiGraph(
-        [
-            (
-                "pipeline_graph_input_data",
-                "step_1",
-                {
-                    "input_slot": InputSlot(
-                        "step_1_main_input", None, validate_input_file_dummy
-                    ),
-                    "output_slot": OutputSlot("all"),
-                },
-            ),
-            (
-                "step_1",
-                "results",
-                {
-                    "input_slot": InputSlot("all", None, validate_input_file_dummy),
-                    "output_slot": OutputSlot("step_1_main_output"),
-                },
-            ),
-        ]
-    )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    subgraph = step.get_implementation_graph(pipeline_params)
     assert set(subgraph.nodes) == {
         "pipeline_graph_input_data",
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",

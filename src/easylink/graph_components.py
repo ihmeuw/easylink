@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable, Optional
+import networkx as nx
 
 
 @dataclass
@@ -28,7 +29,6 @@ class Edge:
     output_slot: str
     input_slot: str
 
-
 @dataclass
 class SlotMapping:
     """SlotMapping represents a mapping between a parent and child node
@@ -39,3 +39,14 @@ class SlotMapping:
     parent_slot: str
     child_node: str
     child_slot: str
+    
+    
+class StepGraph(nx.MultiDiGraph):
+    def is_step():
+        return True
+    
+
+class ImplementationGraph(nx.MultiDiGraph):
+    def is_step():
+        return False
+    
