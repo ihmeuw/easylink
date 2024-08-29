@@ -68,7 +68,7 @@ class PipelineGraph(MultiDiGraph):
                         )
                     ]
 
-    def get_input_slots(self, node: str) -> Dict[str, List[str]]:
+    def get_input_slots(self, node: str) -> dict[str, dict[str, Union[str, list[str]]]]:
         """Get all of a node's input slots from edges."""
         input_slots = {}
         for _, _, edge_attrs in self.in_edges(node, data=True):
