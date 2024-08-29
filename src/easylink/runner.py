@@ -37,8 +37,7 @@ def main(
         Path(results_dir),
     )
     snakefile = pipeline.build_snakefile()
-    pipeline.save_graph_plot(Path(results_dir))
-    # save_dag_image(snakefile, results_dir)
+    save_dag_image(snakefile, results_dir)
     environment_args = get_environment_args(config)
     singularity_args = get_singularity_args(config)
     # Set source cache in appropriate location to avoid jenkins failures
@@ -117,4 +116,4 @@ def save_dag_image(snakefile, results_dir) -> None:
     dot_output = process.stdout
     source = Source(dot_output)
     # Render the graph to a file
-    source.render('DAG', directory=results_dir, format='png', cleanup=True)
+    source.render('DAG', directory=results_dir, format='svg', cleanup=True)
