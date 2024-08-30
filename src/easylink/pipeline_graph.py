@@ -1,3 +1,4 @@
+import copy
 import itertools
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
@@ -24,6 +25,7 @@ class PipelineGraph(MultiDiGraph):
             incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
         )
         self.update_slot_filepaths(config)
+        self = nx.freeze(self)
 
     @property
     def implementation_nodes(self) -> List[str]:
@@ -72,12 +74,14 @@ class PipelineGraph(MultiDiGraph):
     def get_input_slots(self, node: str) -> dict[str, dict[str, Union[str, list[str]]]]:
         """Get all of a node's input slots from edges."""
         input_slots = [
-            edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
+            copy.deepcopy(edge_attrs["input_slot"])
+            for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
-        filepaths = [
-            edge_attrs["filepaths"] for _, _, edge_attrs in self.in_edges(node, data=True)
+        filepaths_by_slot = [
+            copy.deepcopy(edge_attrs["filepaths"])
+            for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
-        return self.condense_input_slots(input_slots, filepaths)
+        return self.condense_input_slots(input_slots, filepaths_by_slot)
 
     @staticmethod
     def condense_input_slots(
@@ -113,7 +117,7 @@ class PipelineGraph(MultiDiGraph):
         input_files = list(
             itertools.chain.from_iterable(
                 [
-                    edge_attrs["filepaths"]
+                    copy.deepcopy(edge_attrs["filepaths"])
                     for _, _, edge_attrs in self.in_edges(node, data=True)
                 ]
             )
@@ -121,7 +125,7 @@ class PipelineGraph(MultiDiGraph):
         output_files = list(
             itertools.chain.from_iterable(
                 [
-                    edge_attrs["filepaths"]
+                    copy.deepcopy(edge_attrs["filepaths"])
                     for _, _, edge_attrs in self.out_edges(node, data=True)
                 ]
             )
