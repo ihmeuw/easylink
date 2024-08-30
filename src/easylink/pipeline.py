@@ -85,7 +85,7 @@ class Pipeline:
     def write_implementation_rules(self, node: str) -> None:
         """Write the rules for each implemented step."""
         implementation = self.pipeline_graph.nodes[node]["implementation"]
-        input_files, output_files = self.pipeline_graph.get_input_output_files(node)
+        _input_files, output_files = self.pipeline_graph.get_input_output_files(node)
         input_slots = self.pipeline_graph.get_input_slots(node)
         diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
@@ -94,7 +94,7 @@ class Pipeline:
             if self.config.computing_environment == "slurm"
             else None
         )
-        validation_files, validation_rules = self.get_validations(node)
+        validation_files, validation_rules = self.get_validations(node, input_slots)
         implementation_rule = ImplementedRule(
             name=node,
             step_name=implementation.schema_step_name,
@@ -161,11 +161,11 @@ use rule start_spark_worker from spark_cluster with:
                         """
             f.write(module)
 
-    def get_validations(self, node) -> Tuple[List[str], List[InputValidationRule]]:
+    @staticmethod
+    def get_validations(node, input_slots) -> Tuple[List[str], List[InputValidationRule]]:
         """Get validator file and validation rule for each slot for a given node"""
         validation_files = []
         validation_rules = []
-        input_slots = self.pipeline_graph.get_input_slots(node)
 
         for input_slot_name, input_slot_attrs in input_slots.items():
             validation_file = f"input_validations/{node}/{input_slot_name}_validator"
