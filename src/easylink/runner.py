@@ -10,12 +10,17 @@ from snakemake.cli import main as snake_main
 
 from easylink.configuration import Config, load_params_from_specification
 from easylink.pipeline import Pipeline
-from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
+from easylink.utilities.data_utils import (
+    copy_configuration_files_to_results_directory,
+    create_results_directory,
+    create_results_intermediates,
+)
 from easylink.utilities.general_utils import is_on_slurm
 from easylink.utilities.paths import EASYLINK_TEMP
 
 
 def main(
+    command: str,
     pipeline_specification: str,
     input_data: str,
     computing_environment: str,
@@ -28,15 +33,20 @@ def main(
     )
     config = Config(config_params)
     pipeline = Pipeline(config)
-    # Now that all validation is done, create results dir and copy the configuration files to the results directory
+    # After validation is completed, create the results directory
+    create_results_directory(Path(results_dir))
+    snakefile = pipeline.build_snakefile()
+    save_dag_image(snakefile, results_dir)
+    if command == "generate_dag":
+        return
+    # Copy the configuration files to the results directory if we actually plan to run the pipeline.
+    create_results_intermediates(Path(results_dir))
     copy_configuration_files_to_results_directory(
         Path(pipeline_specification),
         Path(input_data),
         Path(computing_environment),
         Path(results_dir),
     )
-    snakefile = pipeline.build_snakefile()
-    save_dag_image(snakefile, results_dir)
     environment_args = get_environment_args(config)
     singularity_args = get_singularity_args(config)
     # Set source cache in appropriate location to avoid jenkins failures
