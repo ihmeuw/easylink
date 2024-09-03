@@ -377,7 +377,7 @@ all_combos, pik_pairs = pvs_matching_pass(blocking_cols, matching_cols)
 output_file_path = os.getenv("DUMMY_CONTAINER_OUTPUT_PATHS")
 final_output = pd.merge(
     census_2030_raw_input,
-    census_2030[["record_id_raw_input_file", "pik"]].drop_duplicates(),
+    census_2030[["record_id_raw_input_file", "pik"]],
     left_on="record_id",
     right_on="record_id_raw_input_file",
     how="left",

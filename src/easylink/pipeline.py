@@ -1,8 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple
-import matplotlib.pyplot as plt
-import networkx as nx
 
 from loguru import logger
 
