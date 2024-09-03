@@ -40,25 +40,7 @@ SHARED_OPTIONS = [
         default=True,
         show_default=True,
         help="Save the results in a timestamped sub-directory of --output-dir.",
-    ),
-    click.option(
-        "-e",
-        "--computing-environment",
-        default=None,
-        show_default=True,
-        type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-        help=("Path to a computing environment yaml file on which to launch the step."),
-    ),
-    click.option(
-        "-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True
-    ),
-    click.option(
-        "--pdb",
-        "with_debugger",
-        is_flag=True,
-        help="Drop into python debugger if an error occurs.",
-        hidden=True,
-    ),
+    )
 ]
 
 
@@ -79,6 +61,24 @@ def easylink():
 
 @easylink.command()
 @pass_shared_options
+@click.option(
+        "-e",
+        "--computing-environment",
+        default=None,
+        show_default=True,
+        type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+        help=("Path to a computing environment yaml file on which to launch the step."),
+    )
+@click.option(
+        "-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True
+    )
+@click.option(
+        "--pdb",
+        "with_debugger",
+        is_flag=True,
+        help="Drop into python debugger if an error occurs.",
+        hidden=True,
+    )
 def run(
     pipeline_specification: str,
     input_data: str,
@@ -115,25 +115,17 @@ def generate_dag(
     input_data: str,
     output_dir: Optional[str],
     timestamp: bool,
-    computing_environment: Optional[str],
-    verbose: int,
-    with_debugger: bool,
 ) -> None:
     """Generate a DAG file from the command line."""
-    configure_logging_to_terminal(verbose)
     logger.info("Generating DAG")
     results_dir = get_results_directory(output_dir, timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")
     # TODO [MIC-4493]: Add configuration validation
-
-    main = handle_exceptions(
-        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
-    )
-    main(
+    runner.main(
         command="generate_dag",
         pipeline_specification=pipeline_specification,
         input_data=input_data,
-        computing_environment=computing_environment,
+        computing_environment=None,
         results_dir=results_dir,
     )
     logger.info("*** DAG saved to result directory ***")
