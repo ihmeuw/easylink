@@ -24,48 +24,48 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": [
+            "filepaths": (
                 Path(f"{test_dir}/input_data1/file1.csv"),
                 Path(f"{test_dir}/input_data2/file2.csv"),
-            ],
+            ),
         },
         ("pipeline_graph_input_data", "step_4_python_pandas"): {
             "input_slot_name": "step_4_secondary_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-            "filepaths": [
+            "filepaths": (
                 Path(f"{test_dir}/input_data1/file1.csv"),
                 Path(f"{test_dir}/input_data2/file2.csv"),
-            ],
+            ),
         },
         ("step_1_python_pandas", "step_2_python_pandas"): {
             "input_slot_name": "step_2_main_input",
             "output_slot_name": "step_1_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": [Path("intermediate/step_1_python_pandas/result.parquet")],
+            "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
         },
         ("step_2_python_pandas", "step_3_python_pandas"): {
             "input_slot_name": "step_3_main_input",
             "output_slot_name": "step_2_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": [Path("intermediate/step_2_python_pandas/result.parquet")],
+            "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
         },
         ("step_3_python_pandas", "step_4_python_pandas"): {
             "input_slot_name": "step_4_main_input",
             "output_slot_name": "step_3_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": [Path("intermediate/step_3_python_pandas/result.parquet")],
+            "filepaths": (Path("intermediate/step_3_python_pandas/result.parquet"),),
         },
         ("step_4_python_pandas", "pipeline_graph_results"): {
             "input_slot_name": "result",
             "output_slot_name": "step_4_main_output",
             "validator": validate_input_file_dummy,
             "env_var": None,
-            "filepaths": [Path("intermediate/step_4_python_pandas/result.parquet")],
+            "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
         },
     }
     assert set(pipeline_graph.edges()) == expected_edges.keys()
@@ -81,9 +81,9 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
             edge_attrs["output_slot"].name
             == expected_edges[(source, sink)]["output_slot_name"]
         )
-        assert edge_attrs["filepaths"] == [
-            str(file) for file in expected_edges[(source, sink)]["filepaths"]
-        ]
+        assert edge_attrs["filepaths"] == tuple(
+            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
+        )
 
 
 def test_implementations(default_config: Config) -> None:
@@ -105,26 +105,26 @@ def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
     pipeline_graph.update_slot_filepaths(default_config)
     expected_filepaths = {
-        ("pipeline_graph_input_data", "step_1_python_pandas"): [
+        ("pipeline_graph_input_data", "step_1_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
             str(Path(f"{test_dir}/input_data2/file2.csv")),
-        ],
-        ("pipeline_graph_input_data", "step_4_python_pandas"): [
+        ),
+        ("pipeline_graph_input_data", "step_4_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
             str(Path(f"{test_dir}/input_data2/file2.csv")),
-        ],
-        ("step_1_python_pandas", "step_2_python_pandas"): [
+        ),
+        ("step_1_python_pandas", "step_2_python_pandas"): (
             str(Path("intermediate/step_1_python_pandas/result.parquet")),
-        ],
-        ("step_2_python_pandas", "step_3_python_pandas"): [
+        ),
+        ("step_2_python_pandas", "step_3_python_pandas"): (
             str(Path("intermediate/step_2_python_pandas/result.parquet")),
-        ],
-        ("step_3_python_pandas", "step_4_python_pandas"): [
+        ),
+        ("step_3_python_pandas", "step_4_python_pandas"): (
             str(Path("intermediate/step_3_python_pandas/result.parquet")),
-        ],
-        ("step_4_python_pandas", "pipeline_graph_results"): [
+        ),
+        ("step_4_python_pandas", "pipeline_graph_results"): (
             str(Path("intermediate/step_4_python_pandas/result.parquet")),
-        ],
+        ),
     }
     for source, sink, edge_attrs in pipeline_graph.edges(data=True):
         assert edge_attrs["filepaths"] == expected_filepaths[(source, sink)]

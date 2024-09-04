@@ -50,26 +50,26 @@ class PipelineGraph(MultiDiGraph):
         ):
             for edge_idx in self[source][sink]:
                 if edge_attrs["output_slot"].name == "all":
-                    self[source][sink][edge_idx]["filepaths"] = [
-                        str(path) for path in config.input_data.to_dict().values()
-                    ]
+                    self[source][sink][edge_idx]["filepaths"] = tuple(
+                        [str(path) for path in config.input_data.to_dict().values()]
+                    )
                 else:
-                    self[source][sink][edge_idx]["filepaths"] = [
-                        str(config.input_data[edge_attrs["output_slot"].name])
-                    ]
+                    self[source][sink][edge_idx]["filepaths"] = (
+                        str(config.input_data[edge_attrs["output_slot"].name]),
+                    )
 
         # Update implementation nodes with yaml metadata
         for node in self.implementation_nodes:
             imp_outputs = self.nodes[node]["implementation"].outputs
             for source, sink, edge_attrs in self.out_edges(node, data=True):
                 for edge_idx in self[node][sink]:
-                    self[source][sink][edge_idx]["filepaths"] = [
+                    self[source][sink][edge_idx]["filepaths"] = (
                         str(
                             Path("intermediate")
                             / node
                             / imp_outputs[edge_attrs["output_slot"].name]
-                        )
-                    ]
+                        ),
+                    )
 
     def get_input_slots(self, node: str) -> dict[str, dict[str, Union[str, list[str]]]]:
         """Get all of a node's input slots from edges."""
@@ -77,7 +77,7 @@ class PipelineGraph(MultiDiGraph):
             edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
         filepaths_by_slot = [
-            edge_attrs["filepaths"].copy()
+            list(edge_attrs["filepaths"])
             for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
         return self.condense_input_slots(input_slots, filepaths_by_slot)
@@ -116,7 +116,7 @@ class PipelineGraph(MultiDiGraph):
         input_files = list(
             itertools.chain.from_iterable(
                 [
-                    edge_attrs["filepaths"].copy()
+                    list(edge_attrs["filepaths"])
                     for _, _, edge_attrs in self.in_edges(node, data=True)
                 ]
             )
@@ -124,7 +124,7 @@ class PipelineGraph(MultiDiGraph):
         output_files = list(
             itertools.chain.from_iterable(
                 [
-                    edge_attrs["filepaths"].copy()
+                    list(edge_attrs["filepaths"])
                     for _, _, edge_attrs in self.out_edges(node, data=True)
                 ]
             )
