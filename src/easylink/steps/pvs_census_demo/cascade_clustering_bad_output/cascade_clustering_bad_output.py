@@ -315,8 +315,7 @@ def pvs_matching_pass(blocking_cols, matching_cols):
     print(f"{len(potential_links)} links above threshold")
 
     # Post-processing: deal with multiple matches
-    # According to the report, a record is considered not linkable if it has multiple matches above the threshold
-    # I represent "not linkable" here with a PIK of -1 (different from NaN, which means yet-to-be-linked)
+    # Do not consider multiple matches for the same record_id; simply do not link them.
     potential_links = potential_links.merge(
         reference_file[["record_id", "pik"]],
         left_on="record_id_reference_file",
@@ -332,15 +331,10 @@ def pvs_matching_pass(blocking_cols, matching_cols):
     )
     if len(census_records_with_multiple_potential_piks) > 0:
         print(
-            f"{len(census_records_with_multiple_potential_piks)} input records matched to multiple PIKs, marking as unlinkable"
+            f"{len(census_records_with_multiple_potential_piks)} input records matched to multiple PIKs, dropping them from list of potential matches"
         )
 
-    potential_links.loc[
-        potential_links.record_id_census_2030.isin(
-            census_records_with_multiple_potential_piks
-        ),
-        "pik",
-    ] = -1
+    potential_links = potential_links.loc[~census_records_with_multiple_potential_piks]
 
     assert (potential_links.groupby("record_id_census_2030").pik.nunique() == 1).all()
     links = potential_links.groupby("record_id_census_2030").pik.first().reset_index()
@@ -389,4 +383,4 @@ if "pik" in census_2030_raw_input:
     final_output = final_output.rename(columns={"pik_updated": "pik"}).drop(
         columns=["pik_raw"]
     )
-final_output.to_parquet(output_file_path)
+# final_output.to_parquet(output_file_path)
