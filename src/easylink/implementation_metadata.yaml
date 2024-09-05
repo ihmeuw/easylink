@@ -98,10 +98,10 @@ cascade_clustering_pandas:
     piked_census: result.parquet
   requires_spark: false
 
-cascade_clustering_spark:
+cascade_clustering_bad_output:
   step: cascade_clustering
-  image_path: /ihme/homes/pnast/repos/linker/src/easylink/steps/pvs_census_demo/cascade_clustering_spark/cascade_clustering_spark.sif
-  script_cmd: python3 /code/cascade_clustering_spark.py 
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/pvs_census_demo/cascade_clustering_bad_output/cascade_clustering_bad_output.sif
+  script_cmd: python3 /cascade_clustering_bad_output.py 
   outputs:
     piked_census: result.parquet
-  requires_spark: true
+  requires_spark: false
