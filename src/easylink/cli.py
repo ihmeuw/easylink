@@ -10,6 +10,45 @@ from easylink.utilities.general_utils import (
     handle_exceptions,
 )
 
+SHARED_OPTIONS = [
+    click.option(
+        "-p",
+        "--pipeline-specification",
+        required=True,
+        type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+        help="The path to the pipeline specification yaml file.",
+    ),
+    click.option(
+        "-i",
+        "--input-data",
+        required=True,
+        type=click.Path(exists=True, dir_okay=False, resolve_path=True),
+        help="The path to the input data specification yaml file (not the paths to the input data themselves).",
+    ),
+    click.option(
+        "-o",
+        "--output-dir",
+        type=click.Path(exists=False, dir_okay=True, resolve_path=True),
+        help=(
+            "The directory to write results and incidental files (logs, etc.) to. "
+            "If no value is passed, results will be written to a 'results/' directory "
+            "in the current working directory."
+        ),
+    ),
+    click.option(
+        "--timestamp/--no-timestamp",
+        default=True,
+        show_default=True,
+        help="Save the results in a timestamped sub-directory of --output-dir.",
+    ),
+]
+
+
+def pass_shared_options(func):
+    for option in SHARED_OPTIONS:
+        func = option(func)
+    return func
+
 
 @click.group()
 def easylink():
@@ -21,36 +60,7 @@ def easylink():
 
 
 @easylink.command()
-@click.option(
-    "-p",
-    "--pipeline-specification",
-    required=True,
-    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    help="The path to the pipeline specification yaml file.",
-)
-@click.option(
-    "-i",
-    "--input-data",
-    required=True,
-    type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    help="The path to the input data specification yaml file (not the paths to the input data themselves).",
-)
-@click.option(
-    "-o",
-    "--output-dir",
-    type=click.Path(exists=False, dir_okay=True, resolve_path=True),
-    help=(
-        "The directory to write results and incidental files (logs, etc.) to. "
-        "If no value is passed, results will be written to a 'results/' directory "
-        "in the current working directory."
-    ),
-)
-@click.option(
-    "--timestamp/--no-timestamp",
-    default=True,
-    show_default=True,
-    help="Save the results in a timestamped sub-directory of --output-dir.",
-)
+@pass_shared_options
 @click.option(
     "-e",
     "--computing-environment",
@@ -87,9 +97,33 @@ def run(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
     main(
+        command="run",
         pipeline_specification=pipeline_specification,
         input_data=input_data,
         computing_environment=computing_environment,
         results_dir=results_dir,
     )
     logger.info("*** FINISHED ***")
+
+
+@easylink.command()
+@pass_shared_options
+def generate_dag(
+    pipeline_specification: str,
+    input_data: str,
+    output_dir: Optional[str],
+    timestamp: bool,
+) -> None:
+    """Generate a DAG file from the command line."""
+    logger.info("Generating DAG")
+    results_dir = get_results_directory(output_dir, timestamp).as_posix()
+    logger.info(f"Results directory: {results_dir}")
+    # TODO [MIC-4493]: Add configuration validation
+    runner.main(
+        command="generate_dag",
+        pipeline_specification=pipeline_specification,
+        input_data=input_data,
+        computing_environment=None,
+        results_dir=results_dir,
+    )
+    logger.info("*** DAG saved to result directory ***")
