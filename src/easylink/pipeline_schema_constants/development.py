@@ -1,4 +1,4 @@
-from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
+from easylink.graph_components import StepGraphEdge, InputSlot, OutputSlot, StepSlotMapping
 from easylink.step import (
     BasicStep,
     HierarchicalStep,
@@ -66,7 +66,7 @@ NODES = [
             output_slots=[OutputSlot("step_3_main_output")],
         ),
         self_edges=[
-            Edge(
+            StepGraphEdge(
                 source_node="step_3",
                 target_node="step_3",
                 output_slot="step_3_main_output",
@@ -124,7 +124,7 @@ NODES = [
             ),
         ],
         edges=[
-            Edge(
+            StepGraphEdge(
                 source_node="step_4a",
                 target_node="step_4b",
                 output_slot="step_4a_main_output",
@@ -133,7 +133,7 @@ NODES = [
         ],
         slot_mappings={
             "input": [
-                SlotMapping(
+                StepSlotMapping(
                     slot_type="input",
                     parent_node="step_4",
                     parent_slot="step_4_main_input",
@@ -142,7 +142,7 @@ NODES = [
                 )
             ],
             "output": [
-                SlotMapping(
+                StepSlotMapping(
                     slot_type="output",
                     parent_node="step_4",
                     parent_slot="step_4_main_output",
@@ -161,37 +161,37 @@ NODES = [
     ),
 ]
 EDGES = [
-    Edge(
+    StepGraphEdge(
         source_node="input_data",
         target_node="step_1",
         output_slot="all",
         input_slot="step_1_main_input",
     ),
-    Edge(
+    StepGraphEdge(
         source_node="input_data",
         target_node="step_4",
         output_slot="all",
         input_slot="step_4_secondary_input",
     ),
-    Edge(
+    StepGraphEdge(
         source_node="step_1",
         target_node="step_2",
         output_slot="step_1_main_output",
         input_slot="step_2_main_input",
     ),
-    Edge(
+    StepGraphEdge(
         source_node="step_2",
         target_node="step_3",
         output_slot="step_2_main_output",
         input_slot="step_3_main_input",
     ),
-    Edge(
+    StepGraphEdge(
         source_node="step_3",
         target_node="step_4",
         output_slot="step_3_main_output",
         input_slot="step_4_main_input",
     ),
-    Edge(
+    StepGraphEdge(
         source_node="step_4",
         target_node="results",
         output_slot="step_4_main_output",

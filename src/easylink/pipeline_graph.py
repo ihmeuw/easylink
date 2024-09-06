@@ -46,7 +46,7 @@ class PipelineGraph(MultiDiGraph):
             "pipeline_graph_input_data", data=True
         ):
             for edge_idx in self[source][sink]:
-                if edge_attrs["output_slot"].name == "all":
+                if edge_attrs["output_slot"] == "all":
                     self[source][sink][edge_idx]["filepaths"] = [
                         str(path) for path in config.input_data.to_dict().values()
                     ]
@@ -64,7 +64,7 @@ class PipelineGraph(MultiDiGraph):
                         str(
                             Path("intermediate")
                             / node
-                            / imp_outputs[edge_attrs["output_slot"].name]
+                            / imp_outputs[edge_attrs["output_slot"]]
                         )
                     ]
 
