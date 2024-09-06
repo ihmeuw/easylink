@@ -330,9 +330,9 @@ class CompositeStep(Step):
                 imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
-            raise ValueError(f"IOStep {self.name} not in edge {edge}")
+            raise ValueError(f" {self.name} not in edge {edge}")
         if not implementation_edges:
-            raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
+            raise ValueError(f"No edges found for {self.name} in edge {edge}")
         return implementation_edges
 
     def update_edges(self, implementation_graph: ImplementationGraph) -> None:

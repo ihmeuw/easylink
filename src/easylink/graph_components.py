@@ -22,15 +22,6 @@ class OutputSlot:
 
     name: str
 
-
-@dataclass
-class Edge:
-    source_node: str
-    target_node: str
-    output_slot: str
-    input_slot: str
-
-
 @dataclass
 class StepGraphEdge:
     """An edge between two nodes in a graph. Edges connect the output slot of
