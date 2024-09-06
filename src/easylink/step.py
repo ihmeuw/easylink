@@ -44,11 +44,9 @@ class Step(ABC):
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.parent_step = None
         self._config = None
-    
+
     def __hash__(self) -> int:
         return hash(self.name)
-    
-    
 
     @property
     def config(self):
@@ -89,19 +87,29 @@ class IOStep(Step):
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
         implementation_graph = ImplementationGraph()
-        implementation_graph.add_node_from_impl(self.implementation_graph_node_name, implementation=None)
+        implementation_graph.add_node_from_impl(
+            self.implementation_graph_node_name, implementation=None
+        )
         return implementation_graph
-    
+
     def get_implementation_edges(self, edge: StepGraphEdge):
         implementation_edges = []
         if edge.source_node == self.name:
-            mappings = [mapping for mapping in self.implementation_slot_mappings()["output"] if mapping.slot == edge.output_slot]
+            mappings = [
+                mapping
+                for mapping in self.implementation_slot_mappings()["output"]
+                if mapping.slot == edge.output_slot
+            ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(self, edge)
                 implementation_edges.append(imp_edge)
-            
+
         elif edge.target_node == self.name:
-            mappings = [mapping for mapping in self.implementation_slot_mappings()["input"] if mapping.slot == edge.input_slot]
+            mappings = [
+                mapping
+                for mapping in self.implementation_slot_mappings()["input"]
+                if mapping.slot == edge.input_slot
+            ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(self, edge)
                 implementation_edges.append(imp_edge)
@@ -110,22 +118,22 @@ class IOStep(Step):
         if not implementation_edges:
             raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
-        
 
     def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         return {
             "input": [
                 ImplementationSlotMapping(
-                    "input", self.name, slot, self.implementation_graph_node_name)
+                    "input", self.name, slot, self.implementation_graph_node_name
+                )
                 for slot in self.input_slots
             ],
             "output": [
                 ImplementationSlotMapping(
-                    "output", self.name, slot, self.implementation_graph_node_name)
+                    "output", self.name, slot, self.implementation_graph_node_name
+                )
                 for slot in self.output_slots
             ],
         }
-
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -167,17 +175,25 @@ class BasicStep(Step):
             implementation=implementation,
         )
         return implementation_graph
-    
+
     def get_implementation_edges(self, edge: StepGraphEdge):
         implementation_edges = []
         if edge.source_node == self.name:
-            mappings = [mapping for mapping in self.implementation_slot_mappings()["output"] if mapping.slot == edge.output_slot]
+            mappings = [
+                mapping
+                for mapping in self.implementation_slot_mappings()["output"]
+                if mapping.slot == edge.output_slot
+            ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(self, edge)
                 implementation_edges.append(imp_edge)
-            
+
         elif edge.target_node == self.name:
-            mappings = [mapping for mapping in self.implementation_slot_mappings()["input"] if mapping.slot == edge.input_slot]
+            mappings = [
+                mapping
+                for mapping in self.implementation_slot_mappings()["input"]
+                if mapping.slot == edge.input_slot
+            ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(self, edge)
                 implementation_edges.append(imp_edge)
@@ -186,17 +202,19 @@ class BasicStep(Step):
         if not implementation_edges:
             raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
-    
+
     def implementation_slot_mappings(self) -> Dict[str, List[ImplementationSlotMapping]]:
         return {
             "input": [
                 ImplementationSlotMapping(
-                    "input", self.name, slot, self.get_implementation_node_name())
+                    "input", self.name, slot, self.get_implementation_node_name()
+                )
                 for slot in self.input_slots
             ],
             "output": [
                 ImplementationSlotMapping(
-                    "output", self.name, slot, self.get_implementation_node_name())
+                    "output", self.name, slot, self.get_implementation_node_name()
+                )
                 for slot in self.output_slots
             ],
         }
@@ -283,23 +301,31 @@ class CompositeStep(Step):
         for edge in edges:
             step_graph.add_edge_from_data(edge)
         return step_graph
-    
-    def update_nodes(self,implementation_graph: ImplementationGraph) -> None:
+
+    def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
         for node in self.step_graph.nodes:
             step = self.step_graph.nodes[node]["step"]
             step.set_step_config(self.config)
             implementation_graph.update(step.get_implementation_graph())
-    
+
     def get_implementation_edges(self, edge: StepGraphEdge):
         implementation_edges = []
         if edge.source_node == self.name:
-            mappings = [mapping for mapping in self.step_slot_mappings["output"] if mapping.parent_slot == edge.output_slot]
+            mappings = [
+                mapping
+                for mapping in self.step_slot_mappings["output"]
+                if mapping.parent_slot == edge.output_slot
+            ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
-            
+
         elif edge.target_node == self.name:
-            mappings = [mapping for mapping in self.step_slot_mappings["input"] if mapping.parent_slot == edge.input_slot]
+            mappings = [
+                mapping
+                for mapping in self.step_slot_mappings["input"]
+                if mapping.parent_slot == edge.input_slot
+            ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
@@ -308,19 +334,19 @@ class CompositeStep(Step):
         if not implementation_edges:
             raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
-    
-    def update_edges(self,implementation_graph: ImplementationGraph) -> None:
+
+    def update_edges(self, implementation_graph: ImplementationGraph) -> None:
         for source, target, edge_attrs in self.step_graph.edges(data=True):
             all_edges = []
             edge = StepGraphEdge.from_graph_edge(source, target, edge_attrs)
             parent_source_step = self.step_graph.nodes[source]["step"]
             parent_target_step = self.step_graph.nodes[target]["step"]
-            
+
             source_edges = parent_source_step.get_implementation_edges(edge)
             for source_edge in source_edges:
                 for target_edge in parent_target_step.get_implementation_edges(source_edge):
                     all_edges.append(target_edge)
-            
+
             for edge in all_edges:
                 implementation_graph.add_edge_from_data(edge)
 
@@ -373,7 +399,7 @@ class HierarchicalStep(CompositeStep, BasicStep):
         if len(self.config) > 1:
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
-    
+
     def get_implementation_edges(self, edge: StepGraphEdge):
         if len(self.config) > 1:
             return CompositeStep.get_implementation_edges(self, edge)
@@ -432,7 +458,7 @@ class LoopStep(CompositeStep, BasicStep):
             self.step_slot_mappings = self._get_loop_slot_mappings(num_loops)
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
-    
+
     def get_implementation_edges(self, edge: StepGraphEdge):
         if len(self.config) > 1:
             return CompositeStep.get_implementation_edges(self, edge)
@@ -478,16 +504,16 @@ class LoopStep(CompositeStep, BasicStep):
             nodes.append(updated_step)
             if i > 0:
                 for self_edge in self.self_edges:
-                    source_node=f"{self.name}_loop_{i}"
-                    target_node=f"{self.name}_loop_{i+1}"
+                    source_node = f"{self.name}_loop_{i}"
+                    target_node = f"{self.name}_loop_{i+1}"
                     edge = StepGraphEdge(
-                    source_node=source_node,
-                    target_node=target_node,
-                    input_slot=self_edge.input_slot,
-                    output_slot=self_edge.output_slot,
+                        source_node=source_node,
+                        target_node=target_node,
+                        input_slot=self_edge.input_slot,
+                        output_slot=self_edge.output_slot,
                     )
                     edges.append(edge)
-                    
+
         for node in nodes:
             graph.add_node_from_step(node)
         for edge in edges:
@@ -502,7 +528,9 @@ class LoopStep(CompositeStep, BasicStep):
         external_input_slots = self.input_slots.keys() - self_edge_input_slots
         for input_slot in self_edge_input_slots:
             input_mappings.append(
-                StepSlotMapping("input", self.name, input_slot, f"{self.name}_loop_1", input_slot)
+                StepSlotMapping(
+                    "input", self.name, input_slot, f"{self.name}_loop_1", input_slot
+                )
             )
         for input_slot in external_input_slots:
             input_mappings.extend(
@@ -567,7 +595,7 @@ class ParallelStep(CompositeStep, BasicStep):
             self.step_slot_mappings = self._get_parallel_slot_mappings(num_splits)
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
-    
+
     def get_implementation_edges(self, edge: StepGraphEdge):
         if len(self.config) > 1:
             return CompositeStep.get_implementation_edges(self, edge)
@@ -627,12 +655,16 @@ class ParallelStep(CompositeStep, BasicStep):
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         input_mappings = [
-            StepSlotMapping("input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
+            StepSlotMapping(
+                "input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot
+            )
             for n in range(num_splits)
             for slot in self.input_slots
         ]
         output_mappings = [
-            StepSlotMapping("output", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot)
+            StepSlotMapping(
+                "output", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot
+            )
             for n in range(num_splits)
             for slot in self.output_slots
         ]

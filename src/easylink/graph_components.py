@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Callable, Optional, TYPE_CHECKING
 import networkx as nx
 from easylink.implementation import Implementation
+
 if TYPE_CHECKING:
     from easylink.step import Step
 
@@ -20,14 +21,16 @@ class OutputSlot:
     """OutputSlot  represents a single output slot for a step."""
 
     name: str
-    
-@dataclass 
+
+
+@dataclass
 class Edge:
     source_node: str
     target_node: str
     output_slot: str
     input_slot: str
-    
+
+
 @dataclass
 class StepGraphEdge:
     """An edge between two nodes in a graph. Edges connect the output slot of
@@ -40,15 +43,24 @@ class StepGraphEdge:
 
     @classmethod
     def from_graph_edge(cls, source, sink, edge_attrs) -> "Edge":
-        return cls(source, sink, edge_attrs["output_slot"].name, edge_attrs["input_slot"].name)
+        return cls(
+            source, sink, edge_attrs["output_slot"].name, edge_attrs["input_slot"].name
+        )
+
+
 class StepGraph(nx.MultiDiGraph):
     def add_node_from_step(self, step: "Step") -> None:
         super().add_node(step.name, step=step)
-    
+
     def add_edge_from_data(self, edge: StepGraphEdge) -> None:
-        return super().add_edge(edge.source_node, edge.target_node, output_slot=self.nodes[edge.source_node]["step"].output_slots[edge.output_slot], 
-                                input_slot=self.nodes[edge.target_node]["step"].input_slots[edge.input_slot])
-    
+        return super().add_edge(
+            edge.source_node,
+            edge.target_node,
+            output_slot=self.nodes[edge.source_node]["step"].output_slots[edge.output_slot],
+            input_slot=self.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
+        )
+
+
 @dataclass
 class ImplementationGraphEdge:
     """An edge between two nodes in a graph. Edges connect the output slot of
@@ -60,12 +72,20 @@ class ImplementationGraphEdge:
     input_slot: InputSlot
     filepaths: Optional[tuple[str]] = None
 
+
 class ImplementationGraph(nx.MultiDiGraph):
     def add_node_from_impl(self, node_name, implementation: Implementation) -> None:
         super().add_node(node_name, implementation=implementation)
-    
+
     def add_edge_from_data(self, edge: ImplementationGraphEdge) -> None:
-        return super().add_edge(edge.source_node, edge.target_node, output_slot=edge.output_slot, input_slot=edge.input_slot, filepaths=edge.filepaths)
+        return super().add_edge(
+            edge.source_node,
+            edge.target_node,
+            output_slot=edge.output_slot,
+            input_slot=edge.input_slot,
+            filepaths=edge.filepaths,
+        )
+
 
 @dataclass
 class SlotMapping:
@@ -78,8 +98,9 @@ class SlotMapping:
     child_node: str
     child_slot: str
 
+
 class StepSlotMapping(SlotMapping):
-    
+
     def propagate_edge(self, edge: StepGraphEdge) -> StepGraphEdge:
         if self.slot_type == "input":
             if not edge.target_node == self.parent_node:
@@ -90,7 +111,7 @@ class StepSlotMapping(SlotMapping):
                 source_node=edge.source_node,
                 target_node=self.child_node,
                 output_slot=edge.output_slot,
-                input_slot=self.child_slot
+                input_slot=self.child_slot,
             )
         else:
             if not edge.source_node == self.parent_node:
@@ -101,16 +122,18 @@ class StepSlotMapping(SlotMapping):
                 source_node=self.child_node,
                 target_node=edge.target_node,
                 output_slot=self.child_slot,
-                input_slot=edge.input_slot
+                input_slot=edge.input_slot,
             )
+
+
 @dataclass
-class ImplementationSlotMapping():
-    
+class ImplementationSlotMapping:
+
     slot_type: str
     step_node: str
     slot: str
     implementation_node: str
-        
+
     def propagate_edge(self, step: "Step", edge: StepGraphEdge) -> ImplementationGraphEdge:
         if self.slot_type == "input":
             if not edge.target_node == self.step_node:
@@ -132,6 +155,5 @@ class ImplementationSlotMapping():
                 source_node=self.implementation_node,
                 target_node=edge.target_node,
                 output_slot=step.output_slots[self.slot],
-                input_slot=edge.input_slot
+                input_slot=edge.input_slot,
             )
-    
