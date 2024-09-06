@@ -317,8 +317,10 @@ class CompositeStep(Step):
                 if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
-                implementation_edges.append(imp_edge)
+                new_edge = mapping.propagate_edge(edge)
+                new_step = self.step_graph.nodes[mapping.child_node]["step"]
+                imp_edges = new_step.get_implementation_edges(new_edge)
+                implementation_edges.extend(imp_edges)
 
         elif edge.target_node == self.name:
             mappings = [
@@ -327,8 +329,10 @@ class CompositeStep(Step):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
-                implementation_edges.append(imp_edge)
+                new_edge = mapping.propagate_edge(edge)
+                new_step = self.step_graph.nodes[mapping.child_node]["step"]
+                imp_edges = new_step.get_implementation_edges(new_edge)
+                implementation_edges.extend(imp_edges)
         else:
             raise ValueError(f" {self.name} not in edge {edge}")
         if not implementation_edges:
