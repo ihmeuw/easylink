@@ -146,7 +146,7 @@ NODES = [
                     parent_slot="step_4_secondary_input",
                     child_node="step_4a",
                     child_slot="step_4a_secondary_input",
-                )
+                ),
             ],
             "output": [
                 StepSlotMapping(
@@ -162,7 +162,7 @@ NODES = [
                     parent_slot="step_4_secondary_output",
                     child_node="step_4b",
                     child_slot="step_4b_secondary_output",
-                )
+                ),
             ],
         },
     ),
