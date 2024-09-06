@@ -44,6 +44,11 @@ class Step(ABC):
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.parent_step = None
         self._config = None
+    
+    def __hash__(self) -> int:
+        return hash(self.name)
+    
+    
 
     @property
     def config(self):

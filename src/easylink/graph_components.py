@@ -20,15 +20,21 @@ class OutputSlot:
     """OutputSlot  represents a single output slot for a step."""
 
     name: str
+@dataclass Edge:
+    source_node: Step | Implementation
+    target_node: Step | Implementation
+    output_slot: OutputSlot
+    input_slot: InputSlot
+    
 @dataclass
 class StepGraphEdge:
     """An edge between two nodes in a graph. Edges connect the output slot of
     the source node to the input slot of the target node."""
 
-    source_node: str
-    target_node: str
-    output_slot: str
-    input_slot: str
+    source_node: Step
+    target_node: Step
+    output_slot: OutputSlot
+    input_slot: InputSlot
 
     @classmethod
     def from_graph_edge(cls, source, sink, edge_attrs) -> "Edge":
@@ -46,10 +52,10 @@ class ImplementationGraphEdge:
     """An edge between two nodes in a graph. Edges connect the output slot of
     the source node to the input slot of the target node."""
 
-    source_node: str
-    target_node: str
-    output_slot: str
-    input_slot: str
+    source_node: Implementation
+    target_node: Implementation
+    output_slot: OutputSlot
+    input_slot: InputSlot
     filepaths: Optional[tuple[str]] = None
 
     @classmethod
