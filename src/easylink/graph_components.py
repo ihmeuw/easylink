@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Optional
+
 import networkx as nx
+
 from easylink.implementation import Implementation
 
 if TYPE_CHECKING:

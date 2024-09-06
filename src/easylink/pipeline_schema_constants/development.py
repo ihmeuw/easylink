@@ -1,4 +1,9 @@
-from easylink.graph_components import StepGraphEdge, InputSlot, OutputSlot, StepSlotMapping
+from easylink.graph_components import (
+    InputSlot,
+    OutputSlot,
+    StepGraphEdge,
+    StepSlotMapping,
+)
 from easylink.step import (
     BasicStep,
     HierarchicalStep,

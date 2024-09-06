@@ -2,21 +2,18 @@ import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Dict, List
-import itertools
 
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import (
-    StepGraphEdge,
-    ImplementationGraphEdge,
+    ImplementationGraph,
+    ImplementationSlotMapping,
     InputSlot,
     OutputSlot,
-    SlotMapping,
-    StepSlotMapping,
-    ImplementationSlotMapping,
     StepGraph,
-    ImplementationGraph,
+    StepGraphEdge,
+    StepSlotMapping,
 )
 from easylink.implementation import Implementation
 from easylink.utilities import paths
@@ -119,7 +116,7 @@ class IOStep(Step):
             raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
 
-    def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
+    def implementation_slot_mappings(self) -> Dict[str, List[ImplementationSlotMapping]]:
         return {
             "input": [
                 ImplementationSlotMapping(
