@@ -1,4 +1,4 @@
-from easylink.graph_components import Edge, InputSlot, OutputSlot, SlotMapping
+from easylink.graph_components import InputSlot, OutputSlot, SlotMapping, StepGraphEdge
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -17,7 +17,7 @@ def test_output_slot() -> None:
 
 
 def test_edge() -> None:
-    edge = Edge(
+    edge = StepGraphEdge(
         source_node="input_data",
         target_node="step_1",
         output_slot="file1",

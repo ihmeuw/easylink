@@ -97,8 +97,8 @@ class StepSlotMapping(SlotMapping):
 
     def propagate_edge(self, edge: StepGraphEdge) -> StepGraphEdge:
         if self.slot_type == "input":
-            if not edge.target_node == self.parent_node:
-                raise ValueError("Parent node does not match target node")
+            # if not edge.target_node == self.parent_node:
+            #     raise ValueError("Parent node does not match target node")
             if not edge.input_slot == self.parent_slot:
                 raise ValueError("Parent slot does not match input slot")
             return StepGraphEdge(
@@ -108,8 +108,8 @@ class StepSlotMapping(SlotMapping):
                 input_slot=self.child_slot,
             )
         else:
-            if not edge.source_node == self.parent_node:
-                raise ValueError("Parent node does not match source node")
+            # if not edge.source_node == self.parent_node:
+            #     raise ValueError("Parent node does not match source node")
             if not edge.output_slot == self.parent_slot:
                 raise ValueError("Parent slot does not match output slot")
             return StepGraphEdge(
