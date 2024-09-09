@@ -116,7 +116,7 @@ class PipelineGraph(MultiDiGraph):
         input_files = list(
             itertools.chain.from_iterable(
                 [
-                    list(edge_attrs["filepaths"])
+                    edge_attrs["filepaths"]
                     for _, _, edge_attrs in self.in_edges(node, data=True)
                 ]
             )
@@ -124,7 +124,7 @@ class PipelineGraph(MultiDiGraph):
         output_files = list(
             itertools.chain.from_iterable(
                 [
-                    list(edge_attrs["filepaths"])
+                    edge_attrs["filepaths"]
                     for _, _, edge_attrs in self.out_edges(node, data=True)
                 ]
             )
