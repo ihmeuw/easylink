@@ -51,7 +51,7 @@ class PipelineGraph(MultiDiGraph):
             for edge_idx in self[source][sink]:
                 if edge_attrs["output_slot"].name == "all":
                     self[source][sink][edge_idx]["filepaths"] = tuple(
-                        [str(path) for path in config.input_data.to_dict().values()]
+                        str(path) for path in config.input_data.to_dict().values()
                     )
                 else:
                     self[source][sink][edge_idx]["filepaths"] = (
