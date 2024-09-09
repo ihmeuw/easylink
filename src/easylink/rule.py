@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional, Union
 
 
 class Rule(ABC):
@@ -81,7 +81,7 @@ class ImplementedRule(Rule):
     name: str
     step_name: str
     implementation_name: str
-    input_slots: Dict[str, List[str]]
+    input_slots: Dict[str, Dict[str, Union[str, list[str]]]]
     validations: List[str]
     output: List[str]
     resources: Optional[dict]
@@ -110,9 +110,9 @@ rule:
     def _build_input(self) -> str:
         input_str = f"""
     input:"""
-        for slot_name, slot_files in self.input_slots.items():
+        for slot_attrs in self.input_slots.values():
             input_str += f"""
-        {slot_name.lower()}={slot_files},"""
+        {slot_attrs["env_var"].lower()}={slot_attrs["filepaths"]},"""
         input_str += f"""
         validations={self.validations}, """
         if self.requires_spark:
@@ -139,9 +139,9 @@ rule:
         '''
         export DUMMY_CONTAINER_OUTPUT_PATHS={",".join(self.output)}
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
-        for slot_name, slot_files in self.input_slots.items():
+        for slot_attrs in self.input_slots.values():
             shell_cmd += f"""
-        export {slot_name}={",".join(slot_files)}"""
+        export {slot_attrs["env_var"]}={",".join(slot_attrs["filepaths"])}"""
         if self.requires_spark:
             shell_cmd += f"""
         read -r DUMMY_CONTAINER_SPARK_MASTER_URL < {{input.master_url}}

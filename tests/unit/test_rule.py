@@ -61,8 +61,16 @@ def test_implemented_rule_build_rule(computing_environment):
         step_name="foo_step",
         implementation_name="foo_imp",
         input_slots={
-            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS": ["foo"],
-            "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS": ["bar"],
+            "main": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "filepaths": ["foo"],
+                "validator": lambda x: None,
+            },
+            "secondary": {
+                "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                "filepaths": ["bar"],
+                "validator": lambda x: None,
+            },
         },
         validations=["bar"],
         output=["baz"],
