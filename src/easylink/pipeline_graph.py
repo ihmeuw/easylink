@@ -1,11 +1,13 @@
+import copy
 import itertools
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import networkx as nx
 from networkx import MultiDiGraph
 
 from easylink.configuration import Config
+from easylink.graph_components import InputSlot
 from easylink.implementation import Implementation
 
 
@@ -23,6 +25,7 @@ class PipelineGraph(MultiDiGraph):
             incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
         )
         self.update_slot_filepaths(config)
+        self = nx.freeze(self)
 
     @property
     def implementation_nodes(self) -> List[str]:
@@ -47,38 +50,66 @@ class PipelineGraph(MultiDiGraph):
         ):
             for edge_idx in self[source][sink]:
                 if edge_attrs["output_slot"].name == "all":
-                    self[source][sink][edge_idx]["filepaths"] = [
+                    self[source][sink][edge_idx]["filepaths"] = tuple(
                         str(path) for path in config.input_data.to_dict().values()
-                    ]
+                    )
                 else:
-                    self[source][sink][edge_idx]["filepaths"] = [
-                        str(config.input_data[edge_attrs["output_slot"].name])
-                    ]
+                    self[source][sink][edge_idx]["filepaths"] = (
+                        str(config.input_data[edge_attrs["output_slot"].name]),
+                    )
 
         # Update implementation nodes with yaml metadata
         for node in self.implementation_nodes:
             imp_outputs = self.nodes[node]["implementation"].outputs
             for source, sink, edge_attrs in self.out_edges(node, data=True):
                 for edge_idx in self[node][sink]:
-                    self[source][sink][edge_idx]["filepaths"] = [
+                    self[source][sink][edge_idx]["filepaths"] = (
                         str(
                             Path("intermediate")
                             / node
                             / imp_outputs[edge_attrs["output_slot"].name]
-                        )
-                    ]
+                        ),
+                    )
 
-    def get_input_slots(self, node: str) -> Dict[str, List[str]]:
+    def get_input_slots(self, node: str) -> dict[str, dict[str, Union[str, list[str]]]]:
         """Get all of a node's input slots from edges."""
-        input_slots = {}
-        for _, _, edge_attrs in self.in_edges(node, data=True):
-            # Consider whether we need duplicate variables to merge
-            env_var, files = edge_attrs["input_slot"].env_var, edge_attrs["filepaths"]
-            if env_var in input_slots:
-                input_slots[env_var].extend(files)
+        input_slots = [
+            edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
+        ]
+        filepaths_by_slot = [
+            list(edge_attrs["filepaths"])
+            for _, _, edge_attrs in self.in_edges(node, data=True)
+        ]
+        return self.condense_input_slots(input_slots, filepaths_by_slot)
+
+    @staticmethod
+    def condense_input_slots(
+        input_slots: List[InputSlot], filepaths_by_slot: List[str]
+    ) -> Dict[str, dict[str, Union[str, list[str]]]]:
+        condensed_slot_dict = {}
+        for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
+            slot_name, env_var, validator = (
+                input_slot.name,
+                input_slot.env_var,
+                input_slot.validator,
+            )
+            if slot_name in condensed_slot_dict:
+                if env_var != condensed_slot_dict[slot_name]["env_var"]:
+                    raise ValueError(
+                        f"Duplicate slot name {slot_name} with different env vars."
+                    )
+                if validator != condensed_slot_dict[slot_name]["validator"]:
+                    raise ValueError(
+                        f"Duplicate slot name {slot_name} with different validators."
+                    )
+                condensed_slot_dict[slot_name]["filepaths"].extend(filepaths)
             else:
-                input_slots[env_var] = files
-        return input_slots
+                condensed_slot_dict[slot_name] = {
+                    "env_var": env_var,
+                    "validator": validator,
+                    "filepaths": filepaths,
+                }
+        return condensed_slot_dict
 
     def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
         """Get all of a node's input and output files from edges."""
