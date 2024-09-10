@@ -7,23 +7,40 @@ from typing import Dict, Optional, Union
 import yaml
 
 
+def modify_umask(func):
+    """Decorator to wrap umask modification before making directories"""
+
+    def wrapper(*args, **kwargs):
+        old_umask = os.umask(0o002)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            os.umask(old_umask)
+
+    return wrapper
+
+
+@modify_umask
+def create_results_directory(results_dir: Path) -> None:
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+
+@modify_umask
+def create_results_intermediates(results_dir: Path) -> None:
+    (results_dir / "intermediate").mkdir(exist_ok=True)
+    (results_dir / "diagnostics").mkdir(exist_ok=True)
+
+
 def copy_configuration_files_to_results_directory(
     pipeline_specification: Path,
     input_data: Path,
     computing_environment: Optional[Path],
     results_dir: Path,
 ) -> None:
-    old_umask = os.umask(0o002)
-    try:
-        results_dir.mkdir(parents=True, exist_ok=True)
-        (results_dir / "intermediate").mkdir(exist_ok=True)
-        (results_dir / "diagnostics").mkdir(exist_ok=True)
-        shutil.copy(pipeline_specification, results_dir)
-        shutil.copy(input_data, results_dir)
-        if computing_environment:
-            shutil.copy(computing_environment, results_dir)
-    finally:
-        os.umask(old_umask)
+    shutil.copy(pipeline_specification, results_dir)
+    shutil.copy(input_data, results_dir)
+    if computing_environment:
+        shutil.copy(computing_environment, results_dir)
 
 
 def get_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:

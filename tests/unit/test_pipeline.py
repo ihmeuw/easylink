@@ -5,7 +5,11 @@ import pytest
 
 from easylink.configuration import Config, load_params_from_specification
 from easylink.pipeline import Pipeline
-from easylink.utilities.data_utils import copy_configuration_files_to_results_directory
+from easylink.utilities.data_utils import (
+    copy_configuration_files_to_results_directory,
+    create_results_directory,
+    create_results_intermediates,
+)
 
 PIPELINE_STRINGS = {
     "local": "rule_strings/pipeline_local.txt",
@@ -14,7 +18,9 @@ PIPELINE_STRINGS = {
 
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
-def test_build_snakefile(default_config_paths, mocker, test_dir, computing_environment):
+def test_build_snakefile(
+    default_config_paths, mocker, test_dir, results_dir, computing_environment
+):
     config_paths = default_config_paths
     if computing_environment == "slurm":
         config_paths["computing_environment"] = f"{test_dir}/spark_environment.yaml"
@@ -23,6 +29,8 @@ def test_build_snakefile(default_config_paths, mocker, test_dir, computing_envir
     config = Config(config_params)
     mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(config)
+    create_results_directory(results_dir)
+    create_results_intermediates(results_dir)
     copy_configuration_files_to_results_directory(**config_paths)
     snakefile = pipeline.build_snakefile()
     expected_file_path = (
