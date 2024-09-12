@@ -5,23 +5,20 @@ import pytest
 
 from easylink.utilities.data_utils import (
     copy_configuration_files_to_results_directory,
+    create_results_directory,
+    create_results_intermediates,
     get_results_directory,
 )
 
 
-def test_copy_configuration_files_to_results_directory(default_config_paths, test_dir):
-    output_dir = Path(test_dir + "/some/output/dir")
-    config_paths = default_config_paths
-    config_paths["results_dir"] = output_dir
-    copy_configuration_files_to_results_directory(
-        config_paths["pipeline_specification"],
-        config_paths["input_data"],
-        config_paths["computing_environment"],
-        output_dir,
-    )
-    assert output_dir.exists()
-    assert (output_dir / "intermediate").exists()
-    assert (output_dir / "diagnostics").exists()
+def test_create_results_directory(test_dir):
+    results_dir = Path(test_dir + "/some/output/dir")
+    create_results_directory(results_dir)
+    assert results_dir.exists()
+
+    create_results_intermediates(results_dir)
+    assert (results_dir / "intermediate").exists()
+    assert (results_dir / "diagnostics").exists()
 
 
 @pytest.mark.parametrize(
