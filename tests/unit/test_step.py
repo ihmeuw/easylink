@@ -5,7 +5,12 @@ import pytest
 from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
-from easylink.graph_components import InputSlot, OutputSlot, StepSlotMapping, StepGraphEdge
+from easylink.graph_components import (
+    InputSlot,
+    OutputSlot,
+    StepGraphEdge,
+    StepSlotMapping,
+)
 from easylink.pipeline_schema_constants.development import NODES
 from easylink.step import (
     BasicStep,
@@ -135,7 +140,9 @@ def composite_step_params() -> Dict[str, Any]:
                 output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [StepGraphEdge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
+        "edges": [
+            StepGraphEdge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
+        ],
         "slot_mappings": {
             "input": [
                 StepSlotMapping(
@@ -169,14 +176,15 @@ def test_composite_step_update_implementation_graph(
 ) -> None:
     step = CompositeStep(**composite_step_params)
     pipeline_params = LayeredConfigTree(
-        {"step_4" :{
-            "step_4a": {
-                "implementation": {"name": "step_4a_python_pandas", "configuration": {}}
-            },
-            "step_4b": {
-                "implementation": {"name": "step_4b_python_pandas", "configuration": {}}
-            },
-        }
+        {
+            "step_4": {
+                "step_4a": {
+                    "implementation": {"name": "step_4a_python_pandas", "configuration": {}}
+                },
+                "step_4b": {
+                    "implementation": {"name": "step_4b_python_pandas", "configuration": {}}
+                },
+            }
         }
     )
     step.set_step_config(pipeline_params)
@@ -241,7 +249,9 @@ def hierarchical_step_params() -> Dict[str, Any]:
                 output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [StepGraphEdge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
+        "edges": [
+            StepGraphEdge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
+        ],
         "slot_mappings": {
             "input": [
                 StepSlotMapping(
@@ -274,9 +284,8 @@ def test_hierarchical_step_update_implementation_graph(
     hierarchical_step_params: Dict[str, Any]
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
-    pipeline_params = LayeredConfigTree( {"step_4":
-        {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}
-    }
+    pipeline_params = LayeredConfigTree(
+        {"step_4": {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}}
     )
     step.set_step_config(pipeline_params)
     subgraph = step.get_implementation_graph()
@@ -285,22 +294,23 @@ def test_hierarchical_step_update_implementation_graph(
 
     # Test update_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
-        { "step_4": {
-            "substeps": {
-                "step_4a": {
-                    "implementation": {
-                        "name": "step_4a_python_pandas",
-                        "configuration": {},
-                    }
-                },
-                "step_4b": {
-                    "implementation": {
-                        "name": "step_4b_python_pandas",
-                        "configuration": {},
-                    }
+        {
+            "step_4": {
+                "substeps": {
+                    "step_4a": {
+                        "implementation": {
+                            "name": "step_4a_python_pandas",
+                            "configuration": {},
+                        }
+                    },
+                    "step_4b": {
+                        "implementation": {
+                            "name": "step_4b_python_pandas",
+                            "configuration": {},
+                        }
+                    },
                 },
             },
-        },
         }
     )
     step.set_step_config(pipeline_params)
@@ -487,36 +497,37 @@ def test_loop_update_implementation_graph(
     assert list(subgraph.edges) == []
 
     pipeline_params = LayeredConfigTree(
-        { "step_3": {
-            "iterate": [
-                LayeredConfigTree(
-                    {
-                        "implementation": {
-                            "name": "step_3_python_pandas",
-                            "configuration": {},
+        {
+            "step_3": {
+                "iterate": [
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_3_python_pandas",
+                                "configuration": {},
+                            }
                         }
-                    }
-                ),
-                LayeredConfigTree(
-                    {
-                        "substeps": {
-                            "step_3a": {
-                                "implementation": {
-                                    "name": "step_3a_python_pandas",
-                                    "configuration": {},
-                                }
+                    ),
+                    LayeredConfigTree(
+                        {
+                            "substeps": {
+                                "step_3a": {
+                                    "implementation": {
+                                        "name": "step_3a_python_pandas",
+                                        "configuration": {},
+                                    }
+                                },
+                                "step_3b": {
+                                    "implementation": {
+                                        "name": "step_3b_python_pandas",
+                                        "configuration": {},
+                                    }
+                                },
                             },
-                            "step_3b": {
-                                "implementation": {
-                                    "name": "step_3b_python_pandas",
-                                    "configuration": {},
-                                }
-                            },
-                        },
-                    }
-                ),
-            ],
-        }
+                        }
+                    ),
+                ],
+            }
         }
     )
     step.set_step_config(pipeline_params)
@@ -657,55 +668,56 @@ def test_parallel_step_update_implementation_graph(
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = ParallelStep(**parallel_step_params)
     pipeline_params = LayeredConfigTree(
-        { "step_1": {
-            "parallel": [
-                {
-                    "substeps": {
-                        "step_1a": {
-                            "implementation": {
-                                "name": "step_1a_python_pandas",
+        {
+            "step_1": {
+                "parallel": [
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
                             },
                         },
-                        "step_1b": {
-                            "implementation": {
-                                "name": "step_1b_python_pandas",
-                            },
-                        },
+                        "input_data_file": "input_file_1",
                     },
-                    "input_data_file": "input_file_1",
-                },
-                {
-                    "substeps": {
-                        "step_1a": {
-                            "implementation": {
-                                "name": "step_1a_python_pandas",
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
                             },
                         },
-                        "step_1b": {
-                            "implementation": {
-                                "name": "step_1b_python_pandas",
-                            },
-                        },
+                        "input_data_file": "input_file_2",
                     },
-                    "input_data_file": "input_file_2",
-                },
-                {
-                    "substeps": {
-                        "step_1a": {
-                            "implementation": {
-                                "name": "step_1a_python_pandas",
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
                             },
                         },
-                        "step_1b": {
-                            "implementation": {
-                                "name": "step_1b_python_pandas",
-                            },
-                        },
+                        "input_data_file": "input_file_3",
                     },
-                    "input_data_file": "input_file_3",
-                },
-            ],
-        }
+                ],
+            }
         }
     )
     step.set_step_config(pipeline_params)
