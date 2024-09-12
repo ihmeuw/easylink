@@ -94,7 +94,6 @@ class SlotMapping:
 
 
 class StepSlotMapping(SlotMapping):
-
     def propagate_edge(self, edge: StepGraphEdge) -> StepGraphEdge:
         if self.slot_type == "input":
             # if not edge.target_node == self.parent_node:
