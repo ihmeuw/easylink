@@ -8,6 +8,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import (
     ImplementationGraph,
+    ImplementationGraphEdge,
     ImplementationSlotMapping,
     InputSlot,
     OutputSlot,
@@ -46,20 +47,20 @@ class Step(ABC):
         return hash(self.name)
 
     @property
-    def config(self):
+    def config(self) -> LayeredConfigTree:
         if self._config is None:
             raise ValueError(f"Step {self.name}'s config was invoked before being set")
         return self._config
 
     @abstractmethod
-    def set_step_config(self, parent_config: LayeredConfigTree):
+    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         pass
 
-    def set_parent_step(self, step):
+    def set_parent_step(self, step) -> None:
         self.parent_step = step
 
     @abstractmethod
-    def get_implementation_graph(self) -> None:
+    def get_implementation_graph(self) -> ImplementationGraph:
         """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
 
@@ -89,7 +90,7 @@ class IOStep(Step):
         )
         return implementation_graph
 
-    def get_implementation_edges(self, edge: StepGraphEdge):
+    def get_implementation_edges(self, edge: StepGraphEdge) -> ImplementationGraphEdge:
         implementation_edges = []
         if edge.source_node == self.name:
             mappings = [
@@ -173,7 +174,7 @@ class BasicStep(Step):
         )
         return implementation_graph
 
-    def get_implementation_edges(self, edge: StepGraphEdge):
+    def get_implementation_edges(self, edge: StepGraphEdge) -> list[ImplementationGraphEdge]:
         implementation_edges = []
         if edge.source_node == self.name:
             mappings = [
@@ -305,7 +306,7 @@ class CompositeStep(Step):
             step.set_step_config(self.config)
             implementation_graph.update(step.get_implementation_graph())
 
-    def get_implementation_edges(self, edge: StepGraphEdge):
+    def get_implementation_edges(self, edge: StepGraphEdge) -> List[ImplementationGraphEdge]:
         implementation_edges = []
         if edge.source_node == self.name:
             mappings = [
@@ -401,7 +402,7 @@ class HierarchicalStep(CompositeStep, BasicStep):
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
 
-    def get_implementation_edges(self, edge: StepGraphEdge):
+    def get_implementation_edges(self, edge: StepGraphEdge) -> list[ImplementationGraphEdge]:
         if len(self.config) > 1:
             return CompositeStep.get_implementation_edges(self, edge)
         return BasicStep.get_implementation_edges(self, edge)
@@ -444,24 +445,27 @@ class LoopStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "iterate"
+    
+    @property
+    def num_repeats(self):
+        return len(self.config)
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         step_config = parent_config[self.name]
         if not self.config_key in step_config:
             self._config = step_config
         else:
-            self._config = self._get_loop_config(step_config[self.config_key])
+            self._config = self._get_expanded_config(step_config[self.config_key])
 
-    def get_implementation_graph(self) -> None:
-        if len(self.config) > 1:
-            num_loops = len(self.config)
-            self.step_graph = self._create_looped_graph(num_loops)
-            self.step_slot_mappings = self._get_loop_slot_mappings(num_loops)
+    def get_implementation_graph(self) -> ImplementationGraph:
+        if self.num_repeats > 1:
+            self.step_graph = self._create_step_graph()
+            self.step_slot_mappings = self._get_step_slot_mappings()
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
 
-    def get_implementation_edges(self, edge: StepGraphEdge):
-        if len(self.config) > 1:
+    def get_implementation_edges(self, edge: StepGraphEdge) -> list[ImplementationGraphEdge]:
+        if self.num_repeats > 1:
             return CompositeStep.get_implementation_edges(self, edge)
         return BasicStep.get_implementation_edges(self, edge)
 
@@ -490,14 +494,14 @@ class LoopStep(CompositeStep, BasicStep):
                 errors[f"step {self.name}"][f"loop {i+1}"] = loop_errors
         return errors
 
-    def _create_looped_graph(self, num_loops: int) -> StepGraph:
+    def _create_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
         to the self edges."""
         graph = StepGraph()
         nodes = []
         edges = []
 
-        for i in range(num_loops):
+        for i in range(self.num_repeats):
             self.template_step.parent_step = None
             updated_step = copy.deepcopy(self.template_step)
             updated_step.set_parent_step(self)
@@ -521,7 +525,7 @@ class LoopStep(CompositeStep, BasicStep):
             graph.add_edge_from_data(edge)
         return graph
 
-    def _get_loop_slot_mappings(self, num_loops: int) -> dict:
+    def _get_step_slot_mappings(self) -> dict:
         """Get the appropriate slot mappings based on the number of loops
         and the non-self-edge input and output slots."""
         input_mappings = []
@@ -539,22 +543,22 @@ class LoopStep(CompositeStep, BasicStep):
                     StepSlotMapping(
                         "input", self.name, input_slot, f"{self.name}_loop_{n+1}", input_slot
                     )
-                    for n in range(num_loops)
+                    for n in range(self.num_repeats)
                 ]
             )
         output_mappings = [
-            StepSlotMapping("output", self.name, slot, f"{self.name}_loop_{num_loops}", slot)
+            StepSlotMapping("output", self.name, slot, f"{self.name}_loop_{self.num_repeats}", slot)
             for slot in self.output_slots
         ]
         return {"input": input_mappings, "output": output_mappings}
 
-    def _get_loop_config(
-        self, iterate_config: LayeredConfigTree
+    def _get_expanded_config(
+        self, step_config: LayeredConfigTree
     ) -> Dict[str, LayeredConfigTree]:
         """Get the dictionary for the looped graph based on the sequence
         of sub-yamls."""
         loop_config = {}
-        for i, loop in enumerate(iterate_config):
+        for i, loop in enumerate(step_config):
             loop_config[f"{self.name}_loop_{i+1}"] = loop
         return LayeredConfigTree(loop_config)
 
@@ -581,24 +585,27 @@ class ParallelStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "parallel"
+    
+    @property
+    def num_repeats(self):
+        return len(self.config)
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         step_config = parent_config[self.name]
         if not self.config_key in step_config:
             self._config = step_config
         else:
-            self._config = self._get_parallel_config(step_config[self.config_key])
+            self._config = self._get_expanded_config(step_config[self.config_key])
 
-    def get_implementation_graph(self) -> None:
-        if len(self.config) > 1:
-            num_splits = len(self.config)
-            self.step_graph = self._create_parallel_graph(num_splits)
-            self.step_slot_mappings = self._get_parallel_slot_mappings(num_splits)
+    def get_implementation_graph(self) -> ImplementationGraph:
+        if self.num_repeats > 1:
+            self.step_graph = self._create_step_graph()
+            self.step_slot_mappings = self._get_step_slot_mappings()
             return CompositeStep.get_implementation_graph(self)
         return BasicStep.get_implementation_graph(self)
 
-    def get_implementation_edges(self, edge: StepGraphEdge):
-        if len(self.config) > 1:
+    def get_implementation_edges(self, edge: StepGraphEdge) -> list[ImplementationGraphEdge]:
+        if self.num_repeats > 1:
             return CompositeStep.get_implementation_edges(self, edge)
         return BasicStep.get_implementation_edges(self, edge)
 
@@ -639,12 +646,12 @@ class ParallelStep(CompositeStep, BasicStep):
                 errors[f"step {self.name}"][f"parallel_split_{i+1}"] = parallel_errors
         return errors
 
-    def _create_parallel_graph(self, num_splits: int) -> StepGraph:
+    def _create_step_graph(self) -> StepGraph:
         """Make N copies of the template step that are independent and contain the same edges as the
         current step"""
         graph = StepGraph()
 
-        for i in range(num_splits):
+        for i in range(self.num_repeats):
             self.template_step.parent_step = None
             updated_step = copy.deepcopy(self.template_step)
             updated_step.set_parent_step(self)
@@ -652,26 +659,26 @@ class ParallelStep(CompositeStep, BasicStep):
             graph.add_node_from_step(updated_step)
         return graph
 
-    def _get_parallel_slot_mappings(self, num_splits) -> nx.MultiDiGraph:
+    def _get_step_slot_mappings(self) -> Dict[str, List[StepSlotMapping]]:
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         input_mappings = [
             StepSlotMapping(
                 "input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot
             )
-            for n in range(num_splits)
+            for n in range(self.num_repeats)
             for slot in self.input_slots
         ]
         output_mappings = [
             StepSlotMapping(
                 "output", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot
             )
-            for n in range(num_splits)
+            for n in range(self.num_repeats)
             for slot in self.output_slots
         ]
         return {"input": input_mappings, "output": output_mappings}
 
-    def _get_parallel_config(
+    def _get_expanded_config(
         self, step_config: LayeredConfigTree
     ) -> Dict[str, LayeredConfigTree]:
         """Get the dictionary for the parallel graph based on the sequence
