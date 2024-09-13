@@ -1,4 +1,5 @@
 import copy
+from collections import defaultdict
 import itertools
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
@@ -9,6 +10,7 @@ from networkx import MultiDiGraph
 from easylink.configuration import Config
 from easylink.graph_components import InputSlot
 from easylink.implementation import Implementation
+from easylink.utilities.general_utils import exit_with_validation_error
 
 
 class PipelineGraph(MultiDiGraph):
@@ -24,8 +26,26 @@ class PipelineGraph(MultiDiGraph):
         super().__init__(
             incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
         )
+        self._validate()
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
+
+    def _validate(self) -> None:
+        """Validates the pipeline graph."""
+
+        errors = {**self._validate_implementations()}
+
+        if errors:
+            exit_with_validation_error(errors)
+
+    def _validate_implementations(self) -> Dict:
+        """Validates each individual Implementation instance."""
+        errors = defaultdict(dict)
+        for implementation in self.implementations:
+            implementation_errors = implementation.validate()
+            if implementation_errors:
+                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
+        return errors
 
     @property
     def implementation_nodes(self) -> List[str]:

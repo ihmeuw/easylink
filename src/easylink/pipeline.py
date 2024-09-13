@@ -20,24 +20,6 @@ class Pipeline:
         self.pipeline_graph = PipelineGraph(config)
         self.spark_is_required = self.pipeline_graph.spark_is_required()
         # TODO [MIC-4880]: refactor into validation object
-        self._validate()
-
-    def _validate(self) -> None:
-        """Validates the pipeline."""
-
-        errors = {**self._validate_implementations()}
-
-        if errors:
-            exit_with_validation_error(errors)
-
-    def _validate_implementations(self) -> Dict:
-        """Validates each individual Implementation instance."""
-        errors = defaultdict(dict)
-        for implementation in self.pipeline_graph.implementations:
-            implementation_errors = implementation.validate()
-            if implementation_errors:
-                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
-        return errors
 
     @property
     def snakefile_path(self) -> Path:

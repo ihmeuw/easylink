@@ -135,7 +135,11 @@ class BasicStep(Step):
         """Return error strings if the step configuration is incorrect."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        if not "implementation" in step_config:
+        if len(step_config) > 1:
+            errors[f"step {self.name}"] = [
+                "The step configuration requires exactly one 'implementation' key."
+            ]
+        elif not "implementation" in step_config:
             errors[f"step {self.name}"] = [
                 "The step configuration does not contain an 'implementation' key."
             ]
@@ -241,7 +245,7 @@ class CompositeStep(Step):
             step = self.graph.nodes[node]["step"]
             if isinstance(step, IOStep):
                 continue
-            if step.name not in step_config:
+            if not step.name in step_config or not step_config[step.name]:
                 step_errors = {f"step {step.name}": [f"The step is not configured."]}
             else:
                 step_errors = step.validate_step(step_config[step.name], input_data_config)
