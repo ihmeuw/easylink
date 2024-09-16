@@ -445,7 +445,7 @@ class LoopStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "iterate"
-    
+
     @property
     def num_repeats(self):
         return len(self.config)
@@ -547,7 +547,9 @@ class LoopStep(CompositeStep, BasicStep):
                 ]
             )
         output_mappings = [
-            StepSlotMapping("output", self.name, slot, f"{self.name}_loop_{self.num_repeats}", slot)
+            StepSlotMapping(
+                "output", self.name, slot, f"{self.name}_loop_{self.num_repeats}", slot
+            )
             for slot in self.output_slots
         ]
         return {"input": input_mappings, "output": output_mappings}
@@ -585,7 +587,7 @@ class ParallelStep(CompositeStep, BasicStep):
     @property
     def config_key(self):
         return "parallel"
-    
+
     @property
     def num_repeats(self):
         return len(self.config)
