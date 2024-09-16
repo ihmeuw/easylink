@@ -26,7 +26,7 @@ class OutputSlot:
 
 
 @dataclass
-class StepGraphEdge:
+class Edge:
     """An edge between two nodes in a graph. Edges connect the output slot of
     the source node to the input slot of the target node."""
 
@@ -34,11 +34,12 @@ class StepGraphEdge:
     target_node: str
     output_slot: str
     input_slot: str
+    filepaths: Optional[tuple[str]] = None
 
     @classmethod
     def from_graph_edge(cls, source, sink, edge_attrs) -> "Edge":
         return cls(
-            source, sink, edge_attrs["output_slot"].name, edge_attrs["input_slot"].name
+            source, sink, edge_attrs["output_slot"].name, edge_attrs["input_slot"].name, edge_attrs.get("filepaths")
         )
 
 
@@ -46,7 +47,7 @@ class StepGraph(nx.MultiDiGraph):
     def add_node_from_step(self, step: "Step") -> None:
         super().add_node(step.name, step=step)
 
-    def add_edge_from_data(self, edge: StepGraphEdge) -> None:
+    def add_edge_from_data(self, edge: Edge) -> None:
         return super().add_edge(
             edge.source_node,
             edge.target_node,
@@ -55,23 +56,11 @@ class StepGraph(nx.MultiDiGraph):
         )
 
 
-@dataclass
-class ImplementationGraphEdge:
-    """An edge between two nodes in a graph. Edges connect the output slot of
-    the source node to the input slot of the target node."""
-
-    source_node: str
-    target_node: str
-    output_slot: OutputSlot
-    input_slot: InputSlot
-    filepaths: Optional[tuple[str]] = None
-
-
 class ImplementationGraph(nx.MultiDiGraph):
     def add_node_from_impl(self, node_name, implementation: Implementation) -> None:
         super().add_node(node_name, implementation=implementation)
 
-    def add_edge_from_data(self, edge: ImplementationGraphEdge) -> None:
+    def add_edge_from_data(self, edge: Edge) -> None:
         return super().add_edge(
             edge.source_node,
             edge.target_node,
@@ -94,13 +83,13 @@ class SlotMapping:
 
 
 class StepSlotMapping(SlotMapping):
-    def propagate_edge(self, edge: StepGraphEdge) -> StepGraphEdge:
+    def propagate_edge(self, edge: Edge) -> Edge:
         if self.slot_type == "input":
             # if not edge.target_node == self.parent_node:
             #     raise ValueError("Parent node does not match target node")
             if not edge.input_slot == self.parent_slot:
                 raise ValueError("Parent slot does not match input slot")
-            return StepGraphEdge(
+            return Edge(
                 source_node=edge.source_node,
                 target_node=self.child_node,
                 output_slot=edge.output_slot,
@@ -111,7 +100,7 @@ class StepSlotMapping(SlotMapping):
             #     raise ValueError("Parent node does not match source node")
             if not edge.output_slot == self.parent_slot:
                 raise ValueError("Parent slot does not match output slot")
-            return StepGraphEdge(
+            return Edge(
                 source_node=self.child_node,
                 target_node=edge.target_node,
                 output_slot=self.child_slot,
@@ -127,13 +116,13 @@ class ImplementationSlotMapping:
     slot: str
     implementation_node: str
 
-    def propagate_edge(self, step: "Step", edge: StepGraphEdge) -> ImplementationGraphEdge:
+    def propagate_edge(self, step: "Step", edge: Edge) -> Edge:
         if self.slot_type == "input":
             if not edge.target_node == self.step_node:
                 raise ValueError("Parent node does not match target node")
             if not edge.input_slot == self.slot:
                 raise ValueError("Parent slot does not match input slot")
-            return ImplementationGraphEdge(
+            return Edge(
                 source_node=edge.source_node,
                 target_node=self.implementation_node,
                 output_slot=edge.output_slot,
@@ -144,7 +133,7 @@ class ImplementationSlotMapping:
                 raise ValueError("Parent node does not match source node")
             if not edge.output_slot == self.slot:
                 raise ValueError("Parent slot does not match output slot")
-            return ImplementationGraphEdge(
+            return Edge(
                 source_node=self.implementation_node,
                 target_node=edge.target_node,
                 output_slot=step.output_slots[self.slot],

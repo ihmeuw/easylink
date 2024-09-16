@@ -1,4 +1,4 @@
-from easylink.graph_components import InputSlot, OutputSlot, StepGraphEdge
+from easylink.graph_components import InputSlot, OutputSlot, Edge
 from easylink.step import BasicStep, InputSlot, IOStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
@@ -24,13 +24,13 @@ NODES = [
     ),
 ]
 EDGES = [
-    StepGraphEdge(
+    Edge(
         source_node="input_data",
         target_node="step_1",
         output_slot="all",
         input_slot="step_1_main_input",
     ),
-    StepGraphEdge(
+    Edge(
         source_node="step_1",
         target_node="results",
         output_slot="step_1_main_output",

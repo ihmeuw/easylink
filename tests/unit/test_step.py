@@ -8,7 +8,7 @@ from easylink.configuration import Config
 from easylink.graph_components import (
     InputSlot,
     OutputSlot,
-    StepGraphEdge,
+    Edge,
     StepSlotMapping,
 )
 from easylink.pipeline_schema_constants.development import NODES
@@ -141,7 +141,7 @@ def composite_step_params() -> Dict[str, Any]:
             ),
         ],
         "edges": [
-            StepGraphEdge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
+            Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
         ],
         "slot_mappings": {
             "input": [
@@ -250,7 +250,7 @@ def hierarchical_step_params() -> Dict[str, Any]:
             ),
         ],
         "edges": [
-            StepGraphEdge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
+            Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
         ],
         "slot_mappings": {
             "input": [
@@ -406,7 +406,7 @@ def loop_step_params() -> Dict[str, Any]:
                 ),
             ],
             edges=[
-                StepGraphEdge(
+                Edge(
                     source_node="step_3a",
                     target_node="step_3b",
                     output_slot="step_3a_main_output",
@@ -449,7 +449,7 @@ def loop_step_params() -> Dict[str, Any]:
             },
         ),
         "self_edges": [
-            StepGraphEdge(
+            Edge(
                 source_node="step_3",
                 target_node="step_3",
                 output_slot="step_3_main_output",
@@ -481,7 +481,7 @@ def test_loop_step(loop_step_params: Dict[str, Any]) -> None:
     assert step.template_step.input_slots == step.input_slots
     assert step.template_step.output_slots == step.output_slots
     assert step.self_edges == [
-        StepGraphEdge(step.name, step.name, "step_3_main_output", "step_3_main_input")
+        Edge(step.name, step.name, "step_3_main_output", "step_3_main_input")
     ]
 
 
@@ -617,7 +617,7 @@ def parallel_step_params() -> Dict[str, Any]:
                 ),
             ],
             edges=[
-                StepGraphEdge(
+                Edge(
                     source_node="step_1a",
                     target_node="step_1b",
                     output_slot="step_1a_main_output",
