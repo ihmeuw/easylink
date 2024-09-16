@@ -7,12 +7,12 @@ import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import (
+    Edge,
     ImplementationGraph,
     ImplementationSlotMapping,
     InputSlot,
     OutputSlot,
     StepGraph,
-    Edge,
     StepSlotMapping,
 )
 from easylink.implementation import Implementation
@@ -193,7 +193,10 @@ class BasicStep(Step):
             ]
             for mapping in mappings:
                 # works, but isn't quite right.
-                if "input_data_file" in self.config and edge.source_node == "pipeline_graph_input_data":
+                if (
+                    "input_data_file" in self.config
+                    and edge.source_node == "pipeline_graph_input_data"
+                ):
                     edge.output_slot = OutputSlot(name=self.config["input_data_file"])
                 imp_edge = mapping.propagate_edge(self, edge)
                 implementation_edges.append(imp_edge)

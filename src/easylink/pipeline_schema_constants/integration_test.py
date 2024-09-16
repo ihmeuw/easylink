@@ -1,4 +1,4 @@
-from easylink.graph_components import InputSlot, OutputSlot, Edge
+from easylink.graph_components import Edge, InputSlot, OutputSlot
 from easylink.step import BasicStep, InputSlot, IOStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 

@@ -39,7 +39,11 @@ class Edge:
     @classmethod
     def from_graph_edge(cls, source, sink, edge_attrs) -> "Edge":
         return cls(
-            source, sink, edge_attrs["output_slot"].name, edge_attrs["input_slot"].name, edge_attrs.get("filepaths")
+            source,
+            sink,
+            edge_attrs["output_slot"].name,
+            edge_attrs["input_slot"].name,
+            edge_attrs.get("filepaths"),
         )
 
 

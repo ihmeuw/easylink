@@ -5,12 +5,7 @@ import pytest
 from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
-from easylink.graph_components import (
-    InputSlot,
-    OutputSlot,
-    Edge,
-    StepSlotMapping,
-)
+from easylink.graph_components import Edge, InputSlot, OutputSlot, StepSlotMapping
 from easylink.pipeline_schema_constants.development import NODES
 from easylink.step import (
     BasicStep,
@@ -140,9 +135,7 @@ def composite_step_params() -> Dict[str, Any]:
                 output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [
-            Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
-        ],
+        "edges": [Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
         "slot_mappings": {
             "input": [
                 StepSlotMapping(
@@ -249,9 +242,7 @@ def hierarchical_step_params() -> Dict[str, Any]:
                 output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [
-            Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
-        ],
+        "edges": [Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
         "slot_mappings": {
             "input": [
                 StepSlotMapping(
