@@ -42,9 +42,6 @@ class Step(ABC):
         self.parent_step = None
         self._config = None
 
-    def __hash__(self) -> int:
-        return hash(self.name)
-
     @property
     def config(self) -> LayeredConfigTree:
         if self._config is None:
