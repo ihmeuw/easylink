@@ -36,10 +36,11 @@ def test_spark_slurm(mocker, caplog):
         env_config = yaml.safe_load(stream)
     with pytest.raises(SystemExit) as exit:
         main(
-            pipeline_specification,
-            input_data,
-            computing_environment,
-            str(results_dir),
+            command="run",
+            pipeline_specification=pipeline_specification,
+            input_data=input_data,
+            computing_environment=computing_environment,
+            results_dir=str(results_dir),
             debug=True,
         )
     assert exit.value.code == 0

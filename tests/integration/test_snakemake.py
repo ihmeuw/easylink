@@ -30,10 +30,11 @@ def test_missing_results(mocker, caplog):
     os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
     with pytest.raises(SystemExit) as exit:
         main(
-            SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
-            SPECIFICATIONS_DIR / "common/input_data.yaml",
-            SPECIFICATIONS_DIR / "common/environment_local.yaml",
-            results_dir,
+            command="run",
+            pipeline_specification=SPECIFICATIONS_DIR / "integration" / "pipeline.yaml",
+            input_data=SPECIFICATIONS_DIR / "common/input_data.yaml",
+            computing_environment=SPECIFICATIONS_DIR / "common/environment_local.yaml",
+            results_dir=results_dir,
         )
     assert exit.value.code == 1
     assert "MissingOutputException" in caplog.text
