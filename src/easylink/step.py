@@ -135,6 +135,16 @@ class IOStep(Step):
         return {}
 
 
+class InputStep(IOStep):
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        """Configure the step against the pipeline configuration and input data."""
+        super().configure_step(step_config, input_data_config)
+        for input_data_key in input_data_config:
+            self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
+
+
 class BasicStep(Step):
     """Step for leaf node tied to a specific single implementation"""
 

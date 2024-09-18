@@ -3,6 +3,7 @@ from easylink.step import (
     BasicStep,
     HierarchicalStep,
     InputSlot,
+    InputStep,
     IOStep,
     LoopStep,
     ParallelStep,
@@ -10,7 +11,7 @@ from easylink.step import (
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
-    IOStep(step_name="input_data", input_slots=[], output_slots=[OutputSlot("all")]),
+    InputStep(step_name="input_data", input_slots=[], output_slots=[OutputSlot("all")]),
     ParallelStep(
         step_name="step_1",
         input_slots=[
