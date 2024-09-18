@@ -68,8 +68,12 @@ class ImplementationGraph(nx.MultiDiGraph):
         return super().add_edge(
             edge.source_node,
             edge.target_node,
-            output_slot=edge.output_slot,
-            input_slot=edge.input_slot,
+            output_slot=self.nodes[edge.source_node]["implementation"].output_slots[
+                edge.output_slot
+            ],
+            input_slot=self.nodes[edge.target_node]["implementation"].input_slots[
+                edge.input_slot
+            ],
             filepaths=edge.filepaths,
         )
 
@@ -116,7 +120,7 @@ class ImplementationSlotMapping:
     slot: str
     implementation_node: str
 
-    def propagate_edge(self, step: "Step", edge: Edge) -> Edge:
+    def propagate_edge(self, edge: Edge) -> Edge:
         if self.slot_type == "input":
             if not edge.target_node == self.step_node:
                 raise ValueError("Parent node does not match target node")
@@ -126,7 +130,7 @@ class ImplementationSlotMapping:
                 source_node=edge.source_node,
                 target_node=self.implementation_node,
                 output_slot=edge.output_slot,
-                input_slot=step.input_slots[self.slot],
+                input_slot=self.slot,
             )
         else:
             if not edge.source_node == self.step_node:
@@ -136,6 +140,6 @@ class ImplementationSlotMapping:
             return Edge(
                 source_node=self.implementation_node,
                 target_node=edge.target_node,
-                output_slot=step.output_slots[self.slot],
+                output_slot=self.slot,
                 input_slot=edge.input_slot,
             )
