@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 from layered_config_tree import LayeredConfigTree
 
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
+
+if TYPE_CHECKING:
+    from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
@@ -15,8 +18,16 @@ class Implementation:
     inside the container, and some metadata about the container.
     """
 
-    def __init__(self, step_name: str, implementation_config: LayeredConfigTree):
+    def __init__(
+        self,
+        step_name: str,
+        implementation_config: LayeredConfigTree,
+        input_slots: List["InputSlot"],
+        output_slots: List["OutputSlot"],
+    ):
         self.name = implementation_config.name
+        self.input_slots = input_slots
+        self.output_slots = output_slots
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
         self.metadata_step_name = self._metadata["step"]
@@ -68,3 +79,11 @@ class Implementation:
     @property
     def outputs(self) -> Dict[str, List[str]]:
         return self._metadata["outputs"]
+
+
+class NullImplementation:
+    """A NullImplementation is used to represent a step that does not have an implementation."""
+
+    def __init__(self, name, input_slots, output_slots):
+        self.input_slots = input_slots
+        self.output_slots = output_slots
