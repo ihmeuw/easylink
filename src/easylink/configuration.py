@@ -176,6 +176,7 @@ class Config(LayeredConfigTree):
                 errors[PIPELINE_ERRORS_KEY][schema.name] = logs
                 pass  # try the next schema
             else:
+                schema.configure_step(self.pipeline, self.input_data)
                 return schema
         # No schemas were validated
         exit_with_validation_error(dict(errors))

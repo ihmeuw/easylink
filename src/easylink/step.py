@@ -15,7 +15,7 @@ from easylink.graph_components import (
     StepGraph,
     StepSlotMapping,
 )
-from easylink.implementation import Implementation
+from easylink.implementation import Implementation, NullImplementation
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
@@ -52,9 +52,6 @@ class Step(ABC):
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         pass
 
-    def set_parent_step(self, step) -> None:
-        self.parent_step = step
-
     @abstractmethod
     def get_implementation_graph(self) -> ImplementationGraph:
         """Resolve the graph composed of Steps into a graph composed of Implementations."""
@@ -66,6 +63,15 @@ class Step(ABC):
     ) -> Dict[str, List[str]]:
         """Validate the step against the pipeline configuration."""
         pass
+
+    def set_parent_step(self, step) -> None:
+        self.parent_step = step
+
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        """Configure the step against the pipeline configuration and input data."""
+        self.set_step_config(step_config)
 
 
 class IOStep(Step):
@@ -82,7 +88,10 @@ class IOStep(Step):
         """Add a single node to the graph based on step name."""
         implementation_graph = ImplementationGraph()
         implementation_graph.add_node_from_impl(
-            self.implementation_graph_node_name, implementation=None
+            self.implementation_graph_node_name,
+            implementation=NullImplementation(
+                self.implementation_graph_node_name, self.input_slots, self.output_slots
+            ),
         )
         return implementation_graph
 
@@ -95,7 +104,7 @@ class IOStep(Step):
                 if mapping.slot == edge.output_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(self, edge)
+                imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
 
         elif edge.target_node == self.name:
@@ -105,7 +114,7 @@ class IOStep(Step):
                 if mapping.slot == edge.input_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(self, edge)
+                imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
             raise ValueError(f"IOStep {self.name} not in edge {edge}")
@@ -173,6 +182,8 @@ class BasicStep(Step):
         implementation = Implementation(
             step_name=self.step_name,
             implementation_config=implementation_config,
+            input_slots=self.input_slots,
+            output_slots=self.output_slots,
         )
         implementation_graph.add_node_from_impl(
             implementation_node_name,
@@ -189,7 +200,7 @@ class BasicStep(Step):
                 if mapping.slot == edge.output_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(self, edge)
+                imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
 
         elif edge.target_node == self.name:
@@ -199,13 +210,12 @@ class BasicStep(Step):
                 if mapping.slot == edge.input_slot
             ]
             for mapping in mappings:
-                # works, but isn't quite right.
                 if (
                     "input_data_file" in self.config
                     and edge.source_node == "pipeline_graph_input_data"
                 ):
-                    edge.output_slot = OutputSlot(name=self.config["input_data_file"])
-                imp_edge = mapping.propagate_edge(self, edge)
+                    edge.output_slot = self.config["input_data_file"]
+                imp_edge = mapping.propagate_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
             raise ValueError(f"IOStep {self.name} not in edge {edge}")
@@ -315,7 +325,6 @@ class CompositeStep(Step):
     def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
         for node in self.step_graph.nodes:
             step = self.step_graph.nodes[node]["step"]
-            step.set_step_config(self.config)
             implementation_graph.update(step.get_implementation_graph())
 
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
@@ -391,6 +400,14 @@ class CompositeStep(Step):
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
 
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        super().configure_step(step_config, input_data_config)
+        for node in self.step_graph.nodes:
+            step = self.step_graph.nodes[node]["step"]
+            step.configure_step(self.config, input_data_config)
+
 
 class HierarchicalStep(CompositeStep, BasicStep):
     """A HierarchicalStep can be a single implementation or several 'substeps'. This requires
@@ -409,16 +426,6 @@ class HierarchicalStep(CompositeStep, BasicStep):
             else step_config[self.config_key]
         )
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        if len(self.config) > 1:
-            return CompositeStep.get_implementation_graph(self)
-        return BasicStep.get_implementation_graph(self)
-
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        if len(self.config) > 1:
-            return CompositeStep.get_implementation_edges(self, edge)
-        return BasicStep.get_implementation_edges(self, edge)
-
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
@@ -426,6 +433,15 @@ class HierarchicalStep(CompositeStep, BasicStep):
             return BasicStep.validate_step(self, step_config, input_data_config)
         sub_config = step_config[self.config_key]
         return CompositeStep.validate_step(self, sub_config, input_data_config)
+
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        self.set_step_config(step_config)
+        if len(self.config) > 1:
+            CompositeStep.configure_step(self, step_config, input_data_config)
+            self = CompositeStep(self)
+        self = BasicStep(self)
 
 
 class LoopStep(CompositeStep, BasicStep):
@@ -468,18 +484,6 @@ class LoopStep(CompositeStep, BasicStep):
             self._config = step_config
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
-
-    def get_implementation_graph(self) -> ImplementationGraph:
-        if self.num_repeats > 1:
-            self.step_graph = self._create_step_graph()
-            self.step_slot_mappings = self._get_step_slot_mappings()
-            return CompositeStep.get_implementation_graph(self)
-        return BasicStep.get_implementation_graph(self)
-
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        if self.num_repeats > 1:
-            return CompositeStep.get_implementation_edges(self, edge)
-        return BasicStep.get_implementation_edges(self, edge)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -576,6 +580,17 @@ class LoopStep(CompositeStep, BasicStep):
             loop_config[f"{self.name}_loop_{i+1}"] = loop
         return LayeredConfigTree(loop_config)
 
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        self.set_step_config(step_config)
+        if self.num_repeats > 1:
+            self.step_graph = self._create_step_graph()
+            self.step_slot_mappings = self._get_step_slot_mappings()
+            CompositeStep.configure_step(self, step_config, input_data_config)
+            self = CompositeStep(self)
+        self = BasicStep(self)
+
 
 class ParallelStep(CompositeStep, BasicStep):
     """A ParallelStep allows a user to run a sequence of steps in parallel."""
@@ -610,18 +625,6 @@ class ParallelStep(CompositeStep, BasicStep):
             self._config = step_config
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
-
-    def get_implementation_graph(self) -> ImplementationGraph:
-        if self.num_repeats > 1:
-            self.step_graph = self._create_step_graph()
-            self.step_slot_mappings = self._get_step_slot_mappings()
-            return CompositeStep.get_implementation_graph(self)
-        return BasicStep.get_implementation_graph(self)
-
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        if self.num_repeats > 1:
-            return CompositeStep.get_implementation_edges(self, edge)
-        return BasicStep.get_implementation_edges(self, edge)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -701,3 +704,14 @@ class ParallelStep(CompositeStep, BasicStep):
         for i, config in enumerate(step_config):
             parallel_step_config[f"{self.name}_parallel_split_{i+1}"] = config
         return LayeredConfigTree(parallel_step_config)
+
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        self.set_step_config(step_config)
+        if self.num_repeats > 1:
+            self.step_graph = self._create_step_graph()
+            self.step_slot_mappings = self._get_step_slot_mappings()
+            CompositeStep.configure_step(self, step_config, input_data_config)
+            self = CompositeStep(self)
+        self = BasicStep(self)
