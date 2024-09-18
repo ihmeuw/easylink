@@ -1,7 +1,11 @@
-import re, copy, os, json
-import pandas as pd
-import numpy as np
+import copy
+import json
+import os
+import re
+
 import jellyfish
+import numpy as np
+import pandas as pd
 from splink.duckdb.linker import DuckDBLinker
 
 
@@ -334,7 +338,11 @@ def pvs_matching_pass(blocking_cols, matching_cols):
             f"{len(census_records_with_multiple_potential_piks)} input records matched to multiple PIKs, dropping them from list of potential matches"
         )
 
-    potential_links = potential_links[~potential_links.record_id_census_2030.isin(census_records_with_multiple_potential_piks)]
+    potential_links = potential_links[
+        ~potential_links.record_id_census_2030.isin(
+            census_records_with_multiple_potential_piks
+        )
+    ]
 
     assert (potential_links.groupby("record_id_census_2030").pik.nunique() == 1).all()
     links = potential_links.groupby("record_id_census_2030").pik.first().reset_index()

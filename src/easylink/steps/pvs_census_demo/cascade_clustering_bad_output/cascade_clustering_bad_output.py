@@ -1,7 +1,11 @@
-import re, copy, os, json
-import pandas as pd
-import numpy as np
+import copy
+import json
+import os
+import re
+
 import jellyfish
+import numpy as np
+import pandas as pd
 from splink.duckdb.linker import DuckDBLinker
 
 

@@ -1,6 +1,6 @@
 import copy
-from collections import defaultdict
 import itertools
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 

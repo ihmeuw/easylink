@@ -9,7 +9,10 @@ from easylink.pipeline_graph import PipelineGraph
 from easylink.rule import ImplementedRule, InputValidationRule, TargetRule
 from easylink.utilities.general_utils import exit_with_validation_error
 from easylink.utilities.paths import SPARK_SNAKEFILE
-from easylink.utilities.validation_utils import validate_input_file_dummy, demo_validator
+from easylink.utilities.validation_utils import (
+    demo_validator,
+    validate_input_file_dummy,
+)
 
 
 class Pipeline:

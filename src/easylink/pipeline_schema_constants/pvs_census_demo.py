@@ -7,7 +7,6 @@ from easylink.step import (
     LoopStep,
     ParallelStep,
 )
-
 from easylink.utilities.validation_utils import demo_validator
 
 NODES = [
@@ -30,16 +29,16 @@ NODES = [
         template_step=BasicStep(
             step_name="cascade_clustering",
             input_slots=[
-            InputSlot(
-                name="simulated_census",
-                env_var="SIMULATED_CENSUS",
-                validator=demo_validator,
-            ),
-            InputSlot(
-                name="reference_file",
-                env_var="REFERENCE_FILE",
-                validator=demo_validator,
-            ),
+                InputSlot(
+                    name="simulated_census",
+                    env_var="SIMULATED_CENSUS",
+                    validator=demo_validator,
+                ),
+                InputSlot(
+                    name="reference_file",
+                    env_var="REFERENCE_FILE",
+                    validator=demo_validator,
+                ),
             ],
             output_slots=[OutputSlot("piked_census")],
         ),

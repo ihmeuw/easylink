@@ -1,4 +1,8 @@
-from easylink.pipeline_schema_constants import development, integration_test, pvs_census_demo
+from easylink.pipeline_schema_constants import (
+    development,
+    integration_test,
+    pvs_census_demo,
+)
 
 ALLOWED_SCHEMA_PARAMS = {
     # "development": development.SCHEMA_PARAMS,
