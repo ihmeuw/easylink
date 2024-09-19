@@ -180,7 +180,7 @@ def test_composite_step_update_implementation_graph(
             }
         }
     )
-    step.set_step_config(pipeline_params)
+    step.configure_step(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_4a_python_pandas",
@@ -278,7 +278,7 @@ def test_hierarchical_step_update_implementation_graph(
     pipeline_params = LayeredConfigTree(
         {"step_4": {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}}
     )
-    step.set_step_config(pipeline_params)
+    step.configure_step(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
@@ -304,7 +304,7 @@ def test_hierarchical_step_update_implementation_graph(
             },
         }
     )
-    step.set_step_config(pipeline_params)
+    step.configure_step(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_4a_python_pandas",
@@ -482,7 +482,7 @@ def test_loop_update_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
-    step.set_step_config(default_config["pipeline"])
+    step.configure_step(default_config["pipeline"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
@@ -521,7 +521,7 @@ def test_loop_update_implementation_graph(
             }
         }
     )
-    step.set_step_config(pipeline_params)
+    step.configure_step(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_3_loop_1_step_3_python_pandas",
@@ -711,7 +711,7 @@ def test_parallel_step_update_implementation_graph(
             }
         }
     )
-    step.set_step_config(pipeline_params)
+    step.configure_step(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert set(subgraph.nodes) == {
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
