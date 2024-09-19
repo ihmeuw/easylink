@@ -609,10 +609,10 @@ class LoopStep(CompositeStep, BasicStep):
     ) -> Dict[str, LayeredConfigTree]:
         """Get the dictionary for the looped graph based on the sequence
         of sub-yamls."""
-        loop_config = {}
-        for i, loop in enumerate(step_config):
-            loop_config[f"{self.name}_loop_{i+1}"] = loop
-        return LayeredConfigTree(loop_config)
+        expanded_config = {}
+        for i, sub_config in enumerate(step_config):
+            expanded_config[f"{self.name}_loop_{i+1}"] = sub_config
+        return LayeredConfigTree(expanded_config)
 
 
 class ParallelStep(CompositeStep, BasicStep):
@@ -740,7 +740,7 @@ class ParallelStep(CompositeStep, BasicStep):
     ) -> Dict[str, LayeredConfigTree]:
         """Get the dictionary for the parallel graph based on the sequence
         of sub-yamls."""
-        parallel_step_config = {}
-        for i, config in enumerate(step_config):
-            parallel_step_config[f"{self.name}_parallel_split_{i+1}"] = config
-        return LayeredConfigTree(parallel_step_config)
+        expanded_step_config = {}
+        for i, sub_config in enumerate(step_config):
+            expanded_step_config[f"{self.name}_parallel_split_{i+1}"] = sub_config
+        return LayeredConfigTree(expanded_step_config)
