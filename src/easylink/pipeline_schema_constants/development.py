@@ -1,4 +1,10 @@
-from easylink.graph_components import Edge, InputSlot, OutputSlot, StepSlotMapping
+from easylink.graph_components import (
+    Edge,
+    InputSlot,
+    InputSlotMapping,
+    OutputSlot,
+    OutputSlotMapping,
+)
 from easylink.step import (
     BasicStep,
     HierarchicalStep,
@@ -134,32 +140,24 @@ NODES = [
         ],
         slot_mappings={
             "input": [
-                StepSlotMapping(
-                    slot_type="input",
-                    parent_node="step_4",
+                InputSlotMapping(
                     parent_slot="step_4_main_input",
                     child_node="step_4a",
                     child_slot="step_4a_main_input",
                 ),
-                StepSlotMapping(
-                    slot_type="input",
-                    parent_node="step_4",
+                InputSlotMapping(
                     parent_slot="step_4_secondary_input",
                     child_node="step_4a",
                     child_slot="step_4a_secondary_input",
                 ),
-                StepSlotMapping(
-                    slot_type="input",
-                    parent_node="step_4",
+                InputSlotMapping(
                     parent_slot="step_4_secondary_input",
                     child_node="step_4b",
                     child_slot="step_4b_secondary_input",
                 ),
             ],
             "output": [
-                StepSlotMapping(
-                    slot_type="output",
-                    parent_node="step_4",
+                OutputSlotMapping(
                     parent_slot="step_4_main_output",
                     child_node="step_4b",
                     child_slot="step_4b_main_output",

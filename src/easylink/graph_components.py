@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional
 
@@ -83,63 +84,34 @@ class SlotMapping:
     """SlotMapping represents a mapping between a parent and child node
     at different levels of the nested pipeline schema."""
 
-    slot_type: str
-    parent_node: str
     parent_slot: str
     child_node: str
     child_slot: str
 
-
-class StepSlotMapping(SlotMapping):
+    @abstractmethod
     def propagate_edge(self, edge: Edge) -> Edge:
-        if self.slot_type == "input":
-            if not edge.input_slot == self.parent_slot:
-                raise ValueError("Parent slot does not match input slot")
-            return Edge(
-                source_node=edge.source_node,
-                target_node=self.child_node,
-                output_slot=edge.output_slot,
-                input_slot=self.child_slot,
-            )
-        else:
-            if not edge.output_slot == self.parent_slot:
-                raise ValueError("Parent slot does not match output slot")
-            return Edge(
-                source_node=self.child_node,
-                target_node=edge.target_node,
-                output_slot=self.child_slot,
-                input_slot=edge.input_slot,
-            )
+        pass
 
 
-@dataclass
-class ImplementationSlotMapping:
-
-    slot_type: str
-    step_node: str
-    slot: str
-    implementation_node: str
-
+class InputSlotMapping(SlotMapping):
     def propagate_edge(self, edge: Edge) -> Edge:
-        if self.slot_type == "input":
-            if not edge.target_node == self.step_node:
-                raise ValueError("Parent node does not match target node")
-            if not edge.input_slot == self.slot:
-                raise ValueError("Parent slot does not match input slot")
-            return Edge(
-                source_node=edge.source_node,
-                target_node=self.implementation_node,
-                output_slot=edge.output_slot,
-                input_slot=self.slot,
-            )
-        else:
-            if not edge.source_node == self.step_node:
-                raise ValueError("Parent node does not match source node")
-            if not edge.output_slot == self.slot:
-                raise ValueError("Parent slot does not match output slot")
-            return Edge(
-                source_node=self.implementation_node,
-                target_node=edge.target_node,
-                output_slot=self.slot,
-                input_slot=edge.input_slot,
-            )
+        if edge.input_slot != self.parent_slot:
+            raise ValueError("Parent slot does not match input slot")
+        return Edge(
+            source_node=edge.source_node,
+            target_node=self.child_node,
+            output_slot=edge.output_slot,
+            input_slot=self.child_slot,
+        )
+
+
+class OutputSlotMapping(SlotMapping):
+    def propagate_edge(self, edge: Edge) -> Edge:
+        if edge.output_slot != self.parent_slot:
+            raise ValueError("Parent slot does not match output slot")
+        return Edge(
+            source_node=self.child_node,
+            target_node=edge.target_node,
+            output_slot=self.child_slot,
+            input_slot=edge.input_slot,
+        )

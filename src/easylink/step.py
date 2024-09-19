@@ -9,11 +9,12 @@ from layered_config_tree import LayeredConfigTree
 from easylink.graph_components import (
     Edge,
     ImplementationGraph,
-    ImplementationSlotMapping,
     InputSlot,
+    InputSlotMapping,
     OutputSlot,
+    OutputSlotMapping,
+    SlotMapping,
     StepGraph,
-    StepSlotMapping,
 )
 from easylink.implementation import Implementation, NullImplementation
 from easylink.utilities import paths
@@ -101,7 +102,7 @@ class IOStep(Step):
             mappings = [
                 mapping
                 for mapping in self.implementation_slot_mappings()["output"]
-                if mapping.slot == edge.output_slot
+                if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(edge)
@@ -111,7 +112,7 @@ class IOStep(Step):
             mappings = [
                 mapping
                 for mapping in self.implementation_slot_mappings()["input"]
-                if mapping.slot == edge.input_slot
+                if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(edge)
@@ -122,18 +123,14 @@ class IOStep(Step):
             raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
 
-    def implementation_slot_mappings(self) -> Dict[str, List[ImplementationSlotMapping]]:
+    def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         return {
             "input": [
-                ImplementationSlotMapping(
-                    "input", self.name, slot, self.implementation_graph_node_name
-                )
+                InputSlotMapping(slot, self.implementation_graph_node_name, slot)
                 for slot in self.input_slots
             ],
             "output": [
-                ImplementationSlotMapping(
-                    "output", self.name, slot, self.implementation_graph_node_name
-                )
+                OutputSlotMapping(slot, self.implementation_graph_node_name, slot)
                 for slot in self.output_slots
             ],
         }
@@ -197,7 +194,7 @@ class BasicStep(Step):
             mappings = [
                 mapping
                 for mapping in self.implementation_slot_mappings()["output"]
-                if mapping.slot == edge.output_slot
+                if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
                 imp_edge = mapping.propagate_edge(edge)
@@ -207,7 +204,7 @@ class BasicStep(Step):
             mappings = [
                 mapping
                 for mapping in self.implementation_slot_mappings()["input"]
-                if mapping.slot == edge.input_slot
+                if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
                 if (
@@ -223,18 +220,14 @@ class BasicStep(Step):
             raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
 
-    def implementation_slot_mappings(self) -> Dict[str, List[ImplementationSlotMapping]]:
+    def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         return {
             "input": [
-                ImplementationSlotMapping(
-                    "input", self.name, slot, self.get_implementation_node_name()
-                )
+                InputSlotMapping(slot, self.get_implementation_node_name(), slot)
                 for slot in self.input_slots
             ],
             "output": [
-                ImplementationSlotMapping(
-                    "output", self.name, slot, self.get_implementation_node_name()
-                )
+                OutputSlotMapping(slot, self.get_implementation_node_name(), slot)
                 for slot in self.output_slots
             ],
         }
@@ -300,7 +293,7 @@ class CompositeStep(Step):
         output_slots: List[OutputSlot] = [],
         nodes: List[Step] = [],
         edges: List[Edge] = [],
-        slot_mappings: Dict[str, List[StepSlotMapping]] = {"input": [], "output": []},
+        slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
     ) -> None:
         super().__init__(step_name, name, input_slots, output_slots)
         self.nodes = nodes
@@ -308,7 +301,7 @@ class CompositeStep(Step):
             node.set_parent_step(self)
         self.edges = edges
         self.step_graph = self._create_graph(nodes, edges)
-        self.step_slot_mappings = slot_mappings
+        self.slot_mappings = slot_mappings
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config[self.name]
@@ -332,7 +325,7 @@ class CompositeStep(Step):
         if edge.source_node == self.name:
             mappings = [
                 mapping
-                for mapping in self.step_slot_mappings["output"]
+                for mapping in self.slot_mappings["output"]
                 if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
@@ -344,7 +337,7 @@ class CompositeStep(Step):
         elif edge.target_node == self.name:
             mappings = [
                 mapping
-                for mapping in self.step_slot_mappings["input"]
+                for mapping in self.slot_mappings["input"]
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
@@ -561,7 +554,7 @@ class LoopStep(CompositeStep, BasicStep):
             graph.add_edge_from_data(edge)
         return graph
 
-    def _get_step_slot_mappings(self) -> dict:
+    def _get_slot_mappings(self) -> dict:
         """Get the appropriate slot mappings based on the number of loops
         and the non-self-edge input and output slots."""
         input_mappings = []
@@ -569,23 +562,17 @@ class LoopStep(CompositeStep, BasicStep):
         external_input_slots = self.input_slots.keys() - self_edge_input_slots
         for input_slot in self_edge_input_slots:
             input_mappings.append(
-                StepSlotMapping(
-                    "input", self.name, input_slot, f"{self.name}_loop_1", input_slot
-                )
+                InputSlotMapping(input_slot, f"{self.name}_loop_1", input_slot)
             )
         for input_slot in external_input_slots:
             input_mappings.extend(
                 [
-                    StepSlotMapping(
-                        "input", self.name, input_slot, f"{self.name}_loop_{n+1}", input_slot
-                    )
+                    InputSlotMapping(input_slot, f"{self.name}_loop_{n+1}", input_slot)
                     for n in range(self.num_repeats)
                 ]
             )
         output_mappings = [
-            StepSlotMapping(
-                "output", self.name, slot, f"{self.name}_loop_{self.num_repeats}", slot
-            )
+            OutputSlotMapping(slot, f"{self.name}_loop_{self.num_repeats}", slot)
             for slot in self.output_slots
         ]
         return {"input": input_mappings, "output": output_mappings}
@@ -606,7 +593,7 @@ class LoopStep(CompositeStep, BasicStep):
         self.set_step_config(step_config)
         if self.num_repeats > 1:
             self.step_graph = self._create_step_graph()
-            self.step_slot_mappings = self._get_step_slot_mappings()
+            self.slot_mappings = self._get_slot_mappings()
             CompositeStep.configure_step(self, step_config, input_data_config)
         else:
             BasicStep.configure_step(self, step_config, input_data_config)
@@ -706,20 +693,16 @@ class ParallelStep(CompositeStep, BasicStep):
             graph.add_node_from_step(updated_step)
         return graph
 
-    def _get_step_slot_mappings(self) -> Dict[str, List[StepSlotMapping]]:
+    def _get_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         input_mappings = [
-            StepSlotMapping(
-                "input", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot
-            )
+            InputSlotMapping(slot, f"{self.name}_parallel_split_{n+1}", slot)
             for n in range(self.num_repeats)
             for slot in self.input_slots
         ]
         output_mappings = [
-            StepSlotMapping(
-                "output", self.name, slot, f"{self.name}_parallel_split_{n+1}", slot
-            )
+            OutputSlotMapping(slot, f"{self.name}_parallel_split_{n+1}", slot)
             for n in range(self.num_repeats)
             for slot in self.output_slots
         ]
@@ -741,7 +724,7 @@ class ParallelStep(CompositeStep, BasicStep):
         self.set_step_config(step_config)
         if self.num_repeats > 1:
             self.step_graph = self._create_step_graph()
-            self.step_slot_mappings = self._get_step_slot_mappings()
+            self.slot_mappings = self._get_slot_mappings()
             CompositeStep.configure_step(self, step_config, input_data_config)
         else:
             BasicStep.configure_step(self, step_config, input_data_config)

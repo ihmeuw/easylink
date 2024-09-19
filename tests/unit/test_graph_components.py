@@ -31,14 +31,10 @@ def test_edge() -> None:
 
 def test_slot_mapping() -> None:
     slot_mapping = SlotMapping(
-        "input",
-        "step_1",
         "step_1_main_input",
         "step_1a",
         "step_1a_main_input",
     )
-    assert slot_mapping.slot_type == "input"
-    assert slot_mapping.parent_node == "step_1"
     assert slot_mapping.parent_slot == "step_1_main_input"
     assert slot_mapping.child_node == "step_1a"
     assert slot_mapping.child_slot == "step_1a_main_input"
