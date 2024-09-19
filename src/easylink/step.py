@@ -426,6 +426,16 @@ class HierarchicalStep(CompositeStep, BasicStep):
             else step_config[self.config_key]
         )
 
+    def get_implementation_graph(self) -> ImplementationGraph:
+        if len(self.config) > 1:
+            return CompositeStep.get_implementation_graph(self)
+        return BasicStep.get_implementation_graph(self)
+
+    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
+        if len(self.config) > 1:
+            return CompositeStep.get_implementation_edges(self, edge)
+        return BasicStep.get_implementation_edges(self, edge)
+
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
@@ -440,8 +450,8 @@ class HierarchicalStep(CompositeStep, BasicStep):
         self.set_step_config(step_config)
         if len(self.config) > 1:
             CompositeStep.configure_step(self, step_config, input_data_config)
-            self = CompositeStep(self)
-        self = BasicStep(self)
+        else:
+            BasicStep.configure_step(self, step_config, input_data_config)
 
 
 class LoopStep(CompositeStep, BasicStep):
@@ -484,6 +494,16 @@ class LoopStep(CompositeStep, BasicStep):
             self._config = step_config
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
+
+    def get_implementation_graph(self) -> ImplementationGraph:
+        if self.num_repeats > 1:
+            return CompositeStep.get_implementation_graph(self)
+        return BasicStep.get_implementation_graph(self)
+
+    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
+        if self.num_repeats > 1:
+            return CompositeStep.get_implementation_edges(self, edge)
+        return BasicStep.get_implementation_edges(self, edge)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -588,8 +608,8 @@ class LoopStep(CompositeStep, BasicStep):
             self.step_graph = self._create_step_graph()
             self.step_slot_mappings = self._get_step_slot_mappings()
             CompositeStep.configure_step(self, step_config, input_data_config)
-            self = CompositeStep(self)
-        self = BasicStep(self)
+        else:
+            BasicStep.configure_step(self, step_config, input_data_config)
 
 
 class ParallelStep(CompositeStep, BasicStep):
@@ -625,6 +645,16 @@ class ParallelStep(CompositeStep, BasicStep):
             self._config = step_config
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
+
+    def get_implementation_graph(self) -> ImplementationGraph:
+        if self.num_repeats > 1:
+            return CompositeStep.get_implementation_graph(self)
+        return BasicStep.get_implementation_graph(self)
+
+    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
+        if self.num_repeats > 1:
+            return CompositeStep.get_implementation_edges(self, edge)
+        return BasicStep.get_implementation_edges(self, edge)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -713,5 +743,5 @@ class ParallelStep(CompositeStep, BasicStep):
             self.step_graph = self._create_step_graph()
             self.step_slot_mappings = self._get_step_slot_mappings()
             CompositeStep.configure_step(self, step_config, input_data_config)
-            self = CompositeStep(self)
-        self = BasicStep(self)
+        else:
+            BasicStep.configure_step(self, step_config, input_data_config)
