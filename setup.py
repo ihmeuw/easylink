@@ -17,7 +17,7 @@ if __name__ == "__main__":
     install_requirements = [
         "click",
         "docker",
-        "pygraphviz",
+        "graphviz",
         "loguru",
         "layered_config_tree",
         "networkx",
