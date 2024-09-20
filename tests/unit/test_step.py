@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-import networkx as nx
 import pytest
 from layered_config_tree import LayeredConfigTree
 

@@ -4,14 +4,13 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 import networkx as nx
-from networkx import MultiDiGraph
 
 from easylink.configuration import Config
-from easylink.graph_components import InputSlot
+from easylink.graph_components import ImplementationGraph, InputSlot
 from easylink.implementation import Implementation
 
 
-class PipelineGraph(MultiDiGraph):
+class PipelineGraph(ImplementationGraph):
     """
     The Pipeline Graph is the structure of the pipeline. It is a DAG composed of
     Implementations and their file dependencies. The Pipeline Graph is created by

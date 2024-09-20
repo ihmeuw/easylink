@@ -409,7 +409,7 @@ class CompositeStep(Step):
         return implementation_edges
 
     def _get_step_graph(self, nodes: List[Step], edges: List[Edge]) -> StepGraph:
-        """Create a MultiDiGraph from the nodes and edges the step was initialized with."""
+        """Create a StepGraph from the nodes and edges the step was initialized with."""
         step_graph = StepGraph()
         for step in nodes:
             step_graph.add_node_from_step(step)

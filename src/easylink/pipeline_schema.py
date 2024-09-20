@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
+from easylink.graph_components import ImplementationGraph
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import CompositeStep, Step
 
@@ -21,7 +22,7 @@ class PipelineSchema(CompositeStep):
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config
 
-    def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> nx.MultiDiGraph:
+    def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> ImplementationGraph:
         """Resolve the PipelineSchema into a PipelineGraph."""
         self._config = pipeline_config
         return self.get_implementation_graph()
