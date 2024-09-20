@@ -22,8 +22,8 @@ class Implementation:
         self,
         step_name: str,
         implementation_config: LayeredConfigTree,
-        input_slots: List["InputSlot"],
-        output_slots: List["OutputSlot"],
+        input_slots: dict[str, "InputSlot"] = {},
+        output_slots: dict[str, "OutputSlot"] = {},
     ):
         self.name = implementation_config.name
         self.input_slots = input_slots

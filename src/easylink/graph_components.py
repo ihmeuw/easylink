@@ -80,7 +80,7 @@ class ImplementationGraph(nx.MultiDiGraph):
 
 
 @dataclass
-class SlotMapping:
+class SlotMapping(ABC):
     """SlotMapping represents a mapping between a parent and child node
     at different levels of the nested pipeline schema."""
 
