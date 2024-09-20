@@ -23,7 +23,7 @@ class PipelineSchema(CompositeStep):
 
     def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> nx.MultiDiGraph:
         """Resolve the PipelineSchema into a PipelineGraph."""
-        self._config = pipeline_config
+        self.configure_step(pipeline_config)
         graph = nx.MultiDiGraph()
         graph.add_node(self.name, step=self)
         self.update_implementation_graph(graph)
