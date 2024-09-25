@@ -42,9 +42,10 @@ def test_io_update_implementation_graph(
     io_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = IOStep(**io_step_params)
+    step.configure_step(default_config["pipeline"])
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"])
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == ["pipeline_graph_io"]
     assert list(subgraph.edges) == []
 
@@ -81,9 +82,10 @@ def test_basic_step_update_implementation_graph(
     basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
+    step.configure_step(default_config["pipeline"])
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 
@@ -92,11 +94,12 @@ def test_basic_step_get_implementation_node_name(
     basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
-    node_name = step.get_implementation_node_name(default_config["pipeline"][step.name])
+    step.configure_step(default_config["pipeline"])
+    node_name = step.get_implementation_node_name()
     assert node_name == "step_1_python_pandas"
 
     step.set_parent_step(BasicStep(step_name="foo", name="bar"))
-    node_name = step.get_implementation_node_name(default_config["pipeline"][step.name])
+    node_name = step.get_implementation_node_name()
     assert node_name == "bar_step_1_step_1_python_pandas"
 
 
@@ -171,14 +174,17 @@ def test_composite_step_update_implementation_graph(
     step = CompositeStep(**composite_step_params)
     pipeline_params = LayeredConfigTree(
         {
-            "step_4a": {
-                "implementation": {"name": "step_4a_python_pandas", "configuration": {}}
-            },
-            "step_4b": {
-                "implementation": {"name": "step_4b_python_pandas", "configuration": {}}
-            },
+            "step_4": {
+                "step_4a": {
+                    "implementation": {"name": "step_4a_python_pandas", "configuration": {}}
+                },
+                "step_4b": {
+                    "implementation": {"name": "step_4b_python_pandas", "configuration": {}}
+                },
+            }
         }
     )
+    step.configure_step(pipeline_params)
     subgraph = nx.MultiDiGraph(
         [
             (
@@ -193,7 +199,7 @@ def test_composite_step_update_implementation_graph(
             )
         ]
     )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == [
         "input_data",
         "step_4a_python_pandas",
@@ -300,33 +306,37 @@ def test_hierarchical_step_update_implementation_graph(
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     pipeline_params = LayeredConfigTree(
-        {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}
+        {"step_4": {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}}
     )
+    step.configure_step(pipeline_params)
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, pipeline_params)
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
     # Test update_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
         {
-            "substeps": {
-                "step_4a": {
-                    "implementation": {
-                        "name": "step_4a_python_pandas",
-                        "configuration": {},
-                    }
-                },
-                "step_4b": {
-                    "implementation": {
-                        "name": "step_4b_python_pandas",
-                        "configuration": {},
-                    }
+            "step_4": {
+                "substeps": {
+                    "step_4a": {
+                        "implementation": {
+                            "name": "step_4a_python_pandas",
+                            "configuration": {},
+                        }
+                    },
+                    "step_4b": {
+                        "implementation": {
+                            "name": "step_4b_python_pandas",
+                            "configuration": {},
+                        }
+                    },
                 },
             },
-        },
+        }
     )
+    step.configure_step(pipeline_params)
     subgraph = nx.MultiDiGraph(
         [
             (
@@ -341,7 +351,7 @@ def test_hierarchical_step_update_implementation_graph(
             )
         ]
     )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == [
         "input_data",
         "step_4a_python_pandas",
@@ -530,44 +540,48 @@ def test_loop_update_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
+    step.configure_step(default_config["pipeline"])
     subgraph = nx.MultiDiGraph()
     subgraph.add_node(step.name, step=step)
-    step.update_implementation_graph(subgraph, default_config["pipeline"][step.name])
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
 
     pipeline_params = LayeredConfigTree(
         {
-            "iterate": [
-                LayeredConfigTree(
-                    {
-                        "implementation": {
-                            "name": "step_3_python_pandas",
-                            "configuration": {},
+            "step_3": {
+                "iterate": [
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_3_python_pandas",
+                                "configuration": {},
+                            }
                         }
-                    }
-                ),
-                LayeredConfigTree(
-                    {
-                        "substeps": {
-                            "step_3a": {
-                                "implementation": {
-                                    "name": "step_3a_python_pandas",
-                                    "configuration": {},
-                                }
+                    ),
+                    LayeredConfigTree(
+                        {
+                            "substeps": {
+                                "step_3a": {
+                                    "implementation": {
+                                        "name": "step_3a_python_pandas",
+                                        "configuration": {},
+                                    }
+                                },
+                                "step_3b": {
+                                    "implementation": {
+                                        "name": "step_3b_python_pandas",
+                                        "configuration": {},
+                                    }
+                                },
                             },
-                            "step_3b": {
-                                "implementation": {
-                                    "name": "step_3b_python_pandas",
-                                    "configuration": {},
-                                }
-                            },
-                        },
-                    }
-                ),
-            ],
+                        }
+                    ),
+                ],
+            }
         }
     )
+    step.configure_step(pipeline_params)
     subgraph = nx.MultiDiGraph(
         [
             (
@@ -592,7 +606,7 @@ def test_loop_update_implementation_graph(
             ),
         ]
     )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    step.update_implementation_graph(subgraph)
     assert list(subgraph.nodes) == [
         "input_data",
         "step_3_loop_1_step_3_python_pandas",
@@ -777,55 +791,58 @@ def test_parallel_step_update_implementation_graph(
     step = ParallelStep(**parallel_step_params)
     pipeline_params = LayeredConfigTree(
         {
-            "parallel": [
-                {
-                    "substeps": {
-                        "step_1a": {
-                            "implementation": {
-                                "name": "step_1a_python_pandas",
+            "step_1": {
+                "parallel": [
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
                             },
                         },
-                        "step_1b": {
-                            "implementation": {
-                                "name": "step_1b_python_pandas",
-                            },
-                        },
+                        "input_data_file": "input_file_1",
                     },
-                    "input_data_file": "input_file_1",
-                },
-                {
-                    "substeps": {
-                        "step_1a": {
-                            "implementation": {
-                                "name": "step_1a_python_pandas",
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
                             },
                         },
-                        "step_1b": {
-                            "implementation": {
-                                "name": "step_1b_python_pandas",
-                            },
-                        },
+                        "input_data_file": "input_file_2",
                     },
-                    "input_data_file": "input_file_2",
-                },
-                {
-                    "substeps": {
-                        "step_1a": {
-                            "implementation": {
-                                "name": "step_1a_python_pandas",
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
                             },
                         },
-                        "step_1b": {
-                            "implementation": {
-                                "name": "step_1b_python_pandas",
-                            },
-                        },
+                        "input_data_file": "input_file_3",
                     },
-                    "input_data_file": "input_file_3",
-                },
-            ],
+                ],
+            }
         }
     )
+    step.configure_step(pipeline_params)
     subgraph = nx.MultiDiGraph(
         [
             (
@@ -848,7 +865,7 @@ def test_parallel_step_update_implementation_graph(
             ),
         ]
     )
-    step.update_implementation_graph(subgraph, pipeline_params)
+    step.update_implementation_graph(subgraph)
     assert set(subgraph.nodes) == {
         "pipeline_graph_input_data",
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
