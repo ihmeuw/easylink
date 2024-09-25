@@ -61,15 +61,9 @@ class Step(ABC):
         """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
 
-
     @abstractmethod
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
         """Propagate edges of StepGraph to ImplementationGraph."""
-        pass
-
-    @abstractmethod
-    def update_implementation_graph(self, graph: nx.MultiDiGraph) -> None:
-        """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
 
     def set_parent_step(self, step) -> None:
@@ -77,8 +71,10 @@ class Step(ABC):
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config[self.name]
-        
-    def configure_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> None:
+
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
         self.set_step_config(step_config)
 
 
@@ -93,6 +89,9 @@ class IOStep(Step):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
         return {}
+    
+    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
+        self._config = parent_config
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""

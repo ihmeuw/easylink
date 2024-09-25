@@ -24,7 +24,6 @@ class PipelineSchema(CompositeStep):
 
     def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> ImplementationGraph:
         """Resolve the PipelineSchema into a PipelineGraph."""
-        self._config = pipeline_config
         return self.get_implementation_graph()
 
     @property
