@@ -89,7 +89,7 @@ class IOStep(Step):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
         return {}
-    
+
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config
 
