@@ -56,6 +56,7 @@ build-env: # Make a new conda environment
 	conda create ${CONDA_ENV_CREATION_FLAG} python=${PYTHON_VERSION} --yes
 
 install: # Install setuptools, install this package in editable mode
+	conda install python-graphviz
 	pip install --upgrade pip setuptools
 	pip install -e .[DEV]
 

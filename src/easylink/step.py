@@ -57,28 +57,29 @@ class Step(ABC):
         pass
 
     @abstractmethod
-    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        pass
-
-    @abstractmethod
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        """Configure the step against the pipeline configuration and input data."""
-        pass
-
-    @abstractmethod
     def get_implementation_graph(self) -> ImplementationGraph:
         """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
+
 
     @abstractmethod
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
         """Propagate edges of StepGraph to ImplementationGraph."""
         pass
 
+    @abstractmethod
+    def update_implementation_graph(self, graph: nx.MultiDiGraph) -> None:
+        """Resolve the graph composed of Steps into a graph composed of Implementations."""
+        pass
+
     def set_parent_step(self, step) -> None:
         self.parent_step = step
+
+    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
+        self._config = parent_config[self.name]
+        
+    def configure_step(self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree) -> None:
+        self.set_step_config(step_config)
 
 
 class IOStep(Step):
@@ -92,14 +93,6 @@ class IOStep(Step):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
         return {}
-
-    def set_step_config(self, parent_config: LayeredConfigTree):
-        self._config = parent_config
-
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(step_config)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
@@ -199,14 +192,6 @@ class BasicStep(Step):
                 f"Supported implementations are: {list(metadata.keys())}."
             ]
         return errors
-
-    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        self._config = parent_config[self.name]
-
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(step_config)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
@@ -339,9 +324,6 @@ class CompositeStep(Step):
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
 
-    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        self._config = parent_config[self.name]
-
     def configure_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
@@ -416,6 +398,26 @@ class CompositeStep(Step):
         for edge in edges:
             step_graph.add_edge_from_data(edge)
         return step_graph
+
+    def _create_graph(self, nodes: List[Step], edges: List[Edge]) -> nx.MultiDiGraph:
+        """Create a MultiDiGraph from the nodes and edges the step was initialized with."""
+        graph = nx.MultiDiGraph()
+        for step in nodes:
+            graph.add_node(
+                step.name,
+                step=step,
+            )
+        for edge in edges:
+            graph.add_edge(
+                edge.source_node,
+                edge.target_node,
+                input_slot=graph.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
+                output_slot=graph.nodes[edge.source_node]["step"].output_slots[
+                    edge.output_slot
+                ],
+            )
+
+        return graph
 
 
 class HierarchicalStep(CompositeStep, BasicStep):
