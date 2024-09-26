@@ -76,6 +76,7 @@ class Step(ABC):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self.set_step_config(step_config)
+        
 
 
 class IOStep(Step):
