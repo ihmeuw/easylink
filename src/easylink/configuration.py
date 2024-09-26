@@ -102,6 +102,7 @@ class Config(LayeredConfigTree):
             self.update({"environment": {"slurm": {}}}, layer="default")
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
+        self.schema.configure_step(self.pipeline)
         self._validate()
         self.freeze()
 
@@ -176,7 +177,6 @@ class Config(LayeredConfigTree):
                 errors[PIPELINE_ERRORS_KEY][schema.name] = logs
                 pass  # try the next schema
             else:
-                schema.configure_step(self.pipeline, self.input_data)
                 return schema
         # No schemas were validated
         exit_with_validation_error(dict(errors))
