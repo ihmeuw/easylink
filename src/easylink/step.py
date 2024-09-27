@@ -34,7 +34,7 @@ class LayerState(ABC):
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
         """Propagate edges of StepGraph to ImplementationGraph."""
         pass
-    
+
     @abstractmethod
     def configure_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -44,12 +44,11 @@ class LayerState(ABC):
 
 
 class LeafState(LayerState):
-    
     def configure_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         pass
-        
+
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
@@ -158,7 +157,7 @@ class CompositeState(LayerState):
         if not implementation_edges:
             raise ValueError(f"No edges found for {self.name} in edge {edge}")
         return implementation_edges
-    
+
     def configure_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
