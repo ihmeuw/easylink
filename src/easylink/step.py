@@ -100,6 +100,12 @@ class LeafState(LayerState):
 
 
 class CompositeState(LayerState):
+    
+    def __init__(self, step: "Step"):
+        super().__init__(step)
+        if not step.step_graph:
+            raise ValueError(f"CompositeState requires a subgraph to operate on, but Step {step.name} has no step graph.")
+        
     def get_implementation_graph(self) -> ImplementationGraph:
         """Call get_implementation_graph on each subgraph node and update the graph."""
         implementation_graph = ImplementationGraph()
@@ -425,14 +431,11 @@ class HierarchicalStep(CompositeStep):
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         step_config = parent_config[self.name]
-        self._config = (
-            step_config
-            if not self.config_key in step_config
-            else step_config[self.config_key]
-        )
-        if len(self.config) > 1:
+        if self.config_key in step_config:
+            self._config = step_config[self.config_key]
             self.layer_state = CompositeState(self)
         else:
+            self._config = step_config
             self.layer_state = LeafState(self)
 
 
@@ -474,7 +477,7 @@ class LoopStep(Step):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
-            return BasicStep.validate_step(self, step_config, input_data_config)
+            return self.template_step.validate_step(step_config, input_data_config)
 
         sub_config = step_config[self.config_key]
 
@@ -499,14 +502,13 @@ class LoopStep(Step):
         step_config = parent_config[self.name]
         if not self.config_key in step_config:
             self._config = step_config
+            self.layer_state = LeafState(self)
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
-        if len(self.config) > 1:
-            self.layer_state = CompositeState(self)
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
-        else:
-            self.layer_state = LeafState(self)
+            self.layer_state = CompositeState(self)
+
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
@@ -604,7 +606,7 @@ class ParallelStep(Step):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
         if not self.config_key in step_config:
-            return BasicStep.validate_step(self, step_config, input_data_config)
+            return self.template_step.validate_step(step_config, input_data_config)
 
         sub_config = step_config[self.config_key]
 
@@ -641,14 +643,12 @@ class ParallelStep(Step):
         step_config = parent_config[self.name]
         if not self.config_key in step_config:
             self._config = step_config
+            self.layer_state = LeafState(self)
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
-        if self.num_repeats > 1:
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
             self.layer_state = CompositeState(self)
-        else:
-            self.layer_state = LeafState(self)
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the template step that are independent and contain the same edges as the
