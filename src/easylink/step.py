@@ -34,9 +34,22 @@ class LayerState(ABC):
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
         """Propagate edges of StepGraph to ImplementationGraph."""
         pass
+    
+    @abstractmethod
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        """Configure the step against the pipeline configuration and input data."""
+        pass
 
 
 class LeafState(LayerState):
+    
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        pass
+        
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
@@ -145,6 +158,13 @@ class CompositeState(LayerState):
         if not implementation_edges:
             raise ValueError(f"No edges found for {self.name} in edge {edge}")
         return implementation_edges
+    
+    def configure_step(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        for node in self._step.step_graph.nodes:
+            step = self._step.step_graph.nodes[node]["step"]
+            step.configure_step(self._step.config, input_data_config)
 
 
 class Step(ABC):
@@ -209,6 +229,7 @@ class Step(ABC):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self.set_step_config(step_config)
+        self.layer_state.configure_step(step_config, input_data_config)
 
     @property
     def implementation_node_name(self) -> str:
@@ -293,7 +314,7 @@ class InputStep(IOStep):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         """Configure the step against the pipeline configuration and input data."""
-        self.set_step_config(step_config)
+        super().configure_step(step_config, input_data_config)
         for input_data_key in input_data_config:
             self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
 
@@ -308,12 +329,7 @@ class BasicStep(Step):
         input_slots: List[InputSlot] = [],
         output_slots: List[OutputSlot] = [],
     ) -> None:
-        self.name = name if name else step_name
-        self.step_name = step_name
-        self.input_slots = {slot.name: slot for slot in input_slots}
-        self.output_slots = {slot.name: slot for slot in output_slots}
-        self.parent_step = None
-        self._config = None
+        super().__init__(step_name, name, input_slots, output_slots)
         self._layer_state = LeafState(self)
 
     def validate_step(
@@ -381,14 +397,6 @@ class CompositeStep(Step):
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
 
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(step_config)
-        for node in self.step_graph.nodes:
-            step = self.step_graph.nodes[node]["step"]
-            step.configure_step(self.config, input_data_config)
-
     def _get_step_graph(self, nodes: List[Step], edges: List[Edge]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
         step_graph = StepGraph()
@@ -423,20 +431,13 @@ class HierarchicalStep(CompositeStep):
             if not self.config_key in step_config
             else step_config[self.config_key]
         )
-
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(step_config)
         if len(self.config) > 1:
             self.layer_state = CompositeState(self)
-            CompositeStep.configure_step(self, step_config, input_data_config)
         else:
             self.layer_state = LeafState(self)
-            BasicStep.configure_step(self, step_config, input_data_config)
 
 
-class LoopStep(BasicStep):
+class LoopStep(Step):
     """A LoopStep allows a user to loop a single step or a sequence of steps a user-configured number of times."""
 
     def __init__(
@@ -501,19 +502,12 @@ class LoopStep(BasicStep):
             self._config = step_config
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
-
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(step_config)
-        if self.num_repeats > 1:
+        if len(self.config) > 1:
+            self.layer_state = CompositeState(self)
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
-            self.layer_state = CompositeState(self)
-            CompositeStep.configure_step(self, step_config, input_data_config)
         else:
             self.layer_state = LeafState(self)
-            BasicStep.configure_step(self, step_config, input_data_config)
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
@@ -580,7 +574,7 @@ class LoopStep(BasicStep):
         return LayeredConfigTree(expanded_config)
 
 
-class ParallelStep(BasicStep):
+class ParallelStep(Step):
     """A ParallelStep allows a user to run a sequence of steps in parallel."""
 
     def __init__(
@@ -650,18 +644,11 @@ class ParallelStep(BasicStep):
             self._config = step_config
         else:
             self._config = self._get_expanded_config(step_config[self.config_key])
-
-    def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(step_config)
         if self.num_repeats > 1:
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
-            CompositeStep.configure_step(self, step_config, input_data_config)
             self.layer_state = CompositeState(self)
         else:
-            BasicStep.configure_step(self, step_config, input_data_config)
             self.layer_state = LeafState(self)
 
     def _get_step_graph(self) -> StepGraph:
