@@ -35,8 +35,8 @@ class LayerState(ABC):
         """Propagate edges of StepGraph to ImplementationGraph."""
         pass
 
+
 class LeafState(LayerState):
-    
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
@@ -86,8 +86,8 @@ class LeafState(LayerState):
             raise ValueError(f"No edges found for Step {self._step.name} in edge {edge}")
         return implementation_edges
 
+
 class CompositeState(LayerState):
-    
     def get_implementation_graph(self) -> ImplementationGraph:
         """Call get_implementation_graph on each subgraph node and update the graph."""
         implementation_graph = ImplementationGraph()
@@ -145,7 +145,8 @@ class CompositeState(LayerState):
         if not implementation_edges:
             raise ValueError(f"No edges found for {self.name} in edge {edge}")
         return implementation_edges
-    
+
+
 class Step(ABC):
     """Steps contain information about the purpose of the interoperable elements of
     the sequence called a *Pipeline* and how those elements relate to one another.
@@ -174,11 +175,11 @@ class Step(ABC):
         if self._layer_state is None:
             raise ValueError(f"Step {self.name}'s layer_state was invoked before being set")
         return self._layer_state
-    
+
     @layer_state.setter
     def layer_state(self, state: LayerState) -> None:
         self._layer_state = state
-    
+
     @property
     def config(self) -> LayeredConfigTree:
         if self._config is None:
@@ -191,10 +192,10 @@ class Step(ABC):
     ) -> Dict[str, List[str]]:
         """Validate the step against the pipeline configuration."""
         pass
-    
+
     def get_implementation_graph(self) -> ImplementationGraph:
         return self.layer_state.get_implementation_graph()
-    
+
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
         return self.layer_state.get_implementation_edges(edge)
 
@@ -208,7 +209,7 @@ class Step(ABC):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self.set_step_config(step_config)
-    
+
     @property
     def implementation_node_name(self) -> str:
         """Resolve a sensible unique node name for the implementation graph.
@@ -237,10 +238,29 @@ class Step(ABC):
         implementation_names.append(self.config["implementation"]["name"])
         return "_".join(implementation_names)
 
+    def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
+        return {
+            "input": [
+                InputSlotMapping(slot, self.implementation_node_name, slot)
+                for slot in self.input_slots
+            ],
+            "output": [
+                OutputSlotMapping(slot, self.implementation_node_name, slot)
+                for slot in self.output_slots
+            ],
+        }
+
 
 class IOStep(Step):
     """"""
-    def __init__(self, step_name: str, name: str = None, input_slots: List[InputSlot] = [], output_slots: List[OutputSlot] = []) -> None:
+
+    def __init__(
+        self,
+        step_name: str,
+        name: str = None,
+        input_slots: List[InputSlot] = [],
+        output_slots: List[OutputSlot] = [],
+    ) -> None:
         super().__init__(step_name, name, input_slots, output_slots)
         self._layer_state = LeafState(self)
 
@@ -266,18 +286,6 @@ class IOStep(Step):
             ),
         )
         return implementation_graph
-
-    def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
-        return {
-            "input": [
-                InputSlotMapping(slot, self.implementation_node_name, slot)
-                for slot in self.input_slots
-            ],
-            "output": [
-                OutputSlotMapping(slot, self.implementation_node_name, slot)
-                for slot in self.output_slots
-            ],
-        }
 
 
 class InputStep(IOStep):
@@ -328,18 +336,6 @@ class BasicStep(Step):
                 f"Supported implementations are: {list(metadata.keys())}."
             ]
         return errors
-
-    def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
-        return {
-            "input": [
-                InputSlotMapping(slot, self.implementation_node_name, slot)
-                for slot in self.input_slots
-            ],
-            "output": [
-                OutputSlotMapping(slot, self.implementation_node_name, slot)
-                for slot in self.output_slots
-            ],
-        }
 
 
 class CompositeStep(Step):
@@ -433,8 +429,8 @@ class HierarchicalStep(CompositeStep):
     ) -> None:
         self.set_step_config(step_config)
         if len(self.config) > 1:
-           self.layer_state = CompositeState(self)
-           CompositeStep.configure_step(self, step_config, input_data_config)
+            self.layer_state = CompositeState(self)
+            CompositeStep.configure_step(self, step_config, input_data_config)
         else:
             self.layer_state = LeafState(self)
             BasicStep.configure_step(self, step_config, input_data_config)
@@ -518,7 +514,6 @@ class LoopStep(BasicStep):
         else:
             self.layer_state = LeafState(self)
             BasicStep.configure_step(self, step_config, input_data_config)
-
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
