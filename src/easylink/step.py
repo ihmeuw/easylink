@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Dict, List
 
-import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import (
@@ -397,26 +396,6 @@ class CompositeStep(Step):
         for edge in edges:
             step_graph.add_edge_from_data(edge)
         return step_graph
-
-    def _create_graph(self, nodes: List[Step], edges: List[Edge]) -> nx.MultiDiGraph:
-        """Create a MultiDiGraph from the nodes and edges the step was initialized with."""
-        graph = nx.MultiDiGraph()
-        for step in nodes:
-            graph.add_node(
-                step.name,
-                step=step,
-            )
-        for edge in edges:
-            graph.add_edge(
-                edge.source_node,
-                edge.target_node,
-                input_slot=graph.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
-                output_slot=graph.nodes[edge.source_node]["step"].output_slots[
-                    edge.output_slot
-                ],
-            )
-
-        return graph
 
 
 class HierarchicalStep(CompositeStep, BasicStep):
