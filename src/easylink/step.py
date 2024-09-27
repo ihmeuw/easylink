@@ -21,6 +21,131 @@ from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
 
+class LayerState(ABC):
+    def __init__(self, step: "Step"):
+        self._step = step
+
+    @abstractmethod
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Resolve the graph composed of Steps into a graph composed of Implementations."""
+        pass
+
+    @abstractmethod
+    def get_implementation_edges(self, edge: Edge) -> List[Edge]:
+        """Propagate edges of StepGraph to ImplementationGraph."""
+        pass
+
+class LeafState(LayerState):
+    
+    def get_implementation_graph(self) -> ImplementationGraph:
+        implementation_graph = ImplementationGraph()
+        """Return a single node with an implementation attribute."""
+        implementation_config = self._step.config["implementation"]
+        implementation_node_name = self._step.implementation_node_name
+        implementation = Implementation(
+            step_name=self._step.step_name,
+            implementation_config=implementation_config,
+            input_slots=self._step.input_slots,
+            output_slots=self._step.output_slots,
+        )
+        implementation_graph.add_node_from_impl(
+            implementation_node_name,
+            implementation=implementation,
+        )
+        return implementation_graph
+
+    def get_implementation_edges(self, edge: Edge) -> List[Edge]:
+        implementation_edges = []
+        if edge.source_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.implementation_slot_mappings()["output"]
+                if mapping.parent_slot == edge.output_slot
+            ]
+            for mapping in mappings:
+                imp_edge = mapping.propagate_edge(edge)
+                implementation_edges.append(imp_edge)
+
+        elif edge.target_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.implementation_slot_mappings()["input"]
+                if mapping.parent_slot == edge.input_slot
+            ]
+            for mapping in mappings:
+                if (
+                    "input_data_file" in self._step.config
+                    and edge.source_node == "pipeline_graph_input_data"
+                ):
+                    edge.output_slot = self._step.config["input_data_file"]
+                imp_edge = mapping.propagate_edge(edge)
+                implementation_edges.append(imp_edge)
+        else:
+            raise ValueError(f"Step {self._step.name} not in edge {edge}")
+        if not implementation_edges:
+            raise ValueError(f"No edges found for Step {self._step.name} in edge {edge}")
+        return implementation_edges
+
+class CompositeState(LayerState):
+    
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Call get_implementation_graph on each subgraph node and update the graph."""
+        implementation_graph = ImplementationGraph()
+        self.update_nodes(implementation_graph)
+        self.update_edges(implementation_graph)
+        return implementation_graph
+
+    def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
+        for node in self._step.step_graph.nodes:
+            step = self._step.step_graph.nodes[node]["step"]
+            implementation_graph.update(step.get_implementation_graph())
+
+    def update_edges(self, implementation_graph: ImplementationGraph) -> None:
+        for source, target, edge_attrs in self._step.step_graph.edges(data=True):
+            all_edges = []
+            edge = Edge.from_graph_edge(source, target, edge_attrs)
+            parent_source_step = self._step.step_graph.nodes[source]["step"]
+            parent_target_step = self._step.step_graph.nodes[target]["step"]
+
+            source_edges = parent_source_step.get_implementation_edges(edge)
+            for source_edge in source_edges:
+                for target_edge in parent_target_step.get_implementation_edges(source_edge):
+                    all_edges.append(target_edge)
+
+            for edge in all_edges:
+                implementation_graph.add_edge_from_data(edge)
+
+    def get_implementation_edges(self, edge: Edge) -> List[Edge]:
+        implementation_edges = []
+        if edge.source_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.slot_mappings["output"]
+                if mapping.parent_slot == edge.output_slot
+            ]
+            for mapping in mappings:
+                new_edge = mapping.propagate_edge(edge)
+                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
+                imp_edges = new_step.get_implementation_edges(new_edge)
+                implementation_edges.extend(imp_edges)
+
+        elif edge.target_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.slot_mappings["input"]
+                if mapping.parent_slot == edge.input_slot
+            ]
+            for mapping in mappings:
+                new_edge = mapping.propagate_edge(edge)
+                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
+                imp_edges = new_step.get_implementation_edges(new_edge)
+                implementation_edges.extend(imp_edges)
+        else:
+            raise ValueError(f" {self.name} not in edge {edge}")
+        if not implementation_edges:
+            raise ValueError(f"No edges found for {self.name} in edge {edge}")
+        return implementation_edges
+    
 class Step(ABC):
     """Steps contain information about the purpose of the interoperable elements of
     the sequence called a *Pipeline* and how those elements relate to one another.
@@ -42,7 +167,18 @@ class Step(ABC):
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.parent_step = None
         self._config = None
+        self._layer_state = None
 
+    @property
+    def layer_state(self) -> LayerState:
+        if self._layer_state is None:
+            raise ValueError(f"Step {self.name}'s layer_state was invoked before being set")
+        return self._layer_state
+    
+    @layer_state.setter
+    def layer_state(self, state: LayerState) -> None:
+        self._layer_state = state
+    
     @property
     def config(self) -> LayeredConfigTree:
         if self._config is None:
@@ -55,16 +191,12 @@ class Step(ABC):
     ) -> Dict[str, List[str]]:
         """Validate the step against the pipeline configuration."""
         pass
-
-    @abstractmethod
+    
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Resolve the graph composed of Steps into a graph composed of Implementations."""
-        pass
-
-    @abstractmethod
+        return self.layer_state.get_implementation_graph()
+    
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
-        """Propagate edges of StepGraph to ImplementationGraph."""
-        pass
+        return self.layer_state.get_implementation_edges(edge)
 
     def set_parent_step(self, step) -> None:
         self.parent_step = step
@@ -76,13 +208,44 @@ class Step(ABC):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self.set_step_config(step_config)
+    
+    @property
+    def implementation_node_name(self) -> str:
+        """Resolve a sensible unique node name for the implementation graph.
+        This method compares the step node names with the step names through the step hierarchy and
+        uses the full suffix of step names starting from wherever the two first differ. For example,
+        loop steps may have multiple loops with the same implementation and step, e.g. "step_3" and "step_3_python_pandas".
+        If we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
+        will be step_3_loop_1_step_3_python_pandas. If all the node names and step names match, we have not
+        introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
+        name."""
+        step = self
+        node_names = []
+        step_names = []
+        while step:
+            node_names.append(step.name)
+            step_names.append(step.step_name)
+            step = step.parent_step
+
+        implementation_names = []
+        step_names.reverse()
+        node_names.reverse()
+        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+            if step_name != node_name:
+                implementation_names = node_names[i:]
+                break
+        implementation_names.append(self.config["implementation"]["name"])
+        return "_".join(implementation_names)
 
 
 class IOStep(Step):
     """"""
+    def __init__(self, step_name: str, name: str = None, input_slots: List[InputSlot] = [], output_slots: List[OutputSlot] = []) -> None:
+        super().__init__(step_name, name, input_slots, output_slots)
+        self._layer_state = LeafState(self)
 
     @property
-    def implementation_graph_node_name(self):
+    def implementation_node_name(self):
         return "pipeline_graph_" + self.name
 
     def validate_step(
@@ -97,48 +260,21 @@ class IOStep(Step):
         """Add a single node to the graph based on step name."""
         implementation_graph = ImplementationGraph()
         implementation_graph.add_node_from_impl(
-            self.implementation_graph_node_name,
+            self.implementation_node_name,
             implementation=NullImplementation(
-                self.implementation_graph_node_name, self.input_slots, self.output_slots
+                self.implementation_node_name, self.input_slots, self.output_slots
             ),
         )
         return implementation_graph
 
-    def get_implementation_edges(self, edge: Edge) -> Edge:
-        implementation_edges = []
-        if edge.source_node == self.name:
-            mappings = [
-                mapping
-                for mapping in self.implementation_slot_mappings()["output"]
-                if mapping.parent_slot == edge.output_slot
-            ]
-            for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
-                implementation_edges.append(imp_edge)
-
-        elif edge.target_node == self.name:
-            mappings = [
-                mapping
-                for mapping in self.implementation_slot_mappings()["input"]
-                if mapping.parent_slot == edge.input_slot
-            ]
-            for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
-                implementation_edges.append(imp_edge)
-        else:
-            raise ValueError(f"IOStep {self.name} not in edge {edge}")
-        if not implementation_edges:
-            raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
-        return implementation_edges
-
     def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         return {
             "input": [
-                InputSlotMapping(slot, self.implementation_graph_node_name, slot)
+                InputSlotMapping(slot, self.implementation_node_name, slot)
                 for slot in self.input_slots
             ],
             "output": [
-                OutputSlotMapping(slot, self.implementation_graph_node_name, slot)
+                OutputSlotMapping(slot, self.implementation_node_name, slot)
                 for slot in self.output_slots
             ],
         }
@@ -170,6 +306,7 @@ class BasicStep(Step):
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.parent_step = None
         self._config = None
+        self._layer_state = LeafState(self)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -192,93 +329,17 @@ class BasicStep(Step):
             ]
         return errors
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        implementation_graph = ImplementationGraph()
-        """Return a single node with an implementation attribute."""
-        implementation_config = self.config["implementation"]
-        implementation_node_name = self.get_implementation_node_name()
-        implementation = Implementation(
-            step_name=self.step_name,
-            implementation_config=implementation_config,
-            input_slots=self.input_slots,
-            output_slots=self.output_slots,
-        )
-        implementation_graph.add_node_from_impl(
-            implementation_node_name,
-            implementation=implementation,
-        )
-        return implementation_graph
-
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        implementation_edges = []
-        if edge.source_node == self.name:
-            mappings = [
-                mapping
-                for mapping in self.implementation_slot_mappings()["output"]
-                if mapping.parent_slot == edge.output_slot
-            ]
-            for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
-                implementation_edges.append(imp_edge)
-
-        elif edge.target_node == self.name:
-            mappings = [
-                mapping
-                for mapping in self.implementation_slot_mappings()["input"]
-                if mapping.parent_slot == edge.input_slot
-            ]
-            for mapping in mappings:
-                if (
-                    "input_data_file" in self.config
-                    and edge.source_node == "pipeline_graph_input_data"
-                ):
-                    edge.output_slot = self.config["input_data_file"]
-                imp_edge = mapping.propagate_edge(edge)
-                implementation_edges.append(imp_edge)
-        else:
-            raise ValueError(f"IOStep {self.name} not in edge {edge}")
-        if not implementation_edges:
-            raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
-        return implementation_edges
-
     def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         return {
             "input": [
-                InputSlotMapping(slot, self.get_implementation_node_name(), slot)
+                InputSlotMapping(slot, self.implementation_node_name, slot)
                 for slot in self.input_slots
             ],
             "output": [
-                OutputSlotMapping(slot, self.get_implementation_node_name(), slot)
+                OutputSlotMapping(slot, self.implementation_node_name, slot)
                 for slot in self.output_slots
             ],
         }
-
-    def get_implementation_node_name(self) -> str:
-        """Resolve a sensible unique node name for the implementation graph.
-        This method compares the step node names with the step names through the step hierarchy and
-        uses the full suffix of step names starting from wherever the two first differ. For example,
-        loop steps may have multiple loops with the same implementation and step, e.g. "step_3" and "step_3_python_pandas".
-        If we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
-        will be step_3_loop_1_step_3_python_pandas. If all the node names and step names match, we have not
-        introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
-        name."""
-        step = self
-        node_names = []
-        step_names = []
-        while step:
-            node_names.append(step.name)
-            step_names.append(step.step_name)
-            step = step.parent_step
-
-        implementation_names = []
-        step_names.reverse()
-        node_names.reverse()
-        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-            if step_name != node_name:
-                implementation_names = node_names[i:]
-                break
-        implementation_names.append(self.config["implementation"]["name"])
-        return "_".join(implementation_names)
 
 
 class CompositeStep(Step):
@@ -302,6 +363,7 @@ class CompositeStep(Step):
         self.edges = edges
         self.step_graph = self._get_step_graph(nodes, edges)
         self.slot_mappings = slot_mappings
+        self._layer_state = CompositeState(self)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
@@ -331,64 +393,6 @@ class CompositeStep(Step):
             step = self.step_graph.nodes[node]["step"]
             step.configure_step(self.config, input_data_config)
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Call get_implementation_graph on each subgraph node and update the graph."""
-        implementation_graph = ImplementationGraph()
-        self.update_nodes(implementation_graph)
-        self.update_edges(implementation_graph)
-        return implementation_graph
-
-    def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
-        for node in self.step_graph.nodes:
-            step = self.step_graph.nodes[node]["step"]
-            implementation_graph.update(step.get_implementation_graph())
-
-    def update_edges(self, implementation_graph: ImplementationGraph) -> None:
-        for source, target, edge_attrs in self.step_graph.edges(data=True):
-            all_edges = []
-            edge = Edge.from_graph_edge(source, target, edge_attrs)
-            parent_source_step = self.step_graph.nodes[source]["step"]
-            parent_target_step = self.step_graph.nodes[target]["step"]
-
-            source_edges = parent_source_step.get_implementation_edges(edge)
-            for source_edge in source_edges:
-                for target_edge in parent_target_step.get_implementation_edges(source_edge):
-                    all_edges.append(target_edge)
-
-            for edge in all_edges:
-                implementation_graph.add_edge_from_data(edge)
-
-    def get_implementation_edges(self, edge: Edge) -> List[Edge]:
-        implementation_edges = []
-        if edge.source_node == self.name:
-            mappings = [
-                mapping
-                for mapping in self.slot_mappings["output"]
-                if mapping.parent_slot == edge.output_slot
-            ]
-            for mapping in mappings:
-                new_edge = mapping.propagate_edge(edge)
-                new_step = self.step_graph.nodes[mapping.child_node]["step"]
-                imp_edges = new_step.get_implementation_edges(new_edge)
-                implementation_edges.extend(imp_edges)
-
-        elif edge.target_node == self.name:
-            mappings = [
-                mapping
-                for mapping in self.slot_mappings["input"]
-                if mapping.parent_slot == edge.input_slot
-            ]
-            for mapping in mappings:
-                new_edge = mapping.propagate_edge(edge)
-                new_step = self.step_graph.nodes[mapping.child_node]["step"]
-                imp_edges = new_step.get_implementation_edges(new_edge)
-                implementation_edges.extend(imp_edges)
-        else:
-            raise ValueError(f" {self.name} not in edge {edge}")
-        if not implementation_edges:
-            raise ValueError(f"No edges found for {self.name} in edge {edge}")
-        return implementation_edges
-
     def _get_step_graph(self, nodes: List[Step], edges: List[Edge]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
         step_graph = StepGraph()
@@ -398,28 +402,8 @@ class CompositeStep(Step):
             step_graph.add_edge_from_data(edge)
         return step_graph
 
-    def _create_graph(self, nodes: List[Step], edges: List[Edge]) -> nx.MultiDiGraph:
-        """Create a MultiDiGraph from the nodes and edges the step was initialized with."""
-        graph = nx.MultiDiGraph()
-        for step in nodes:
-            graph.add_node(
-                step.name,
-                step=step,
-            )
-        for edge in edges:
-            graph.add_edge(
-                edge.source_node,
-                edge.target_node,
-                input_slot=graph.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
-                output_slot=graph.nodes[edge.source_node]["step"].output_slots[
-                    edge.output_slot
-                ],
-            )
 
-        return graph
-
-
-class HierarchicalStep(CompositeStep, BasicStep):
+class HierarchicalStep(CompositeStep):
     """A HierarchicalStep can be a single implementation or several 'substeps'. This requires
     a "substeps" key in the step configuration. If no substeps key is present, it will be treated as
     a single implemented step."""
@@ -449,22 +433,14 @@ class HierarchicalStep(CompositeStep, BasicStep):
     ) -> None:
         self.set_step_config(step_config)
         if len(self.config) > 1:
-            CompositeStep.configure_step(self, step_config, input_data_config)
+           self.layer_state = CompositeState(self)
+           CompositeStep.configure_step(self, step_config, input_data_config)
         else:
+            self.layer_state = LeafState(self)
             BasicStep.configure_step(self, step_config, input_data_config)
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        if len(self.config) > 1:
-            return CompositeStep.get_implementation_graph(self)
-        return BasicStep.get_implementation_graph(self)
 
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        if len(self.config) > 1:
-            return CompositeStep.get_implementation_edges(self, edge)
-        return BasicStep.get_implementation_edges(self, edge)
-
-
-class LoopStep(CompositeStep, BasicStep):
+class LoopStep(BasicStep):
     """A LoopStep allows a user to loop a single step or a sequence of steps a user-configured number of times."""
 
     def __init__(
@@ -476,7 +452,7 @@ class LoopStep(CompositeStep, BasicStep):
         template_step: Step = None,
         self_edges: List[Edge] = [],
     ) -> None:
-        super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
+        super().__init__(step_name, name, input_slots, output_slots)
         if not template_step or template_step.name != step_name:
             raise NotImplementedError(
                 f"LoopStep {self.name} must be initialized with a single node with the same name."
@@ -537,19 +513,12 @@ class LoopStep(CompositeStep, BasicStep):
         if self.num_repeats > 1:
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
+            self.layer_state = CompositeState(self)
             CompositeStep.configure_step(self, step_config, input_data_config)
         else:
+            self.layer_state = LeafState(self)
             BasicStep.configure_step(self, step_config, input_data_config)
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        if self.num_repeats > 1:
-            return CompositeStep.get_implementation_graph(self)
-        return BasicStep.get_implementation_graph(self)
-
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        if self.num_repeats > 1:
-            return CompositeStep.get_implementation_edges(self, edge)
-        return BasicStep.get_implementation_edges(self, edge)
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
@@ -616,7 +585,7 @@ class LoopStep(CompositeStep, BasicStep):
         return LayeredConfigTree(expanded_config)
 
 
-class ParallelStep(CompositeStep, BasicStep):
+class ParallelStep(BasicStep):
     """A ParallelStep allows a user to run a sequence of steps in parallel."""
 
     def __init__(
@@ -627,7 +596,7 @@ class ParallelStep(CompositeStep, BasicStep):
         output_slots: List[OutputSlot] = [],
         template_step: Step = None,
     ) -> None:
-        super(CompositeStep, self).__init__(step_name, name, input_slots, output_slots)
+        super().__init__(step_name, name, input_slots, output_slots)
         if not template_step or template_step.name != step_name:
             raise NotImplementedError(
                 f"ParallelStep {self.name} must be initialized with a single node with the same name."
@@ -695,18 +664,10 @@ class ParallelStep(CompositeStep, BasicStep):
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
             CompositeStep.configure_step(self, step_config, input_data_config)
+            self.layer_state = CompositeState(self)
         else:
             BasicStep.configure_step(self, step_config, input_data_config)
-
-    def get_implementation_graph(self) -> ImplementationGraph:
-        if self.num_repeats > 1:
-            return CompositeStep.get_implementation_graph(self)
-        return BasicStep.get_implementation_graph(self)
-
-    def get_implementation_edges(self, edge: Edge) -> list[Edge]:
-        if self.num_repeats > 1:
-            return CompositeStep.get_implementation_edges(self, edge)
-        return BasicStep.get_implementation_edges(self, edge)
+            self.layer_state = LeafState(self)
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the template step that are independent and contain the same edges as the

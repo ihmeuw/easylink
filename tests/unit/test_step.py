@@ -91,16 +91,16 @@ def test_basic_step_update_implementation_graph(
     assert list(subgraph.edges) == []
 
 
-def test_basic_step_get_implementation_node_name(
+def test_basic_step_implementation_node_name(
     basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
     step.configure_step(default_config["pipeline"], {})
-    node_name = step.get_implementation_node_name()
+    node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
 
     step.set_parent_step(BasicStep(step_name="foo", name="bar"))
-    node_name = step.get_implementation_node_name()
+    node_name = step.implementation_node_name
     assert node_name == "bar_step_1_step_1_python_pandas"
 
 
