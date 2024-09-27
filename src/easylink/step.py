@@ -100,12 +100,13 @@ class LeafState(LayerState):
 
 
 class CompositeState(LayerState):
-    
     def __init__(self, step: "Step"):
         super().__init__(step)
         if not step.step_graph:
-            raise ValueError(f"CompositeState requires a subgraph to operate on, but Step {step.name} has no step graph.")
-        
+            raise ValueError(
+                f"CompositeState requires a subgraph to operate on, but Step {step.name} has no step graph."
+            )
+
     def get_implementation_graph(self) -> ImplementationGraph:
         """Call get_implementation_graph on each subgraph node and update the graph."""
         implementation_graph = ImplementationGraph()
@@ -508,7 +509,6 @@ class LoopStep(Step):
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
             self.layer_state = CompositeState(self)
-
 
     def _get_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
