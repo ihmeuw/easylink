@@ -69,12 +69,12 @@ def test_implementation_graph(mocker) -> None:
     implementation1 = Implementation(
         "step_1",
         LayeredConfigTree({"name": "step1"}),
-        output_slots={"foo": OutputSlot("foo")},
+        output_slots=[OutputSlot("foo")],
     )
     implementation2 = Implementation(
         "step_2",
         LayeredConfigTree({"name": "step2"}),
-        input_slots={"bar": InputSlot("bar", None, None)},
+        input_slots=[InputSlot("bar", None, None)],
     )
     implementation_graph.add_node_from_implementation("step_1", implementation1)
     implementation_graph.add_node_from_implementation("step_2", implementation2)
