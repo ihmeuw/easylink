@@ -63,7 +63,7 @@ class Pipeline:
     def write_target_rules(self) -> None:
         """Write the rule for the final output and its validation"""
         ## The "input" files to the result node/the target rule are the final output themselves.
-        final_output, _ = self.pipeline_graph.get_input_output_files("pipeline_graph_results")
+        final_output, _ = self.pipeline_graph.get_input_output_files("results")
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
         # before the validation

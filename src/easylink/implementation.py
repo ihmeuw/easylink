@@ -82,8 +82,16 @@ class Implementation:
 
 
 class NullImplementation:
-    """A NullImplementation is used to represent a step that does not have an implementation."""
+    """A NullImplementation is used to represent a step that does not have an implementation.
+    For example, the IO steps in the pipeline schema do not correspond to implementations
+    but ImplementationGraph requires an "implementation" attribute with input and output slots
+    for each node."""
 
-    def __init__(self, name, input_slots, output_slots):
+    def __init__(
+        self,
+        name: str,
+        input_slots: dict[str, "InputSlot"] = {},
+        output_slots: dict[str, "OutputSlot"] = {},
+    ):
         self.input_slots = input_slots
         self.output_slots = output_slots

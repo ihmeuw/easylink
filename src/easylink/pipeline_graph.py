@@ -21,7 +21,7 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(
-            incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
+            incoming_graph_data=config.schema.get_implementation_graph(config.pipeline)
         )
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
@@ -30,11 +30,7 @@ class PipelineGraph(ImplementationGraph):
     def implementation_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""
         ordered_nodes = list(nx.topological_sort(self))
-        return [
-            node
-            for node in ordered_nodes
-            if node != "pipeline_graph_input_data" and node != "pipeline_graph_results"
-        ]
+        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
     def implementations(self) -> List[Implementation]:
@@ -44,9 +40,7 @@ class PipelineGraph(ImplementationGraph):
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
         # Update input data edges to direct to correct filenames from config
-        for source, sink, edge_attrs in self.out_edges(
-            "pipeline_graph_input_data", data=True
-        ):
+        for source, sink, edge_attrs in self.out_edges("input_data", data=True):
             for edge_idx in self[source][sink]:
                 if edge_attrs["output_slot"].name == "all":
                     self[source][sink][edge_idx]["filepaths"] = tuple(

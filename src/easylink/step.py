@@ -65,7 +65,7 @@ class Step(ABC):
         """Propagate edges of StepGraph to ImplementationGraph."""
         pass
 
-    def set_parent_step(self, step) -> None:
+    def set_parent_step(self, step: "Step") -> None:
         self.parent_step = step
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
@@ -80,10 +80,6 @@ class Step(ABC):
 class IOStep(Step):
     """"""
 
-    @property
-    def implementation_graph_node_name(self):
-        return "pipeline_graph_" + self.name
-
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> Dict[str, List[str]]:
@@ -95,11 +91,9 @@ class IOStep(Step):
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
         implementation_graph = ImplementationGraph()
-        implementation_graph.add_node_from_impl(
-            self.implementation_graph_node_name,
-            implementation=NullImplementation(
-                self.implementation_graph_node_name, self.input_slots, self.output_slots
-            ),
+        implementation_graph.add_node_from_implementation(
+            self.name,
+            implementation=NullImplementation(self.name, self.input_slots, self.output_slots),
         )
         return implementation_graph
 
@@ -112,7 +106,7 @@ class IOStep(Step):
                 if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
+                imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
 
         elif edge.target_node == self.name:
@@ -122,7 +116,7 @@ class IOStep(Step):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
+                imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
             raise ValueError(f"IOStep {self.name} not in edge {edge}")
@@ -202,7 +196,7 @@ class BasicStep(Step):
             input_slots=self.input_slots,
             output_slots=self.output_slots,
         )
-        implementation_graph.add_node_from_impl(
+        implementation_graph.add_node_from_implementation(
             implementation_node_name,
             implementation=implementation,
         )
@@ -217,7 +211,7 @@ class BasicStep(Step):
                 if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
-                imp_edge = mapping.propagate_edge(edge)
+                imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
 
         elif edge.target_node == self.name:
@@ -227,12 +221,9 @@ class BasicStep(Step):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
-                if (
-                    "input_data_file" in self.config
-                    and edge.source_node == "pipeline_graph_input_data"
-                ):
+                if "input_data_file" in self.config and edge.source_node == "input_data":
                     edge.output_slot = self.config["input_data_file"]
-                imp_edge = mapping.propagate_edge(edge)
+                imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
             raise ValueError(f"IOStep {self.name} not in edge {edge}")
@@ -366,7 +357,7 @@ class CompositeStep(Step):
                 if mapping.parent_slot == edge.output_slot
             ]
             for mapping in mappings:
-                new_edge = mapping.propagate_edge(edge)
+                new_edge = mapping.remap_edge(edge)
                 new_step = self.step_graph.nodes[mapping.child_node]["step"]
                 imp_edges = new_step.get_implementation_edges(new_edge)
                 implementation_edges.extend(imp_edges)
@@ -378,7 +369,7 @@ class CompositeStep(Step):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
-                new_edge = mapping.propagate_edge(edge)
+                new_edge = mapping.remap_edge(edge)
                 new_step = self.step_graph.nodes[mapping.child_node]["step"]
                 imp_edges = new_step.get_implementation_edges(new_edge)
                 implementation_edges.extend(imp_edges)

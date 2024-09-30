@@ -76,8 +76,8 @@ def test_implementation_graph(mocker) -> None:
         LayeredConfigTree({"name": "step2"}),
         input_slots={"bar": InputSlot("bar", None, None)},
     )
-    implementation_graph.add_node_from_impl("step_1", implementation1)
-    implementation_graph.add_node_from_impl("step_2", implementation2)
+    implementation_graph.add_node_from_implementation("step_1", implementation1)
+    implementation_graph.add_node_from_implementation("step_2", implementation2)
     assert implementation_graph.nodes["step_1"]["implementation"] == implementation1
     assert implementation_graph.nodes["step_2"]["implementation"] == implementation2
 
@@ -108,7 +108,7 @@ def test_input_slot_mapping() -> None:
         output_slot="file1",
         input_slot="step_1_main_input",
     )
-    new_edge = input_slot_mapping.propagate_edge(edge)
+    new_edge = input_slot_mapping.remap_edge(edge)
     assert new_edge.source_node == "input_data"
     assert new_edge.target_node == "step_1a"
     assert new_edge.output_slot == "file1"
@@ -131,7 +131,7 @@ def test_output_slot_mapping() -> None:
         output_slot="step_1_main_output",
         input_slot="file1",
     )
-    new_edge = output_slot_mapping.propagate_edge(edge)
+    new_edge = output_slot_mapping.remap_edge(edge)
     assert new_edge.source_node == "step_1a"
     assert new_edge.target_node == "output_data"
     assert new_edge.output_slot == "step_1a_main_input"

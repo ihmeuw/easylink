@@ -4,16 +4,14 @@ from typing import Dict, List, Optional
 import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
-from easylink.graph_components import ImplementationGraph
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import CompositeStep, Step
 
 
 class PipelineSchema(CompositeStep):
     """
-    A schema is a nested graph that determines all possible
-    allowable pipelines. The nodes of the graph are Steps, with
-    edges representing file dependencies between then.
+    A schema is a CompositeStep whose StephGraph determines all possible
+    allowable pipelines.
     """
 
     def __repr__(self) -> str:
@@ -22,13 +20,9 @@ class PipelineSchema(CompositeStep):
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config
 
-    def get_pipeline_graph(self, pipeline_config: LayeredConfigTree) -> ImplementationGraph:
-        """Resolve the PipelineSchema into a PipelineGraph."""
-        return self.get_implementation_graph()
-
     @property
     def step_nodes(self) -> List[str]:
-        """Return list of nodes tied to specific implementations."""
+        """Return list of nodes tied to specific steps."""
         ordered_nodes = list(nx.topological_sort(self.step_graph))
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
