@@ -20,9 +20,7 @@ class PipelineGraph(ImplementationGraph):
     """
 
     def __init__(self, config: Config) -> None:
-        super().__init__(
-            incoming_graph_data=config.schema.get_implementation_graph(config.pipeline)
-        )
+        super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
 

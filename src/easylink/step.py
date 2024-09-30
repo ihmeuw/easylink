@@ -126,13 +126,9 @@ class IOStep(Step):
 
     def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
         return {
-            "input": [
-                InputSlotMapping(slot, self.implementation_graph_node_name, slot)
-                for slot in self.input_slots
-            ],
+            "input": [InputSlotMapping(slot, self.name, slot) for slot in self.input_slots],
             "output": [
-                OutputSlotMapping(slot, self.implementation_graph_node_name, slot)
-                for slot in self.output_slots
+                OutputSlotMapping(slot, self.name, slot) for slot in self.output_slots
             ],
         }
 
