@@ -5,7 +5,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.configuration import Config
 from easylink.graph_components import (
-    Edge,
+    EdgeParams,
     InputSlot,
     InputSlotMapping,
     OutputSlot,
@@ -140,13 +140,15 @@ def composite_step_params() -> Dict[str, Any]:
                 output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
-        "slot_mappings": {
-            "input": [InputSlotMapping("step_4_main_input", "step_4a", "step_4a_main_input")],
-            "output": [
-                OutputSlotMapping("step_4_main_output", "step_4b", "step_4b_main_output")
-            ],
-        },
+        "edges": [
+            EdgeParams("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
+        ],
+        "input_slot_mappings": [
+            InputSlotMapping("step_4_main_input", "step_4a", "step_4a_main_input")
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping("step_4_main_output", "step_4b", "step_4b_main_output")
+        ],
     }
 
 
@@ -241,13 +243,15 @@ def hierarchical_step_params() -> Dict[str, Any]:
                 output_slots=[OutputSlot("step_4b_main_output")],
             ),
         ],
-        "edges": [Edge("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")],
-        "slot_mappings": {
-            "input": [InputSlotMapping("step_4_main_input", "step_4a", "step_4a_main_input")],
-            "output": [
-                OutputSlotMapping("step_4_main_output", "step_4b", "step_4b_main_output")
-            ],
-        },
+        "edges": [
+            EdgeParams("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
+        ],
+        "input_slot_mappings": [
+            InputSlotMapping("step_4_main_input", "step_4a", "step_4a_main_input")
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping("step_4_main_output", "step_4b", "step_4b_main_output")
+        ],
     }
 
 
@@ -390,42 +394,40 @@ def loop_step_params() -> Dict[str, Any]:
                 ),
             ],
             edges=[
-                Edge(
+                EdgeParams(
                     source_node="step_3a",
                     target_node="step_3b",
                     output_slot="step_3a_main_output",
                     input_slot="step_3b_main_input",
                 ),
             ],
-            slot_mappings={
-                "input": [
-                    InputSlotMapping(
-                        parent_slot="step_3_main_input",
-                        child_node="step_3a",
-                        child_slot="step_3a_main_input",
-                    ),
-                    InputSlotMapping(
-                        parent_slot="step_3_secondary_input",
-                        child_node="step_3a",
-                        child_slot="step_3a_secondary_input",
-                    ),
-                    InputSlotMapping(
-                        parent_slot="step_3_secondary_input",
-                        child_node="step_3b",
-                        child_slot="step_3b_secondary_input",
-                    ),
-                ],
-                "output": [
-                    OutputSlotMapping(
-                        parent_slot="step_3_main_output",
-                        child_node="step_3b",
-                        child_slot="step_3b_main_output",
-                    )
-                ],
-            },
+            input_slot_mappings=[
+                InputSlotMapping(
+                    parent_slot="step_3_main_input",
+                    child_node="step_3a",
+                    child_slot="step_3a_main_input",
+                ),
+                InputSlotMapping(
+                    parent_slot="step_3_secondary_input",
+                    child_node="step_3a",
+                    child_slot="step_3a_secondary_input",
+                ),
+                InputSlotMapping(
+                    parent_slot="step_3_secondary_input",
+                    child_node="step_3b",
+                    child_slot="step_3b_secondary_input",
+                ),
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping(
+                    parent_slot="step_3_main_output",
+                    child_node="step_3b",
+                    child_slot="step_3b_main_output",
+                )
+            ],
         ),
         "self_edges": [
-            Edge(
+            EdgeParams(
                 source_node="step_3",
                 target_node="step_3",
                 output_slot="step_3_main_output",
@@ -457,7 +459,7 @@ def test_loop_step(loop_step_params: Dict[str, Any]) -> None:
     assert step.template_step.input_slots == step.input_slots
     assert step.template_step.output_slots == step.output_slots
     assert step.self_edges == [
-        Edge(step.name, step.name, "step_3_main_output", "step_3_main_input")
+        EdgeParams(step.name, step.name, "step_3_main_output", "step_3_main_input")
     ]
 
 
@@ -593,29 +595,27 @@ def parallel_step_params() -> Dict[str, Any]:
                 ),
             ],
             edges=[
-                Edge(
+                EdgeParams(
                     source_node="step_1a",
                     target_node="step_1b",
                     output_slot="step_1a_main_output",
                     input_slot="step_1b_main_input",
                 ),
             ],
-            slot_mappings={
-                "input": [
-                    InputSlotMapping(
-                        parent_slot="step_1_main_input",
-                        child_node="step_1a",
-                        child_slot="step_1a_main_input",
-                    )
-                ],
-                "output": [
-                    OutputSlotMapping(
-                        parent_slot="step_1_main_output",
-                        child_node="step_1b",
-                        child_slot="step_1b_main_output",
-                    )
-                ],
-            },
+            input_slot_mappings=[
+                InputSlotMapping(
+                    parent_slot="step_1_main_input",
+                    child_node="step_1a",
+                    child_slot="step_1a_main_input",
+                )
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping(
+                    parent_slot="step_1_main_output",
+                    child_node="step_1b",
+                    child_slot="step_1b_main_output",
+                )
+            ],
         ),
     }
 

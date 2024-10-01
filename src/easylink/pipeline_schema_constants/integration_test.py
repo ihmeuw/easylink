@@ -1,9 +1,14 @@
-from easylink.graph_components import Edge, InputSlot, OutputSlot
-from easylink.step import BasicStep, InputSlot, IOStep
+from easylink.graph_components import EdgeParams, InputSlot, OutputSlot
+from easylink.step import (
+    BasicStep,
+    InputSlot,
+    InputStep,
+    OutputStep,
+)
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
-    IOStep("input_data", input_slots=[], output_slots=[OutputSlot("all")]),
+    InputStep(),
     BasicStep(
         "step_1",
         input_slots=[
@@ -15,22 +20,20 @@ NODES = [
         ],
         output_slots=[OutputSlot("step_1_main_output")],
     ),
-    IOStep(
-        "results",
+    OutputStep(
         input_slots=[
             InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
         ],
-        output_slots=[],
     ),
 ]
 EDGES = [
-    Edge(
+    EdgeParams(
         source_node="input_data",
         target_node="step_1",
         output_slot="all",
         input_slot="step_1_main_input",
     ),
-    Edge(
+    EdgeParams(
         source_node="step_1",
         target_node="results",
         output_slot="step_1_main_output",

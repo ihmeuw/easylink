@@ -27,9 +27,9 @@ class OutputSlot:
 
 
 @dataclass
-class Edge:
-    """An edge between two nodes in a graph. Edges connect the output slot of
-    the source node to the input slot of the target node."""
+class EdgeParams:
+    """A dataclass representation of an edge between two nodes in a networkx graph.
+    Edges connect the output slot of the source node to the input slot of the target node."""
 
     source_node: str
     target_node: str
@@ -38,7 +38,7 @@ class Edge:
     filepaths: Optional[tuple[str]] = None
 
     @classmethod
-    def from_graph_edge(cls, source, sink, edge_attrs) -> "Edge":
+    def from_graph_edge(cls, source, sink, edge_attrs) -> "EdgeParams":
         return cls(
             source,
             sink,
@@ -56,12 +56,16 @@ class StepGraph(nx.MultiDiGraph):
     def add_node_from_step(self, step: "Step") -> None:
         self.add_node(step.name, step=step)
 
-    def add_edge_from_data(self, edge: Edge) -> None:
+    def add_edge_from_params(self, edge_params: EdgeParams) -> None:
         return self.add_edge(
-            edge.source_node,
-            edge.target_node,
-            output_slot=self.nodes[edge.source_node]["step"].output_slots[edge.output_slot],
-            input_slot=self.nodes[edge.target_node]["step"].input_slots[edge.input_slot],
+            edge_params.source_node,
+            edge_params.target_node,
+            output_slot=self.nodes[edge_params.source_node]["step"].output_slots[
+                edge_params.output_slot
+            ],
+            input_slot=self.nodes[edge_params.target_node]["step"].input_slots[
+                edge_params.input_slot
+            ],
         )
 
 
@@ -73,17 +77,17 @@ class ImplementationGraph(nx.MultiDiGraph):
     def add_node_from_implementation(self, node_name, implementation: Implementation) -> None:
         self.add_node(node_name, implementation=implementation)
 
-    def add_edge_from_data(self, edge: Edge) -> None:
+    def add_edge_from_params(self, edge_params: EdgeParams) -> None:
         return self.add_edge(
-            edge.source_node,
-            edge.target_node,
-            output_slot=self.nodes[edge.source_node]["implementation"].output_slots[
-                edge.output_slot
+            edge_params.source_node,
+            edge_params.target_node,
+            output_slot=self.nodes[edge_params.source_node]["implementation"].output_slots[
+                edge_params.output_slot
             ],
-            input_slot=self.nodes[edge.target_node]["implementation"].input_slots[
-                edge.input_slot
+            input_slot=self.nodes[edge_params.target_node]["implementation"].input_slots[
+                edge_params.input_slot
             ],
-            filepaths=edge.filepaths,
+            filepaths=edge_params.filepaths,
         )
 
 
@@ -97,15 +101,15 @@ class SlotMapping(ABC):
     child_slot: str
 
     @abstractmethod
-    def remap_edge(self, edge: Edge) -> Edge:
+    def remap_edge(self, edge: EdgeParams) -> EdgeParams:
         pass
 
 
 class InputSlotMapping(SlotMapping):
-    def remap_edge(self, edge: Edge) -> Edge:
+    def remap_edge(self, edge: EdgeParams) -> EdgeParams:
         if edge.input_slot != self.parent_slot:
             raise ValueError("Parent slot does not match input slot")
-        return Edge(
+        return EdgeParams(
             source_node=edge.source_node,
             target_node=self.child_node,
             output_slot=edge.output_slot,
@@ -114,10 +118,10 @@ class InputSlotMapping(SlotMapping):
 
 
 class OutputSlotMapping(SlotMapping):
-    def remap_edge(self, edge: Edge) -> Edge:
+    def remap_edge(self, edge: EdgeParams) -> EdgeParams:
         if edge.output_slot != self.parent_slot:
             raise ValueError("Parent slot does not match output slot")
-        return Edge(
+        return EdgeParams(
             source_node=self.child_node,
             target_node=edge.target_node,
             output_slot=self.child_slot,
