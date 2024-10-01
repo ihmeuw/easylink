@@ -62,7 +62,7 @@ class Step(ABC):
 
     @abstractmethod
     def get_implementation_edges(self, edge: Edge) -> List[Edge]:
-        """Propagate edges of StepGraph to edges of ImplementationGraph."""
+        """Propagate edges of StepGraph to ImplementationGraph."""
         pass
 
     def set_parent_step(self, step: "Step") -> None:
@@ -93,9 +93,7 @@ class IOStep(Step):
         implementation_graph = ImplementationGraph()
         implementation_graph.add_node_from_implementation(
             self.name,
-            implementation=NullImplementation(
-                self.name, self.input_slots.values(), self.output_slots.values()
-            ),
+            implementation=NullImplementation(self.name, self.input_slots, self.output_slots),
         )
         return implementation_graph
 
@@ -121,9 +119,9 @@ class IOStep(Step):
                 imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
-            raise ValueError(f"Step {self.name} not in edge {edge}")
+            raise ValueError(f"IOStep {self.name} not in edge {edge}")
         if not implementation_edges:
-            raise ValueError(f"No edges found for dStep {self.name} in edge {edge}")
+            raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
 
     def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
@@ -191,8 +189,8 @@ class BasicStep(Step):
         implementation = Implementation(
             step_name=self.step_name,
             implementation_config=implementation_config,
-            input_slots=self.input_slots.values(),
-            output_slots=self.output_slots.values(),
+            input_slots=self.input_slots,
+            output_slots=self.output_slots,
         )
         implementation_graph.add_node_from_implementation(
             implementation_node_name,
@@ -224,9 +222,9 @@ class BasicStep(Step):
                 imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
-            raise ValueError(f"Step {self.name} not in edge {edge}")
+            raise ValueError(f"IOStep {self.name} not in edge {edge}")
         if not implementation_edges:
-            raise ValueError(f"No edges found for dStep {self.name} in edge {edge}")
+            raise ValueError(f"No edges found for IOStep {self.name} in edge {edge}")
         return implementation_edges
 
     def implementation_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
