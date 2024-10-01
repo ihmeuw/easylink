@@ -136,7 +136,6 @@ class IOStep(Step):
 
 
 class InputStep(IOStep):
-
     def __init__(
         self,
         output_slots: Iterable[InputSlot] = (OutputSlot("all"),),

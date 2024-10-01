@@ -1,11 +1,10 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from layered_config_tree import LayeredConfigTree
 
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from typing import Iterable
 
 if TYPE_CHECKING:
     from easylink.graph_components import InputSlot, OutputSlot

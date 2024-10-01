@@ -9,8 +9,8 @@ from easylink.step import (
     BasicStep,
     HierarchicalStep,
     InputStep,
-    OutputStep,
     LoopStep,
+    OutputStep,
     ParallelStep,
 )
 from easylink.utilities.validation_utils import validate_input_file_dummy
