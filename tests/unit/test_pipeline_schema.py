@@ -35,9 +35,9 @@ def test_get_schemas() -> None:
     # Check basic structure
     for schema in supported_schemas:
         assert schema.name
-        assert schema.steps
-        assert isinstance(schema.steps, list)
-        for step in schema.steps:
+        assert schema.step_graph.steps
+        assert isinstance(schema.step_graph.steps, list)
+        for step in schema.step_graph.steps:
             assert isinstance(step, Step)
             assert step.name
 
