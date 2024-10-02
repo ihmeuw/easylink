@@ -11,15 +11,15 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 def test__create_graph(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
     assert set(pipeline_graph.nodes) == {
-        "pipeline_graph_input_data",
+        "input_data",
         "step_1_python_pandas",
         "step_2_python_pandas",
         "step_3_python_pandas",
         "step_4_python_pandas",
-        "pipeline_graph_results",
+        "results",
     }
     expected_edges = {
-        ("pipeline_graph_input_data", "step_1_python_pandas"): {
+        ("input_data", "step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -29,7 +29,7 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("pipeline_graph_input_data", "step_4_python_pandas"): {
+        ("input_data", "step_4_python_pandas"): {
             "input_slot_name": "step_4_secondary_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -60,7 +60,7 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (Path("intermediate/step_3_python_pandas/result.parquet"),),
         },
-        ("step_4_python_pandas", "pipeline_graph_results"): {
+        ("step_4_python_pandas", "results"): {
             "input_slot_name": "result",
             "output_slot_name": "step_4_main_output",
             "validator": validate_input_file_dummy,
@@ -105,11 +105,11 @@ def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
     pipeline_graph.update_slot_filepaths(default_config)
     expected_filepaths = {
-        ("pipeline_graph_input_data", "step_1_python_pandas"): (
+        ("input_data", "step_1_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
             str(Path(f"{test_dir}/input_data2/file2.csv")),
         ),
-        ("pipeline_graph_input_data", "step_4_python_pandas"): (
+        ("input_data", "step_4_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
             str(Path(f"{test_dir}/input_data2/file2.csv")),
         ),
@@ -122,7 +122,7 @@ def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
         ("step_3_python_pandas", "step_4_python_pandas"): (
             str(Path("intermediate/step_3_python_pandas/result.parquet")),
         ),
-        ("step_4_python_pandas", "pipeline_graph_results"): (
+        ("step_4_python_pandas", "results"): (
             str(Path("intermediate/step_4_python_pandas/result.parquet")),
         ),
     }

@@ -1,10 +1,13 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from layered_config_tree import LayeredConfigTree
 
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
+
+if TYPE_CHECKING:
+    from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
@@ -15,8 +18,16 @@ class Implementation:
     inside the container, and some metadata about the container.
     """
 
-    def __init__(self, step_name: str, implementation_config: LayeredConfigTree):
+    def __init__(
+        self,
+        step_name: str,
+        implementation_config: LayeredConfigTree,
+        input_slots: Iterable["InputSlot"] = (),
+        output_slots: Iterable["OutputSlot"] = (),
+    ):
         self.name = implementation_config.name
+        self.input_slots = {slot.name: slot for slot in input_slots}
+        self.output_slots = {slot.name: slot for slot in output_slots}
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
         self.metadata_step_name = self._metadata["step"]
@@ -68,3 +79,19 @@ class Implementation:
     @property
     def outputs(self) -> Dict[str, List[str]]:
         return self._metadata["outputs"]
+
+
+class NullImplementation:
+    """A NullImplementation is used to represent a step that does not have an implementation.
+    For example, the IO steps in the pipeline schema do not correspond to implementations
+    but ImplementationGraph requires an "implementation" attribute with input and output slots
+    for each node."""
+
+    def __init__(
+        self,
+        name: str,
+        input_slots: Iterable["InputSlot"] = (),
+        output_slots: Iterable["OutputSlot"] = (),
+    ):
+        self.input_slots = {slot.name: slot for slot in input_slots}
+        self.output_slots = {slot.name: slot for slot in output_slots}

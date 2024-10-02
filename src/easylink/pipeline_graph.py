@@ -4,14 +4,13 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 import networkx as nx
-from networkx import MultiDiGraph
 
 from easylink.configuration import Config
-from easylink.graph_components import InputSlot
+from easylink.graph_components import ImplementationGraph, InputSlot
 from easylink.implementation import Implementation
 
 
-class PipelineGraph(MultiDiGraph):
+class PipelineGraph(ImplementationGraph):
     """
     The Pipeline Graph is the structure of the pipeline. It is a DAG composed of
     Implementations and their file dependencies. The Pipeline Graph is created by
@@ -21,9 +20,7 @@ class PipelineGraph(MultiDiGraph):
     """
 
     def __init__(self, config: Config) -> None:
-        super().__init__(
-            incoming_graph_data=config.schema.get_pipeline_graph(config.pipeline)
-        )
+        super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
 
@@ -31,11 +28,7 @@ class PipelineGraph(MultiDiGraph):
     def implementation_nodes(self) -> List[str]:
         """Return list of nodes tied to specific implementations."""
         ordered_nodes = list(nx.topological_sort(self))
-        return [
-            node
-            for node in ordered_nodes
-            if node != "pipeline_graph_input_data" and node != "pipeline_graph_results"
-        ]
+        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
     def implementations(self) -> List[Implementation]:
@@ -45,9 +38,7 @@ class PipelineGraph(MultiDiGraph):
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
         # Update input data edges to direct to correct filenames from config
-        for source, sink, edge_attrs in self.out_edges(
-            "pipeline_graph_input_data", data=True
-        ):
+        for source, sink, edge_attrs in self.out_edges("input_data", data=True):
             for edge_idx in self[source][sink]:
                 if edge_attrs["output_slot"].name == "all":
                     self[source][sink][edge_idx]["filepaths"] = tuple(
