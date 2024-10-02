@@ -1,13 +1,12 @@
 import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Dict, List
+from typing import Iterable
 
-import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import (
-    Edge,
+    EdgeParams,
     ImplementationGraph,
     InputSlot,
     InputSlotMapping,
@@ -185,8 +184,8 @@ class Step(ABC):
         self,
         step_name: str,
         name: str = None,
-        input_slots: List[InputSlot] = [],
-        output_slots: List[OutputSlot] = [],
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
     ) -> None:
         self.name = name if name else step_name
         self.step_name = step_name
@@ -215,17 +214,17 @@ class Step(ABC):
     @abstractmethod
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Validate the step against the pipeline configuration."""
         pass
 
     def get_implementation_graph(self) -> ImplementationGraph:
         return self.layer_state.get_implementation_graph()
 
-    def get_implementation_edges(self, edge: Edge) -> List[Edge]:
+    def get_implementation_edges(self, edge: EdgeParams) -> List[EdgeParams]:
         return self.layer_state.get_implementation_edges(edge)
 
-    def set_parent_step(self, step) -> None:
+    def set_parent_step(self, step: "Step") -> None:
         self.parent_step = step
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
@@ -291,13 +290,9 @@ class IOStep(Step):
         super().__init__(step_name, name, input_slots, output_slots)
         self._layer_state = LeafState(self)
 
-    @property
-    def implementation_node_name(self):
-        return "pipeline_graph_" + self.name
-
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         return {}
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
@@ -306,10 +301,10 @@ class IOStep(Step):
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
         implementation_graph = ImplementationGraph()
-        implementation_graph.add_node_from_impl(
-            self.implementation_node_name,
+        implementation_graph.add_node_from_implementation(
+            self.name,
             implementation=NullImplementation(
-                self.implementation_node_name, self.input_slots, self.output_slots
+                self.name, self.input_slots.values(), self.output_slots.values()
             ),
         )
         return implementation_graph
@@ -332,15 +327,15 @@ class BasicStep(Step):
         self,
         step_name: str,
         name: str = None,
-        input_slots: List[InputSlot] = [],
-        output_slots: List[OutputSlot] = [],
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
     ) -> None:
         super().__init__(step_name, name, input_slots, output_slots)
         self._layer_state = LeafState(self)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Return error strings if the step configuration is incorrect."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
@@ -368,11 +363,12 @@ class CompositeStep(Step):
         self,
         step_name: str,
         name: str = None,
-        input_slots: List[InputSlot] = [],
-        output_slots: List[OutputSlot] = [],
-        nodes: List[Step] = [],
-        edges: List[Edge] = [],
-        slot_mappings: Dict[str, List[SlotMapping]] = {"input": [], "output": []},
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
+        nodes: Iterable[Step] = (),
+        edges: Iterable[EdgeParams] = (),
+        input_slot_mappings: Iterable[InputSlotMapping] = (),
+        output_slot_mappings: Iterable[OutputSlotMapping] = (),
     ) -> None:
         super().__init__(step_name, name, input_slots, output_slots)
         self.nodes = nodes
@@ -380,12 +376,15 @@ class CompositeStep(Step):
             node.set_parent_step(self)
         self.edges = edges
         self.step_graph = self._get_step_graph(nodes, edges)
-        self.slot_mappings = slot_mappings
+        self.slot_mappings = {
+            "input": list(input_slot_mappings),
+            "output": list(output_slot_mappings),
+        }
         self._layer_state = CompositeState(self)
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         """Validate each step in the subgraph in turn. Also return errors for any extra steps."""
         errors = {}
         for node in self.step_graph.nodes:
@@ -403,13 +402,13 @@ class CompositeStep(Step):
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
 
-    def _get_step_graph(self, nodes: List[Step], edges: List[Edge]) -> StepGraph:
+    def _get_step_graph(self, nodes: List[Step], edges: List[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
         step_graph = StepGraph()
         for step in nodes:
             step_graph.add_node_from_step(step)
         for edge in edges:
-            step_graph.add_edge_from_data(edge)
+            step_graph.add_edge_from_params(edge)
         return step_graph
 
 
@@ -424,7 +423,7 @@ class HierarchicalStep(CompositeStep):
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         if not self.config_key in step_config:
             return BasicStep.validate_step(self, step_config, input_data_config)
         sub_config = step_config[self.config_key]
@@ -447,10 +446,10 @@ class LoopStep(Step):
         self,
         step_name: str,
         name: str = None,
-        input_slots: List[InputSlot] = [],
-        output_slots: List[OutputSlot] = [],
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
         template_step: Step = None,
-        self_edges: List[Edge] = [],
+        self_edges: Iterable[EdgeParams] = (),
     ) -> None:
         super().__init__(step_name, name, input_slots, output_slots)
         if not template_step or template_step.name != step_name:
@@ -476,7 +475,7 @@ class LoopStep(Step):
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         if not self.config_key in step_config:
             return self.template_step.validate_step(step_config, input_data_config)
 
@@ -527,7 +526,7 @@ class LoopStep(Step):
                 for self_edge in self.self_edges:
                     source_node = f"{self.name}_loop_{i}"
                     target_node = f"{self.name}_loop_{i+1}"
-                    edge = Edge(
+                    edge = EdgeParams(
                         source_node=source_node,
                         target_node=target_node,
                         input_slot=self_edge.input_slot,
@@ -538,7 +537,7 @@ class LoopStep(Step):
         for node in nodes:
             graph.add_node_from_step(node)
         for edge in edges:
-            graph.add_edge_from_data(edge)
+            graph.add_edge_from_params(edge)
         return graph
 
     def _get_slot_mappings(self) -> dict:
@@ -566,7 +565,7 @@ class LoopStep(Step):
 
     def _get_expanded_config(
         self, step_config: LayeredConfigTree
-    ) -> Dict[str, LayeredConfigTree]:
+    ) -> dict[str, LayeredConfigTree]:
         """Get the dictionary for the looped graph based on the sequence
         of sub-yamls."""
         expanded_config = {}
@@ -582,8 +581,8 @@ class ParallelStep(Step):
         self,
         step_name: str,
         name: str = None,
-        input_slots: List[InputSlot] = [],
-        output_slots: List[OutputSlot] = [],
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
         template_step: Step = None,
     ) -> None:
         super().__init__(step_name, name, input_slots, output_slots)
@@ -604,7 +603,7 @@ class ParallelStep(Step):
 
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> Dict[str, List[str]]:
+    ) -> dict[str, list[str]]:
         if not self.config_key in step_config:
             return self.template_step.validate_step(step_config, input_data_config)
 
@@ -663,7 +662,7 @@ class ParallelStep(Step):
             graph.add_node_from_step(updated_step)
         return graph
 
-    def _get_slot_mappings(self) -> Dict[str, List[SlotMapping]]:
+    def _get_slot_mappings(self) -> dict[str, list[SlotMapping]]:
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         input_mappings = [
@@ -680,7 +679,7 @@ class ParallelStep(Step):
 
     def _get_expanded_config(
         self, step_config: LayeredConfigTree
-    ) -> Dict[str, LayeredConfigTree]:
+    ) -> dict[str, LayeredConfigTree]:
         """Get the dictionary for the parallel graph based on the sequence
         of sub-yamls."""
         expanded_step_config = {}

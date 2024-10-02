@@ -1,7 +1,7 @@
 from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import (
-    Edge,
+    EdgeParams,
     ImplementationGraph,
     InputSlot,
     InputSlotMapping,
@@ -30,7 +30,7 @@ def test_output_slot() -> None:
 
 
 def test_edge() -> None:
-    edge = Edge(
+    edge = EdgeParams(
         source_node="input_data",
         target_node="step_1",
         output_slot="file1",
@@ -51,13 +51,13 @@ def test_step_graph() -> None:
     assert step_graph.nodes["step_1"]["step"] == step1
     assert step_graph.nodes["step_2"]["step"] == step2
 
-    edge = Edge(
+    edge = EdgeParams(
         source_node="step_1",
         target_node="step_2",
         output_slot="foo",
         input_slot="bar",
     )
-    step_graph.add_edge_from_data(edge)
+    step_graph.add_edge_from_params(edge)
     assert step_graph.edges["step_1", "step_2", 0]["output_slot"].name == "foo"
     assert step_graph.edges["step_1", "step_2", 0]["input_slot"].name == "bar"
 
@@ -69,25 +69,25 @@ def test_implementation_graph(mocker) -> None:
     implementation1 = Implementation(
         "step_1",
         LayeredConfigTree({"name": "step1"}),
-        output_slots={"foo": OutputSlot("foo")},
+        output_slots=[OutputSlot("foo")],
     )
     implementation2 = Implementation(
         "step_2",
         LayeredConfigTree({"name": "step2"}),
-        input_slots={"bar": InputSlot("bar", None, None)},
+        input_slots=[InputSlot("bar", None, None)],
     )
-    implementation_graph.add_node_from_impl("step_1", implementation1)
-    implementation_graph.add_node_from_impl("step_2", implementation2)
+    implementation_graph.add_node_from_implementation("step_1", implementation1)
+    implementation_graph.add_node_from_implementation("step_2", implementation2)
     assert implementation_graph.nodes["step_1"]["implementation"] == implementation1
     assert implementation_graph.nodes["step_2"]["implementation"] == implementation2
 
-    edge = Edge(
+    edge = EdgeParams(
         source_node="step_1",
         target_node="step_2",
         output_slot="foo",
         input_slot="bar",
     )
-    implementation_graph.add_edge_from_data(edge)
+    implementation_graph.add_edge_from_params(edge)
     assert implementation_graph.edges["step_1", "step_2", 0]["output_slot"].name == "foo"
     assert implementation_graph.edges["step_1", "step_2", 0]["input_slot"].name == "bar"
 
@@ -102,13 +102,13 @@ def test_input_slot_mapping() -> None:
     assert input_slot_mapping.child_node == "step_1a"
     assert input_slot_mapping.child_slot == "step_1a_main_input"
 
-    edge = Edge(
+    edge = EdgeParams(
         source_node="input_data",
         target_node="step_1",
         output_slot="file1",
         input_slot="step_1_main_input",
     )
-    new_edge = input_slot_mapping.propagate_edge(edge)
+    new_edge = input_slot_mapping.remap_edge(edge)
     assert new_edge.source_node == "input_data"
     assert new_edge.target_node == "step_1a"
     assert new_edge.output_slot == "file1"
@@ -125,13 +125,13 @@ def test_output_slot_mapping() -> None:
     assert output_slot_mapping.child_node == "step_1a"
     assert output_slot_mapping.child_slot == "step_1a_main_input"
 
-    edge = Edge(
+    edge = EdgeParams(
         source_node="step_1",
         target_node="output_data",
         output_slot="step_1_main_output",
         input_slot="file1",
     )
-    new_edge = output_slot_mapping.propagate_edge(edge)
+    new_edge = output_slot_mapping.remap_edge(edge)
     assert new_edge.source_node == "step_1a"
     assert new_edge.target_node == "output_data"
     assert new_edge.output_slot == "step_1a_main_input"

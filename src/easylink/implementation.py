@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from layered_config_tree import LayeredConfigTree
 
@@ -22,12 +22,12 @@ class Implementation:
         self,
         step_name: str,
         implementation_config: LayeredConfigTree,
-        input_slots: dict[str, "InputSlot"] = {},
-        output_slots: dict[str, "OutputSlot"] = {},
+        input_slots: Iterable["InputSlot"] = (),
+        output_slots: Iterable["OutputSlot"] = (),
     ):
         self.name = implementation_config.name
-        self.input_slots = input_slots
-        self.output_slots = output_slots
+        self.input_slots = {slot.name: slot for slot in input_slots}
+        self.output_slots = {slot.name: slot for slot in output_slots}
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
         self.metadata_step_name = self._metadata["step"]
@@ -82,8 +82,16 @@ class Implementation:
 
 
 class NullImplementation:
-    """A NullImplementation is used to represent a step that does not have an implementation."""
+    """A NullImplementation is used to represent a step that does not have an implementation.
+    For example, the IO steps in the pipeline schema do not correspond to implementations
+    but ImplementationGraph requires an "implementation" attribute with input and output slots
+    for each node."""
 
-    def __init__(self, name, input_slots, output_slots):
-        self.input_slots = input_slots
-        self.output_slots = output_slots
+    def __init__(
+        self,
+        name: str,
+        input_slots: Iterable["InputSlot"] = (),
+        output_slots: Iterable["OutputSlot"] = (),
+    ):
+        self.input_slots = {slot.name: slot for slot in input_slots}
+        self.output_slots = {slot.name: slot for slot in output_slots}
