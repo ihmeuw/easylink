@@ -1,10 +1,10 @@
 from easylink.graph_components import EdgeParams, InputSlot, OutputSlot
-from easylink.step import BasicStep, InputSlot, InputStep, OutputStep
+from easylink.step import GenericStep, InputSlot, InputStep, OutputStep
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
     InputStep(),
-    BasicStep(
+    GenericStep(
         "step_1",
         input_slots=[
             InputSlot(

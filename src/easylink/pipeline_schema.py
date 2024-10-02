@@ -6,12 +6,12 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import ImplementationGraph
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import CompositeStep, Step
+from easylink.step import GenericStep, Step
 
 
-class PipelineSchema(CompositeStep):
+class PipelineSchema(GenericStep):
     """
-    A schema is a CompositeStep whose StephGraph determines all possible
+    A schema is a GenericStep whose StephGraph determines all possible
     allowable pipelines.
     """
 

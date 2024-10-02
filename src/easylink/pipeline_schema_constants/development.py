@@ -6,7 +6,7 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
-    BasicStep,
+    GenericStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
@@ -27,7 +27,7 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_1_main_output")],
-        template_step=BasicStep(
+        template_step=GenericStep(
             step_name="step_1",
             input_slots=[
                 InputSlot(
@@ -39,7 +39,7 @@ NODES = [
             output_slots=[OutputSlot("step_1_main_output")],
         ),
     ),
-    BasicStep(
+    GenericStep(
         step_name="step_2",
         input_slots=[
             InputSlot(
@@ -60,7 +60,7 @@ NODES = [
             ),
         ],
         output_slots=[OutputSlot("step_3_main_output")],
-        template_step=BasicStep(
+        template_step=GenericStep(
             step_name="step_3",
             input_slots=[
                 InputSlot(
@@ -96,7 +96,7 @@ NODES = [
         ],
         output_slots=[OutputSlot("step_4_main_output")],
         nodes=[
-            BasicStep(
+            GenericStep(
                 step_name="step_4a",
                 input_slots=[
                     InputSlot(
@@ -112,7 +112,7 @@ NODES = [
                 ],
                 output_slots=[OutputSlot("step_4a_main_output")],
             ),
-            BasicStep(
+            GenericStep(
                 step_name="step_4b",
                 input_slots=[
                     InputSlot(
