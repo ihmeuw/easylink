@@ -60,7 +60,7 @@ class StepGraph(nx.MultiDiGraph):
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
-    def steps(self) -> list[Step]:
+    def steps(self) -> list["Step"]:
         """Convenience property to get all steps in the graph."""
         return [self.nodes[node]["step"] for node in self.step_nodes]
 
