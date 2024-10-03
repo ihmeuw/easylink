@@ -542,24 +542,27 @@ class TemplateStep(Step):
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         step_config = parent_config[self.name]
-        if not self.config_key in step_config:
-            self._config = step_config
-            self.layer_state = LeafState(self)
+        if self.config_key in step_config:
+            expanded_step_config = LayeredConfigTree()
+            for i, sub_config in enumerate(step_config[self.config_key]):
+                expanded_step_config.update(
+                    {f"{self.name}_{self.node_prefix}_{i+1}": sub_config}
+                )
+            self._config = expanded_step_config
         else:
-            self._config = self._get_expanded_config(step_config[self.config_key])
+            self._config = step_config
+
+    def configure_step(
+        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        self.set_step_config(parent_config)
+        if self.num_repeats > 1:
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
             self.layer_state = CompositeState(self)
-
-    def _get_expanded_config(
-        self, step_config: LayeredConfigTree
-    ) -> dict[str, LayeredConfigTree]:
-        """Get the dictionary for the parallel graph based on the sequence
-        of sub-yamls."""
-        expanded_step_config = {}
-        for i, sub_config in enumerate(step_config):
-            expanded_step_config[f"{self.name}_{self.node_prefix}_{i+1}"] = sub_config
-        return LayeredConfigTree(expanded_step_config)
+        else:
+            self.layer_state = LeafState(self)
+        self.layer_state.configure_step(parent_config, input_data_config)
 
 
 class LoopStep(TemplateStep):

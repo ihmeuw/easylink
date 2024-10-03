@@ -47,7 +47,7 @@ def test_io_update_implementation_graph(
 
 
 @pytest.fixture
-def basic_step_params() -> Dict[str, Any]:
+def leaf_step_params() -> Dict[str, Any]:
     return {
         "step_name": "step_1",
         "input_slots": [
@@ -61,8 +61,8 @@ def basic_step_params() -> Dict[str, Any]:
     }
 
 
-def test_basic_step(basic_step_params: Dict[str, Any]) -> None:
-    step = GenericStep(**basic_step_params)
+def test_leaf_step(leaf_step_params: Dict[str, Any]) -> None:
+    step = GenericStep(**leaf_step_params)
     assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
@@ -74,20 +74,20 @@ def test_basic_step(basic_step_params: Dict[str, Any]) -> None:
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
 
-def test_basic_step_update_implementation_graph(
-    basic_step_params: Dict[str, Any], default_config: Config
+def test_leaf_step_update_implementation_graph(
+    leaf_step_params: Dict[str, Any], default_config: Config
 ) -> None:
-    step = GenericStep(**basic_step_params)
+    step = GenericStep(**leaf_step_params)
     step.configure_step(default_config["pipeline"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
 
 
-def test_basic_step_implementation_node_name(
-    basic_step_params: Dict[str, Any], default_config: Config
+def test_implementation_node_name(
+    leaf_step_params: Dict[str, Any], default_config: Config
 ) -> None:
-    step = GenericStep(**basic_step_params)
+    step = GenericStep(**leaf_step_params)
     step.configure_step(default_config["pipeline"], {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
