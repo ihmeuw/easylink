@@ -323,20 +323,6 @@ def test_hierarchical_step_update_implementation_graph(
 @pytest.fixture
 def loop_step_params() -> Dict[str, Any]:
     return {
-        "step_name": "step_3",
-        "input_slots": [
-            InputSlot(
-                name="step_3_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
-            InputSlot(
-                name="step_3_secondary_input",
-                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
-        ],
-        "output_slots": [OutputSlot("step_3_main_output")],
         "template_step": HierarchicalStep(
             "step_3",
             input_slots=[
@@ -544,15 +530,6 @@ def test_loop_update_implementation_graph(
 @pytest.fixture
 def parallel_step_params() -> Dict[str, Any]:
     return {
-        "step_name": "step_1",
-        "input_slots": [
-            InputSlot(
-                "step_1_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-            )
-        ],
-        "output_slots": [OutputSlot("step_1_main_output")],
         "template_step": HierarchicalStep(
             "step_1",
             input_slots=[

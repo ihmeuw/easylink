@@ -455,24 +455,16 @@ class TemplateStep(Step):
 
     def __init__(
         self,
-        step_name: str,
-        name: str = None,
-        input_slots: Iterable[InputSlot] = (),
-        output_slots: Iterable[OutputSlot] = (),
-        template_step: Step = None,
+        template_step: Step,
     ) -> None:
-        super().__init__(step_name, name, input_slots, output_slots)
-        if not template_step or template_step.name != step_name:
-            raise NotImplementedError(
-                f"{self.__class__} {self.name} must be initialized with a single node with the same name."
-            )
+        super().__init__(
+            template_step.step_name,
+            template_step.name,
+            template_step.input_slots.values(),
+            template_step.output_slots.values(),
+        )
         self.template_step = template_step
         self.template_step.set_parent_step(self)
-
-    @property
-    @abstractmethod
-    def config_key(self) -> str:
-        pass
 
     @property
     @abstractmethod
@@ -556,14 +548,10 @@ class LoopStep(TemplateStep):
 
     def __init__(
         self,
-        step_name: str,
-        name: str = None,
-        input_slots: Iterable[InputSlot] = (),
-        output_slots: Iterable[OutputSlot] = (),
         template_step: Step = None,
         self_edges: Iterable[EdgeParams] = (),
     ) -> None:
-        super().__init__(step_name, name, input_slots, output_slots, template_step)
+        super().__init__(template_step)
         self.self_edges = self_edges
 
     @property

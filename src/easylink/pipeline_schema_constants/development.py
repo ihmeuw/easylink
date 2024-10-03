@@ -18,15 +18,6 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 NODES = [
     InputStep(),
     ParallelStep(
-        step_name="step_1",
-        input_slots=[
-            InputSlot(
-                name="step_1_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
-        ],
-        output_slots=[OutputSlot("step_1_main_output")],
         template_step=GenericStep(
             step_name="step_1",
             input_slots=[
@@ -51,15 +42,6 @@ NODES = [
         output_slots=[OutputSlot("step_2_main_output")],
     ),
     LoopStep(
-        step_name="step_3",
-        input_slots=[
-            InputSlot(
-                name="step_3_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
-        ],
-        output_slots=[OutputSlot("step_3_main_output")],
         template_step=GenericStep(
             step_name="step_3",
             input_slots=[
