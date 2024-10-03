@@ -12,7 +12,7 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.pipeline_schema_constants.development import NODES
-from easylink.step import GenericStep, HierarchicalStep, IOStep, LoopStep, ParallelStep
+from easylink.step import HierarchicalStep, IOStep, LoopStep, ParallelStep, Step
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 STEP_KEYS = {step.name: step for step in NODES}
@@ -62,7 +62,7 @@ def leaf_step_params() -> Dict[str, Any]:
 
 
 def test_leaf_step(leaf_step_params: Dict[str, Any]) -> None:
-    step = GenericStep(**leaf_step_params)
+    step = Step(**leaf_step_params)
     assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
@@ -77,7 +77,7 @@ def test_leaf_step(leaf_step_params: Dict[str, Any]) -> None:
 def test_leaf_step_update_implementation_graph(
     leaf_step_params: Dict[str, Any], default_config: Config
 ) -> None:
-    step = GenericStep(**leaf_step_params)
+    step = Step(**leaf_step_params)
     step.configure_step(default_config["pipeline"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
@@ -87,12 +87,12 @@ def test_leaf_step_update_implementation_graph(
 def test_implementation_node_name(
     leaf_step_params: Dict[str, Any], default_config: Config
 ) -> None:
-    step = GenericStep(**leaf_step_params)
+    step = Step(**leaf_step_params)
     step.configure_step(default_config["pipeline"], {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
 
-    step.set_parent_step(GenericStep(step_name="foo", name="bar"))
+    step.set_parent_step(Step(step_name="foo", name="bar"))
     node_name = step.implementation_node_name
     assert node_name == "bar_step_1_step_1_python_pandas"
 
@@ -110,7 +110,7 @@ def composite_step_params() -> Dict[str, Any]:
         ],
         "output_slots": [OutputSlot("step_4_main_output")],
         "nodes": [
-            GenericStep(
+            Step(
                 "step_4a",
                 input_slots=[
                     InputSlot(
@@ -121,7 +121,7 @@ def composite_step_params() -> Dict[str, Any]:
                 ],
                 output_slots=[OutputSlot("step_4a_main_output")],
             ),
-            GenericStep(
+            Step(
                 "step_4b",
                 input_slots=[
                     InputSlot(
@@ -146,7 +146,7 @@ def composite_step_params() -> Dict[str, Any]:
 
 
 def test_composite_step(composite_step_params: Dict[str, Any]) -> None:
-    step = GenericStep(**composite_step_params)
+    step = Step(**composite_step_params)
     assert step.name == step.step_name == "step_4"
     assert step.input_slots == {
         "step_4_main_input": InputSlot(
@@ -161,7 +161,7 @@ def test_composite_step(composite_step_params: Dict[str, Any]) -> None:
 def test_composite_step_update_implementation_graph(
     composite_step_params: Dict[str, Any]
 ) -> None:
-    step = GenericStep(**composite_step_params)
+    step = Step(**composite_step_params)
     pipeline_params = LayeredConfigTree(
         {
             "step_4": {
@@ -213,7 +213,7 @@ def hierarchical_step_params() -> Dict[str, Any]:
         ],
         "output_slots": [OutputSlot("step_4_main_output")],
         "nodes": [
-            GenericStep(
+            Step(
                 "step_4a",
                 input_slots=[
                     InputSlot(
@@ -224,7 +224,7 @@ def hierarchical_step_params() -> Dict[str, Any]:
                 ],
                 output_slots=[OutputSlot("step_4a_main_output")],
             ),
-            GenericStep(
+            Step(
                 "step_4b",
                 input_slots=[
                     InputSlot(
@@ -339,7 +339,7 @@ def loop_step_params() -> Dict[str, Any]:
             ],
             output_slots=[OutputSlot("step_3_main_output")],
             nodes=[
-                GenericStep(
+                Step(
                     step_name="step_3a",
                     input_slots=[
                         InputSlot(
@@ -355,7 +355,7 @@ def loop_step_params() -> Dict[str, Any]:
                     ],
                     output_slots=[OutputSlot("step_3a_main_output")],
                 ),
-                GenericStep(
+                Step(
                     step_name="step_3b",
                     input_slots=[
                         InputSlot(
@@ -541,7 +541,7 @@ def parallel_step_params() -> Dict[str, Any]:
             ],
             output_slots=[OutputSlot("step_1_main_output")],
             nodes=[
-                GenericStep(
+                Step(
                     step_name="step_1a",
                     input_slots=[
                         InputSlot(
@@ -552,7 +552,7 @@ def parallel_step_params() -> Dict[str, Any]:
                     ],
                     output_slots=[OutputSlot("step_1a_main_output")],
                 ),
-                GenericStep(
+                Step(
                     step_name="step_1b",
                     input_slots=[
                         InputSlot(

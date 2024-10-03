@@ -3,17 +3,20 @@ from pathlib import Path
 from layered_config_tree import LayeredConfigTree
 
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import GenericStep
+from easylink.step import Step
 
 
-class PipelineSchema(GenericStep):
+class PipelineSchema(Step):
     """
-    A schema is a GenericStep whose StephGraph determines all possible
+    A schema is a Step whose StephGraph determines all possible
     allowable pipelines.
     """
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
+
+    def is_composite(self, step_config) -> bool:
+        return True
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config

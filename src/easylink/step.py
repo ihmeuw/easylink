@@ -172,7 +172,7 @@ class CompositeState(LayerState):
             step.configure_step(self._step.config, input_data_config)
 
 
-class Step(ABC):
+class Step:
     """Steps contain information about the purpose of the interoperable elements of
     the sequence called a *Pipeline* and how those elements relate to one another.
     In turn, steps are implemented by Implementations, such that each step may have
@@ -186,14 +186,31 @@ class Step(ABC):
         name: str = None,
         input_slots: Iterable[InputSlot] = (),
         output_slots: Iterable[OutputSlot] = (),
+        nodes: Iterable["Step"] = (),
+        edges: Iterable[EdgeParams] = (),
+        input_slot_mappings: Iterable[InputSlotMapping] = (),
+        output_slot_mappings: Iterable[OutputSlotMapping] = (),
     ) -> None:
         self.name = name if name else step_name
         self.step_name = step_name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
+        self.nodes = nodes
+        for node in self.nodes:
+            node.set_parent_step(self)
+        self.edges = edges
+        self.step_graph = self._get_step_graph(nodes, edges)
+        self.slot_mappings = {
+            "input": list(input_slot_mappings),
+            "output": list(output_slot_mappings),
+        }
         self.parent_step = None
         self._config = None
         self._layer_state = None
+
+    @property
+    def config_key(self):
+        return None
 
     @property
     def layer_state(self) -> LayerState:
@@ -207,16 +224,60 @@ class Step(ABC):
             raise ValueError(f"Step {self.name}'s config was invoked before being set")
         return self._config
 
-    @abstractmethod
+    def validate_leaf(self, step_config: LayeredConfigTree) -> dict[str, list[str]]:
+        errors = {}
+        metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+        if not "implementation" in step_config:
+            errors[f"step {self.name}"] = [
+                "The step configuration does not contain an 'implementation' key."
+            ]
+        elif not "name" in step_config["implementation"]:
+            errors[f"step {self.name}"] = [
+                "The implementation configuration does not contain a 'name' key."
+            ]
+        elif not step_config["implementation"]["name"] in metadata:
+            errors[f"step {self.name}"] = [
+                f"Implementation '{step_config['implementation']['name']}' is not supported. "
+                f"Supported implementations are: {list(metadata.keys())}."
+            ]
+        return errors
+
+    def validate_composite(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> dict[str, list[str]]:
+        errors = {}
+        for node in self.step_graph.nodes:
+            step = self.step_graph.nodes[node]["step"]
+            if isinstance(step, IOStep):
+                continue
+            if step.name not in step_config:
+                step_errors = {f"step {step.name}": [f"The step is not configured."]}
+            else:
+                step_errors = step.validate_step(step_config[step.name], input_data_config)
+            if step_errors:
+                errors.update(step_errors)
+        extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
+        for extra_step in extra_steps:
+            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
+        return errors
+
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> dict[str, list[str]]:
-        """Validate the step against the pipeline configuration."""
-        pass
-
-    @abstractmethod
-    def set_layer_state(self) -> None:
-        pass
+        # BasicStep
+        if len(self.step_graph.nodes) == 0:
+            return self.validate_leaf(step_config)
+        # CompositeStep
+        elif self.config_key is None:
+            if "implementation" in step_config:
+                return self.validate_leaf(step_config)
+            else:
+                return self.validate_composite(step_config, input_data_config)
+        # HierarchicalStep
+        elif self.config_key in step_config:
+            return self.validate_composite(step_config[self.config_key], input_data_config)
+        else:
+            return self.validate_leaf(step_config)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         return self.layer_state.get_implementation_graph()
@@ -227,15 +288,43 @@ class Step(ABC):
     def set_parent_step(self, step: "Step") -> None:
         self.parent_step = step
 
-    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        self._config = parent_config[self.name]
-
     def configure_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self.set_step_config(step_config)
         self.set_layer_state()
         self.layer_state.configure_subgraph_steps(step_config, input_data_config)
+
+    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
+        step_config = parent_config[self.name]
+        self._config = (
+            step_config
+            if not self.config_key in step_config
+            else step_config[self.config_key]
+        )
+
+    def set_layer_state(self) -> None:
+        if self.config_key is not None:
+            if len(self.config) > 1:
+                self._layer_state = CompositeState(self)
+            else:
+                self._layer_state = LeafState(self)
+        elif len(self.step_graph.nodes) == 0:
+            self._layer_state = LeafState(self)
+        else:
+            if "implementation" in self.config:
+                self._layer_state = LeafState(self)
+            else:
+                self._layer_state = CompositeState(self)
+
+    def _get_step_graph(self, nodes: list["Step"], edges: list[EdgeParams]) -> StepGraph:
+        """Create a StepGraph from the nodes and edges the step was initialized with."""
+        step_graph = StepGraph()
+        for step in nodes:
+            step_graph.add_node_from_step(step)
+        for edge in edges:
+            step_graph.add_edge_from_params(edge)
+        return step_graph
 
     @property
     def implementation_node_name(self) -> str:
@@ -329,117 +418,7 @@ class OutputStep(IOStep):
         super().__init__("results", input_slots=input_slots)
 
 
-class GenericStep(Step):
-    """A GenericStep can be a single implementation or several implementations depending on whether the "implementation" key is present in the step configuration."""
-
-    def __init__(
-        self,
-        step_name: str,
-        name: str = None,
-        input_slots: Iterable[InputSlot] = (),
-        output_slots: Iterable[OutputSlot] = (),
-        nodes: Iterable[Step] = (),
-        edges: Iterable[EdgeParams] = (),
-        input_slot_mappings: Iterable[InputSlotMapping] = (),
-        output_slot_mappings: Iterable[OutputSlotMapping] = (),
-    ) -> None:
-        super().__init__(step_name, name, input_slots, output_slots)
-        self.nodes = nodes
-        for node in self.nodes:
-            node.set_parent_step(self)
-        self.edges = edges
-        self.step_graph = self._get_step_graph(nodes, edges)
-        self.slot_mappings = {
-            "input": list(input_slot_mappings),
-            "output": list(output_slot_mappings),
-        }
-
-    @property
-    def config_key(self) -> None:
-        return None
-
-    def validate_leaf(self, step_config: LayeredConfigTree) -> dict[str, list[str]]:
-        errors = {}
-        metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        if not "implementation" in step_config:
-            errors[f"step {self.name}"] = [
-                "The step configuration does not contain an 'implementation' key."
-            ]
-        elif not "name" in step_config["implementation"]:
-            errors[f"step {self.name}"] = [
-                "The implementation configuration does not contain a 'name' key."
-            ]
-        elif not step_config["implementation"]["name"] in metadata:
-            errors[f"step {self.name}"] = [
-                f"Implementation '{step_config['implementation']['name']}' is not supported. "
-                f"Supported implementations are: {list(metadata.keys())}."
-            ]
-        return errors
-
-    def validate_composite(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> dict[str, list[str]]:
-        errors = {}
-        for node in self.step_graph.nodes:
-            step = self.step_graph.nodes[node]["step"]
-            if isinstance(step, IOStep):
-                continue
-            if step.name not in step_config:
-                step_errors = {f"step {step.name}": [f"The step is not configured."]}
-            else:
-                step_errors = step.validate_step(step_config[step.name], input_data_config)
-            if step_errors:
-                errors.update(step_errors)
-        extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
-        for extra_step in extra_steps:
-            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
-        return errors
-
-    def validate_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> dict[str, list[str]]:
-        # BasicStep
-        if len(self.step_graph.nodes) == 0:
-            return self.validate_leaf(step_config)
-        # CompositeStep
-        elif self.config_key is None:
-            if "implementation" in step_config:
-                return self.validate_leaf(step_config)
-            else:
-                return self.validate_composite(step_config, input_data_config)
-        # HierarchicalStep
-        elif self.config_key in step_config:
-            return self.validate_composite(step_config[self.config_key], input_data_config)
-        else:
-            return self.validate_leaf(step_config)
-
-    def set_layer_state(self) -> None:
-        if len(self.step_graph.nodes) == 0:
-            self._layer_state = LeafState(self)
-            return
-        if self.config_key is not None:
-            if self.config_key in self.config:
-                self._config = self.config[self.config_key]
-                self._layer_state = CompositeState(self)
-            else:
-                self._layer_state = LeafState(self)
-        else:
-            if "implementation" in self.config:
-                self._layer_state = LeafState(self)
-            else:
-                self._layer_state = CompositeState(self)
-
-    def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
-        """Create a StepGraph from the nodes and edges the step was initialized with."""
-        step_graph = StepGraph()
-        for step in nodes:
-            step_graph.add_node_from_step(step)
-        for edge in edges:
-            step_graph.add_edge_from_params(edge)
-        return step_graph
-
-
-class HierarchicalStep(GenericStep):
+class HierarchicalStep(Step):
     """A HierarchicalStep can be a single implementation or several 'substeps'. This requires
     a "substeps" key in the step configuration. If no substeps key is present, it will be treated as
     a single implemented step."""
@@ -476,11 +455,11 @@ class TemplateStep(Step):
         return len(self.config)
 
     @abstractmethod
-    def _get_step_graph(self) -> StepGraph:
+    def _update_step_graph(self) -> StepGraph:
         pass
 
     @abstractmethod
-    def _get_slot_mappings(self) -> dict[str, list[SlotMapping]]:
+    def _update_slot_mappings(self) -> dict[str, list[SlotMapping]]:
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         pass
@@ -535,12 +514,9 @@ class TemplateStep(Step):
             self._config = step_config
 
     def set_layer_state(self) -> None:
-        if self.num_repeats > 1:
-            self.step_graph = self._get_step_graph()
-            self.slot_mappings = self._get_slot_mappings()
-            self._layer_state = CompositeState(self)
-        else:
-            self._layer_state = LeafState(self)
+        self.step_graph = self._update_step_graph()
+        self.slot_mappings = self._update_slot_mappings()
+        super().set_layer_state()
 
 
 class LoopStep(TemplateStep):
@@ -562,7 +538,7 @@ class LoopStep(TemplateStep):
     def node_prefix(self):
         return "loop"
 
-    def _get_step_graph(self) -> StepGraph:
+    def _update_step_graph(self) -> StepGraph:
         """Make N copies of the iterated graph and chain them together according
         to the self edges."""
         graph = StepGraph()
@@ -593,7 +569,7 @@ class LoopStep(TemplateStep):
             graph.add_edge_from_params(edge)
         return graph
 
-    def _get_slot_mappings(self) -> dict:
+    def _update_slot_mappings(self) -> dict:
         """Get the appropriate slot mappings based on the number of loops
         and the non-self-edge input and output slots."""
         input_mappings = []
@@ -632,7 +608,7 @@ class ParallelStep(TemplateStep):
     def node_prefix(self):
         return "parallel_split"
 
-    def _get_step_graph(self) -> StepGraph:
+    def _update_step_graph(self) -> StepGraph:
         """Make N copies of the template step that are independent and contain the same edges as the
         current step"""
         graph = StepGraph()
@@ -645,7 +621,7 @@ class ParallelStep(TemplateStep):
             graph.add_node_from_step(updated_step)
         return graph
 
-    def _get_slot_mappings(self) -> dict[str, list[SlotMapping]]:
+    def _update_slot_mappings(self) -> dict[str, list[SlotMapping]]:
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         input_mappings = [

@@ -6,19 +6,19 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
-    GenericStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
     OutputStep,
     ParallelStep,
+    Step,
 )
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
     InputStep(),
     ParallelStep(
-        template_step=GenericStep(
+        template_step=Step(
             step_name="step_1",
             input_slots=[
                 InputSlot(
@@ -30,7 +30,7 @@ NODES = [
             output_slots=[OutputSlot("step_1_main_output")],
         ),
     ),
-    GenericStep(
+    Step(
         step_name="step_2",
         input_slots=[
             InputSlot(
@@ -42,7 +42,7 @@ NODES = [
         output_slots=[OutputSlot("step_2_main_output")],
     ),
     LoopStep(
-        template_step=GenericStep(
+        template_step=Step(
             step_name="step_3",
             input_slots=[
                 InputSlot(
@@ -78,7 +78,7 @@ NODES = [
         ],
         output_slots=[OutputSlot("step_4_main_output")],
         nodes=[
-            GenericStep(
+            Step(
                 step_name="step_4a",
                 input_slots=[
                     InputSlot(
@@ -94,7 +94,7 @@ NODES = [
                 ],
                 output_slots=[OutputSlot("step_4a_main_output")],
             ),
-            GenericStep(
+            Step(
                 step_name="step_4b",
                 input_slots=[
                     InputSlot(
