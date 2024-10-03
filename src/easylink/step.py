@@ -25,7 +25,7 @@ class LayerState(ABC):
         self._step = step
 
     @abstractmethod
-    def configure_step(
+    def configure_subgraph_steps(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         """Configure the step against the pipeline configuration and input data."""
@@ -43,7 +43,7 @@ class LayerState(ABC):
 
 
 class LeafState(LayerState):
-    def configure_step(
+    def configure_subgraph_steps(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         pass
@@ -164,7 +164,7 @@ class CompositeState(LayerState):
             raise ValueError(f"No edges found for {self.name} in edge {edge}")
         return implementation_edges
 
-    def configure_step(
+    def configure_subgraph_steps(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         for node in self._step.step_graph.nodes:
@@ -201,10 +201,6 @@ class Step(ABC):
             raise ValueError(f"Step {self.name}'s layer_state was invoked before being set")
         return self._layer_state
 
-    @layer_state.setter
-    def layer_state(self, state: LayerState) -> None:
-        self._layer_state = state
-
     @property
     def config(self) -> LayeredConfigTree:
         if self._config is None:
@@ -216,6 +212,10 @@ class Step(ABC):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> dict[str, list[str]]:
         """Validate the step against the pipeline configuration."""
+        pass
+
+    @abstractmethod
+    def set_layer_state(self) -> None:
         pass
 
     def get_implementation_graph(self) -> ImplementationGraph:
@@ -234,7 +234,8 @@ class Step(ABC):
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self.set_step_config(step_config)
-        self.layer_state.configure_step(step_config, input_data_config)
+        self.set_layer_state()
+        self.layer_state.configure_subgraph_steps(step_config, input_data_config)
 
     @property
     def implementation_node_name(self) -> str:
@@ -280,16 +281,6 @@ class Step(ABC):
 class IOStep(Step):
     """"""
 
-    def __init__(
-        self,
-        step_name: str,
-        name: str = None,
-        input_slots: Iterable[InputSlot] = (),
-        output_slots: Iterable[OutputSlot] = (),
-    ) -> None:
-        super().__init__(step_name, name, input_slots, output_slots)
-        self._layer_state = LeafState(self)
-
     @property
     def implementation_node_name(self) -> str:
         return self.name
@@ -301,6 +292,9 @@ class IOStep(Step):
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config
+
+    def set_layer_state(self) -> None:
+        self._layer_state = LeafState(self)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
@@ -419,25 +413,21 @@ class GenericStep(Step):
         else:
             return self.validate_leaf(step_config)
 
-    def configure_step(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(parent_config)
+    def set_layer_state(self) -> None:
         if len(self.step_graph.nodes) == 0:
-            self.layer_state = LeafState(self)
+            self._layer_state = LeafState(self)
             return
         if self.config_key is not None:
             if self.config_key in self.config:
                 self._config = self.config[self.config_key]
-                self.layer_state = CompositeState(self)
+                self._layer_state = CompositeState(self)
             else:
-                self.layer_state = LeafState(self)
+                self._layer_state = LeafState(self)
         else:
             if "implementation" in self.config:
-                self.layer_state = LeafState(self)
+                self._layer_state = LeafState(self)
             else:
-                self.layer_state = CompositeState(self)
-        self.layer_state.configure_step(parent_config, input_data_config)
+                self._layer_state = CompositeState(self)
 
     def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
@@ -552,17 +542,13 @@ class TemplateStep(Step):
         else:
             self._config = step_config
 
-    def configure_step(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        self.set_step_config(parent_config)
+    def set_layer_state(self) -> None:
         if self.num_repeats > 1:
             self.step_graph = self._get_step_graph()
             self.slot_mappings = self._get_slot_mappings()
-            self.layer_state = CompositeState(self)
+            self._layer_state = CompositeState(self)
         else:
-            self.layer_state = LeafState(self)
-        self.layer_state.configure_step(parent_config, input_data_config)
+            self._layer_state = LeafState(self)
 
 
 class LoopStep(TemplateStep):
