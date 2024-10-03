@@ -596,12 +596,12 @@ class LoopStep(TemplateStep):
             self.template_step.parent_step = None
             updated_step = copy.deepcopy(self.template_step)
             updated_step.set_parent_step(self)
-            updated_step.name = f"{self.name}_loop_{i+1}"
+            updated_step.name = f"{self.name}_{self.node_prefix}_{i+1}"
             nodes.append(updated_step)
             if i > 0:
                 for self_edge in self.self_edges:
-                    source_node = f"{self.name}_loop_{i}"
-                    target_node = f"{self.name}_loop_{i+1}"
+                    source_node = f"{self.name}_{self.node_prefix}_{i}"
+                    target_node = f"{self.name}_{self.node_prefix}_{i+1}"
                     edge = EdgeParams(
                         source_node=source_node,
                         target_node=target_node,
@@ -624,17 +624,21 @@ class LoopStep(TemplateStep):
         external_input_slots = self.input_slots.keys() - self_edge_input_slots
         for input_slot in self_edge_input_slots:
             input_mappings.append(
-                InputSlotMapping(input_slot, f"{self.name}_loop_1", input_slot)
+                InputSlotMapping(input_slot, f"{self.name}_{self.node_prefix}_1", input_slot)
             )
         for input_slot in external_input_slots:
             input_mappings.extend(
                 [
-                    InputSlotMapping(input_slot, f"{self.name}_loop_{n+1}", input_slot)
+                    InputSlotMapping(
+                        input_slot, f"{self.name}_{self.node_prefix}_{n+1}", input_slot
+                    )
                     for n in range(self.num_repeats)
                 ]
             )
         output_mappings = [
-            OutputSlotMapping(slot, f"{self.name}_loop_{self.num_repeats}", slot)
+            OutputSlotMapping(
+                slot, f"{self.name}_{self.node_prefix}_{self.num_repeats}", slot
+            )
             for slot in self.output_slots
         ]
         return {"input": input_mappings, "output": output_mappings}
@@ -660,7 +664,7 @@ class ParallelStep(TemplateStep):
             self.template_step.parent_step = None
             updated_step = copy.deepcopy(self.template_step)
             updated_step.set_parent_step(self)
-            updated_step.name = f"{self.name}_parallel_split_{i+1}"
+            updated_step.name = f"{self.name}_{self.node_prefix}_{i+1}"
             graph.add_node_from_step(updated_step)
         return graph
 
@@ -668,12 +672,12 @@ class ParallelStep(TemplateStep):
         """Get the appropriate slot mappings based on the number of parallel copies
         and the existing input and output slots."""
         input_mappings = [
-            InputSlotMapping(slot, f"{self.name}_parallel_split_{n+1}", slot)
+            InputSlotMapping(slot, f"{self.name}_{self.node_prefix}_{n+1}", slot)
             for n in range(self.num_repeats)
             for slot in self.input_slots
         ]
         output_mappings = [
-            OutputSlotMapping(slot, f"{self.name}_parallel_split_{n+1}", slot)
+            OutputSlotMapping(slot, f"{self.name}_{self.node_prefix}_{n+1}", slot)
             for n in range(self.num_repeats)
             for slot in self.output_slots
         ]
