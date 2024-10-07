@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from layered_config_tree import LayeredConfigTree
@@ -19,9 +19,9 @@ STEP_KEYS = {step.name: step for step in NODES}
 
 
 def test_implementation_node_name(
-    leaf_step_params: [str, Any], default_config: Config
+    implemented_step_params: dict[str, Any], default_config: Config
 ) -> None:
-    step = Step(**leaf_step_params)
+    step = Step(**implemented_step_params)
     step.configure_step(default_config["pipeline"], {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
@@ -32,7 +32,7 @@ def test_implementation_node_name(
 
 
 @pytest.fixture
-def io_step_params() -> Dict[str, Any]:
+def io_step_params() -> dict[str, Any]:
     return {
         "step_name": "io",
         "input_slots": [InputSlot("result", None, validate_input_file_dummy)],
@@ -40,7 +40,7 @@ def io_step_params() -> Dict[str, Any]:
     }
 
 
-def test_io_step(io_step_params: Dict[str, Any]) -> None:
+def test_io_step(io_step_params: dict[str, Any]) -> None:
     step = IOStep(**io_step_params)
     assert step.name == step.step_name == "io"
     assert step.input_slots == {
@@ -49,8 +49,8 @@ def test_io_step(io_step_params: Dict[str, Any]) -> None:
     assert step.output_slots == {"file1": OutputSlot("file1")}
 
 
-def test_io_update_implementation_graph(
-    io_step_params: Dict[str, Any], default_config: Config
+def test_io_get_implementation_graph(
+    io_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = IOStep(**io_step_params)
     step.set_step_config(default_config["pipeline"])
@@ -60,7 +60,7 @@ def test_io_update_implementation_graph(
 
 
 @pytest.fixture
-def leaf_step_params() -> Dict[str, Any]:
+def implemented_step_params() -> dict[str, Any]:
     return {
         "step_name": "step_1",
         "input_slots": [
@@ -74,8 +74,8 @@ def leaf_step_params() -> Dict[str, Any]:
     }
 
 
-def test_leaf_step(leaf_step_params: Dict[str, Any]) -> None:
-    step = Step(**leaf_step_params)
+def test_implemented_step(implemented_step_params: dict[str, Any]) -> None:
+    step = Step(**implemented_step_params)
     assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
@@ -87,10 +87,10 @@ def test_leaf_step(leaf_step_params: Dict[str, Any]) -> None:
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
 
-def test_leaf_step_update_implementation_graph(
-    leaf_step_params: Dict[str, Any], default_config: Config
+def test_implemented_step_get_implementation_graph(
+    implemented_step_params: dict[str, Any], default_config: Config
 ) -> None:
-    step = Step(**leaf_step_params)
+    step = Step(**implemented_step_params)
     step.configure_step(default_config["pipeline"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
@@ -98,7 +98,7 @@ def test_leaf_step_update_implementation_graph(
 
 
 @pytest.fixture
-def composite_step_params() -> Dict[str, Any]:
+def hierarchical_step_params() -> dict[str, Any]:
     return {
         "step_name": "step_4",
         "input_slots": [
@@ -145,110 +145,7 @@ def composite_step_params() -> Dict[str, Any]:
     }
 
 
-def test_composite_step(composite_step_params: Dict[str, Any]) -> None:
-    step = Step(**composite_step_params)
-    assert step.name == step.step_name == "step_4"
-    assert step.input_slots == {
-        "step_4_main_input": InputSlot(
-            "step_4_main_input",
-            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            validate_input_file_dummy,
-        )
-    }
-    assert step.output_slots == {"step_4_main_output": OutputSlot("step_4_main_output")}
-
-
-def test_composite_step_update_implementation_graph(
-    composite_step_params: Dict[str, Any]
-) -> None:
-    step = Step(**composite_step_params)
-    pipeline_params = LayeredConfigTree(
-        {
-            "step_4": {
-                "step_4a": {
-                    "implementation": {"name": "step_4a_python_pandas", "configuration": {}}
-                },
-                "step_4b": {
-                    "implementation": {"name": "step_4b_python_pandas", "configuration": {}}
-                },
-            }
-        }
-    )
-    step.configure_step(pipeline_params, {})
-    subgraph = step.get_implementation_graph()
-    assert list(subgraph.nodes) == [
-        "step_4a_python_pandas",
-        "step_4b_python_pandas",
-    ]
-    expected_edges = [
-        (
-            "step_4a_python_pandas",
-            "step_4b_python_pandas",
-            {
-                "input_slot": InputSlot(
-                    "step_4b_main_input",
-                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validate_input_file_dummy,
-                ),
-                "output_slot": OutputSlot("step_4a_main_output"),
-                "filepaths": None,
-            },
-        ),
-    ]
-    assert len(subgraph.edges) == len(expected_edges)
-    for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
-
-
-@pytest.fixture
-def hierarchical_step_params() -> Dict[str, Any]:
-    return {
-        "step_name": "step_4",
-        "input_slots": [
-            InputSlot(
-                "step_4_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-            )
-        ],
-        "output_slots": [OutputSlot("step_4_main_output")],
-        "nodes": [
-            Step(
-                "step_4a",
-                input_slots=[
-                    InputSlot(
-                        "step_4a_main_input",
-                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                        validate_input_file_dummy,
-                    )
-                ],
-                output_slots=[OutputSlot("step_4a_main_output")],
-            ),
-            Step(
-                "step_4b",
-                input_slots=[
-                    InputSlot(
-                        "step_4b_main_input",
-                        "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                        validate_input_file_dummy,
-                    )
-                ],
-                output_slots=[OutputSlot("step_4b_main_output")],
-            ),
-        ],
-        "edges": [
-            EdgeParams("step_4a", "step_4b", "step_4a_main_output", "step_4b_main_input")
-        ],
-        "input_slot_mappings": [
-            InputSlotMapping("step_4_main_input", "step_4a", "step_4a_main_input")
-        ],
-        "output_slot_mappings": [
-            OutputSlotMapping("step_4_main_output", "step_4b", "step_4b_main_output")
-        ],
-    }
-
-
-def test_hierarchical_step(hierarchical_step_params: Dict[str, Any]) -> None:
+def test_hierarchical_step(hierarchical_step_params: dict[str, Any]) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     assert step.name == "step_4"
     assert step.input_slots == {
@@ -261,8 +158,8 @@ def test_hierarchical_step(hierarchical_step_params: Dict[str, Any]) -> None:
     assert step.output_slots == {"step_4_main_output": OutputSlot("step_4_main_output")}
 
 
-def test_hierarchical_step_update_implementation_graph(
-    hierarchical_step_params: Dict[str, Any]
+def test_hierarchical_step_get_implementation_graph(
+    hierarchical_step_params: dict[str, Any]
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     pipeline_params = LayeredConfigTree(
@@ -273,7 +170,7 @@ def test_hierarchical_step_update_implementation_graph(
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
-    # Test update_implementation_graph for substeps
+    # Test get_implementation_graph for substeps
     pipeline_params = LayeredConfigTree(
         {
             "step_4": {
@@ -321,7 +218,7 @@ def test_hierarchical_step_update_implementation_graph(
 
 
 @pytest.fixture
-def loop_step_params() -> Dict[str, Any]:
+def loop_step_params() -> dict[str, Any]:
     return {
         "template_step": HierarchicalStep(
             "step_3",
@@ -416,7 +313,7 @@ def loop_step_params() -> Dict[str, Any]:
     }
 
 
-def test_loop_step(loop_step_params: Dict[str, Any]) -> None:
+def test_loop_step(loop_step_params: dict[str, Any]) -> None:
     step = LoopStep(**loop_step_params)
     assert step.name == step.step_name == "step_3"
     assert isinstance(step, LoopStep)
@@ -442,8 +339,8 @@ def test_loop_step(loop_step_params: Dict[str, Any]) -> None:
     ]
 
 
-def test_loop_update_implementation_graph(
-    mocker, loop_step_params: Dict[str, Any], default_config: Config
+def test_loop_get_implementation_graph(
+    mocker, loop_step_params: dict[str, Any], default_config: Config
 ) -> None:
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
@@ -528,7 +425,7 @@ def test_loop_update_implementation_graph(
 
 
 @pytest.fixture
-def parallel_step_params() -> Dict[str, Any]:
+def parallel_step_params() -> dict[str, Any]:
     return {
         "template_step": HierarchicalStep(
             "step_1",
@@ -590,7 +487,7 @@ def parallel_step_params() -> Dict[str, Any]:
     }
 
 
-def test_parallel_step(parallel_step_params: Dict[str, Any]) -> None:
+def test_parallel_step(parallel_step_params: dict[str, Any]) -> None:
     step = ParallelStep(**parallel_step_params)
     assert step.name == "step_1"
     assert step.input_slots == {
@@ -603,8 +500,8 @@ def test_parallel_step(parallel_step_params: Dict[str, Any]) -> None:
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
 
-def test_parallel_step_update_implementation_graph(
-    mocker, parallel_step_params: Dict[str, Any]
+def test_parallel_step_get_implementation_graph(
+    mocker, parallel_step_params: dict[str, Any]
 ) -> None:
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
