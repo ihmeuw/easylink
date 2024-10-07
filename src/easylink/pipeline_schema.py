@@ -5,7 +5,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import EdgeParams
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import HierarchicalStep, NotImplementedState, Step
+from easylink.step import CompositeState, HierarchicalStep, Step
 
 
 class PipelineSchema(HierarchicalStep):
@@ -29,7 +29,7 @@ class PipelineSchema(HierarchicalStep):
         return super().validate_step({"substeps": pipeline_config}, input_data_config)
 
     def set_layer_state(self, step_config) -> None:
-        self._layer_state = NotImplementedState(self)
+        self._layer_state = CompositeState(self)
 
     @classmethod
     def _get_schemas(cls) -> list["PipelineSchema"]:

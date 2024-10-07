@@ -20,7 +20,7 @@ from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
 
-class ImplementationState(ABC):
+class LayerState(ABC):
     def __init__(self, step: "Step"):
         self._step = step
 
@@ -42,7 +42,7 @@ class ImplementationState(ABC):
         pass
 
 
-class ImplementedState(ImplementationState):
+class LeafState(LayerState):
     def configure_subgraph_steps(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
@@ -98,7 +98,7 @@ class ImplementedState(ImplementationState):
         return implementation_edges
 
 
-class NotImplementedState(ImplementationState):
+class CompositeState(LayerState):
     def __init__(self, step: "Step"):
         super().__init__(step)
         if not step.step_graph:
@@ -213,7 +213,7 @@ class Step:
         return None
 
     @property
-    def layer_state(self) -> ImplementationState:
+    def layer_state(self) -> LayerState:
         if self._layer_state is None:
             raise ValueError(f"Step {self.name}'s layer_state was invoked before being set")
         return self._layer_state
@@ -298,11 +298,11 @@ class Step:
     def set_layer_state(self, parent_config) -> None:
         step_config = parent_config[self.name]
         if len(self.step_graph.nodes) == 0:
-            self._layer_state = ImplementedState(self)
+            self._layer_state = LeafState(self)
         elif self.config_key in step_config:
-            self._layer_state = NotImplementedState(self)
+            self._layer_state = CompositeState(self)
         else:
-            self._layer_state = ImplementedState(self)
+            self._layer_state = LeafState(self)
 
     def _get_step_graph(self, nodes: list["Step"], edges: list[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
@@ -370,7 +370,7 @@ class IOStep(Step):
         self._config = parent_config
 
     def set_layer_state(self, step_config) -> None:
-        self._layer_state = ImplementedState(self)
+        self._layer_state = LeafState(self)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
