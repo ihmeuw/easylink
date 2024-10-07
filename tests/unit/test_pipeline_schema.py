@@ -3,10 +3,10 @@ from re import match
 
 import networkx as nx
 
+from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import Step
-from easylink.graph_components import InputSlot, OutputSlot
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
