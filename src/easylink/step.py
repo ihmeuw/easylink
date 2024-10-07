@@ -428,8 +428,8 @@ class HierarchicalStep(Step):
         return "substeps"
 
 
-class TemplateStep(Step):
-    """TemplateStep is a class of step that transforms a template step into multiple instances according to
+class TemplatedStep(Step):
+    """TemplatedStep is a class of step that transforms a template step into multiple instances according to
     a specified transformation rule and the user-specified configuration."""
 
     def __init__(
@@ -519,7 +519,7 @@ class TemplateStep(Step):
         super().set_layer_state()
 
 
-class LoopStep(TemplateStep):
+class LoopStep(TemplatedStep):
     """A LoopStep allows a user to loop a single step or a sequence of steps a user-configured number of times."""
 
     def __init__(
@@ -597,7 +597,7 @@ class LoopStep(TemplateStep):
         return {"input": input_mappings, "output": output_mappings}
 
 
-class ParallelStep(TemplateStep):
+class ParallelStep(TemplatedStep):
     """A ParallelStep allows a user to run a sequence of steps in parallel."""
 
     @property
