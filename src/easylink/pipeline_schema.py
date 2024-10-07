@@ -1,25 +1,35 @@
 from pathlib import Path
+from typing import Iterable
 
 from layered_config_tree import LayeredConfigTree
 
+from easylink.graph_components import EdgeParams
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import Step
+from easylink.step import HierarchicalStep, Step, NotImplementedState
 
 
-class PipelineSchema(Step):
+class PipelineSchema(HierarchicalStep):
     """
     A schema is a Step whose StephGraph determines all possible
     allowable pipelines.
     """
 
+    def __init__(self, name: str, nodes: Iterable[Step], edges: Iterable[EdgeParams]) -> None:
+        super().__init__(name, nodes=nodes, edges=edges)
+
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
 
-    def is_composite(self, step_config) -> bool:
-        return True
-
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config
+
+    def validate_step(
+        self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> dict[str, list[str]]:
+        return super().validate_step({"substeps": pipeline_config}, input_data_config)
+
+    def set_layer_state(self, step_config) -> None:
+        self._layer_state = NotImplementedState(self)
 
     @classmethod
     def _get_schemas(cls) -> list["PipelineSchema"]:

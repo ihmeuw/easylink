@@ -20,7 +20,7 @@ from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
 
-class LayerState(ABC):
+class ImplementationState(ABC):
     def __init__(self, step: "Step"):
         self._step = step
 
@@ -42,7 +42,7 @@ class LayerState(ABC):
         pass
 
 
-class LeafState(LayerState):
+class ImplementedState(ImplementationState):
     def configure_subgraph_steps(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
@@ -98,7 +98,7 @@ class LeafState(LayerState):
         return implementation_edges
 
 
-class CompositeState(LayerState):
+class NotImplementedState(ImplementationState):
     def __init__(self, step: "Step"):
         super().__init__(step)
         if not step.step_graph:
@@ -169,7 +169,7 @@ class CompositeState(LayerState):
     ) -> None:
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
-            step.configure_step(self._step.config, input_data_config)
+            step.configure_step(step_config, input_data_config)
 
 
 class Step:
@@ -213,7 +213,7 @@ class Step:
         return None
 
     @property
-    def layer_state(self) -> LayerState:
+    def layer_state(self) -> ImplementationState:
         if self._layer_state is None:
             raise ValueError(f"Step {self.name}'s layer_state was invoked before being set")
         return self._layer_state
@@ -264,16 +264,8 @@ class Step:
     def validate_step(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> dict[str, list[str]]:
-        # BasicStep
         if len(self.step_graph.nodes) == 0:
             return self.validate_leaf(step_config)
-        # CompositeStep
-        elif self.config_key is None:
-            if "implementation" in step_config:
-                return self.validate_leaf(step_config)
-            else:
-                return self.validate_composite(step_config, input_data_config)
-        # HierarchicalStep
         elif self.config_key in step_config:
             return self.validate_composite(step_config[self.config_key], input_data_config)
         else:
@@ -289,11 +281,11 @@ class Step:
         self.parent_step = step
 
     def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
-        self.set_step_config(step_config)
-        self.set_layer_state()
-        self.layer_state.configure_subgraph_steps(step_config, input_data_config)
+        self.set_step_config(parent_config)
+        self.set_layer_state(parent_config)
+        self.layer_state.configure_subgraph_steps(self.config, input_data_config)
 
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         step_config = parent_config[self.name]
@@ -303,19 +295,14 @@ class Step:
             else step_config[self.config_key]
         )
 
-    def set_layer_state(self) -> None:
-        if self.config_key is not None:
-            if len(self.config) > 1:
-                self._layer_state = CompositeState(self)
-            else:
-                self._layer_state = LeafState(self)
-        elif len(self.step_graph.nodes) == 0:
-            self._layer_state = LeafState(self)
+    def set_layer_state(self, parent_config) -> None:
+        step_config = parent_config[self.name]
+        if len(self.step_graph.nodes) == 0:
+            self._layer_state = ImplementedState(self)
+        elif self.config_key in step_config:
+            self._layer_state = NotImplementedState(self)
         else:
-            if "implementation" in self.config:
-                self._layer_state = LeafState(self)
-            else:
-                self._layer_state = CompositeState(self)
+            self._layer_state = ImplementedState(self)
 
     def _get_step_graph(self, nodes: list["Step"], edges: list[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
@@ -382,8 +369,8 @@ class IOStep(Step):
     def set_step_config(self, parent_config: LayeredConfigTree) -> None:
         self._config = parent_config
 
-    def set_layer_state(self) -> None:
-        self._layer_state = LeafState(self)
+    def set_layer_state(self, step_config) -> None:
+        self._layer_state = ImplementedState(self)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
@@ -405,10 +392,10 @@ class InputStep(IOStep):
         super().__init__(step_name="input_data", output_slots=output_slots)
 
     def configure_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         """Configure the step against the pipeline configuration and input data."""
-        super().configure_step(step_config, input_data_config)
+        super().configure_step(parent_config, input_data_config)
         for input_data_key in input_data_config:
             self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
 
@@ -513,10 +500,10 @@ class TemplatedStep(Step):
         else:
             self._config = step_config
 
-    def set_layer_state(self) -> None:
+    def set_layer_state(self, step_config) -> None:
         self.step_graph = self._update_step_graph()
         self.slot_mappings = self._update_slot_mappings()
-        super().set_layer_state()
+        super().set_layer_state(step_config)
 
 
 class LoopStep(TemplatedStep):
