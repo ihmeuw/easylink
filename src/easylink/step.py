@@ -272,11 +272,11 @@ class BasicStep(Step):
         implementation_names = []
         step_names.reverse()
         node_names.reverse()
-        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-            if step_name != node_name:
-                implementation_names = node_names[i:]
-                break
-        implementation_names.append(self.config["implementation"]["name"])
+        # for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+        #     if step_name != node_name:
+        #         implementation_names = node_names[i:]
+        #         break
+        implementation_names = step_names + [self.config["implementation"]["name"]]
         return "_".join(implementation_names)
 
 

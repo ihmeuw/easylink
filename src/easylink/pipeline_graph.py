@@ -21,6 +21,7 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
+        self.merge_joint_implementations()
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
 
@@ -34,6 +35,37 @@ class PipelineGraph(ImplementationGraph):
     def implementations(self) -> List[Implementation]:
         """Convenience property to get all implementations in the graph."""
         return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
+
+    def merge_joint_implementations(self) -> None:
+        joint_implementations_by_name = {
+            joint_implementation.name: {
+                "implemented_nodes": {
+                    node
+                    for node in self.implementation_nodes
+                    if self.nodes[node]["implementation"].name == joint_implementation.name
+                },
+                "metadata_steps": set(joint_implementation.metadata_steps),
+            }
+            for joint_implementation in set(
+                implementation
+                for implementation in self.implementations
+                if implementation.is_joint
+            )
+        }
+        for (
+            joint_implementation_name,
+            implementation_dict,
+        ) in joint_implementations_by_name.items():
+            implemented_steps = {
+                self.nodes[node]["implementation"].schema_step_name
+                for node in implementation_dict["implemented_nodes"]
+            }
+            if implemented_steps != implementation_dict["metadata_steps"]:
+                raise RuntimeError(
+                    "Joint implementation doesn't match required number of steps."
+                )
+
+            return
 
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""

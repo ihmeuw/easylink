@@ -30,7 +30,8 @@ class Implementation:
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
-        self.metadata_step_name = self._metadata["step"]
+        self.metadata_steps = self._metadata["steps"]
+        self.is_joint = len(self.metadata_steps) > 1
         self.schema_step_name = step_name
         self.requires_spark = self._metadata.get("requires_spark", False)
 
@@ -55,9 +56,9 @@ class Implementation:
         return metadata[self.name]
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        if self.metadata_step_name != self.schema_step_name:
+        if self.schema_step_name not in self.metadata_steps:
             logs.append(
-                f"Implementaton metadata step '{self.metadata_step_name}' does not "
+                f"Implementaton metadata steps '{self.metadata_steps}' does not "
                 f"match pipeline configuration step '{self.schema_step_name}'"
             )
         return logs
