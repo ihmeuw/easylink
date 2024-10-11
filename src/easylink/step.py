@@ -21,14 +21,18 @@ from easylink.utilities.data_utils import load_yaml
 
 
 class LayerState(ABC):
-    def __init__(self, step: "Step", config):
+    def __init__(
+        self,
+        step: "Step",
+        pipeline_config: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ):
         self._step = step
-        self.config = config
+        self.pipeline_config = pipeline_config
+        self.input_data_config = input_data_config
 
     @abstractmethod
-    def configure_subgraph_steps(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
+    def configure_subgraph_steps(self) -> None:
         """Configure the step against the pipeline configuration and input data."""
         pass
 
@@ -44,13 +48,13 @@ class LayerState(ABC):
 
 
 class LeafState(LayerState):
-    def configure_subgraph_steps(self, input_data_config: LayeredConfigTree) -> None:
+    def configure_subgraph_steps(self) -> None:
         pass
 
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
-        implementation_config = self.config["implementation"]
+        implementation_config = self.pipeline_config["implementation"]
         implementation_node_name = self._step.implementation_node_name
         implementation = Implementation(
             step_name=self._step.step_name,
@@ -84,10 +88,10 @@ class LeafState(LayerState):
             ]
             for mapping in mappings:
                 if (
-                    "input_data_file" in self.config
+                    "input_data_file" in self.pipeline_config
                     and edge.source_node == "pipeline_graph_input_data"
                 ):
-                    edge.output_slot = self.config["input_data_file"]
+                    edge.output_slot = self.pipeline_config["input_data_file"]
                 imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
@@ -98,8 +102,13 @@ class LeafState(LayerState):
 
 
 class CompositeState(LayerState):
-    def __init__(self, step: "Step", config: LayeredConfigTree):
-        super().__init__(step, config)
+    def __init__(
+        self,
+        step: "Step",
+        pipeline_config: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ):
+        super().__init__(step, pipeline_config, input_data_config)
         if not step.step_graph:
             raise ValueError(
                 f"CompositeState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
@@ -163,10 +172,10 @@ class CompositeState(LayerState):
             raise ValueError(f"No edges found for {self._step.name} in edge {edge}")
         return implementation_edges
 
-    def configure_subgraph_steps(self, input_data_config: LayeredConfigTree) -> None:
+    def configure_subgraph_steps(self) -> None:
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
-            step.configure_step(self.config, input_data_config)
+            step.configure_step(self.pipeline_config, self.input_data_config)
 
 
 class Step:
@@ -274,8 +283,8 @@ class Step:
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         step_config = parent_config[self.name]
-        self.set_layer_state(step_config)
-        self.layer_state.configure_subgraph_steps(input_data_config)
+        self.set_layer_state(step_config, input_data_config)
+        self.layer_state.configure_subgraph_steps()
 
     def get_state_config(self, step_config: LayeredConfigTree) -> None:
         return (
@@ -284,14 +293,16 @@ class Step:
             else step_config[self.config_key]
         )
 
-    def set_layer_state(self, step_config) -> None:
+    def set_layer_state(
+        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
         state_config = self.get_state_config(step_config)
         if len(self.step_graph.nodes) == 0:
-            self._layer_state = LeafState(self, state_config)
+            self._layer_state = LeafState(self, state_config, input_data_config)
         elif self.config_key in step_config:
-            self._layer_state = CompositeState(self, state_config)
+            self._layer_state = CompositeState(self, state_config, input_data_config)
         else:
-            self._layer_state = LeafState(self, state_config)
+            self._layer_state = LeafState(self, state_config, input_data_config)
 
     def _get_step_graph(self, nodes: list["Step"], edges: list[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
@@ -327,7 +338,9 @@ class Step:
             if step_name != node_name:
                 implementation_names = node_names[i:]
                 break
-        implementation_names.append(self.layer_state.config["implementation"]["name"])
+        implementation_names.append(
+            self.layer_state.pipeline_config["implementation"]["name"]
+        )
         return "_".join(implementation_names)
 
     def implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
@@ -358,7 +371,7 @@ class IOStep(Step):
     def configure_step(
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
-        self._layer_state = LeafState(self, parent_config)
+        self._layer_state = LeafState(self, parent_config, input_data_config)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
@@ -487,8 +500,8 @@ class TemplatedStep(Step):
         num_repeats = len(self.get_state_config(step_config))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
-        self.set_layer_state(step_config)
-        self.layer_state.configure_subgraph_steps(input_data_config)
+        self.set_layer_state(step_config, input_data_config)
+        self.layer_state.configure_subgraph_steps()
 
 
 class LoopStep(TemplatedStep):

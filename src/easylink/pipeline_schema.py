@@ -20,19 +20,16 @@ class PipelineSchema(HierarchicalStep):
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
 
-    def get_state_config(self, parent_config: LayeredConfigTree) -> None:
-        self._config = parent_config
-
     def validate_step(
         self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> dict[str, list[str]]:
         return super().validate_step({"substeps": pipeline_config}, input_data_config)
 
     def configure_step(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
-        self._layer_state = CompositeState(self, parent_config)
-        self.layer_state.configure_subgraph_steps(input_data_config)
+        self._layer_state = CompositeState(self, pipeline_config, input_data_config)
+        self.layer_state.configure_subgraph_steps()
 
     @classmethod
     def _get_schemas(cls) -> list["PipelineSchema"]:
