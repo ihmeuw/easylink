@@ -290,9 +290,7 @@ class Step:
     ) -> None:
         step_config = parent_config[self.name]
         state_config = self.get_state_config(step_config)
-        if len(self.step_graph.nodes) == 0:
-            self._layer_state = LeafState(self, state_config, input_data_config)
-        elif self.config_key in step_config:
+        if self.config_key is not None and self.config_key in step_config:
             self._layer_state = CompositeState(self, state_config, input_data_config)
         else:
             self._layer_state = LeafState(self, state_config, input_data_config)
@@ -489,15 +487,10 @@ class TemplatedStep(Step):
         return step_config
 
     def set_layer_state(self, parent_config, input_data_config):
-        step_config = parent_config[self.name]
-        state_config = self.get_state_config(step_config)
-        num_repeats = len(state_config)
+        num_repeats = len(self.get_state_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
-        if self.config_key in step_config:
-            self._layer_state = CompositeState(self, state_config, input_data_config)
-        else:
-            self._layer_state = LeafState(self, state_config, input_data_config)
+        super().set_layer_state(parent_config, input_data_config)
 
 
 class LoopStep(TemplatedStep):
