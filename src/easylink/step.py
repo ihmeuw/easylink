@@ -32,11 +32,6 @@ class LayerState(ABC):
         self.input_data_config = input_data_config
 
     @abstractmethod
-    def configure_subgraph_steps(self) -> None:
-        """Configure the step against the pipeline configuration and input data."""
-        pass
-
-    @abstractmethod
     def get_implementation_graph(self) -> ImplementationGraph:
         """Resolve the graph composed of Steps into a graph composed of Implementations."""
         pass
@@ -48,9 +43,6 @@ class LayerState(ABC):
 
 
 class LeafState(LayerState):
-    def configure_subgraph_steps(self) -> None:
-        pass
-
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
@@ -113,6 +105,7 @@ class CompositeState(LayerState):
             raise ValueError(
                 f"CompositeState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
             )
+        self.configure_subgraph_steps()
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Call get_implementation_graph on each subgraph node and update the graph."""
@@ -284,7 +277,6 @@ class Step:
     ) -> None:
         step_config = parent_config[self.name]
         self.set_layer_state(step_config, input_data_config)
-        self.layer_state.configure_subgraph_steps()
 
     def get_state_config(self, step_config: LayeredConfigTree) -> None:
         return (
@@ -501,7 +493,6 @@ class TemplatedStep(Step):
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
         self.set_layer_state(step_config, input_data_config)
-        self.layer_state.configure_subgraph_steps()
 
 
 class LoopStep(TemplatedStep):
