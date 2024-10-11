@@ -102,7 +102,7 @@ class Config(LayeredConfigTree):
             self.update({"environment": {"slurm": {}}}, layer="default")
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
-        self.schema.configure_step(self.pipeline, self.input_data)
+        self.schema.configure_pipeline(self.pipeline, self.input_data)
         self._validate()
         self.freeze()
 

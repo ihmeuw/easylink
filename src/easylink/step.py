@@ -168,7 +168,7 @@ class CompositeState(LayerState):
     def configure_subgraph_steps(self) -> None:
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
-            step.configure_step(self.pipeline_config, self.input_data_config)
+            step.set_layer_state(self.pipeline_config, self.input_data_config)
 
 
 class Step:
@@ -272,11 +272,11 @@ class Step:
     def set_parent_step(self, step: "Step") -> None:
         self.parent_step = step
 
-    def configure_step(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    ) -> None:
-        step_config = parent_config[self.name]
-        self.set_layer_state(step_config, input_data_config)
+    # def configure_step(
+    #     self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    # ) -> None:
+    #     step_config = parent_config[self.name]
+    #     self.set_layer_state(step_config, input_data_config)
 
     def get_state_config(self, step_config: LayeredConfigTree) -> None:
         return (
@@ -286,8 +286,9 @@ class Step:
         )
 
     def set_layer_state(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
+        step_config = parent_config[self.name]
         state_config = self.get_state_config(step_config)
         if len(self.step_graph.nodes) == 0:
             self._layer_state = LeafState(self, state_config, input_data_config)
@@ -360,7 +361,7 @@ class IOStep(Step):
     ) -> dict[str, list[str]]:
         return {}
 
-    def configure_step(
+    def set_layer_state(
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self._layer_state = LeafState(self, parent_config, input_data_config)
@@ -384,11 +385,11 @@ class InputStep(IOStep):
     ) -> None:
         super().__init__(step_name="input_data", output_slots=output_slots)
 
-    def configure_step(
+    def set_layer_state(
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         """Configure the step against the pipeline configuration and input data."""
-        super().configure_step(parent_config, input_data_config)
+        super().set_layer_state(parent_config, input_data_config)
         for input_data_key in input_data_config:
             self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
 
@@ -487,12 +488,16 @@ class TemplatedStep(Step):
             return expanded_step_config
         return step_config
 
-    def configure_step(self, parent_config, input_data_config):
+    def set_layer_state(self, parent_config, input_data_config):
         step_config = parent_config[self.name]
-        num_repeats = len(self.get_state_config(step_config))
+        state_config = self.get_state_config(step_config)
+        num_repeats = len(state_config)
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
-        self.set_layer_state(step_config, input_data_config)
+        if self.config_key in step_config:
+            self._layer_state = CompositeState(self, state_config, input_data_config)
+        else:
+            self._layer_state = LeafState(self, state_config, input_data_config)
 
 
 class LoopStep(TemplatedStep):

@@ -63,7 +63,7 @@ def test_validate_input(test_dir: str) -> None:
 def test_composite_step_get_implementation_graph(default_config) -> None:
     nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
-    schema.configure_step(default_config.pipeline, default_config.input_data)
+    schema.configure_pipeline(default_config.pipeline, default_config.input_data)
     implementation_graph = schema.get_implementation_graph()
     assert list(implementation_graph.nodes) == [
         "input_data",
