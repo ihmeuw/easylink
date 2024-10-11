@@ -272,12 +272,6 @@ class Step:
     def set_parent_step(self, step: "Step") -> None:
         self.parent_step = step
 
-    # def configure_step(
-    #     self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
-    # ) -> None:
-    #     step_config = parent_config[self.name]
-    #     self.set_layer_state(step_config, input_data_config)
-
     def get_state_config(self, step_config: LayeredConfigTree) -> None:
         return (
             step_config
