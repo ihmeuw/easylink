@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -23,7 +25,7 @@ from easylink.utilities.data_utils import load_yaml
 class LayerState(ABC):
     def __init__(
         self,
-        step: "Step",
+        step: Step,
         pipeline_config: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
@@ -96,7 +98,7 @@ class LeafState(LayerState):
 class CompositeState(LayerState):
     def __init__(
         self,
-        step: "Step",
+        step: Step,
         pipeline_config: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
@@ -185,7 +187,7 @@ class Step:
         name: str = None,
         input_slots: Iterable[InputSlot] = (),
         output_slots: Iterable[OutputSlot] = (),
-        nodes: Iterable["Step"] = (),
+        nodes: Iterable[Step] = (),
         edges: Iterable[EdgeParams] = (),
         input_slot_mappings: Iterable[InputSlotMapping] = (),
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
@@ -269,7 +271,7 @@ class Step:
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
         return self.layer_state.get_implementation_edges(edge)
 
-    def set_parent_step(self, step: "Step") -> None:
+    def set_parent_step(self, step: Step) -> None:
         self.parent_step = step
 
     def get_state_config(self, step_config: LayeredConfigTree) -> None:
@@ -289,7 +291,7 @@ class Step:
         else:
             self._layer_state = LeafState(self, state_config, input_data_config)
 
-    def _get_step_graph(self, nodes: list["Step"], edges: list[EdgeParams]) -> StepGraph:
+    def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
         step_graph = StepGraph()
         for step in nodes:
