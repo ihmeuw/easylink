@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Optional
@@ -38,7 +40,7 @@ class EdgeParams:
     filepaths: Optional[tuple[str]] = None
 
     @classmethod
-    def from_graph_edge(cls, source, sink, edge_attrs) -> "EdgeParams":
+    def from_graph_edge(cls, source, sink, edge_attrs) -> EdgeParams:
         return cls(
             source,
             sink,
@@ -60,11 +62,11 @@ class StepGraph(nx.MultiDiGraph):
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
-    def steps(self) -> list["Step"]:
+    def steps(self) -> list[Step]:
         """Convenience property to get all steps in the graph."""
         return [self.nodes[node]["step"] for node in self.step_nodes]
 
-    def add_node_from_step(self, step: "Step") -> None:
+    def add_node_from_step(self, step: Step) -> None:
         self.add_node(step.name, step=step)
 
     def add_edge_from_params(self, edge_params: EdgeParams) -> None:
