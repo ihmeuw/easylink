@@ -23,6 +23,9 @@ class PipelineSchema(HierarchicalStep):
     def validate_step(
         self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> dict[str, list[str]]:
+        """Nest the full pipeline configuration under the "substeps" key of a root
+        hierarchical step. This must be added because the root step doesn't exist from the user's
+        perspective and it doesn't appear explicitly in the pipeline.yaml"""
         return super().validate_step({"substeps": pipeline_config}, input_data_config)
 
     def configure_pipeline(
