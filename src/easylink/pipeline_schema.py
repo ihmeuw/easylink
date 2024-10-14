@@ -5,7 +5,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import EdgeParams
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import NonLeafConfigurationState, HierarchicalStep, Step
+from easylink.step import HierarchicalStep, NonLeafConfigurationState, Step
 
 
 class PipelineSchema(HierarchicalStep):
