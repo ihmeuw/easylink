@@ -22,7 +22,7 @@ def test_implementation_node_name(
     implemented_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = Step(**implemented_step_params)
-    step.set_layer_state(default_config["pipeline"], {})
+    step.set_configuration_state(default_config["pipeline"], {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
 
@@ -91,7 +91,7 @@ def test_implemented_step_get_implementation_graph(
     implemented_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = Step(**implemented_step_params)
-    step.set_layer_state(default_config["pipeline"], {})
+    step.set_configuration_state(default_config["pipeline"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
@@ -165,7 +165,7 @@ def test_hierarchical_step_get_implementation_graph(
     pipeline_params = LayeredConfigTree(
         {"step_4": {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}}
     )
-    step.set_layer_state(pipeline_params, {})
+    step.set_configuration_state(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
@@ -191,7 +191,7 @@ def test_hierarchical_step_get_implementation_graph(
             },
         }
     )
-    step.set_layer_state(pipeline_params, {})
+    step.set_configuration_state(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_4a_python_pandas",
@@ -345,7 +345,7 @@ def test_loop_get_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
-    step.set_layer_state(default_config["pipeline"], {})
+    step.set_configuration_state(default_config["pipeline"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
@@ -384,7 +384,7 @@ def test_loop_get_implementation_graph(
             }
         }
     )
-    step.set_layer_state(pipeline_params, {})
+    step.set_configuration_state(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_3_loop_1_step_3_python_pandas",
@@ -559,7 +559,7 @@ def test_parallel_step_get_implementation_graph(
             }
         }
     )
-    step.set_layer_state(pipeline_params, {})
+    step.set_configuration_state(pipeline_params, {})
     subgraph = step.get_implementation_graph()
     assert set(subgraph.nodes) == {
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",

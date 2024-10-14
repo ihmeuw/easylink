@@ -5,7 +5,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import EdgeParams
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import CompositeState, HierarchicalStep, Step
+from easylink.step import NonLeafConfigurationState, HierarchicalStep, Step
 
 
 class PipelineSchema(HierarchicalStep):
@@ -31,7 +31,9 @@ class PipelineSchema(HierarchicalStep):
     def configure_pipeline(
         self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
-        self._layer_state = CompositeState(self, pipeline_config, input_data_config)
+        self._configuration_state = NonLeafConfigurationState(
+            self, pipeline_config, input_data_config
+        )
 
     @classmethod
     def _get_schemas(cls) -> list["PipelineSchema"]:

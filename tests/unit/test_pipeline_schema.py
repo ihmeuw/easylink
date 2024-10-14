@@ -60,7 +60,7 @@ def test_validate_input(test_dir: str) -> None:
     )
 
 
-def test_composite_step_get_implementation_graph(default_config) -> None:
+def test_pipeline_schema_get_implementation_graph(default_config) -> None:
     nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
     schema.configure_pipeline(default_config.pipeline, default_config.input_data)

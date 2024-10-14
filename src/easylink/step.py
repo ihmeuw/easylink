@@ -22,7 +22,13 @@ from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
 
-class LayerState(ABC):
+class ConfigurationState(ABC):
+    """
+    Configuration States define the exact pipeline configuration state for a given step, including the
+    strategy required to get the implementation graph from the step. There are two possible configured
+    step states: "Leaf" and "Non-Leaf".
+    """
+
     def __init__(
         self,
         step: Step,
@@ -44,7 +50,9 @@ class LayerState(ABC):
         pass
 
 
-class LeafState(LayerState):
+class LeafConfigurationState(ConfigurationState):
+    """Leaf State corresponds to a leaf node in the pipeline graph that is implemented by a single implementation."""
+
     def get_implementation_graph(self) -> ImplementationGraph:
         implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
@@ -95,7 +103,11 @@ class LeafState(LayerState):
         return implementation_edges
 
 
-class CompositeState(LayerState):
+class NonLeafConfigurationState(ConfigurationState):
+    """A Non-Leaf State is selected when a step has a non-trivial step graph and has been configured
+    to use the step graph (e.g. through a configuration key in the pipeline specification yaml).
+    """
+
     def __init__(
         self,
         step: Step,
@@ -105,7 +117,7 @@ class CompositeState(LayerState):
         super().__init__(step, pipeline_config, input_data_config)
         if not step.step_graph:
             raise ValueError(
-                f"CompositeState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
+                f"NonLeafConfigurationState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
             )
         self.configure_subgraph_steps()
 
@@ -170,7 +182,7 @@ class CompositeState(LayerState):
     def configure_subgraph_steps(self) -> None:
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
-            step.set_layer_state(self.pipeline_config, self.input_data_config)
+            step.set_configuration_state(self.pipeline_config, self.input_data_config)
 
 
 class Step:
@@ -206,17 +218,19 @@ class Step:
             "output": list(output_slot_mappings),
         }
         self.parent_step = None
-        self._layer_state = None
+        self._configuration_state = None
 
     @property
     def config_key(self):
         return None
 
     @property
-    def layer_state(self) -> LayerState:
-        if self._layer_state is None:
-            raise ValueError(f"Step {self.name}'s layer_state was invoked before being set")
-        return self._layer_state
+    def configuration_state(self) -> ConfigurationState:
+        if self._configuration_state is None:
+            raise ValueError(
+                f"Step {self.name}'s configuration_state was invoked before being set"
+            )
+        return self._configuration_state
 
     def validate_leaf(self, step_config: LayeredConfigTree) -> dict[str, list[str]]:
         errors = {}
@@ -236,7 +250,7 @@ class Step:
             ]
         return errors
 
-    def validate_composite(
+    def validate_nonleaf(
         self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> dict[str, list[str]]:
         errors = {}
@@ -261,15 +275,15 @@ class Step:
         if len(self.step_graph.nodes) == 0:
             return self.validate_leaf(step_config)
         elif self.config_key in step_config:
-            return self.validate_composite(step_config[self.config_key], input_data_config)
+            return self.validate_nonleaf(step_config[self.config_key], input_data_config)
         else:
             return self.validate_leaf(step_config)
 
     def get_implementation_graph(self) -> ImplementationGraph:
-        return self.layer_state.get_implementation_graph()
+        return self.configuration_state.get_implementation_graph()
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        return self.layer_state.get_implementation_edges(edge)
+        return self.configuration_state.get_implementation_edges(edge)
 
     def set_parent_step(self, step: Step) -> None:
         self.parent_step = step
@@ -281,15 +295,19 @@ class Step:
             else step_config[self.config_key]
         )
 
-    def set_layer_state(
+    def set_configuration_state(
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         step_config = parent_config[self.name]
         state_config = self.get_state_config(step_config)
         if self.config_key is not None and self.config_key in step_config:
-            self._layer_state = CompositeState(self, state_config, input_data_config)
+            self._configuration_state = NonLeafConfigurationState(
+                self, state_config, input_data_config
+            )
         else:
-            self._layer_state = LeafState(self, state_config, input_data_config)
+            self._configuration_state = LeafConfigurationState(
+                self, state_config, input_data_config
+            )
 
     def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
         """Create a StepGraph from the nodes and edges the step was initialized with."""
@@ -326,7 +344,7 @@ class Step:
                 implementation_names = node_names[i:]
                 break
         implementation_names.append(
-            self.layer_state.pipeline_config["implementation"]["name"]
+            self.configuration_state.pipeline_config["implementation"]["name"]
         )
         return "_".join(implementation_names)
 
@@ -355,10 +373,12 @@ class IOStep(Step):
     ) -> dict[str, list[str]]:
         return {}
 
-    def set_layer_state(
+    def set_configuration_state(
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
-        self._layer_state = LeafState(self, parent_config, input_data_config)
+        self._configuration_state = LeafConfigurationState(
+            self, parent_config, input_data_config
+        )
 
     def get_implementation_graph(self) -> ImplementationGraph:
         """Add a single node to the graph based on step name."""
@@ -379,11 +399,11 @@ class InputStep(IOStep):
     ) -> None:
         super().__init__(step_name="input_data", output_slots=output_slots)
 
-    def set_layer_state(
+    def set_configuration_state(
         self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         """Configure the step against the pipeline configuration and input data."""
-        super().set_layer_state(parent_config, input_data_config)
+        super().set_configuration_state(parent_config, input_data_config)
         for input_data_key in input_data_config:
             self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
 
@@ -482,11 +502,11 @@ class TemplatedStep(Step):
             return expanded_step_config
         return step_config
 
-    def set_layer_state(self, parent_config, input_data_config):
+    def set_configuration_state(self, parent_config, input_data_config):
         num_repeats = len(self.get_state_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
-        super().set_layer_state(parent_config, input_data_config)
+        super().set_configuration_state(parent_config, input_data_config)
 
 
 class LoopStep(TemplatedStep):
