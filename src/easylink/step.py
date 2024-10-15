@@ -262,6 +262,11 @@ class BasicStep(Step):
         introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
         name."""
         step = self
+        implementation_name = self.config["implementation"]["name"]
+        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)[
+            implementation_name
+        ]
+        is_joint = len(implementation_metadata["steps"]) > 1
         node_names = []
         step_names = []
         while step:
@@ -272,11 +277,13 @@ class BasicStep(Step):
         implementation_names = []
         step_names.reverse()
         node_names.reverse()
-        # for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-        #     if step_name != node_name:
-        #         implementation_names = node_names[i:]
-        #         break
-        implementation_names = step_names + [self.config["implementation"]["name"]]
+        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+            if step_name != node_name:
+                implementation_names = node_names[i:]
+                break
+        if is_joint:
+            implementation_names.append(step_names[-1])
+        implementation_names.append(self.config["implementation"]["name"])
         return "_".join(implementation_names)
 
 
