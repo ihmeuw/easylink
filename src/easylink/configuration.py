@@ -1,6 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from layered_config_tree import LayeredConfigTree
 
@@ -52,7 +52,7 @@ def load_params_from_specification(
 
 def _load_input_data_paths(
     input_data_specification_path: Union[str, Path]
-) -> Dict[str, List[Path]]:
+) -> Dict[str, list[Path]]:
     """Create dictionary of input data paths from the input data yaml file."""
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
@@ -102,7 +102,7 @@ class Config(LayeredConfigTree):
             self.update({"environment": {"slurm": {}}}, layer="default")
 
         self.update({"schema": self._get_schema()}, layer="initial_data")
-        self.schema.configure_step(self.pipeline, self.input_data)
+        self.schema.configure_pipeline(self.pipeline, self.input_data)
         self._validate()
         self.freeze()
 

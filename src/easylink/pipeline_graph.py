@@ -25,17 +25,6 @@ class PipelineGraph(ImplementationGraph):
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
 
-    @property
-    def implementation_nodes(self) -> List[str]:
-        """Return list of nodes tied to specific implementations."""
-        ordered_nodes = list(nx.topological_sort(self))
-        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
-
-    @property
-    def implementations(self) -> List[Implementation]:
-        """Convenience property to get all implementations in the graph."""
-        return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
-
     def merge_joint_implementations(self) -> None:
         joint_implementations_by_name = {
             joint_implementation.name: {
