@@ -1,45 +1,49 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Iterable
 
-import networkx as nx
 from layered_config_tree import LayeredConfigTree
 
+from easylink.graph_components import EdgeParams
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
-from easylink.step import CompositeStep, Step
+from easylink.step import HierarchicalStep, NonLeafConfigurationState, Step
 
 
-class PipelineSchema(CompositeStep):
+class PipelineSchema(HierarchicalStep):
     """
-    A schema is a CompositeStep whose StephGraph determines all possible
+    A schema is a Step whose StephGraph determines all possible
     allowable pipelines.
     """
+
+    def __init__(self, name: str, nodes: Iterable[Step], edges: Iterable[EdgeParams]) -> None:
+        super().__init__(name, nodes=nodes, edges=edges)
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
 
-    def set_step_config(self, parent_config: LayeredConfigTree) -> None:
-        self._config = parent_config
+    def validate_step(
+        self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> dict[str, list[str]]:
+        """Nest the full pipeline configuration under the "substeps" key of a root
+        hierarchical step. This must be added because the root step doesn't exist from the user's
+        perspective and it doesn't appear explicitly in the pipeline.yaml"""
+        return super().validate_step({"substeps": pipeline_config}, input_data_config)
 
-    @property
-    def step_nodes(self) -> List[str]:
-        """Return list of nodes tied to specific steps."""
-        ordered_nodes = list(nx.topological_sort(self.step_graph))
-        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
-
-    @property
-    def steps(self) -> List[Step]:
-        """Convenience property to get all steps in the graph."""
-        return [self.step_graph.nodes[node]["step"] for node in self.step_nodes]
+    def configure_pipeline(
+        self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+    ) -> None:
+        self._configuration_state = NonLeafConfigurationState(
+            self, pipeline_config, input_data_config
+        )
 
     @classmethod
-    def _get_schemas(cls) -> List["PipelineSchema"]:
+    def _get_schemas(cls) -> list["PipelineSchema"]:
         """Creates the allowable schemas for the pipeline."""
         return [
             cls(name, nodes=nodes, edges=edges)
             for name, (nodes, edges) in ALLOWED_SCHEMA_PARAMS.items()
         ]
 
-    def validate_inputs(self, input_data: Dict[str, Path]) -> Optional[List[str]]:
+    def validate_inputs(self, input_data: dict[str, Path]) -> dict[str, list[str]]:
         "For each file slot used from the input data, validate the file's existence and properties."
         errors = {}
         for _, _, edge_attrs in self.step_graph.out_edges("input_data", data=True):
