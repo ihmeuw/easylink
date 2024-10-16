@@ -319,19 +319,6 @@ class Step:
         return step_graph
 
     @property
-    def implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
-        return {
-            "input": [
-                InputSlotMapping(slot, self.get_implementation_node_name(), slot)
-                for slot in self.input_slots
-            ],
-            "output": [
-                OutputSlotMapping(slot, self.get_implementation_node_name(), slot)
-                for slot in self.output_slots
-            ],
-        }
-
-    @property
     def implementation_node_name(self) -> str:
         """Resolve a sensible unique node name for the implementation graph.
         This method compares the step node names with the step names through the step hierarchy and
