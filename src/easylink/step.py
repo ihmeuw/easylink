@@ -59,7 +59,7 @@ class LeafConfigurationState(ConfigurationState):
         implementation_config = self.pipeline_config["implementation"]
         implementation_node_name = self._step.implementation_node_name
         implementation = Implementation(
-            step_name=self._step.step_name,
+            schema_steps=[self._step.step_name],
             implementation_config=implementation_config,
             input_slots=self._step.input_slots.values(),
             output_slots=self._step.output_slots.values(),
@@ -331,7 +331,8 @@ class Step:
             ],
         }
 
-    def get_implementation_node_name(self) -> str:
+    @property
+    def implementation_node_name(self) -> str:
         """Resolve a sensible unique node name for the implementation graph.
         This method compares the step node names with the step names through the step hierarchy and
         uses the full suffix of step names starting from wherever the two first differ. For example,
@@ -341,7 +342,10 @@ class Step:
         introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
         name."""
         step = self
-        implementation_name = self.config["implementation"]["name"]
+        implementation_name = self._configuration_state.pipeline_config["implementation"][
+            "name"
+        ]
+        ### This happens before validation: BAD
         implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)[
             implementation_name
         ]
@@ -356,13 +360,14 @@ class Step:
         implementation_names = []
         step_names.reverse()
         node_names.reverse()
-        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-            if step_name != node_name:
-                implementation_names = node_names[i:]
-                break
         if is_joint:
-            implementation_names.append(step_names[-1])
-        implementation_names.append(self.config["implementation"]["name"])
+            implementation_names = node_names
+        else:
+            for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+                if step_name != node_name:
+                    implementation_names = node_names[i:]
+                    break
+        implementation_names.append(implementation_name)
         return "_".join(implementation_names)
 
     def implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:

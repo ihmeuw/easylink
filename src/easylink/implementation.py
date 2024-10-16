@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence
 
 from layered_config_tree import LayeredConfigTree
 
@@ -20,7 +22,7 @@ class Implementation:
 
     def __init__(
         self,
-        step_name: str,
+        schema_steps: Sequence[str],
         implementation_config: LayeredConfigTree,
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
@@ -30,13 +32,48 @@ class Implementation:
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
-        self.metadata_steps = self._metadata["steps"]
+        self.metadata_steps = set(self._metadata["steps"])
         self.is_joint = len(self.metadata_steps) > 1
-        self.schema_step_name = step_name
+        self.schema_steps = set(schema_steps)
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"
+
+    @classmethod
+    def merge_implementations(
+        cls, implementations: Sequence[Implementation]
+    ) -> Implementation:
+        # Raise if the implementations have different names
+        if len(set(impl.name for impl in implementations)) > 1:
+            raise ValueError("Implementations must have the same name to be merged.")
+        implementation_name = implementations[0].name
+        schema_steps = {
+            step for implementation in implementations for step in implementation.schema_steps
+        }
+        input_slots = [
+            slot
+            for implementation in implementations
+            for slot in implementation.input_slots.values()
+        ]
+        output_slots = [
+            slot
+            for implementation in implementations
+            for slot in implementation.output_slots.values()
+        ]
+        implementation_config = LayeredConfigTree()
+        implementation_config.update({"name": implementation_name})
+        implementation_config.update(
+            {
+                "configuration": {
+                    env_var: value
+                    for implementation in implementations
+                    for env_var, value in implementation.environment_variables.items()
+                }
+            }
+        )
+
+        return Implementation(schema_steps, implementation_config, input_slots, output_slots)
 
     def validate(self) -> List[Optional[str]]:
         """Validates individual Implementation instances. This is intended to be
@@ -56,10 +93,10 @@ class Implementation:
         return metadata[self.name]
 
     def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        if self.schema_step_name not in self.metadata_steps:
+        if not self.schema_steps.issubset(self.metadata_steps):
             logs.append(
                 f"Implementaton metadata steps '{self.metadata_steps}' does not "
-                f"match pipeline configuration step '{self.schema_step_name}'"
+                f"match pipeline configuration step '{self.schema_steps}'"
             )
         return logs
 
@@ -94,5 +131,7 @@ class NullImplementation:
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
     ):
+        self.name = name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
+        self.is_joint = False
