@@ -232,6 +232,7 @@ pipeline {
           deleteDir()
         }
       }
+
       // Tell BitBucket whether the build succeeded or failed.
       script {
         notifyBitbucket()
