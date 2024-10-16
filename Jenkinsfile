@@ -201,16 +201,6 @@ pipeline {
   post {
     always {
       script {
-        if (params.DEBUG) {
-          echo "Debug is enabled. Not cleaning up."
-        } else {
-          echo "Cleaning up."
-          sh "${ACTIVATE} && make clean"
-          sh "rm -rf ${CONDA_ENV_PATH}"
-          
-          // Delete the workspace directory.
-          deleteDir()
-        }
         if (env.BRANCH == "main") {
           channelName = "simsci-ci-status"
         } else {
@@ -229,6 +219,18 @@ pipeline {
           Author: @${slackID}
           Build details: <${env.BUILD_URL}/console|See in web console>
       """.stripIndent()
+
+      // Must be after setting up slack message
+      if (params.DEBUG) {
+          echo "Debug is enabled. Not cleaning up."
+        } else {
+          echo "Cleaning up."
+          sh "${ACTIVATE} && make clean"
+          sh "rm -rf ${CONDA_ENV_PATH}"
+          
+          // Delete the workspace directory.
+          deleteDir()
+        }
       }
       // Tell BitBucket whether the build succeeded or failed.
       script {
