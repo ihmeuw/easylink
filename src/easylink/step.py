@@ -59,7 +59,7 @@ class LeafConfigurationState(ConfigurationState):
         implementation_config = self.pipeline_config["implementation"]
         implementation_node_name = self._step.implementation_node_name
         implementation = Implementation(
-            step_name=self._step.step_name,
+            schema_steps=[self._step.step_name],
             implementation_config=implementation_config,
             input_slots=self._step.input_slots.values(),
             output_slots=self._step.output_slots.values(),
@@ -329,6 +329,14 @@ class Step:
         introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
         name."""
         step = self
+        implementation_name = self._configuration_state.pipeline_config["implementation"][
+            "name"
+        ]
+        ### This happens before validation: BAD
+        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)[
+            implementation_name
+        ]
+        is_joint = len(implementation_metadata["steps"]) > 1
         node_names = []
         step_names = []
         while step:
@@ -339,13 +347,14 @@ class Step:
         implementation_names = []
         step_names.reverse()
         node_names.reverse()
-        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-            if step_name != node_name:
-                implementation_names = node_names[i:]
-                break
-        implementation_names.append(
-            self.configuration_state.pipeline_config["implementation"]["name"]
-        )
+        if is_joint:
+            implementation_names = node_names
+        else:
+            for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+                if step_name != node_name:
+                    implementation_names = node_names[i:]
+                    break
+        implementation_names.append(implementation_name)
         return "_".join(implementation_names)
 
     def implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:

@@ -97,7 +97,7 @@ class Pipeline:
         validation_files, validation_rules = self.get_validations(node, input_slots)
         implementation_rule = ImplementedRule(
             name=node,
-            step_name=implementation.schema_step_name,
+            step_name=" and ".join(implementation.schema_steps),
             implementation_name=implementation.name,
             input_slots=input_slots,
             validations=validation_files,

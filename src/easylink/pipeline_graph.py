@@ -1,4 +1,3 @@
-import copy
 import itertools
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
@@ -8,6 +7,8 @@ import networkx as nx
 from easylink.configuration import Config
 from easylink.graph_components import ImplementationGraph, InputSlot
 from easylink.implementation import Implementation
+from easylink.utilities import paths
+from easylink.utilities.data_utils import load_yaml
 
 
 class PipelineGraph(ImplementationGraph):
@@ -21,8 +22,69 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
+        self.merge_joint_implementations()
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
+
+    def merge_joint_implementations(self):
+        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+        # Find all joint implementations
+        joint_implementations = {
+            data["implementation"].name
+            for node, data in self.nodes(data=True)
+            if data["implementation"].is_joint
+        }
+
+        for joint_implementation in joint_implementations:
+
+            # Find all nodes with the same implementation name
+            nodes_to_merge = [
+                node
+                for node, data in self.nodes(data=True)
+                if data["implementation"].name == joint_implementation
+            ]
+
+            # Check if metadata_steps match
+            implementation_metadata_steps = set(
+                implementation_metadata[joint_implementation]["steps"]
+            )
+            node_set = set(nodes_to_merge)
+            implemented_steps = set(
+                step
+                for node in nodes_to_merge
+                for step in self.nodes[node]["implementation"].schema_steps
+            )
+            if implementation_metadata_steps != implemented_steps:
+                raise ValueError(
+                    f"Metadata steps don't match for implementation {joint_implementation}"
+                )
+
+            # Create a new node
+            ## TODO: Resolve global name better
+            new_node = f"merged_{joint_implementation}"
+            new_implementation = Implementation.merge_implementations(
+                [self.nodes[node]["implementation"] for node in nodes_to_merge]
+            )
+            self.add_node(new_node, implementation=new_implementation)
+
+            # Redirect edges
+            for node in nodes_to_merge:
+                for pred, _, data in self.in_edges(node, data=True):
+                    if pred not in nodes_to_merge:
+                        self.add_edge(pred, new_node, **data)
+
+                for _, succ, data in self.out_edges(node, data=True):
+                    if succ not in nodes_to_merge:
+                        self.add_edge(new_node, succ, **data)
+
+            # Remove original nodes
+            self.remove_nodes_from(nodes_to_merge)
+            try:
+                cycle = nx.find_cycle(self)
+                if cycle:
+                    raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
+            except nx.NetworkXNoCycle:
+                pass
 
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
