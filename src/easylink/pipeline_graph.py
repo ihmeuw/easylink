@@ -60,6 +60,7 @@ class PipelineGraph(ImplementationGraph):
                 )
 
             # Create a new node
+            ## TODO: Resolve global name better
             new_node = f"merged_{joint_implementation}"
             new_implementation = Implementation.merge_implementations(
                 [self.nodes[node]["implementation"] for node in nodes_to_merge]
