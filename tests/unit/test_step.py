@@ -47,7 +47,7 @@ def test_io_update_implementation_graph(
     io_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = IOStep(**io_step_params)
-    step.set_step_config(default_config["pipeline"])
+    step.set_step_config(default_config["pipeline"]["steps"])
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["io"]
     assert list(subgraph.edges) == []
@@ -85,7 +85,7 @@ def test_basic_step_update_implementation_graph(
     basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
-    step.set_step_config(default_config["pipeline"])
+    step.set_step_config(default_config["pipeline"]["steps"])
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
@@ -95,7 +95,7 @@ def test_basic_step_get_implementation_node_name(
     basic_step_params: Dict[str, Any], default_config: Config
 ) -> None:
     step = BasicStep(**basic_step_params)
-    step.configure_step(default_config["pipeline"], {})
+    step.configure_step(default_config["pipeline"]["steps"], {})
     node_name = step.get_implementation_node_name()
     assert node_name == "step_1_python_pandas"
 
@@ -469,7 +469,7 @@ def test_loop_update_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
-    step.configure_step(default_config["pipeline"], {})
+    step.configure_step(default_config["pipeline"]["steps"], {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []

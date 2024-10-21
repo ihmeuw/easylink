@@ -302,7 +302,7 @@ def test_dir(tmpdir_factory) -> str:
 
     # good pipeline.yaml
     with open(f"{str(tmp_path)}/pipeline.yaml", "w") as file:
-        yaml.dump(PIPELINE_CONFIG_DICT["good"], file, sort_keys=False)
+        yaml.dump({"steps": PIPELINE_CONFIG_DICT["good"]}, file, sort_keys=False)
 
     # dummy environment.yaml
     with open(f"{str(tmp_path)}/environment.yaml", "w") as file:
