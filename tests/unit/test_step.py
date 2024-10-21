@@ -22,7 +22,7 @@ def test_implementation_node_name(
     implemented_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = Step(**implemented_step_params)
-    step.set_configuration_state(default_config["pipeline"], {})
+    step.set_configuration_state(default_config["pipeline"]["steps"], {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
 
