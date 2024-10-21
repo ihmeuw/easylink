@@ -114,7 +114,7 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_3": ["No loops configured under iterate key."],
+                        "step step_3": ["No loop instances configured under iterate key."],
                     },
                 },
             },
@@ -125,7 +125,7 @@ def test_batch_validation():
                 PIPELINE_ERRORS_KEY: {
                     "development": {
                         "step step_3": [
-                            "Loops must be formatted as a sequence in the pipeline configuration."
+                            "Loop instances must be formatted as a sequence in the pipeline configuration."
                         ],
                     },
                 },

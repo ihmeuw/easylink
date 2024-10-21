@@ -11,7 +11,7 @@ from easylink.graph_components import (
     StepGraph,
 )
 from easylink.implementation import Implementation
-from easylink.step import BasicStep
+from easylink.step import Step
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -44,8 +44,8 @@ def test_edge() -> None:
 
 def test_step_graph() -> None:
     step_graph = StepGraph()
-    step1 = BasicStep("step_1", output_slots=[OutputSlot("foo")])
-    step2 = BasicStep("step_2", input_slots=[InputSlot("bar", None, None)])
+    step1 = Step("step_1", output_slots=[OutputSlot("foo")])
+    step2 = Step("step_2", input_slots=[InputSlot("bar", None, None)])
     step_graph.add_node_from_step(step1)
     step_graph.add_node_from_step(step2)
     assert step_graph.nodes["step_1"]["step"] == step1

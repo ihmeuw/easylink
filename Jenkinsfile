@@ -1,3 +1,15 @@
+def githubUsernameToSlackName(github_author) {
+  // Add team members as necessary
+  def mapping = [
+    "Jim Albright": "albrja",
+    "Steve Bachmeier": "sbachmei",
+    "Hussain Jafari": "hjafari",
+    "Patrick Nast": "pnast",
+    "Rajan Mudambi": "rmudambi",
+  ]
+  return mapping.get(github_author, "channel")
+}
+
 pipeline_name="easylink"
 conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
 // using /tmp for things is MUCH faster but not shared between nodes.
@@ -189,16 +201,38 @@ pipeline {
   post {
     always {
       script {
-        if (params.DEBUG) {
+        if (env.BRANCH == "main") {
+          channelName = "simsci-ci-status"
+        } else {
+          channelName = "simsci-ci-status-test"
+        }
+        // Run git command to get the author of the last commit
+        developerID = sh(
+          script: "git log -1 --pretty=format:'%an'",
+          returnStdout: true
+        ).trim()
+        slackID = githubUsernameToSlackName(developerID)
+        slackMessage = """
+          Job: *${env.JOB_NAME}*
+          Build number: #${env.BUILD_NUMBER}
+          Build status: *${currentBuild.result}*
+          Author: @${slackID}
+          Build details: <${env.BUILD_URL}/console|See in web console>
+      """.stripIndent()
+
+      // Must be after setting up slack message
+      if (params.DEBUG) {
           echo "Debug is enabled. Not cleaning up."
         } else {
           echo "Cleaning up."
           sh "${ACTIVATE} && make clean"
           sh "rm -rf ${CONDA_ENV_PATH}"
+          
           // Delete the workspace directory.
           deleteDir()
         }
       }
+
       // Tell BitBucket whether the build succeeded or failed.
       script {
         notifyBitbucket()
@@ -206,7 +240,7 @@ pipeline {
     }
     failure {
       slackSend channel: "#${params.SLACK_TO}", 
-                message: ":x: JOB FAILURE: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console\n\n<!channel>",
+                message: slackMessage,
                 teamDomain: "ihme",
                 tokenCredentialId: "slack"
     }
@@ -215,7 +249,7 @@ pipeline {
         if (params.DEBUG) {
           echo "Debug is enabled. Sending a success message to Slack."
           slackSend channel: "#${params.SLACK_TO}", 
-                    message: ":white_check_mark: (debugging) JOB SUCCESS: $JOB_NAME - $BUILD_ID\n\n${BUILD_URL}console",
+                    message: slackMessage,
                     teamDomain: "ihme",
                     tokenCredentialId: "slack"
         }

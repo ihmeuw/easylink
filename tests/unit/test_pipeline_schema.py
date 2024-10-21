@@ -3,9 +3,11 @@ from re import match
 
 import networkx as nx
 
+from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import Step
+from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 def test_schema_instantiation() -> None:
@@ -35,9 +37,9 @@ def test_get_schemas() -> None:
     # Check basic structure
     for schema in supported_schemas:
         assert schema.name
-        assert schema.steps
-        assert isinstance(schema.steps, list)
-        for step in schema.steps:
+        assert schema.step_graph.steps
+        assert isinstance(schema.step_graph.steps, list)
+        for step in schema.step_graph.steps:
             assert isinstance(step, Step)
             assert step.name
 
@@ -56,3 +58,99 @@ def test_validate_input(test_dir: str) -> None:
     assert match(
         "Data file .* is missing required column\\(s\\) .*", errors[str(file_name)][0]
     )
+
+
+def test_pipeline_schema_get_implementation_graph(default_config) -> None:
+    nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
+    schema = PipelineSchema("development", nodes=nodes, edges=edges)
+    schema.configure_pipeline(default_config.pipeline, default_config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+    assert list(implementation_graph.nodes) == [
+        "input_data",
+        "step_1_python_pandas",
+        "step_2_python_pandas",
+        "step_3_python_pandas",
+        "step_4_python_pandas",
+        "results",
+    ]
+    expected_edges = [
+        (
+            "input_data",
+            "step_1_python_pandas",
+            {
+                "output_slot": OutputSlot("all"),
+                "input_slot": InputSlot(
+                    name="step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "input_data",
+            "step_4_python_pandas",
+            {
+                "output_slot": OutputSlot("all"),
+                "input_slot": InputSlot(
+                    name="step_4_secondary_input",
+                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_1_python_pandas",
+            "step_2_python_pandas",
+            {
+                "output_slot": OutputSlot("step_1_main_output"),
+                "input_slot": InputSlot(
+                    name="step_2_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_2_python_pandas",
+            "step_3_python_pandas",
+            {
+                "output_slot": OutputSlot("step_2_main_output"),
+                "input_slot": InputSlot(
+                    name="step_3_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_3_python_pandas",
+            "step_4_python_pandas",
+            {
+                "output_slot": OutputSlot("step_3_main_output"),
+                "input_slot": InputSlot(
+                    name="step_4_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_4_python_pandas",
+            "results",
+            {
+                "output_slot": OutputSlot("step_4_main_output"),
+                "input_slot": InputSlot(
+                    name="result", env_var=None, validator=validate_input_file_dummy
+                ),
+                "filepaths": None,
+            },
+        ),
+    ]
+    assert len(implementation_graph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in implementation_graph.edges(data=True)
