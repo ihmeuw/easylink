@@ -24,10 +24,12 @@ def test_load_params_from_specification(
 ) -> None:
     assert default_config_params == {
         "pipeline": {
-            "step_1": {"implementation": {"name": "step_1_python_pandas"}},
-            "step_2": {"implementation": {"name": "step_2_python_pandas"}},
-            "step_3": {"implementation": {"name": "step_3_python_pandas"}},
-            "step_4": {"implementation": {"name": "step_4_python_pandas"}},
+            "steps": {
+                "step_1": {"implementation": {"name": "step_1_python_pandas"}},
+                "step_2": {"implementation": {"name": "step_2_python_pandas"}},
+                "step_3": {"implementation": {"name": "step_3_python_pandas"}},
+                "step_4": {"implementation": {"name": "step_4_python_pandas"}},
+            }
         },
         "input_data": {
             "file1": Path(f"{test_dir}/input_data1/file1.csv"),
@@ -179,7 +181,7 @@ def test_spark_requests(default_config_params, input, requires_spark):
     config_params = default_config_params
     if requires_spark:
         # Change step 1's implementation to python_pyspark
-        config_params["pipeline"]["step_1"]["implementation"][
+        config_params["pipeline"]["steps"]["step_1"]["implementation"][
             "name"
         ] = "step_1_python_pyspark_distributed"
 
