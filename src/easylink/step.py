@@ -33,10 +33,12 @@ class ConfigurationState(ABC):
         self,
         step: Step,
         pipeline_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
         self._step = step
         self.pipeline_config = pipeline_config
+        self.combined_implementations = combined_implementations
         self.input_data_config = input_data_config
 
     @abstractmethod
@@ -112,9 +114,10 @@ class NonLeafConfigurationState(ConfigurationState):
         self,
         step: Step,
         pipeline_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        super().__init__(step, pipeline_config, input_data_config)
+        super().__init__(step, pipeline_config, combined_implementations, input_data_config)
         if not step.step_graph:
             raise ValueError(
                 f"NonLeafConfigurationState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
@@ -182,7 +185,9 @@ class NonLeafConfigurationState(ConfigurationState):
     def configure_subgraph_steps(self) -> None:
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
-            step.set_configuration_state(self.pipeline_config, self.input_data_config)
+            step.set_configuration_state(
+                self.pipeline_config, self.combined_implementations, self.input_data_config
+            )
 
 
 class Step:
@@ -232,7 +237,11 @@ class Step:
             )
         return self._configuration_state
 
-    def validate_leaf(self, step_config: LayeredConfigTree) -> dict[str, list[str]]:
+    def validate_leaf(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         if not "implementation" in step_config:
@@ -251,7 +260,10 @@ class Step:
         return errors
 
     def validate_nonleaf(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
         errors = {}
         for node in self.step_graph.nodes:
@@ -270,14 +282,19 @@ class Step:
         return errors
 
     def validate_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
         if len(self.step_graph.nodes) == 0:
-            return self.validate_leaf(step_config)
+            return self.validate_leaf(step_config, combined_implementations)
         elif self.config_key in step_config:
-            return self.validate_nonleaf(step_config[self.config_key], input_data_config)
+            return self.validate_nonleaf(
+                step_config[self.config_key], combined_implementations, input_data_config
+            )
         else:
-            return self.validate_leaf(step_config)
+            return self.validate_leaf(step_config, combined_implementations)
 
     def get_implementation_graph(self) -> ImplementationGraph:
         return self.configuration_state.get_implementation_graph()
@@ -296,17 +313,20 @@ class Step:
         )
 
     def set_configuration_state(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        parent_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> None:
         step_config = parent_config[self.name]
         state_config = self.get_state_config(step_config)
         if self.config_key is not None and self.config_key in step_config:
             self._configuration_state = NonLeafConfigurationState(
-                self, state_config, input_data_config
+                self, state_config, combined_implementations, input_data_config
             )
         else:
             self._configuration_state = LeafConfigurationState(
-                self, state_config, input_data_config
+                self, state_config, combined_implementations, input_data_config
             )
 
     def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
@@ -378,15 +398,21 @@ class IOStep(Step):
         return self.name
 
     def validate_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
         return {}
 
     def set_configuration_state(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        parent_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> None:
         self._configuration_state = LeafConfigurationState(
-            self, parent_config, input_data_config
+            self, parent_config, combined_implementations, input_data_config
         )
 
     def get_implementation_graph(self) -> ImplementationGraph:
@@ -409,10 +435,15 @@ class InputStep(IOStep):
         super().__init__(step_name="input_data", output_slots=output_slots)
 
     def set_configuration_state(
-        self, parent_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        parent_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> None:
         """Configure the step against the pipeline configuration and input data."""
-        super().set_configuration_state(parent_config, input_data_config)
+        super().set_configuration_state(
+            parent_config, combined_implementations, input_data_config
+        )
         for input_data_key in input_data_config:
             self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
 
@@ -465,10 +496,15 @@ class TemplatedStep(Step):
         pass
 
     def validate_step(
-        self, step_config: LayeredConfigTree, input_data_config: LayeredConfigTree
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
         if not self.config_key in step_config:
-            return self.template_step.validate_step(step_config, input_data_config)
+            return self.template_step.validate_step(
+                step_config, combined_implementations, input_data_config
+            )
 
         sub_config = step_config[self.config_key]
 
@@ -495,7 +531,9 @@ class TemplatedStep(Step):
                     f"Input data file '{input_data_file}' not found in input data configuration."
                 ]
             parallel_errors.update(
-                self.template_step.validate_step(parallel_config, input_data_config)
+                self.template_step.validate_step(
+                    parallel_config, combined_implementations, input_data_config
+                )
             )
             if parallel_errors:
                 errors[f"step {self.name}"][f"{self.node_prefix}_{i+1}"] = parallel_errors
@@ -511,11 +549,15 @@ class TemplatedStep(Step):
             return expanded_step_config
         return step_config
 
-    def set_configuration_state(self, parent_config, input_data_config):
+    def set_configuration_state(
+        self, parent_config, combined_implementations, input_data_config
+    ):
         num_repeats = len(self.get_state_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
-        super().set_configuration_state(parent_config, input_data_config)
+        super().set_configuration_state(
+            parent_config, combined_implementations, input_data_config
+        )
 
 
 class LoopStep(TemplatedStep):
