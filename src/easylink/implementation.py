@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional, Sequence
+from typing import Iterable, Sequence
 
 from layered_config_tree import LayeredConfigTree
 
@@ -20,19 +20,21 @@ class Implementation:
 
     def __init__(
         self,
-        schema_steps: Sequence[str],
+        schema_steps: list[str],
         implementation_config: LayeredConfigTree,
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
+        combined_name: str | None = None,
     ):
         self.name = implementation_config.name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
-        self.metadata_steps = set(self._metadata["steps"])
+        self.metadata_steps = self._metadata["steps"]
         self.is_joint = len(self.metadata_steps) > 1
-        self.schema_steps = set(schema_steps)
+        self.combined_name = combined_name
+        self.schema_steps = schema_steps
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
@@ -83,7 +85,7 @@ class Implementation:
 
         return Implementation(schema_steps, implementation_config, input_slots, output_slots)
 
-    def validate(self) -> List[Optional[str]]:
+    def validate(self) -> list[str]:
         """Validates individual Implementation instances. This is intended to be
         run from the Pipeline validate method.
         """
@@ -96,19 +98,20 @@ class Implementation:
     # Helper methods #
     ##################
 
-    def _load_metadata(self) -> Dict[str, str]:
+    def _load_metadata(self) -> dict[str, str]:
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         return metadata[self.name]
 
-    def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        if not self.schema_steps.issubset(self.metadata_steps):
+    def _validate_expected_step(self, logs: list[str]) -> list[str]:
+        ## This is going to be too simple
+        if not self.schema_steps == self.metadata_steps:
             logs.append(
                 f"Implementaton metadata steps '{self.metadata_steps}' does not "
                 f"match pipeline configuration step '{self.schema_steps}'"
             )
         return logs
 
-    def _validate_container_exists(self, logs: List[Optional[str]]) -> List[Optional[str]]:
+    def _validate_container_exists(self, logs: list[str]) -> list[str]:
         err_str = f"Container '{self.singularity_image_path}' does not exist."
         if not Path(self.singularity_image_path).exists():
             logs.append(err_str)
@@ -123,7 +126,7 @@ class Implementation:
         return self._metadata["script_cmd"]
 
     @property
-    def outputs(self) -> Dict[str, List[str]]:
+    def outputs(self) -> dict[str, list[str]]:
         return self._metadata["outputs"]
 
 
