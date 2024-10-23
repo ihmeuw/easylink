@@ -416,10 +416,10 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
         expected_msg={
             "IMPLEMENTATION ERRORS": {
                 "step_1_python_pandas": [
-                    "Implementaton metadata step '{'not-the-step-1-name'}' does not match pipeline configuration step '{'step_1'}'"
+                    "Implementaton metadata steps '\\['not-the-step-1-name'\\]' does not match pipeline configuration step '\\['step_1'\\]'"
                 ],
                 "step_2_python_pandas": [
-                    "Implementaton metadata step '{'not-the-step-2-name'}' does not match pipeline configuration step '{'step_2'}'"
+                    "Implementaton metadata steps '\\['not-the-step-2-name'\\]' does not match pipeline configuration step '\\['step_2'\\]'"
                 ],
             },
         },

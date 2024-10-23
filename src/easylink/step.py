@@ -278,7 +278,7 @@ class Step:
                 errors[f"step {self.name}"] = [
                     "The implementation configuration does not contain a 'name' key."
                 ]
-            if not implementation_config["name"] in metadata:
+            elif not implementation_config["name"] in metadata:
                 errors[f"step {self.name}"] = [
                     f"Implementation '{implementation_config['name']}' is not supported. "
                     f"Supported implementations are: {list(metadata.keys())}."
