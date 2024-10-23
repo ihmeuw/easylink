@@ -21,6 +21,8 @@ from easylink.implementation import Implementation, NullImplementation
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
+COMBINED_IMPLEMENTATION_KEY = "combined_implementation_key"
+
 
 class ConfigurationState(ABC):
     """
@@ -55,16 +57,31 @@ class ConfigurationState(ABC):
 class LeafConfigurationState(ConfigurationState):
     """Leaf State corresponds to a leaf node in the pipeline graph that is implemented by a single implementation."""
 
+    @property
+    def is_combined(self) -> bool:
+        return True if COMBINED_IMPLEMENTATION_KEY in self.pipeline_config else False
+
+    @property
+    def implementation_config(self) -> LayeredConfigTree:
+        return (
+            self.combined_implementations[self.pipeline_config[COMBINED_IMPLEMENTATION_KEY]]
+            if self.is_combined
+            else self.pipeline_config["implementation"]
+        )
+
     def get_implementation_graph(self) -> ImplementationGraph:
-        implementation_graph = ImplementationGraph()
         """Return a single node with an implementation attribute."""
-        implementation_config = self.pipeline_config["implementation"]
+        implementation_graph = ImplementationGraph()
+        combined_name = (
+            self.pipeline_config[COMBINED_IMPLEMENTATION_KEY] if self.is_combined else None
+        )
         implementation_node_name = self._step.implementation_node_name
         implementation = Implementation(
             schema_steps=[self._step.step_name],
-            implementation_config=implementation_config,
+            implementation_config=self.implementation_config,
             input_slots=self._step.input_slots.values(),
             output_slots=self._step.output_slots.values(),
+            combined_name=combined_name,
         )
         implementation_graph.add_node_from_implementation(
             implementation_node_name,
@@ -244,19 +261,28 @@ class Step:
     ) -> dict[str, list[str]]:
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        if not "implementation" in step_config:
+        if (
+            not "implementation" in step_config
+            and not COMBINED_IMPLEMENTATION_KEY in step_config
+        ):
             errors[f"step {self.name}"] = [
                 "The step configuration does not contain an 'implementation' key."
             ]
-        elif not "name" in step_config["implementation"]:
-            errors[f"step {self.name}"] = [
-                "The implementation configuration does not contain a 'name' key."
-            ]
-        elif not step_config["implementation"]["name"] in metadata:
-            errors[f"step {self.name}"] = [
-                f"Implementation '{step_config['implementation']['name']}' is not supported. "
-                f"Supported implementations are: {list(metadata.keys())}."
-            ]
+        else:
+            implementation_config = (
+                step_config["implementation"]
+                if "implementation" in step_config
+                else combined_implementations[step_config[COMBINED_IMPLEMENTATION_KEY]]
+            )
+            if not "name" in implementation_config:
+                errors[f"step {self.name}"] = [
+                    "The implementation configuration does not contain a 'name' key."
+                ]
+            if not implementation_config["name"] in metadata:
+                errors[f"step {self.name}"] = [
+                    f"Implementation '{implementation_config['name']}' is not supported. "
+                    f"Supported implementations are: {list(metadata.keys())}."
+                ]
         return errors
 
     def validate_nonleaf(
@@ -273,7 +299,9 @@ class Step:
             if step.name not in step_config:
                 step_errors = {f"step {step.name}": [f"The step is not configured."]}
             else:
-                step_errors = step.validate_step(step_config[step.name], input_data_config)
+                step_errors = step.validate_step(
+                    step_config[step.name], combined_implementations, input_data_config
+                )
             if step_errors:
                 errors.update(step_errors)
         extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
@@ -349,14 +377,11 @@ class Step:
         introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
         name."""
         step = self
-        implementation_name = self._configuration_state.pipeline_config["implementation"][
-            "name"
-        ]
-        ### This happens before validation: BAD
-        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)[
-            implementation_name
-        ]
-        is_joint = len(implementation_metadata["steps"]) > 1
+        implementation_name = (
+            self.configuration_state.pipeline_config[COMBINED_IMPLEMENTATION_KEY]
+            if self.configuration_state.is_combined
+            else self.configuration_state.implementation_config.name
+        )
         node_names = []
         step_names = []
         while step:
@@ -364,18 +389,19 @@ class Step:
             step_names.append(step.step_name)
             step = step.parent_step
 
-        implementation_names = []
+        prefix = []
         step_names.reverse()
         node_names.reverse()
-        if is_joint:
-            implementation_names = node_names
-        else:
-            for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-                if step_name != node_name:
-                    implementation_names = node_names[i:]
-                    break
-        implementation_names.append(implementation_name)
-        return "_".join(implementation_names)
+        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+            if step_name != node_name:
+                prefix = node_names[i:]
+                break
+        # If we didn't include the step name already for a combined implementation,
+        # do so now.
+        if self.configuration_state.is_combined and not prefix:
+            prefix.append(self.name)
+        prefix.append(implementation_name)
+        return "_".join(prefix)
 
     def implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
         return {
