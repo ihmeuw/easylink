@@ -164,7 +164,7 @@ def test_batch_validation():
 )
 def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):
     config_params = default_config_params
-    config_params["pipeline"] = PIPELINE_CONFIG_DICT[pipeline]
+    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT[pipeline]
 
     with pytest.raises(SystemExit) as e:
         Config(config_params)
@@ -180,7 +180,7 @@ def test_pipeline_validation(pipeline, default_config_params, expected_msg, capl
 def test_out_of_order_steps(default_config_params):
     # Make sure we DON'T raise an exception even if the steps are out of order
     config_params = default_config_params
-    config_params["pipeline"] = PIPELINE_CONFIG_DICT["out_of_order"]
+    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["out_of_order"]
     Config(config_params)
 
 
@@ -188,7 +188,7 @@ def test_unsupported_step(default_config_params, caplog, mocker):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params["pipeline"] = PIPELINE_CONFIG_DICT["bad_step"]
+    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["bad_step"]
 
     with pytest.raises(SystemExit) as e:
         Config(config_params)
@@ -211,7 +211,7 @@ def test_unsupported_implementation(default_config_params, caplog, mocker):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params["pipeline"] = PIPELINE_CONFIG_DICT["bad_implementation"]
+    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["bad_implementation"]
 
     with pytest.raises(SystemExit) as e:
         Config(config_params)

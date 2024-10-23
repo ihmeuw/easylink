@@ -1,3 +1,4 @@
-step_1:
-  implementation:
-    name: step_1_python_pandas
+steps:
+  step_1:
+    implementation:
+      name: step_1_python_pandas

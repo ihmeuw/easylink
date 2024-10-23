@@ -301,7 +301,7 @@ def test_spark_is_required(default_config_params, requires_spark):
     config_params = default_config_params
     if requires_spark:
         # Change step 1's implementation to python_pyspark
-        config_params["pipeline"]["step_1"]["implementation"][
+        config_params["pipeline"]["steps"]["step_1"]["implementation"][
             "name"
         ] = "step_1_python_pyspark_distributed"
     config = Config(config_params)
