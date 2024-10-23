@@ -7,9 +7,7 @@ from layered_config_tree import LayeredConfigTree
 
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-
-if TYPE_CHECKING:
-    from easylink.graph_components import InputSlot, OutputSlot
+from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
