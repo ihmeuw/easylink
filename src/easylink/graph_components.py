@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Callable, Optional
 import networkx as nx
 
 if TYPE_CHECKING:
-    from easylink.step import Step
     from easylink.implementation import Implementation
+    from easylink.step import Step
 
 
 @dataclass

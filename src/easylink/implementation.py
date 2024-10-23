@@ -5,9 +5,9 @@ from typing import Iterable, Sequence
 
 from layered_config_tree import LayeredConfigTree
 
+from easylink.graph_components import InputSlot, OutputSlot
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
