@@ -43,12 +43,12 @@ class Implementation:
         cls, implementations: Sequence[Implementation]
     ) -> Implementation:
         # Raise if the implementations have different names
-        if len(set(impl.name for impl in implementations)) > 1:
+        if len(set(impl.combined_name for impl in implementations)) > 1:
             raise ValueError("Implementations must have the same name to be merged.")
         implementation_name = implementations[0].name
-        schema_steps = {
+        schema_steps = [
             step for implementation in implementations for step in implementation.schema_steps
-        }
+        ]
         input_slots = [
             slot
             for implementation in implementations
@@ -59,15 +59,25 @@ class Implementation:
             for implementation in implementations
             for slot in implementation.output_slots.values()
         ]
-        implementation_config = LayeredConfigTree()
-        implementation_config.update({"name": implementation_name})
-        implementation_config.update(
+        for slots in (input_slots, output_slots):
+            seen_names = set()
+            seen_env_vars = set()
+            for slot in slots:
+                # Check for duplicate names
+                if slot.name in seen_names:
+                    raise ValueError(f"Duplicate slot name found: '{slot.name}'")
+                seen_names.add(slot.name)
+
+                # Check for duplicate env_vars
+                # if isinstance(slot, InputSlot) and slot.env_var in seen_env_vars:
+                #     raise ValueError(
+                #         f"Duplicate environment variable found: '{slot.env_var}'"
+                #     )
+                # seen_env_vars.add(slot.env_var)
+        implementation_config = LayeredConfigTree(
             {
-                "configuration": {
-                    env_var: value
-                    for implementation in implementations
-                    for env_var, value in implementation.environment_variables.items()
-                }
+                "name": implementation_name,
+                "configuration": implementations[0].environment_variables,
             }
         )
 
