@@ -22,33 +22,31 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
-        self.merge_joint_implementations()
+        self.merge_joint_implementations(config)
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
 
-    def merge_joint_implementations(self):
+    def merge_joint_implementations(self, config):
         implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         # Find all joint implementations
-        joint_implementations = {
-            data["implementation"].name
-            for node, data in self.nodes(data=True)
-            if data["implementation"].is_joint
-        }
+        joint_implementations = config.pipeline.combined_implementations
 
-        for joint_implementation in joint_implementations:
+        for (
+            joint_implementation_node,
+            joint_implementation_dict,
+        ) in joint_implementations.items():
 
             # Find all nodes with the same implementation name
             nodes_to_merge = [
                 node
                 for node, data in self.nodes(data=True)
-                if data["implementation"].name == joint_implementation
+                if data["implementation"].name == joint_implementation_dict["name"]
             ]
 
             # Check if metadata_steps match
             implementation_metadata_steps = set(
-                implementation_metadata[joint_implementation]["steps"]
+                implementation_metadata[joint_implementation_dict["name"]]["steps"]
             )
-            node_set = set(nodes_to_merge)
             implemented_steps = set(
                 step
                 for node in nodes_to_merge
@@ -56,12 +54,9 @@ class PipelineGraph(ImplementationGraph):
             )
             if implementation_metadata_steps != implemented_steps:
                 raise ValueError(
-                    f"Metadata steps don't match for implementation {joint_implementation}"
+                    f"Metadata steps don't match for implementation {joint_implementation_node}"
                 )
-
-            # Create a new node
-            ## TODO: Resolve global name better
-            new_node = f"merged_{joint_implementation}"
+            new_node = joint_implementation_node
             new_implementation = Implementation.merge_implementations(
                 [self.nodes[node]["implementation"] for node in nodes_to_merge]
             )
