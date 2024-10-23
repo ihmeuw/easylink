@@ -262,11 +262,20 @@ class Step:
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         if (
-            not "implementation" in step_config
-            and not COMBINED_IMPLEMENTATION_KEY in step_config
+            "implementation" not in step_config
+            and COMBINED_IMPLEMENTATION_KEY not in step_config
         ):
             errors[f"step {self.name}"] = [
-                "The step configuration does not contain an 'implementation' key."
+                "The step configuration does not contain an 'implementation' key or a"
+                "reference to a combined implementation."
+            ]
+        elif (
+            COMBINED_IMPLEMENTATION_KEY in step_config
+            and not step_config[COMBINED_IMPLEMENTATION_KEY] in combined_implementations
+        ):
+            errors[f"step {self.name}"] = [
+                f"The step refers to a combined implementation but {step_config[COMBINED_IMPLEMENTATION_KEY]} is not a"
+                f"valid combined implementation."
             ]
         else:
             implementation_config = (

@@ -32,45 +32,46 @@ class PipelineGraph(ImplementationGraph):
         joint_implementations = config.pipeline.combined_implementations
 
         for (
-            joint_implementation_node,
+            combined_implementation,
             joint_implementation_dict,
         ) in joint_implementations.items():
+            implementation_name = joint_implementation_dict["name"]
 
             # Find all nodes with the same implementation name
             nodes_to_merge = [
                 node
                 for node, data in self.nodes(data=True)
-                if data["implementation"].name == joint_implementation_dict["name"]
+                if data["implementation"].combined_name == combined_implementation
             ]
 
             # Check if metadata_steps match
             implementation_metadata_steps = set(
-                implementation_metadata[joint_implementation_dict["name"]]["steps"]
+                implementation_metadata[implementation_name]["steps"]
             )
             implemented_steps = set(
                 step
                 for node in nodes_to_merge
                 for step in self.nodes[node]["implementation"].schema_steps
             )
+            ## TODO Not quite the right condition here
             if implementation_metadata_steps != implemented_steps:
                 raise ValueError(
-                    f"Metadata steps don't match for implementation {joint_implementation_node}"
+                    f"Metadata steps don't match for implementation {combined_implementation}"
                 )
-            new_node = joint_implementation_node
             new_implementation = Implementation.merge_implementations(
                 [self.nodes[node]["implementation"] for node in nodes_to_merge]
             )
-            self.add_node(new_node, implementation=new_implementation)
+            self.add_node(combined_implementation, implementation=new_implementation)
 
             # Redirect edges
             for node in nodes_to_merge:
                 for pred, _, data in self.in_edges(node, data=True):
                     if pred not in nodes_to_merge:
-                        self.add_edge(pred, new_node, **data)
+                        self.add_edge(pred, combined_implementation, **data)
 
                 for _, succ, data in self.out_edges(node, data=True):
                     if succ not in nodes_to_merge:
-                        self.add_edge(new_node, succ, **data)
+                        self.add_edge(combined_implementation, succ, **data)
 
             # Remove original nodes
             self.remove_nodes_from(nodes_to_merge)
