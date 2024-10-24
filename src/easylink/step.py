@@ -266,7 +266,7 @@ class Step:
             and COMBINED_IMPLEMENTATION_KEY not in step_config
         ):
             errors[f"step {self.name}"] = [
-                "The step configuration does not contain an 'implementation' key or a"
+                "The step configuration does not contain an 'implementation' key or a "
                 "reference to a combined implementation."
             ]
         elif (
