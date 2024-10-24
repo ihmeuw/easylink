@@ -160,6 +160,18 @@ def test_batch_validation():
                 },
             },
         ),
+        (
+            "bad_combined_implementations",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_3": [
+                            "The step refers to a combined implementation but 'foo' is not a valid combined implementation."
+                        ]
+                    }
+                }
+            },
+        ),
     ],
 )
 def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):

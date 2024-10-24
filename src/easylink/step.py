@@ -274,7 +274,7 @@ class Step:
             and not step_config[COMBINED_IMPLEMENTATION_KEY] in combined_implementations
         ):
             errors[f"step {self.name}"] = [
-                f"The step refers to a combined implementation but {step_config[COMBINED_IMPLEMENTATION_KEY]} is not a"
+                f"The step refers to a combined implementation but {step_config[COMBINED_IMPLEMENTATION_KEY]} is not a "
                 f"valid combined implementation."
             ]
         else:

@@ -5,6 +5,7 @@ import pytest
 from easylink.configuration import Config
 from easylink.graph_components import InputSlot
 from easylink.pipeline_graph import PipelineGraph
+from easylink.step import COMBINED_IMPLEMENTATION_KEY
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -307,3 +308,82 @@ def test_spark_is_required(default_config_params, requires_spark):
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
     assert pipeline_graph.spark_is_required() == requires_spark
+
+
+def test_merge_joint_implementations(default_config_params, test_dir) -> None:
+    config_params = default_config_params
+    # make step 3 and step 4 a combined implementations
+    config_params["pipeline"]["steps"]["step_3"][COMBINED_IMPLEMENTATION_KEY] = "step_3_4"
+    config_params["pipeline"]["steps"]["step_4"][COMBINED_IMPLEMENTATION_KEY] = "step_3_4"
+    config_params["pipeline"]["combined_implementations"] = {
+        "step_3_4": {
+            "name": "step_3_and_step_4_joint_python_pandas",
+        }
+    }
+    pipeline_graph = PipelineGraph(Config(config_params))
+    assert set(pipeline_graph.nodes) == {
+        "input_data",
+        "step_1_python_pandas",
+        "step_2_python_pandas",
+        "step_3_4",
+        "results",
+    }
+    expected_edges = {
+        ("input_data", "step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "step_3_4"): {
+            "input_slot_name": "step_4_secondary_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("step_1_python_pandas", "step_2_python_pandas"): {
+            "input_slot_name": "step_2_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
+        },
+        ("step_2_python_pandas", "step_3_4"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_2_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
+        },
+        ("step_3_4", "results"): {
+            "input_slot_name": "result",
+            "output_slot_name": "step_4_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": None,
+            "filepaths": (Path("intermediate/step_3_4/result.parquet"),),
+        },
+    }
+    assert set(pipeline_graph.edges()) == expected_edges.keys()
+    for source, sink, edge_attrs in pipeline_graph.edges(data=True):
+        assert (
+            edge_attrs["input_slot"].name == expected_edges[(source, sink)]["input_slot_name"]
+        )
+        assert edge_attrs["input_slot"].env_var == expected_edges[(source, sink)]["env_var"]
+        assert (
+            edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
+        )
+        assert (
+            edge_attrs["output_slot"].name
+            == expected_edges[(source, sink)]["output_slot_name"]
+        )
+        assert edge_attrs["filepaths"] == tuple(
+            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
+        )
