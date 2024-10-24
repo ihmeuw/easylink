@@ -5,10 +5,8 @@ from typing import Dict, List, Tuple, Union
 import networkx as nx
 
 from easylink.configuration import Config
-from easylink.graph_components import ImplementationGraph, InputSlot
+from easylink.graph_components import EdgeParams, ImplementationGraph, InputSlot
 from easylink.implementation import Implementation
-from easylink.utilities import paths
-from easylink.utilities.data_utils import load_yaml
 
 
 class PipelineGraph(ImplementationGraph):
@@ -27,15 +25,10 @@ class PipelineGraph(ImplementationGraph):
         self = nx.freeze(self)
 
     def merge_joint_implementations(self, config):
-        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-        # Find all joint implementations
-        joint_implementations = config.pipeline.combined_implementations
-
         for (
             combined_implementation,
-            joint_implementation_dict,
-        ) in joint_implementations.items():
-            implementation_name = joint_implementation_dict["name"]
+            joint_implementation_config,
+        ) in config.pipeline.combined_implementations.items():
 
             # Find all nodes with the same implementation name
             nodes_to_merge = [
@@ -44,34 +37,55 @@ class PipelineGraph(ImplementationGraph):
                 if data["implementation"].combined_name == combined_implementation
             ]
 
-            # Check if metadata_steps match
-            implementation_metadata_steps = set(
-                implementation_metadata[implementation_name]["steps"]
-            )
-            implemented_steps = set(
+            implemented_steps = [
                 step
                 for node in nodes_to_merge
                 for step in self.nodes[node]["implementation"].schema_steps
-            )
-            ## TODO Not quite the right condition here
-            if implementation_metadata_steps != implemented_steps:
-                raise ValueError(
-                    f"Metadata steps don't match for implementation {combined_implementation}"
-                )
-            new_implementation = Implementation.merge_implementations(
-                [self.nodes[node]["implementation"] for node in nodes_to_merge]
+            ]
+            input_slots = []
+            output_slots = []
+            external_edge_params = []
+
+            for node in nodes_to_merge:
+                for pred, _, data in self.in_edges(node, data=True):
+                    if pred not in nodes_to_merge:
+                        input_slots.append(data["input_slot"])
+                        external_edge_params.append(
+                            EdgeParams.from_graph_edge(pred, combined_implementation, data)
+                        )
+
+                for _, succ, data in self.out_edges(node, data=True):
+                    if succ not in nodes_to_merge:
+                        output_slots.append(data["output_slot"])
+                        external_edge_params.append(
+                            EdgeParams.from_graph_edge(combined_implementation, succ, data)
+                        )
+
+            for slots in (input_slots, output_slots):
+                seen_names = set()
+                seen_env_vars = set()
+                for slot in slots:
+                    # Check for duplicate names
+                    if slot.name in seen_names:
+                        raise ValueError(f"Duplicate slot name found: '{slot.name}'")
+                    seen_names.add(slot.name)
+
+                    # Check for duplicate env_vars
+                    if isinstance(slot, InputSlot):
+                        if slot.env_var in seen_env_vars:
+                            raise ValueError(
+                                f"Duplicate environment variable found: '{slot.env_var}'"
+                            )
+                        seen_env_vars.add(slot.env_var)
+
+            new_implementation = Implementation(
+                implemented_steps, joint_implementation_config, input_slots, output_slots
             )
             self.add_node(combined_implementation, implementation=new_implementation)
 
             # Redirect edges
-            for node in nodes_to_merge:
-                for pred, _, data in self.in_edges(node, data=True):
-                    if pred not in nodes_to_merge:
-                        self.add_edge(pred, combined_implementation, **data)
-
-                for _, succ, data in self.out_edges(node, data=True):
-                    if succ not in nodes_to_merge:
-                        self.add_edge(combined_implementation, succ, **data)
+            for edge in external_edge_params:
+                self.add_edge_from_params(edge)
 
             # Remove original nodes
             self.remove_nodes_from(nodes_to_merge)
