@@ -194,3 +194,14 @@ def test_spark_requests(default_config_params, input, requires_spark):
         expected.update(expected_env_dict[key], layer="user")
     expected = expected.to_dict()
     assert retrieved == expected
+
+
+@pytest.mark.parametrize("is_default", [True, False])
+def test_combined_implementations(default_config_params, is_default):
+    non_default_dict = {"foo": "bar"}
+    config_params = default_config_params
+    if not is_default:
+        config_params["pipeline"]["combined_implementations"] = non_default_dict
+    combined_implementations = Config(config_params).pipeline.combined_implementations
+    expected = {} if is_default else non_default_dict
+    assert combined_implementations.to_dict() == expected

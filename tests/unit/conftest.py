@@ -281,6 +281,26 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "bad_combined_implementations": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "combined_implementation_key": "foo",
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {

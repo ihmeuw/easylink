@@ -27,14 +27,19 @@ class PipelineSchema(HierarchicalStep):
         hierarchical step. This must be added because the root step doesn't exist from the user's
         perspective and it doesn't appear explicitly in the pipeline.yaml"""
         return super().validate_step(
-            {"substeps": pipeline_config["steps"]}, input_data_config
+            step_config={"substeps": pipeline_config["steps"]},
+            combined_implementations=pipeline_config["combined_implementations"],
+            input_data_config=input_data_config,
         )
 
     def configure_pipeline(
         self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
         self._configuration_state = NonLeafConfigurationState(
-            self, pipeline_config["steps"], input_data_config
+            self,
+            pipeline_config["steps"],
+            combined_implementations=pipeline_config["combined_implementations"],
+            input_data_config=input_data_config,
         )
 
     @classmethod
