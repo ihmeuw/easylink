@@ -1,4 +1,5 @@
 import itertools
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
@@ -44,39 +45,42 @@ class PipelineGraph(ImplementationGraph):
             ]
             input_slots = []
             output_slots = []
-            external_edge_params = []
+            in_edge_params = []
+            combined_edges = []
 
             for node in nodes_to_merge:
-                for pred, _, data in self.in_edges(node, data=True):
+                for pred, succ, data in self.in_edges(node, data=True):
                     if pred not in nodes_to_merge:
                         input_slots.append(data["input_slot"])
-                        external_edge_params.append(
-                            EdgeParams.from_graph_edge(pred, combined_implementation, data)
-                        )
+                        in_edge_params.append(EdgeParams.from_graph_edge(pred, succ, data))
+                        combined_edges.append(EdgeParams.from_graph_edge(pred, succ, data))
 
                 for _, succ, data in self.out_edges(node, data=True):
                     if succ not in nodes_to_merge:
                         output_slots.append(data["output_slot"])
-                        external_edge_params.append(
+                        combined_edges.append(
                             EdgeParams.from_graph_edge(combined_implementation, succ, data)
                         )
+            self.validate_edge_params(in_edge_params)
 
             for slots in (input_slots, output_slots):
-                seen_names = set()
-                seen_env_vars = set()
+                seen_slots = []
+                seen_names = []
+                seen_env_vars = []
                 for slot in slots:
                     # Check for duplicate names
-                    if slot.name in seen_names:
+                    if slot.name in seen_names and slot not in seen_slots:
                         raise ValueError(f"Duplicate slot name found: '{slot.name}'")
-                    seen_names.add(slot.name)
+                    seen_names.append(slot.name)
 
                     # Check for duplicate env_vars
                     if isinstance(slot, InputSlot):
-                        if slot.env_var in seen_env_vars:
+                        if slot.env_var in seen_env_vars and slot not in seen_slots:
                             raise ValueError(
                                 f"Duplicate environment variable found: '{slot.env_var}'"
                             )
-                        seen_env_vars.add(slot.env_var)
+                        seen_env_vars.append(slot.env_var)
+                    seen_slots.append(slot)
 
             new_implementation = Implementation(
                 implemented_steps, joint_implementation_config, input_slots, output_slots
@@ -84,7 +88,7 @@ class PipelineGraph(ImplementationGraph):
             self.add_node(combined_implementation, implementation=new_implementation)
 
             # Redirect edges
-            for edge in external_edge_params:
+            for edge in combined_edges:
                 self.add_edge_from_params(edge)
 
             # Remove original nodes
@@ -186,3 +190,35 @@ class PipelineGraph(ImplementationGraph):
     def spark_is_required(self) -> bool:
         """Check if the pipeline requires spark resources."""
         return any([implementation.requires_spark for implementation in self.implementations])
+
+    def validate_edge_params(self, edge_params: list[EdgeParams]) -> None:
+        # Group edges by output slot to check for conflicts
+        input_slot_groups = defaultdict(list)
+
+        for edge in edge_params:
+            input_slot_groups[edge.input_slot].append(edge)
+
+        # Check each group of edges sharing the same output slot
+        for input_slot, edges in input_slot_groups.items():
+            if len(edges) <= 1:
+                continue
+
+            # Check for conflicting input slots
+            output_slot_names = set(edge.output_slot for edge in edges)
+            if len(output_slot_names) > 1:
+                conflicting_edges = [
+                    f"({edge.source_node}->{edge.target_node}, output={edge.output_slot})"
+                    for edge in edges
+                ]
+                raise ValueError(
+                    f"Input slot '{input_slot}' is connected to different output slots in edges: {', '.join(conflicting_edges)}"
+                )
+
+            edge_schema_steps = set(
+                tuple(self.nodes[edge.source_node]["implementation"].schema_steps)
+                for edge in edges
+            )
+            if len(edge_schema_steps) > 1:
+                raise ValueError(
+                    f"Input slot '{input_slot}' is connected to nodes that implement different schema steps"
+                )

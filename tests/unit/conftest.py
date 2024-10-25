@@ -308,6 +308,102 @@ INPUT_DATA_FORMAT_DICT = {
     "wrong_cols": [["wrong", "column", "names"], [1, 2, 3]],
 }
 
+JOINT_IMPLEMENTATION_CONFIGS = {
+    "two_steps": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "combined_implementation_key": "step_3_4",
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_joint_python_pandas",
+            },
+        },
+    },
+    "with_iteration": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "iterate": [
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                        }
+                    },
+                    {
+                        "combined_implementation_key": "step_3_4",
+                    },
+                ]
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_joint_python_pandas",
+            },
+        },
+    },
+    "with_iteration_cycle": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "iterate": [
+                    {
+                        "combined_implementation_key": "step_3_4",
+                    },
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                        }
+                    },
+                ]
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_joint_python_pandas",
+            },
+        },
+    },
+}
+
 
 def _write_csv(filepath: str, rows: List) -> None:
     with open(filepath, "w") as file:
