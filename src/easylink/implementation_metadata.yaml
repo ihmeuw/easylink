@@ -112,3 +112,11 @@ step_3_and_step_4_joint_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_4_main_output: result.parquet
+step_1_and_step_2_joint_python_pandas:
+  steps:
+    - step_1
+    - step_2
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_2_main_output: result.parquet
