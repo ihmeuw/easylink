@@ -53,7 +53,9 @@ class PipelineGraph(ImplementationGraph):
                     if pred not in nodes_to_merge:
                         input_slots.append(data["input_slot"])
                         in_edge_params.append(EdgeParams.from_graph_edge(pred, succ, data))
-                        combined_edges.append(EdgeParams.from_graph_edge(pred, succ, data))
+                        combined_edges.append(
+                            EdgeParams.from_graph_edge(pred, combined_implementation, data)
+                        )
 
                 for _, succ, data in self.out_edges(node, data=True):
                     if succ not in nodes_to_merge:
