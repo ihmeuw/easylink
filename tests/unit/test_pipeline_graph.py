@@ -387,3 +387,23 @@ def test_merge_joint_implementations(default_config_params, test_dir) -> None:
         assert edge_attrs["filepaths"] == tuple(
             [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
         )
+
+
+def test_cycle_error(default_config_params) -> None:
+    config_params = default_config_params
+    # make step 3 and step 4 a combined implementations
+    config_params["pipeline"]["steps"]["step_3"] = {
+        "iterate": [
+            {COMBINED_IMPLEMENTATION_KEY: "step_3_4"},
+            {"implementation": {"name": "step_3_python_pandas"}},
+        ]
+    }
+    config_params["pipeline"]["steps"]["step_4"][COMBINED_IMPLEMENTATION_KEY] = "step_3_4"
+    config_params["pipeline"]["combined_implementations"] = {
+        "step_3_4": {
+            "name": "step_3_and_step_4_joint_python_pandas",
+        }
+    }
+    # Add a cycle
+    with pytest.raises(ValueError):
+        PipelineGraph(Config(config_params))
