@@ -476,3 +476,9 @@ def test_combined_missing_node(default_config_params):
         match="Pipeline configuration nodes \\['step_4'\\] do not match metadata steps \\['step_3', 'step_4'\\].",
     ):
         PipelineGraph(Config(config_params))
+
+
+# TODO: Add a test here when we have modularized pipeline schemas for testing
+@pytest.mark.skip(reason="Not implemented")
+def test_combined_bad_topology():
+    pass
