@@ -478,7 +478,7 @@ def test_combined_missing_node(default_config_params):
         PipelineGraph(Config(config_params))
 
 
-# TODO: Add a test here when we have modularized pipeline schemas for testing
+# TODO MIC-5476: Add a test here when we have modularized pipeline schemas for testing
 @pytest.mark.skip(reason="Not implemented")
 def test_combined_bad_topology():
     pass
