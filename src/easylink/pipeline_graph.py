@@ -37,12 +37,16 @@ class PipelineGraph(ImplementationGraph):
                 for node, data in self.nodes(data=True)
                 if data["implementation"].combined_name == combined_implementation
             ]
+            if not nodes_to_merge:
+                continue
 
             implemented_steps = [
                 step
                 for node in nodes_to_merge
                 for step in self.nodes[node]["implementation"].schema_steps
             ]
+            metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
+            self.validate_implementation_topology(nodes_to_merge, metadata_steps)
             input_slots = []
             output_slots = []
             in_edge_params = []
@@ -216,11 +220,43 @@ class PipelineGraph(ImplementationGraph):
                     f"Input slot '{input_slot}' is connected to different output slots in edges: {', '.join(conflicting_edges)}"
                 )
 
-            edge_schema_steps = set(
-                tuple(self.nodes[edge.source_node]["implementation"].schema_steps)
+            edge_final_steps = set(
+                self.nodes[edge.source_node]["implementation"].metadata_steps[-1]
                 for edge in edges
             )
-            if len(edge_schema_steps) > 1:
+            if len(edge_final_steps) > 1:
                 raise ValueError(
                     f"Input slot '{input_slot}' is connected to nodes that implement different schema steps"
                 )
+
+    def validate_implementation_topology(
+        self, nodes: list[str], metadata_steps: list[str]
+    ) -> None:
+        """Check that the subgraph induced by the nodes implemented by this implementation
+        is topologically consistent with the list of metadata steps."""
+        subgraph = ImplementationGraph(self).subgraph(nodes)
+
+        # Relabel nodes by schema step
+        mapping = {}
+        for node, data in subgraph.nodes(data=True):
+            schema_steps = data["implementation"].schema_steps
+            if len(schema_steps) == 1:
+                mapping[node] = schema_steps[0]
+            else:
+                raise ValueError(
+                    f"Node '{node}' must implement exactly one step before combination."
+                )
+        if not set(mapping.values()) == set(metadata_steps):
+            raise ValueError(
+                f"Pipeline configuration nodes {list(mapping.values())} do not match metadata steps {metadata_steps}."
+            )
+        subgraph = nx.relabel_nodes(subgraph, mapping)
+        # Check for topological inconsistency, i.e. if there
+        # is a path from a later node to an earlier node.
+        for i in range(len(metadata_steps)):
+            for j in range(i + 1, len(metadata_steps)):
+                if nx.has_path(subgraph, metadata_steps[j], metadata_steps[i]):
+                    raise ValueError(
+                        f"Pipeline configuration nodes {set(subgraph.nodes())} are not topologically consistent with metadata steps {set(metadata_steps)}:"
+                        f"There is a path from successor {metadata_steps[j]} to predecessor {metadata_steps[i]}"
+                    )
