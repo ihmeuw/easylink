@@ -32,13 +32,16 @@ class Implementation:
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
         self.metadata_steps = self._metadata["steps"]
-        self.is_joint = len(self.metadata_steps) > 1
         self.combined_name = combined_name
         self.schema_steps = schema_steps
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"
+
+    @property
+    def is_combined(self) -> bool:
+        return len(self.metadata_steps) > 1
 
     def validate(self) -> list[str]:
         """Validates individual Implementation instances. This is intended to be
