@@ -28,8 +28,8 @@ class PipelineGraph(ImplementationGraph):
         self = nx.freeze(self)
 
     @classmethod
-    def from_config(self, config: Config) -> "PipelineGraph":
-        return PipelineGraph(
+    def from_config(cls, config: Config) -> "PipelineGraph":
+        return cls(
             implementation_graph=config.schema.get_implementation_graph(),
             input_data=config.input_data,
         )
