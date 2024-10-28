@@ -91,6 +91,7 @@ class Config(LayeredConfigTree):
     def __init__(
         self,
         config_params: Dict[str, Any],
+        possible_pipeline_schemas: list[PipelineSchema] = PIPELINE_SCHEMAS,
     ):
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
@@ -100,7 +101,7 @@ class Config(LayeredConfigTree):
             # Set slurm defaults to empty dict instead of None so that we don't get errors
             # In slurm resources property
             self.update({"environment": {"slurm": {}}}, layer="default")
-
+        self.update({"possible_pipeline_schemas": possible_pipeline_schemas})
         self.update({"schema": self._get_schema()}, layer="initial_data")
         self.schema.configure_pipeline(self.pipeline, self.input_data)
         self._validate()
@@ -171,7 +172,7 @@ class Config(LayeredConfigTree):
         """
         errors = defaultdict(dict)
         # Try each schema until one is validated
-        for schema in PIPELINE_SCHEMAS:
+        for schema in self.possible_pipeline_schemas:
             logs = schema.validate_step(self.pipeline, self.input_data)
             if logs:
                 errors[PIPELINE_ERRORS_KEY][schema.name] = logs

@@ -38,11 +38,13 @@ class PipelineSchema(HierarchicalStep):
         )
 
     @classmethod
-    def _get_schemas(cls) -> list["PipelineSchema"]:
+    def _get_schemas(
+        cls, schema_params: dict[str, tuple[Step, EdgeParams]] = ALLOWED_SCHEMA_PARAMS
+    ) -> list["PipelineSchema"]:
         """Creates the allowable schemas for the pipeline."""
         return [
             cls(name, nodes=nodes, edges=edges)
-            for name, (nodes, edges) in ALLOWED_SCHEMA_PARAMS.items()
+            for name, (nodes, edges) in schema_params.items()
         ]
 
     def validate_inputs(self, input_data: dict[str, Path]) -> dict[str, list[str]]:
