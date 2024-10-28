@@ -5,7 +5,6 @@ import pytest
 from easylink.configuration import Config
 from easylink.graph_components import InputSlot
 from easylink.pipeline_graph import PipelineGraph
-from easylink.step import COMBINED_IMPLEMENTATION_KEY
 from easylink.utilities.validation_utils import validate_input_file_dummy
 from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
 
