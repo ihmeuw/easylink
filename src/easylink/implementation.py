@@ -58,11 +58,9 @@ class Implementation:
         return metadata[self.name]
 
     def _validate_expected_step(self, logs: list[str]) -> list[str]:
-        ##TODO This is going to be too simple
-        if not self.schema_steps == self.metadata_steps:
+        if not set(self.schema_steps) == set(self.metadata_steps):
             logs.append(
-                f"Implementaton metadata steps '{self.metadata_steps}' does not "
-                f"match pipeline configuration step '{self.schema_steps}'"
+                f"Pipeline configuration nodes {self.schema_steps} do not match metadata steps {self.metadata_steps}."
             )
         return logs
 
