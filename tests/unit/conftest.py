@@ -308,7 +308,7 @@ INPUT_DATA_FORMAT_DICT = {
     "wrong_cols": [["wrong", "column", "names"], [1, 2, 3]],
 }
 
-JOINT_IMPLEMENTATION_CONFIGS = {
+COMBINED_IMPLEMENTATION_CONFIGS = {
     "two_steps": {
         "steps": {
             "step_1": {
@@ -330,7 +330,7 @@ JOINT_IMPLEMENTATION_CONFIGS = {
         },
         "combined_implementations": {
             "step_3_4": {
-                "name": "step_3_and_step_4_joint_python_pandas",
+                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },
@@ -364,7 +364,7 @@ JOINT_IMPLEMENTATION_CONFIGS = {
         },
         "combined_implementations": {
             "step_3_4": {
-                "name": "step_3_and_step_4_joint_python_pandas",
+                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },
@@ -398,7 +398,7 @@ JOINT_IMPLEMENTATION_CONFIGS = {
         },
         "combined_implementations": {
             "step_3_4": {
-                "name": "step_3_and_step_4_joint_python_pandas",
+                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },
@@ -441,10 +441,10 @@ JOINT_IMPLEMENTATION_CONFIGS = {
         },
         "combined_implementations": {
             "steps_1_and_2_combined": {
-                "name": "step_1_and_step_2_joint_python_pandas",
+                "name": "step_1_and_step_2_combined_python_pandas",
             },
             "step_3_4": {
-                "name": "step_3_and_step_4_joint_python_pandas",
+                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },
@@ -467,7 +467,7 @@ JOINT_IMPLEMENTATION_CONFIGS = {
         },
         "combined_implementations": {
             "step_3_4": {
-                "name": "step_3_and_step_4_joint_python_pandas",
+                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },
@@ -494,7 +494,7 @@ JOINT_IMPLEMENTATION_CONFIGS = {
         },
         "combined_implementations": {
             "step_3_4": {
-                "name": "step_3_and_step_4_joint_python_pandas",
+                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },

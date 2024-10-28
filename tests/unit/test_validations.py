@@ -16,10 +16,10 @@ from easylink.configuration import (
     Config,
     load_params_from_specification,
 )
-from easylink.pipeline import Pipeline, IMPLEMENTATION_ERRORS_KEY
+from easylink.pipeline import IMPLEMENTATION_ERRORS_KEY, Pipeline
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from tests.unit.conftest import PIPELINE_CONFIG_DICT, JOINT_IMPLEMENTATION_CONFIGS
+from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS, PIPELINE_CONFIG_DICT
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):

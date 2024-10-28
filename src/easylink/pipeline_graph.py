@@ -21,14 +21,14 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
-        self.merge_joint_implementations(config)
+        self.merge_combined_implementations(config)
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
 
-    def merge_joint_implementations(self, config):
+    def merge_combined_implementations(self, config):
         for (
             combined_implementation,
-            joint_implementation_config,
+            combined_implementation_config,
         ) in config.pipeline.combined_implementations.items():
 
             # Find all nodes with the same implementation name
@@ -89,7 +89,7 @@ class PipelineGraph(ImplementationGraph):
                     seen_slots.append(slot)
 
             new_implementation = Implementation(
-                implemented_steps, joint_implementation_config, input_slots, output_slots
+                implemented_steps, combined_implementation_config, input_slots, output_slots
             )
             self.add_node(combined_implementation, implementation=new_implementation)
 

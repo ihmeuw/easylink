@@ -39,10 +39,6 @@ class Implementation:
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"
 
-    @property
-    def is_combined(self) -> bool:
-        return len(self.metadata_steps) > 1
-
     def validate(self) -> list[str]:
         """Validates individual Implementation instances. This is intended to be
         run from the Pipeline validate method.
@@ -101,5 +97,4 @@ class NullImplementation:
         self.name = name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
-        self.is_joint = False
         self.combined_name = None

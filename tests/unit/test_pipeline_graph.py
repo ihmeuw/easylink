@@ -7,7 +7,7 @@ from easylink.graph_components import InputSlot
 from easylink.pipeline_graph import PipelineGraph
 from easylink.step import COMBINED_IMPLEMENTATION_KEY
 from easylink.utilities.validation_utils import validate_input_file_dummy
-from tests.unit.conftest import JOINT_IMPLEMENTATION_CONFIGS
+from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
 
 
 def check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
@@ -316,10 +316,10 @@ def test_spark_is_required(default_config_params, requires_spark):
     assert pipeline_graph.spark_is_required() == requires_spark
 
 
-def test_merge_joint_implementations(default_config_params, test_dir) -> None:
+def test_merge_combined_implementations(default_config_params, test_dir) -> None:
     config_params = default_config_params
     # make step 3 and step 4 a combined implementations
-    config_params["pipeline"] = JOINT_IMPLEMENTATION_CONFIGS["two_steps"]
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["two_steps"]
     pipeline_graph = PipelineGraph(Config(config_params))
     expected_nodes = {
         "input_data",
@@ -374,10 +374,10 @@ def test_merge_joint_implementations(default_config_params, test_dir) -> None:
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
-def test_merge_joint_implementations_iteration(default_config_params, test_dir) -> None:
+def test_merge_combined_implementations_iteration(default_config_params, test_dir) -> None:
     config_params = default_config_params
     # make step 3 and step 4 a combined implementations
-    config_params["pipeline"] = JOINT_IMPLEMENTATION_CONFIGS["with_iteration"]
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration"]
     pipeline_graph = PipelineGraph(Config(config_params))
     expected_nodes = {
         "input_data",
@@ -444,7 +444,7 @@ def test_merge_joint_implementations_iteration(default_config_params, test_dir) 
 
 def test_cycle_error(default_config_params) -> None:
     config_params = default_config_params
-    config_params["pipeline"] = JOINT_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
     # Add a cycle
     with pytest.raises(ValueError):
         PipelineGraph(Config(config_params))
@@ -453,7 +453,7 @@ def test_cycle_error(default_config_params) -> None:
 # TODO MIC-5466: Deduplicate slots so this configuration is permissible
 def test_duplicate_error(default_config_params) -> None:
     config_params = default_config_params
-    config_params["pipeline"] = JOINT_IMPLEMENTATION_CONFIGS["with_parallel"]
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_parallel"]
     # Add a cycle
     with pytest.raises(ValueError):
         PipelineGraph(Config(config_params))
@@ -461,7 +461,7 @@ def test_duplicate_error(default_config_params) -> None:
 
 def test_combined_extra_step(default_config_params):
     config_params = default_config_params
-    config_params["pipeline"] = JOINT_IMPLEMENTATION_CONFIGS["with_extra_node"]
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_extra_node"]
     with pytest.raises(
         ValueError,
         match="Pipeline configuration nodes \\['step_2', 'step_3', 'step_4'\\] do not match metadata steps \\['step_3', 'step_4'\\].",
@@ -471,7 +471,7 @@ def test_combined_extra_step(default_config_params):
 
 def test_combined_missing_node(default_config_params):
     config_params = default_config_params
-    config_params["pipeline"] = JOINT_IMPLEMENTATION_CONFIGS["with_missing_node"]
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_missing_node"]
     with pytest.raises(
         ValueError,
         match="Pipeline configuration nodes \\['step_4'\\] do not match metadata steps \\['step_3', 'step_4'\\].",
