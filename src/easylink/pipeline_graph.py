@@ -1,4 +1,3 @@
-import copy
 import itertools
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
@@ -7,7 +6,7 @@ import networkx as nx
 
 from easylink.configuration import Config
 from easylink.graph_components import ImplementationGraph, InputSlot
-from easylink.implementation import Implementation
+from layered_config_tree import LayeredConfigTree
 
 
 class PipelineGraph(ImplementationGraph):
@@ -19,23 +18,34 @@ class PipelineGraph(ImplementationGraph):
 
     """
 
-    def __init__(self, config: Config) -> None:
-        super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
-        self.update_slot_filepaths(config)
+    def __init__(
+        self,
+        implementation_graph: ImplementationGraph,
+        input_data: LayeredConfigTree,
+    ) -> None:
+        super().__init__(incoming_graph_data=implementation_graph)
+        self.update_slot_filepaths(input_data)
         self = nx.freeze(self)
 
-    def update_slot_filepaths(self, config: Config) -> None:
+    @classmethod
+    def from_config(self, config: Config) -> "PipelineGraph":
+        return PipelineGraph(
+            implementation_graph=config.schema.get_implementation_graph(),
+            input_data=config.input_data,
+        )
+
+    def update_slot_filepaths(self, input_data: LayeredConfigTree) -> None:
         """Fill graph edges with appropriate filepath information."""
         # Update input data edges to direct to correct filenames from config
         for source, sink, edge_attrs in self.out_edges("input_data", data=True):
             for edge_idx in self[source][sink]:
                 if edge_attrs["output_slot"].name == "all":
                     self[source][sink][edge_idx]["filepaths"] = tuple(
-                        str(path) for path in config.input_data.to_dict().values()
+                        str(path) for path in input_data.to_dict().values()
                     )
                 else:
                     self[source][sink][edge_idx]["filepaths"] = (
-                        str(config.input_data[edge_attrs["output_slot"].name]),
+                        str(input_data[edge_attrs["output_slot"].name]),
                     )
 
         # Update implementation nodes with yaml metadata

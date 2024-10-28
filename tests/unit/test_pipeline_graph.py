@@ -9,7 +9,7 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 def test__create_graph(default_config: Config, test_dir: str) -> None:
-    pipeline_graph = PipelineGraph(default_config)
+    pipeline_graph = PipelineGraph.from_config(default_config)
     assert set(pipeline_graph.nodes) == {
         "input_data",
         "step_1_python_pandas",
@@ -87,7 +87,7 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
 
 
 def test_implementations(default_config: Config) -> None:
-    pipeline_graph = PipelineGraph(default_config)
+    pipeline_graph = PipelineGraph.from_config(default_config)
     implementation_names = [
         implementation.name for implementation in pipeline_graph.implementations
     ]
@@ -102,8 +102,7 @@ def test_implementations(default_config: Config) -> None:
 
 
 def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
-    pipeline_graph = PipelineGraph(default_config)
-    pipeline_graph.update_slot_filepaths(default_config)
+    pipeline_graph = PipelineGraph.from_config(default_config)
     expected_filepaths = {
         ("input_data", "step_1_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
@@ -164,7 +163,7 @@ def test_get_input_slots(default_config: Config, test_dir: str) -> None:
             }
         },
     }
-    pipeline_graph = PipelineGraph(default_config)
+    pipeline_graph = PipelineGraph.from_config(default_config)
     for node, expected_slots in expected.items():
         slots = pipeline_graph.get_input_slots(node)
         for slot_name, expected_slot in expected_slots.items():
@@ -289,7 +288,7 @@ def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
             ["intermediate/step_4_python_pandas/result.parquet"],
         ),
     }
-    pipeline_graph = PipelineGraph(default_config)
+    pipeline_graph = PipelineGraph.from_config(default_config)
     for node, (expected_input_files, expected_output_files) in expected.items():
         input_files, output_files = pipeline_graph.get_input_output_files(node)
         assert input_files == expected_input_files
@@ -304,6 +303,5 @@ def test_spark_is_required(default_config_params, requires_spark):
         config_params["pipeline"]["steps"]["step_1"]["implementation"][
             "name"
         ] = "step_1_python_pyspark_distributed"
-    config = Config(config_params)
-    pipeline_graph = PipelineGraph(config)
+    pipeline_graph = PipelineGraph.from_config(Config(config_params))
     assert pipeline_graph.spark_is_required() == requires_spark

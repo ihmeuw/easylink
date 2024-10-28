@@ -17,7 +17,7 @@ class Pipeline:
 
     def __init__(self, config: Config):
         self.config = config
-        self.pipeline_graph = PipelineGraph(config)
+        self.pipeline_graph = PipelineGraph.from_config(config)
         self.spark_is_required = self.pipeline_graph.spark_is_required()
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
