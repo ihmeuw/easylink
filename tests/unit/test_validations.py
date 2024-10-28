@@ -16,10 +16,10 @@ from easylink.configuration import (
     Config,
     load_params_from_specification,
 )
-from easylink.pipeline import Pipeline
+from easylink.pipeline import Pipeline, IMPLEMENTATION_ERRORS_KEY
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from tests.unit.conftest import PIPELINE_CONFIG_DICT
+from tests.unit.conftest import PIPELINE_CONFIG_DICT, JOINT_IMPLEMENTATION_CONFIGS
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
@@ -390,7 +390,7 @@ def test_no_container(default_config, caplog, mocker):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "IMPLEMENTATION ERRORS": {
+            IMPLEMENTATION_ERRORS_KEY: {
                 "step_1_python_pandas": [
                     "Container 'some/path/with/no/container.sif' does not exist.",
                 ],
@@ -426,12 +426,12 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "IMPLEMENTATION ERRORS": {
+            IMPLEMENTATION_ERRORS_KEY: {
                 "step_1_python_pandas": [
-                    "Implementaton metadata steps '\\['not-the-step-1-name'\\]' does not match pipeline configuration step '\\['step_1'\\]'"
+                    "Pipeline configuration nodes \\['step_1'\\] do not match metadata steps \\['not-the-step-1-name'\\]."
                 ],
                 "step_2_python_pandas": [
-                    "Implementaton metadata steps '\\['not-the-step-2-name'\\]' does not match pipeline configuration step '\\['step_2'\\]'"
+                    "Pipeline configuration nodes \\['step_2'\\] do not match metadata steps \\['not-the-step-2-name'\\]."
                 ],
             },
         },
