@@ -444,7 +444,6 @@ def test_merge_combined_implementations_iteration(default_config_params, test_di
 def test_cycle_error(default_config_params) -> None:
     config_params = default_config_params
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
-    # Add a cycle
     with pytest.raises(ValueError):
         PipelineGraph(Config(config_params))
 
@@ -453,7 +452,6 @@ def test_cycle_error(default_config_params) -> None:
 def test_duplicate_error(default_config_params) -> None:
     config_params = default_config_params
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_parallel"]
-    # Add a cycle
     with pytest.raises(ValueError):
         PipelineGraph(Config(config_params))
 
@@ -463,7 +461,7 @@ def test_combined_extra_step(default_config_params):
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_extra_node"]
     with pytest.raises(
         ValueError,
-        match="Pipeline configuration nodes \\['step_2', 'step_3', 'step_4'\\] do not match metadata steps \\['step_3', 'step_4'\\].",
+        match="Pipeline configuration nodes \['step_2', 'step_3', 'step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
     ):
         PipelineGraph(Config(config_params))
 
@@ -473,7 +471,7 @@ def test_combined_missing_node(default_config_params):
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_missing_node"]
     with pytest.raises(
         ValueError,
-        match="Pipeline configuration nodes \\['step_4'\\] do not match metadata steps \\['step_3', 'step_4'\\].",
+        match="Pipeline configuration nodes \['step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
     ):
         PipelineGraph(Config(config_params))
 

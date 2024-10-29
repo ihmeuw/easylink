@@ -19,7 +19,7 @@ from easylink.configuration import (
 from easylink.pipeline import IMPLEMENTATION_ERRORS_KEY, Pipeline
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS, PIPELINE_CONFIG_DICT
+from tests.unit.conftest import PIPELINE_CONFIG_DICT
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
@@ -278,7 +278,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
         error_no=errno.EINVAL,
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
-                ".*/file1.oops": ["Data file type .oops is not supported. Convert to .*"],
+                r".*/file1.oops": [r"Data file type .oops is not supported. Convert to .*"],
             },
         },
     )
@@ -302,7 +302,7 @@ def test_pipeline_schema_bad_input_data(default_config_paths, test_dir, caplog):
         error_no=errno.EINVAL,
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
-                ".*/broken_file1.csv": ["Data file .* is missing required column\\(s\\) .*"],
+                ".*/broken_file1.csv": [r"Data file .* is missing required column\(s\) .*"],
             }
         },
     )
@@ -428,10 +428,10 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
         expected_msg={
             IMPLEMENTATION_ERRORS_KEY: {
                 "step_1_python_pandas": [
-                    "Pipeline configuration nodes \\['step_1'\\] do not match metadata steps \\['not-the-step-1-name'\\]."
+                    r"Pipeline configuration nodes \['step_1'\] do not match metadata steps \['not-the-step-1-name'\]."
                 ],
                 "step_2_python_pandas": [
-                    "Pipeline configuration nodes \\['step_2'\\] do not match metadata steps \\['not-the-step-2-name'\\]."
+                    r"Pipeline configuration nodes \['step_2'\] do not match metadata steps \['not-the-step-2-name'\]."
                 ],
             },
         },
