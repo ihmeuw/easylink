@@ -424,27 +424,19 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
                 "combined_implementation_key": "steps_1_and_2_combined",
             },
             "step_3": {
-                "iterate": [
-                    {
-                        "combined_implementation_key": "step_3_4",
-                    },
-                    {
-                        "implementation": {
-                            "name": "step_3_python_pandas",
-                        }
-                    },
-                ]
+                "implementation": {
+                    "name": "step_3_python_pandas",
+                }
             },
             "step_4": {
-                "combined_implementation_key": "step_3_4",
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                }
             },
         },
         "combined_implementations": {
             "steps_1_and_2_combined": {
                 "name": "step_1_and_step_2_combined_python_pandas",
-            },
-            "step_3_4": {
-                "name": "step_3_and_step_4_combined_python_pandas",
             },
         },
     },

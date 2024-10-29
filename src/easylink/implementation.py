@@ -97,4 +97,5 @@ class NullImplementation:
         self.name = name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
+        self.schema_steps = [self.name]
         self.combined_name = None

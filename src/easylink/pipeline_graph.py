@@ -101,8 +101,7 @@ class PipelineGraph(ImplementationGraph):
             self.remove_nodes_from(nodes_to_merge)
             try:
                 cycle = nx.find_cycle(self)
-                if cycle:
-                    raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
+                raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
             except nx.NetworkXNoCycle:
                 pass
 
@@ -221,7 +220,7 @@ class PipelineGraph(ImplementationGraph):
                 )
 
             edge_final_steps = set(
-                self.nodes[edge.source_node]["implementation"].metadata_steps[-1]
+                self.nodes[edge.source_node]["implementation"].schema_steps[-1]
                 for edge in edges
             )
             if len(edge_final_steps) > 1:
