@@ -195,18 +195,18 @@ class PipelineGraph(ImplementationGraph):
         return any([implementation.requires_spark for implementation in self.implementations])
 
     def validate_edge_params(self, edge_params: list[EdgeParams]) -> None:
-        # Group edges by output slot to check for conflicts
+        # Group edges by input slot to check for conflicts
         input_slot_groups = defaultdict(list)
 
         for edge in edge_params:
             input_slot_groups[edge.input_slot].append(edge)
 
-        # Check each group of edges sharing the same output slot
+        # Check each group of edges sharing the same input slot
         for input_slot, edges in input_slot_groups.items():
             if len(edges) <= 1:
                 continue
 
-            # Check for conflicting input slots
+            # Check for conflicting output slots
             output_slot_names = set(edge.output_slot for edge in edges)
             if len(output_slot_names) > 1:
                 conflicting_edges = [
