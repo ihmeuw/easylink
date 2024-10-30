@@ -24,31 +24,24 @@ def load_file(file_path, file_format=None):
 
 diagnostics = {}
 
-if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
-    main_input_file_paths = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")
-else:
-    main_input_file_paths = glob.glob("/input_data/main_input*")
+INPUT_ENV_VARS = os.getenv(
+    "INPUT_ENV_VARS",
+    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+).split(",")
 
-logging.info("Loading main input")
-diagnostics["num_main_input_files"] = len(main_input_file_paths)
-df = load_file(main_input_file_paths[0])
+df = pd.DataFrame()
 
-for path in main_input_file_paths[1:]:
-    logging.info("Loading additional primary input")
-    df = pd.concat([df, load_file(path)], ignore_index=True).fillna(0)
+for env_var in INPUT_ENV_VARS:
+    if env_var not in os.environ:
+        logging.warning(f"Missing environment variable {env_var}")
+        continue
 
-if "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" in os.environ:
-    secondary_input_file_paths = os.environ[
-        "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
-    ].split(",")
-else:
-    secondary_input_file_paths = glob.glob("/input_data/secondary_input*")
+    logging.info(f"Loading files for {env_var}")
+    file_paths = os.environ[env_var].split(",")
+    diagnostics[f"num_files_{env_var.lower()}"] = len(file_paths)
+    for path in file_paths:
+        df = pd.concat([df, load_file(path)], ignore_index=True).fillna(0)
 
-diagnostics["num_secondary_input_files"] = len(secondary_input_file_paths)
-
-for path in secondary_input_file_paths:
-    logging.info("Loading secondary input")
-    df = pd.concat([df, load_file(path)], ignore_index=True).fillna(0)
 
 extra_implementation_specific_input_glob = glob.glob(
     "/extra_implementation_specific_input_data/input*"
