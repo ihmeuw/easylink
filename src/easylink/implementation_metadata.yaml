@@ -104,14 +104,6 @@ step_4_r:
   outputs:
     step_4_main_output: result.parquet
   requires_spark: false
-step_3_and_step_4_combined_python_pandas:
-  steps:
-    - step_3
-    - step_4
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
-  script_cmd: python /dummy_step.py
-  outputs:
-    step_4_main_output: result.parquet
 step_1_and_step_2_combined_python_pandas:
   steps:
     - step_1
@@ -120,3 +112,11 @@ step_1_and_step_2_combined_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_2_main_output: result.parquet
+step_3_and_step_4_combined_python_pandas:
+  steps:
+    - step_3
+    - step_4
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_4_main_output: result.parquet
