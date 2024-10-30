@@ -70,23 +70,21 @@ class PipelineGraph(ImplementationGraph):
             self.validate_edge_params(in_edge_params)
 
             for slots in (input_slots, output_slots):
-                seen_slots = []
                 seen_names = []
                 seen_env_vars = []
                 for slot in slots:
                     # Check for duplicate names
-                    if slot.name in seen_names and slot not in seen_slots:
+                    if slot.name in seen_names:
                         raise ValueError(f"Duplicate slot name found: '{slot.name}'")
                     seen_names.append(slot.name)
 
                     # Check for duplicate env_vars
                     if isinstance(slot, InputSlot):
-                        if slot.env_var in seen_env_vars and slot not in seen_slots:
+                        if slot.env_var in seen_env_vars:
                             raise ValueError(
                                 f"Duplicate environment variable found: '{slot.env_var}'"
                             )
                         seen_env_vars.append(slot.env_var)
-                    seen_slots.append(slot)
 
             new_implementation = Implementation(
                 implemented_steps, combined_implementation_config, input_slots, output_slots
