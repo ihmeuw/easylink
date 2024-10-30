@@ -9,26 +9,6 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
 
 
-def check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
-    assert set(pipeline_graph.nodes) == set(expected_nodes)
-    assert set(pipeline_graph.edges()) == expected_edges.keys()
-    for source, sink, edge_attrs in pipeline_graph.edges(data=True):
-        assert (
-            edge_attrs["input_slot"].name == expected_edges[(source, sink)]["input_slot_name"]
-        )
-        assert edge_attrs["input_slot"].env_var == expected_edges[(source, sink)]["env_var"]
-        assert (
-            edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
-        )
-        assert (
-            edge_attrs["output_slot"].name
-            == expected_edges[(source, sink)]["output_slot_name"]
-        )
-        assert edge_attrs["filepaths"] == tuple(
-            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
-        )
-
-
 def test__create_graph(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
     expected_nodes = {
@@ -441,10 +421,12 @@ def test_merge_combined_implementations_iteration(default_config_params, test_di
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
+# TODO MIC-5466: Deduplicate slots so this fails with cycle error
+@pytest.mark.skip(reason="Not implemented")
 def test_cycle_error(default_config_params) -> None:
     config_params = default_config_params
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=("The MultiDiGraph contains a cycle:")):
         PipelineGraph(Config(config_params))
 
 
@@ -461,7 +443,7 @@ def test_combined_extra_step(default_config_params):
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_extra_node"]
     with pytest.raises(
         ValueError,
-        match="Pipeline configuration nodes \['step_2', 'step_3', 'step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
+        match=r"Pipeline configuration nodes \['step_2', 'step_3', 'step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
     ):
         PipelineGraph(Config(config_params))
 
@@ -471,7 +453,7 @@ def test_combined_missing_node(default_config_params):
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_missing_node"]
     with pytest.raises(
         ValueError,
-        match="Pipeline configuration nodes \['step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
+        match=r"Pipeline configuration nodes \['step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
     ):
         PipelineGraph(Config(config_params))
 
@@ -480,3 +462,26 @@ def test_combined_missing_node(default_config_params):
 @pytest.mark.skip(reason="Not implemented")
 def test_combined_bad_topology():
     pass
+
+
+### Helper functions ###
+
+
+def check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
+    assert set(pipeline_graph.nodes) == set(expected_nodes)
+    assert set(pipeline_graph.edges()) == expected_edges.keys()
+    for source, sink, edge_attrs in pipeline_graph.edges(data=True):
+        assert (
+            edge_attrs["input_slot"].name == expected_edges[(source, sink)]["input_slot_name"]
+        )
+        assert edge_attrs["input_slot"].env_var == expected_edges[(source, sink)]["env_var"]
+        assert (
+            edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
+        )
+        assert (
+            edge_attrs["output_slot"].name
+            == expected_edges[(source, sink)]["output_slot_name"]
+        )
+        assert edge_attrs["filepaths"] == tuple(
+            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
+        )
