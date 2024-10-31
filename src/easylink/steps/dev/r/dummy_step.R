@@ -17,41 +17,29 @@ load_file <- function(file_path, file_format = NULL) {
 }
 
 diagnostics <- list()
+input_env_vars = os.getenv(
+    "INPUT_ENV_VARS",
+    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+).split(",")
+strsplit(Sys.getenv("INPUT_ENV_VARS", "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"), ",")[[1]]
 
-# Check if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" is in the environment
-if ("DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" %in% names(Sys.getenv())) {
-    main_input_file_paths <- strsplit(Sys.getenv("DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"), ",")[[1]]
-} else {
-    main_input_file_paths <- list.files(path = "/input_data", pattern = "main_input*", full.names = TRUE)
-}
+df <- data.frame()
 
-message('Loading main input')
-diagnostics$num_main_input_files <- length(main_input_file_paths)
-df <- load_file(main_input_file_paths[1])
+for (env_var in input_env_vars) {
+    if (env_var  %in% names(Sys.getenv())) {
+        message(paste("Missing required environment variable", env_var))
+        stop()
+    }
 
-for (path in main_input_file_paths[-1]) {
-    message('Loading additional primary input')
-    df <- bind_rows(df, load_file(path)) %>%
+     message(paste("Loading files for", env_var))
+    strsplit(Sys.getenv(env_var), ",")[[1]]
+    diagnostics[[paste0("num_files_", tolower(env_var))]] <- length(file_paths)
+    for (path in file_paths) {
+        df <- bind_rows(df, load_file(path)) %>%
         mutate(
             across(everything(), ~replace_na(.x, 0))
         )
-}
-
-# Check if "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" is in the environment
-if ("DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS" %in% names(Sys.getenv())) {
-    secondary_input_file_paths <- strsplit(Sys.getenv("DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"), ",")[[1]]
-} else {
-    secondary_input_file_paths <- list.files(path = "/input_data", pattern = "secondary_input*", full.names = TRUE)
-}
-
-diagnostics$num_secondary_input_files <- length(secondary_input_file_paths)
-
-for (path in secondary_input_file_paths) {
-    message('Loading secondary input')
-    df <- bind_rows(df, load_file(path)) %>%
-        mutate(
-            across(everything(), ~replace_na(.x, 0))
-        )
+    }
 }
 
 extra_implementation_specific_input_glob <- list.files(path = "/extra_implementation_specific_input_data", pattern = "input*", full.names = TRUE)

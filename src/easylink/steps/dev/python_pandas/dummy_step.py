@@ -22,13 +22,12 @@ def load_file(file_path, file_format=None):
     raise ValueError()
 
 
-diagnostics = {}
-
 INPUT_ENV_VARS = os.getenv(
     "INPUT_ENV_VARS",
     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
 ).split(",")
 
+diagnostics = {}
 df = pd.DataFrame()
 
 for env_var in INPUT_ENV_VARS:

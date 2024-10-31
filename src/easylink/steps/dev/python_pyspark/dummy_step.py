@@ -2,7 +2,6 @@ import glob
 import logging
 import os
 
-import pandas as pd
 import yaml
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, lit
@@ -34,6 +33,24 @@ def load_file(file_path, file_format=None):
 
 
 diagnostics = {}
+
+INPUT_ENV_VARS = os.getenv(
+    "INPUT_ENV_VARS",
+    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+).split(",")
+
+df = spark.createDataFrame([], schema=None)
+
+for env_var in INPUT_ENV_VARS:
+    if env_var not in os.environ:
+        logging.error(f"Missing required environment variable {env_var}")
+        raise ValueError()
+
+    logging.info(f"Loading files for {env_var}")
+    file_paths = os.environ[env_var].split(",")
+    diagnostics[f"num_files_{env_var.lower()}"] = len(file_paths)
+    for path in file_paths:
+        df = df.unionByName(load_file(path), allowMissingColumns=True).fillna(0)
 
 if "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS" in os.environ:
     main_input_file_paths = os.environ["DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"].split(",")
