@@ -26,15 +26,15 @@ diagnostics = {}
 
 INPUT_ENV_VARS = os.getenv(
     "INPUT_ENV_VARS",
-    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
 ).split(",")
 
 df = pd.DataFrame()
 
 for env_var in INPUT_ENV_VARS:
     if env_var not in os.environ:
-        logging.warning(f"Missing environment variable {env_var}")
-        continue
+        logging.error(f"Missing required environment variable {env_var}")
+        raise ValueError()
 
     logging.info(f"Loading files for {env_var}")
     file_paths = os.environ[env_var].split(",")
