@@ -67,7 +67,6 @@ class PipelineGraph(ImplementationGraph):
                         combined_edges.append(
                             EdgeParams.from_graph_edge(combined_implementation, succ, data)
                         )
-            self.validate_edge_params(in_edge_params)
 
             for slots in (input_slots, output_slots):
                 seen_names = []
@@ -193,38 +192,6 @@ class PipelineGraph(ImplementationGraph):
     def spark_is_required(self) -> bool:
         """Check if the pipeline requires spark resources."""
         return any([implementation.requires_spark for implementation in self.implementations])
-
-    def validate_edge_params(self, edge_params: list[EdgeParams]) -> None:
-        # Group edges by input slot to check for conflicts
-        input_slot_groups = defaultdict(list)
-
-        for edge in edge_params:
-            input_slot_groups[edge.input_slot].append(edge)
-
-        # Check each group of edges sharing the same input slot
-        for input_slot, edges in input_slot_groups.items():
-            if len(edges) <= 1:
-                continue
-
-            # Check for conflicting output slots
-            output_slot_names = set(edge.output_slot for edge in edges)
-            if len(output_slot_names) > 1:
-                conflicting_edges = [
-                    f"({edge.source_node}->{edge.target_node}, output={edge.output_slot})"
-                    for edge in edges
-                ]
-                raise ValueError(
-                    f"Input slot '{input_slot}' is connected to different output slots in edges: {', '.join(conflicting_edges)}"
-                )
-
-            edge_final_steps = set(
-                self.nodes[edge.source_node]["implementation"].schema_steps[-1]
-                for edge in edges
-            )
-            if len(edge_final_steps) > 1:
-                raise ValueError(
-                    f"Input slot '{input_slot}' is connected to nodes that implement different schema steps"
-                )
 
     def validate_implementation_topology(
         self, nodes: list[str], metadata_steps: list[str]
