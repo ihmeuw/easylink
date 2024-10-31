@@ -31,7 +31,7 @@ class PipelineGraph(ImplementationGraph):
             combined_implementation_config,
         ) in config.pipeline.combined_implementations.items():
 
-            # Find all nodes with the same implementation name
+            # Find all nodes with the same combined implementation
             nodes_to_merge = [
                 node
                 for node, data in self.nodes(data=True)
