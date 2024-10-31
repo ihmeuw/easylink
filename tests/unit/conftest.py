@@ -281,11 +281,215 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "bad_combined_implementations": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "combined_implementation_key": "foo",
+        },
+        "step_4": {
+            "implementation": {
+                "name": "step_4_python_pandas",
+            },
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {
     "correct_cols": [["foo", "bar", "counter"], [1, 2, 3]],
     "wrong_cols": [["wrong", "column", "names"], [1, 2, 3]],
+}
+
+COMBINED_IMPLEMENTATION_CONFIGS = {
+    "two_steps": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "combined_implementation_key": "step_3_4",
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_combined_python_pandas",
+            },
+        },
+    },
+    "with_iteration": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "iterate": [
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                        }
+                    },
+                    {
+                        "combined_implementation_key": "step_3_4",
+                    },
+                ]
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_combined_python_pandas",
+            },
+        },
+    },
+    "with_iteration_cycle": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "iterate": [
+                    {
+                        "combined_implementation_key": "step_3_4",
+                    },
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                        }
+                    },
+                ]
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_combined_python_pandas",
+            },
+        },
+    },
+    "with_parallel": {
+        "steps": {
+            "step_1": {
+                "parallel": [
+                    {
+                        "input_data_file": "file1",
+                        "implementation": {"name": "step_1_python_pandas"},
+                    },
+                    {
+                        "input_data_file": "file2",
+                        "implementation": {"name": "step_1_python_pandas"},
+                    },
+                    {
+                        "input_data_file": "file2",
+                        "combined_implementation_key": "steps_1_and_2_combined",
+                    },
+                ]
+            },
+            "step_2": {
+                "combined_implementation_key": "steps_1_and_2_combined",
+            },
+            "step_3": {
+                "implementation": {
+                    "name": "step_3_python_pandas",
+                }
+            },
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                }
+            },
+        },
+        "combined_implementations": {
+            "steps_1_and_2_combined": {
+                "name": "step_1_and_step_2_combined_python_pandas",
+            },
+        },
+    },
+    "with_extra_node": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "combined_implementation_key": "step_3_4",
+            },
+            "step_3": {
+                "combined_implementation_key": "step_3_4",
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_combined_python_pandas",
+            },
+        },
+    },
+    "with_missing_node": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+            },
+            "step_3": {
+                "implementation": {
+                    "name": "step_3_python_pandas",
+                },
+            },
+            "step_4": {
+                "combined_implementation_key": "step_3_4",
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_combined_python_pandas",
+            },
+        },
+    },
 }
 
 

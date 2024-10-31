@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
+from typing import Iterable
 
 from layered_config_tree import LayeredConfigTree
 
+from easylink.graph_components import InputSlot, OutputSlot
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-
-if TYPE_CHECKING:
-    from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
@@ -20,24 +20,26 @@ class Implementation:
 
     def __init__(
         self,
-        step_name: str,
+        schema_steps: list[str],
         implementation_config: LayeredConfigTree,
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
+        combined_name: str | None = None,
     ):
         self.name = implementation_config.name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
-        self.metadata_step_name = self._metadata["step"]
-        self.schema_step_name = step_name
+        self.metadata_steps = self._metadata["steps"]
+        self.combined_name = combined_name
+        self.schema_steps = schema_steps
         self.requires_spark = self._metadata.get("requires_spark", False)
 
     def __repr__(self) -> str:
         return f"Implementation.{self.step_name}.{self.name}"
 
-    def validate(self) -> List[Optional[str]]:
+    def validate(self) -> list[str]:
         """Validates individual Implementation instances. This is intended to be
         run from the Pipeline validate method.
         """
@@ -50,19 +52,18 @@ class Implementation:
     # Helper methods #
     ##################
 
-    def _load_metadata(self) -> Dict[str, str]:
+    def _load_metadata(self) -> dict[str, str]:
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         return metadata[self.name]
 
-    def _validate_expected_step(self, logs: List[Optional[str]]) -> List[Optional[str]]:
-        if self.metadata_step_name != self.schema_step_name:
+    def _validate_expected_step(self, logs: list[str]) -> list[str]:
+        if not set(self.schema_steps) == set(self.metadata_steps):
             logs.append(
-                f"Implementaton metadata step '{self.metadata_step_name}' does not "
-                f"match pipeline configuration step '{self.schema_step_name}'"
+                f"Pipeline configuration nodes {self.schema_steps} do not match metadata steps {self.metadata_steps}."
             )
         return logs
 
-    def _validate_container_exists(self, logs: List[Optional[str]]) -> List[Optional[str]]:
+    def _validate_container_exists(self, logs: list[str]) -> list[str]:
         err_str = f"Container '{self.singularity_image_path}' does not exist."
         if not Path(self.singularity_image_path).exists():
             logs.append(err_str)
@@ -77,7 +78,7 @@ class Implementation:
         return self._metadata["script_cmd"]
 
     @property
-    def outputs(self) -> Dict[str, List[str]]:
+    def outputs(self) -> dict[str, list[str]]:
         return self._metadata["outputs"]
 
 
@@ -93,5 +94,8 @@ class NullImplementation:
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
     ):
+        self.name = name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
+        self.schema_steps = [self.name]
+        self.combined_name = None

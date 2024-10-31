@@ -6,11 +6,12 @@ from easylink.configuration import Config
 from easylink.graph_components import InputSlot
 from easylink.pipeline_graph import PipelineGraph
 from easylink.utilities.validation_utils import validate_input_file_dummy
+from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
 
 
 def test__create_graph(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
-    assert set(pipeline_graph.nodes) == {
+    expected_nodes = {
         "input_data",
         "step_1_python_pandas",
         "step_2_python_pandas",
@@ -68,22 +69,7 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
             "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
         },
     }
-    assert set(pipeline_graph.edges()) == expected_edges.keys()
-    for source, sink, edge_attrs in pipeline_graph.edges(data=True):
-        assert (
-            edge_attrs["input_slot"].name == expected_edges[(source, sink)]["input_slot_name"]
-        )
-        assert edge_attrs["input_slot"].env_var == expected_edges[(source, sink)]["env_var"]
-        assert (
-            edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
-        )
-        assert (
-            edge_attrs["output_slot"].name
-            == expected_edges[(source, sink)]["output_slot_name"]
-        )
-        assert edge_attrs["filepaths"] == tuple(
-            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
-        )
+    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
 def test_implementations(default_config: Config) -> None:
@@ -307,3 +293,195 @@ def test_spark_is_required(default_config_params, requires_spark):
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
     assert pipeline_graph.spark_is_required() == requires_spark
+
+
+def test_merge_combined_implementations(default_config_params, test_dir) -> None:
+    config_params = default_config_params
+    # make step 3 and step 4 a combined implementations
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["two_steps"]
+    pipeline_graph = PipelineGraph(Config(config_params))
+    expected_nodes = {
+        "input_data",
+        "step_1_python_pandas",
+        "step_2_python_pandas",
+        "step_3_4",
+        "results",
+    }
+    expected_edges = {
+        ("input_data", "step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "step_3_4"): {
+            "input_slot_name": "step_4_secondary_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("step_1_python_pandas", "step_2_python_pandas"): {
+            "input_slot_name": "step_2_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
+        },
+        ("step_2_python_pandas", "step_3_4"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_2_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
+        },
+        ("step_3_4", "results"): {
+            "input_slot_name": "result",
+            "output_slot_name": "step_4_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": None,
+            "filepaths": (Path("intermediate/step_3_4/result.parquet"),),
+        },
+    }
+    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+
+
+def test_merge_combined_implementations_iteration(default_config_params, test_dir) -> None:
+    config_params = default_config_params
+    # make step 3 and step 4 a combined implementations
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration"]
+    pipeline_graph = PipelineGraph(Config(config_params))
+    expected_nodes = {
+        "input_data",
+        "step_1_python_pandas",
+        "step_2_python_pandas",
+        "step_3_loop_1_step_3_python_pandas",
+        "step_3_4",
+        "results",
+    }
+    expected_edges = {
+        ("input_data", "step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "step_3_4"): {
+            "input_slot_name": "step_4_secondary_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("step_1_python_pandas", "step_2_python_pandas"): {
+            "input_slot_name": "step_2_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
+        },
+        ("step_2_python_pandas", "step_3_loop_1_step_3_python_pandas"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_2_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
+        },
+        ("step_3_loop_1_step_3_python_pandas", "step_3_4"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_3_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path("intermediate/step_3_loop_1_step_3_python_pandas/result.parquet"),
+            ),
+        },
+        ("step_3_4", "results"): {
+            "input_slot_name": "result",
+            "output_slot_name": "step_4_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": None,
+            "filepaths": (Path("intermediate/step_3_4/result.parquet"),),
+        },
+    }
+    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+
+
+# TODO MIC-5466: Deduplicate slots so this fails with cycle error
+@pytest.mark.skip(reason="Not implemented")
+def test_cycle_error(default_config_params) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
+    with pytest.raises(ValueError, match=("The MultiDiGraph contains a cycle:")):
+        PipelineGraph(Config(config_params))
+
+
+# TODO MIC-5466: Deduplicate slots so this configuration is permissible
+def test_duplicate_error(default_config_params) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_parallel"]
+    with pytest.raises(ValueError):
+        PipelineGraph(Config(config_params))
+
+
+def test_combined_extra_step(default_config_params):
+    config_params = default_config_params
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_extra_node"]
+    with pytest.raises(
+        ValueError,
+        match=r"Pipeline configuration nodes \['step_2', 'step_3', 'step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
+    ):
+        PipelineGraph(Config(config_params))
+
+
+def test_combined_missing_node(default_config_params):
+    config_params = default_config_params
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_missing_node"]
+    with pytest.raises(
+        ValueError,
+        match=r"Pipeline configuration nodes \['step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
+    ):
+        PipelineGraph(Config(config_params))
+
+
+# TODO MIC-5476: Add a test here when we have modularized pipeline schemas for testing
+@pytest.mark.skip(reason="Not implemented")
+def test_combined_bad_topology():
+    pass
+
+
+### Helper functions ###
+
+
+def check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
+    assert set(pipeline_graph.nodes) == set(expected_nodes)
+    assert set(pipeline_graph.edges()) == expected_edges.keys()
+    for source, sink, edge_attrs in pipeline_graph.edges(data=True):
+        assert (
+            edge_attrs["input_slot"].name == expected_edges[(source, sink)]["input_slot_name"]
+        )
+        assert edge_attrs["input_slot"].env_var == expected_edges[(source, sink)]["env_var"]
+        assert (
+            edge_attrs["input_slot"].validator == expected_edges[(source, sink)]["validator"]
+        )
+        assert (
+            edge_attrs["output_slot"].name
+            == expected_edges[(source, sink)]["output_slot_name"]
+        )
+        assert edge_attrs["filepaths"] == tuple(
+            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
+        )

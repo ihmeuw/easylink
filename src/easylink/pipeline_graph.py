@@ -1,12 +1,12 @@
-import copy
 import itertools
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 import networkx as nx
 
 from easylink.configuration import Config
-from easylink.graph_components import ImplementationGraph, InputSlot
+from easylink.graph_components import EdgeParams, ImplementationGraph, InputSlot
 from easylink.implementation import Implementation
 
 
@@ -21,8 +21,86 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
+        self.merge_combined_implementations(config)
         self.update_slot_filepaths(config)
         self = nx.freeze(self)
+
+    def merge_combined_implementations(self, config):
+        for (
+            combined_implementation,
+            combined_implementation_config,
+        ) in config.pipeline.combined_implementations.items():
+
+            # Find all nodes with the same combined implementation
+            nodes_to_merge = [
+                node
+                for node, data in self.nodes(data=True)
+                if data["implementation"].combined_name == combined_implementation
+            ]
+            if not nodes_to_merge:
+                continue
+
+            implemented_steps = [
+                step
+                for node in nodes_to_merge
+                for step in self.nodes[node]["implementation"].schema_steps
+            ]
+            metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
+            self.validate_implementation_topology(nodes_to_merge, metadata_steps)
+            input_slots = []
+            output_slots = []
+            in_edge_params = []
+            combined_edges = []
+
+            for node in nodes_to_merge:
+                for pred, succ, data in self.in_edges(node, data=True):
+                    if pred not in nodes_to_merge:
+                        input_slots.append(data["input_slot"])
+                        in_edge_params.append(EdgeParams.from_graph_edge(pred, succ, data))
+                        combined_edges.append(
+                            EdgeParams.from_graph_edge(pred, combined_implementation, data)
+                        )
+
+                for _, succ, data in self.out_edges(node, data=True):
+                    if succ not in nodes_to_merge:
+                        output_slots.append(data["output_slot"])
+                        combined_edges.append(
+                            EdgeParams.from_graph_edge(combined_implementation, succ, data)
+                        )
+
+            for slots in (input_slots, output_slots):
+                seen_names = []
+                seen_env_vars = []
+                for slot in slots:
+                    # Check for duplicate names
+                    if slot.name in seen_names:
+                        raise ValueError(f"Duplicate slot name found: '{slot.name}'")
+                    seen_names.append(slot.name)
+
+                    # Check for duplicate env_vars
+                    if isinstance(slot, InputSlot):
+                        if slot.env_var in seen_env_vars:
+                            raise ValueError(
+                                f"Duplicate environment variable found: '{slot.env_var}'"
+                            )
+                        seen_env_vars.append(slot.env_var)
+
+            new_implementation = Implementation(
+                implemented_steps, combined_implementation_config, input_slots, output_slots
+            )
+            self.add_node(combined_implementation, implementation=new_implementation)
+
+            # Redirect edges
+            for edge in combined_edges:
+                self.add_edge_from_params(edge)
+
+            # Remove original nodes
+            self.remove_nodes_from(nodes_to_merge)
+            try:
+                cycle = nx.find_cycle(self)
+                raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
+            except nx.NetworkXNoCycle:
+                pass
 
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
@@ -114,3 +192,35 @@ class PipelineGraph(ImplementationGraph):
     def spark_is_required(self) -> bool:
         """Check if the pipeline requires spark resources."""
         return any([implementation.requires_spark for implementation in self.implementations])
+
+    def validate_implementation_topology(
+        self, nodes: list[str], metadata_steps: list[str]
+    ) -> None:
+        """Check that the subgraph induced by the nodes implemented by this implementation
+        is topologically consistent with the list of metadata steps."""
+        subgraph = ImplementationGraph(self).subgraph(nodes)
+
+        # Relabel nodes by schema step
+        mapping = {}
+        for node, data in subgraph.nodes(data=True):
+            schema_steps = data["implementation"].schema_steps
+            if len(schema_steps) == 1:
+                mapping[node] = schema_steps[0]
+            else:
+                raise ValueError(
+                    f"Node '{node}' must implement exactly one step before combination."
+                )
+        if not set(mapping.values()) == set(metadata_steps):
+            raise ValueError(
+                f"Pipeline configuration nodes {list(mapping.values())} do not match metadata steps {metadata_steps}."
+            )
+        subgraph = nx.relabel_nodes(subgraph, mapping)
+        # Check for topological inconsistency, i.e. if there
+        # is a path from a later node to an earlier node.
+        for i in range(len(metadata_steps)):
+            for j in range(i + 1, len(metadata_steps)):
+                if nx.has_path(subgraph, metadata_steps[j], metadata_steps[i]):
+                    raise ValueError(
+                        f"Pipeline configuration nodes {set(subgraph.nodes())} are not topologically consistent with metadata steps {set(metadata_steps)}:"
+                        f"There is a path from successor {metadata_steps[j]} to predecessor {metadata_steps[i]}"
+                    )
