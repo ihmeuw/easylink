@@ -67,12 +67,12 @@ def test_implementation_graph(mocker) -> None:
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     implementation_graph = ImplementationGraph()
     implementation1 = Implementation(
-        "step_1",
+        ["step_1"],
         LayeredConfigTree({"name": "step1"}),
         output_slots=[OutputSlot("foo")],
     )
     implementation2 = Implementation(
-        "step_2",
+        ["step_2"],
         LayeredConfigTree({"name": "step2"}),
         input_slots=[InputSlot("bar", None, None)],
     )

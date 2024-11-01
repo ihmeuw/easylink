@@ -11,6 +11,8 @@ from easylink.utilities.general_utils import exit_with_validation_error
 from easylink.utilities.paths import SPARK_SNAKEFILE
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
+IMPLEMENTATION_ERRORS_KEY = "IMPLEMENTATION ERRORS"
+
 
 class Pipeline:
     """Abstraction to handle pipeline specification and execution."""
@@ -36,7 +38,7 @@ class Pipeline:
         for implementation in self.pipeline_graph.implementations:
             implementation_errors = implementation.validate()
             if implementation_errors:
-                errors["IMPLEMENTATION ERRORS"][implementation.name] = implementation_errors
+                errors[IMPLEMENTATION_ERRORS_KEY][implementation.name] = implementation_errors
         return errors
 
     @property
@@ -97,7 +99,7 @@ class Pipeline:
         validation_files, validation_rules = self.get_validations(node, input_slots)
         implementation_rule = ImplementedRule(
             name=node,
-            step_name=implementation.schema_step_name,
+            step_name=" and ".join(implementation.metadata_steps),
             implementation_name=implementation.name,
             input_slots=input_slots,
             validations=validation_files,

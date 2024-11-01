@@ -96,6 +96,7 @@ class Config(LayeredConfigTree):
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
         self.update({"environment": {"spark": SPARK_DEFAULTS}}, layer="default")
+        self.update({"pipeline": {"combined_implementations": {}}}, layer="default")
         if self.environment.computing_environment == "slurm":
             # Set slurm defaults to empty dict instead of None so that we don't get errors
             # In slurm resources property

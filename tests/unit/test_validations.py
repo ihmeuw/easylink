@@ -16,7 +16,7 @@ from easylink.configuration import (
     Config,
     load_params_from_specification,
 )
-from easylink.pipeline import Pipeline
+from easylink.pipeline import IMPLEMENTATION_ERRORS_KEY, Pipeline
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 from tests.unit.conftest import PIPELINE_CONFIG_DICT
@@ -77,7 +77,7 @@ def test_batch_validation():
                 PIPELINE_ERRORS_KEY: {
                     "development": {
                         "step step_1": [
-                            "The step configuration does not contain an 'implementation' key."
+                            "The step configuration does not contain an 'implementation' key or a reference to a combined implementation."
                         ]
                     },
                 },
@@ -158,6 +158,18 @@ def test_batch_validation():
                         },
                     },
                 },
+            },
+        ),
+        (
+            "bad_combined_implementations",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step step_3": [
+                            "The step refers to a combined implementation but 'foo' is not a valid combined implementation."
+                        ]
+                    }
+                }
             },
         ),
     ],
@@ -266,7 +278,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
         error_no=errno.EINVAL,
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
-                ".*/file1.oops": ["Data file type .oops is not supported. Convert to .*"],
+                r".*/file1.oops": [r"Data file type .oops is not supported. Convert to .*"],
             },
         },
     )
@@ -290,7 +302,7 @@ def test_pipeline_schema_bad_input_data(default_config_paths, test_dir, caplog):
         error_no=errno.EINVAL,
         expected_msg={
             INPUT_DATA_ERRORS_KEY: {
-                ".*/broken_file1.csv": ["Data file .* is missing required column\\(s\\) .*"],
+                ".*/broken_file1.csv": [r"Data file .* is missing required column\(s\) .*"],
             }
         },
     )
@@ -378,7 +390,7 @@ def test_no_container(default_config, caplog, mocker):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "IMPLEMENTATION ERRORS": {
+            IMPLEMENTATION_ERRORS_KEY: {
                 "step_1_python_pandas": [
                     "Container 'some/path/with/no/container.sif' does not exist.",
                 ],
@@ -398,8 +410,8 @@ def test_no_container(default_config, caplog, mocker):
 
 def test_implemenation_does_not_match_step(default_config, caplog, mocker):
     metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-    metadata["step_1_python_pandas"]["step"] = "not-the-step-1-name"
-    metadata["step_2_python_pandas"]["step"] = "not-the-step-2-name"
+    metadata["step_1_python_pandas"]["steps"] = ["not-the-step-1-name"]
+    metadata["step_2_python_pandas"]["steps"] = ["not-the-step-2-name"]
     mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     mocker.patch(
         "easylink.implementation.Implementation._validate_container_exists",
@@ -414,12 +426,12 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
         caplog=caplog,
         error_no=errno.EINVAL,
         expected_msg={
-            "IMPLEMENTATION ERRORS": {
+            IMPLEMENTATION_ERRORS_KEY: {
                 "step_1_python_pandas": [
-                    "Implementaton metadata step 'not-the-step-1-name' does not match pipeline configuration step 'step_1'"
+                    r"Pipeline configuration nodes \['step_1'\] do not match metadata steps \['not-the-step-1-name'\]."
                 ],
                 "step_2_python_pandas": [
-                    "Implementaton metadata step 'not-the-step-2-name' does not match pipeline configuration step 'step_2'"
+                    r"Pipeline configuration nodes \['step_2'\] do not match metadata steps \['not-the-step-2-name'\]."
                 ],
             },
         },
