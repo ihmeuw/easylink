@@ -6,10 +6,12 @@ from easylink.implementation import Implementation
 def test__get_env_vars(mocker):
     mocker.patch(
         "easylink.implementation.load_yaml",
-        return_value={"test": {"step": "this_step", "env": {"foo": "corge", "spam": "eggs"}}},
+        return_value={
+            "test": {"steps": ["this_step"], "env": {"foo": "corge", "spam": "eggs"}}
+        },
     )
     implementation = Implementation(
-        step_name="this_step",
+        schema_steps=["this_step"],
         implementation_config=LayeredConfigTree(
             {"name": "test", "configuration": {"foo": "bar", "baz": "qux"}}
         ),
