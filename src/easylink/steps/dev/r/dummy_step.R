@@ -31,7 +31,7 @@ for (env_var in input_env_vars) {
         stop()
     }
 
-     message(paste("Loading files for", env_var))
+    message(paste("Loading files for", env_var))
     strsplit(Sys.getenv(env_var), ",")[[1]]
     diagnostics[[paste0("num_files_", tolower(env_var))]] <- length(file_paths)
     for (path in file_paths) {
