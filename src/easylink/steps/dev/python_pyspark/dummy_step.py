@@ -18,7 +18,7 @@ pyspark_log = logging.getLogger("pyspark")
 pyspark_log.setLevel(logging.WARNING)
 
 spark = SparkSession.builder.master(
-    os.getenv("DUMMY_CONTAINER_SPARK_MASTER_URL", "local[2]")
+    os.getenv("DUMMY_CONTAINER_SPARK_MASTER_URL")
 ).getOrCreate()
 
 
