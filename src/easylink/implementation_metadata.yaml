@@ -44,7 +44,7 @@ step_4b_python_pandas:
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
-    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILEPATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4b_main_output: result.parquet
 step_1_python_pyspark:
