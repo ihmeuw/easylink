@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: rocker/tidyverse@sha256:6a7c913590e758b5fe2ad9921ccc5df7c7160e5de1db5f353630fe8e0ee2f876
+
+%files
+    ./dummy_step.R /dummy_step.R
+
+%post
+    # Create directories
+    mkdir -p /input_data
+    mkdir -p /extra_implementation_specific_input_data
+    mkdir -p /results
+    mkdir -p /diagnostics
+
+%environment
+    export LC_ALL=C
+
+%runscript
+    Rscript /dummy_step.R "$@"
+
+%labels
+    Author Patrick Nast
+    Version v1.0
+    Description R Implementation
+
+%startscript
+    # These directories should be bound when running the container
+    mkdir -p /results
+    mkdir -p /diagnostics
+    mkdir -p /input_data

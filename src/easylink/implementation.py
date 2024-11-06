@@ -29,8 +29,8 @@ class Implementation:
         self.name = implementation_config.name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
-        self.environment_variables = implementation_config.to_dict().get("configuration", {})
         self._metadata = self._load_metadata()
+        self.environment_variables = self._get_env_vars(implementation_config)
         self.metadata_steps = self._metadata["steps"]
         self.combined_name = combined_name
         self.schema_steps = schema_steps
@@ -68,6 +68,11 @@ class Implementation:
         if not Path(self.singularity_image_path).exists():
             logs.append(err_str)
         return logs
+
+    def _get_env_vars(self, implementation_config: LayeredConfigTree) -> dict[str, str]:
+        env_vars = self._metadata.get("env", {})
+        env_vars.update(implementation_config.get("configuration", {}))
+        return env_vars
 
     @property
     def singularity_image_path(self) -> str:

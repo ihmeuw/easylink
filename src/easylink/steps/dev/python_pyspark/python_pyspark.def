@@ -1,0 +1,36 @@
+Bootstrap: docker
+From: apache/spark-py@sha256:489f904a77f21134df4840de5f8bd9f110925e7b439ca6a04b7c033813edfebc
+
+%files
+    ./dummy_step.py /code/dummy_step.py
+
+%post
+    # Create directories
+    mkdir -p /input_data
+    mkdir -p /extra_implementation_specific_input_data
+    mkdir -p /results
+    mkdir -p /diagnostics
+    mkdir -p /workdir
+    mkdir -p /code
+
+    # Install Python packages with specific versions
+    pip install pandas==2.1.2 pyarrow pyyaml
+
+%environment
+    export LC_ALL=C
+    export PYTHONPATH="${SPARK_HOME}/python/:${SPARK_HOME}/python/lib/py4j-0.10.9.7-src.zip:${PYTHONPATH}"
+
+%runscript
+    cd /workdir
+    python /code/dummy_step.py "$@"
+
+%labels
+    Author Patrick Nast
+    Version v1.0
+    Description Python Pyspark Implementation
+
+%startscript
+    # These directories should be bound when running the container
+    mkdir -p /results
+    mkdir -p /diagnostics
+    mkdir -p /input_data

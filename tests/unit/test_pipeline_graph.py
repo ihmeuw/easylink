@@ -289,7 +289,7 @@ def test_spark_is_required(default_config_params, requires_spark):
         # Change step 1's implementation to python_pyspark
         config_params["pipeline"]["steps"]["step_1"]["implementation"][
             "name"
-        ] = "step_1_python_pyspark_distributed"
+        ] = "step_1_python_pyspark"
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
     assert pipeline_graph.spark_is_required() == requires_spark

@@ -93,9 +93,9 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
             == 1
         )
         assert (
-            load_yaml(
-                diagnostics_dir / "step_2_python_pyspark_distributed" / "diagnostics.yaml"
-            )["increment"]
+            load_yaml(diagnostics_dir / "step_2_python_pyspark" / "diagnostics.yaml")[
+                "increment"
+            ]
             == 100
         )
         assert (

@@ -25,6 +25,8 @@ step_4_python_pandas:
     - step_4
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
   script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4_main_output: result.parquet
 step_4a_python_pandas:
@@ -32,6 +34,8 @@ step_4a_python_pandas:
     - step_4a
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
   script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4a_main_output: result.parquet
 step_4b_python_pandas:
@@ -39,9 +43,11 @@ step_4b_python_pandas:
     - step_4b
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
   script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4b_main_output: result.parquet
-step_1_python_pyspark_distributed:
+step_1_python_pyspark:
   steps: 
     - step_1
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
@@ -49,7 +55,7 @@ step_1_python_pyspark_distributed:
   outputs:
     step_1_main_output: result.parquet
   requires_spark: true
-step_2_python_pyspark_distributed:
+step_2_python_pyspark:
   steps: 
     - step_2
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
@@ -57,7 +63,7 @@ step_2_python_pyspark_distributed:
   outputs:
     step_2_main_output: result.parquet 
   requires_spark: true
-step_3_python_pyspark_distributed:
+step_3_python_pyspark:
   steps: 
     - step_3
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
@@ -65,11 +71,13 @@ step_3_python_pyspark_distributed:
   outputs:
     step_3_main_output: result.parquet
   requires_spark: true
-step_4_python_pyspark_distributed:
+step_4_python_pyspark:
   steps: 
     - step_4
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
   script_cmd: python3 /code/dummy_step.py 
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4_main_output: result.parquet
 step_1_r:
@@ -101,6 +109,8 @@ step_4_r:
     - step_4
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
   script_cmd: Rscript /dummy_step.R
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4_main_output: result.parquet
   requires_spark: false

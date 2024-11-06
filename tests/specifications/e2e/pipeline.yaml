@@ -4,7 +4,7 @@ steps:
       name: step_1_python_pandas
   step_2:
     implementation:
-      name: step_2_python_pyspark_distributed
+      name: step_2_python_pyspark
       configuration:
         DUMMY_CONTAINER_INCREMENT: 100
   step_3:

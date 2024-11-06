@@ -61,12 +61,12 @@ PIPELINE_CONFIG_DICT = {
     "spark": {
         "step_1": {
             "implementation": {
-                "name": "step_1_python_pyspark_distributed",
+                "name": "step_1_python_pyspark",
             },
         },
         "step_2": {
             "implementation": {
-                "name": "step_2_python_pyspark_distributed",
+                "name": "step_2_python_pyspark",
             },
         },
     },
