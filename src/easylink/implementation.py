@@ -71,7 +71,7 @@ class Implementation:
 
     def _get_env_vars(self, implementation_config: LayeredConfigTree) -> dict[str, str]:
         env_vars = self._metadata.get("env", {})
-        env_vars.update(implementation_config.to_dict().get("configuration", {}))
+        env_vars.update(implementation_config.get("configuration", {}))
         return env_vars
 
     @property
