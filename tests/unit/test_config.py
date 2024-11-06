@@ -183,7 +183,7 @@ def test_spark_requests(default_config_params, input, requires_spark):
         # Change step 1's implementation to python_pyspark
         config_params["pipeline"]["steps"]["step_1"]["implementation"][
             "name"
-        ] = "step_1_python_pyspark_distributed"
+        ] = "step_1_python_pyspark"
 
     if input:
         config_params["environment"][key] = input
