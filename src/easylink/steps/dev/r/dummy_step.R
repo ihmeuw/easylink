@@ -17,23 +17,25 @@ load_file <- function(file_path, file_format = NULL) {
 }
 
 diagnostics <- list()
-input_env_vars = os.getenv(
-    "INPUT_ENV_VARS",
-    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-).split(",")
-strsplit(Sys.getenv("INPUT_ENV_VARS", "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"), ",")[[1]]
+input_env_vars <- strsplit(Sys.getenv("INPUT_ENV_VARS", "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"), ",")[[1]]
 
-df <- data.frame()
+df <- NULL
 
 for (env_var in input_env_vars) {
-    if (env_var  %in% names(Sys.getenv())) {
+    if (!(env_var %in% names(Sys.getenv()))) {
         message(paste("Missing required environment variable", env_var))
         stop()
     }
 
-     message(paste("Loading files for", env_var))
-    strsplit(Sys.getenv(env_var), ",")[[1]]
+    message(paste("Loading files for", env_var))
+    file_paths <- strsplit(Sys.getenv(env_var), ",")[[1]]
     diagnostics[[paste0("num_files_", tolower(env_var))]] <- length(file_paths)
+
+    if (is.null(df)) {
+        df <- load_file(file_paths[1])
+        file_paths <- file_paths[-1]
+    }
+
     for (path in file_paths) {
         df <- bind_rows(df, load_file(path)) %>%
         mutate(
