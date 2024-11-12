@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from easylink.step import Step
 
 
-@dataclass
+@dataclass(frozen=True)
 class InputSlot:
     """InputSlot  represents a single input slot for a step."""
 
@@ -20,14 +20,14 @@ class InputSlot:
     validator: Callable
 
 
-@dataclass
+@dataclass(frozen=True)
 class OutputSlot:
     """OutputSlot  represents a single output slot for a step."""
 
     name: str
 
 
-@dataclass
+@dataclass(frozen=True)
 class EdgeParams:
     """A dataclass representation of an edge between two nodes in a networkx graph.
     Edges connect the output slot of the source node to the input slot of the target node."""
@@ -114,7 +114,7 @@ class ImplementationGraph(nx.MultiDiGraph):
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class SlotMapping(ABC):
     """SlotMapping represents a mapping between a parent and child node
     at different levels of the nested pipeline schema."""

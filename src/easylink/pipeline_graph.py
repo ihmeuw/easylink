@@ -1,12 +1,12 @@
 import itertools
-from collections import defaultdict
+from collections import defaultdict, Counter
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
 import networkx as nx
 
 from easylink.configuration import Config
-from easylink.graph_components import EdgeParams, ImplementationGraph, InputSlot
+from easylink.graph_components import EdgeParams, ImplementationGraph, InputSlot, OutputSlot
 from easylink.implementation import Implementation
 
 
@@ -47,46 +47,77 @@ class PipelineGraph(ImplementationGraph):
             ]
             metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
             self.validate_implementation_topology(nodes_to_merge, metadata_steps)
-            input_slots = []
-            output_slots = []
-            in_edge_params = []
-            combined_edges = []
+            separate_input_slots = set()
+            separate_output_slots = set()
 
             for node in nodes_to_merge:
                 for pred, succ, data in self.in_edges(node, data=True):
                     if pred not in nodes_to_merge:
-                        input_slots.append(data["input_slot"])
-                        in_edge_params.append(EdgeParams.from_graph_edge(pred, succ, data))
-                        combined_edges.append(
-                            EdgeParams.from_graph_edge(pred, combined_implementation, data)
-                        )
+                        input_slot = data["input_slot"]
+                        step_name = self.nodes[node]["implementation"].schema_steps[0]
+                        separate_input_slots.add((step_name, input_slot))
 
                 for _, succ, data in self.out_edges(node, data=True):
                     if succ not in nodes_to_merge:
-                        output_slots.append(data["output_slot"])
-                        combined_edges.append(
-                            EdgeParams.from_graph_edge(combined_implementation, succ, data)
+                        output_slot = data["output_slot"]
+                        step_name = self.nodes[node]["implementation"].schema_steps[0]
+                        separate_output_slots.add((step_name, output_slot))
+
+            name_freq = Counter([slot.name for step_name, slot in separate_input_slots])
+            env_var_freq = Counter([slot.env_var for step_name, slot in separate_input_slots])
+            duplicate_names = [name for name, count in name_freq.items() if count > 1]
+            duplicate_env_vars = [
+                env_var for env_var, count in env_var_freq.items() if count > 1
+            ]
+
+            duplicate_slots = {
+                (step_name, slot)
+                for (step_name, slot) in separate_input_slots
+                if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
+            }
+
+            combined_input_slots = set()
+            for slot_tuple in separate_input_slots:
+                step_name, slot = slot_tuple
+                if slot_tuple in duplicate_slots:
+                    combined_input_slots.add(
+                        InputSlot(
+                            name=step_name + "_" + slot.name,
+                            env_var=step_name + "_" + slot.name,
+                            validator=slot.name,
                         )
+                    )
 
-            for slots in (input_slots, output_slots):
-                seen_names = []
-                seen_env_vars = []
-                for slot in slots:
-                    # Check for duplicate names
-                    if slot.name in seen_names:
-                        raise ValueError(f"Duplicate slot name found: '{slot.name}'")
-                    seen_names.append(slot.name)
+            name_freq = Counter([slot.name for step_name, slot in separate_input_slots])
+            env_var_freq = Counter([slot.env_var for step_name, slot in separate_input_slots])
+            duplicate_names = [name for name, count in name_freq.items() if count > 1]
+            duplicate_env_vars = [
+                env_var for env_var, count in env_var_freq.items() if count > 1
+            ]
 
-                    # Check for duplicate env_vars
-                    if isinstance(slot, InputSlot):
-                        if slot.env_var in seen_env_vars:
-                            raise ValueError(
-                                f"Duplicate environment variable found: '{slot.env_var}'"
-                            )
-                        seen_env_vars.append(slot.env_var)
+            duplicate_slots = {
+                (step_name, slot)
+                for (step_name, slot) in separate_input_slots
+                if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
+            }
+
+            combined_input_slots = set()
+            for slot_tuple in separate_input_slots:
+                step_name, slot = slot_tuple
+                if slot_tuple in duplicate_slots:
+                    combined_input_slots.add(
+                        OutputSlot(
+                            name=step_name + "_" + slot.name,
+                            env_var=step_name + "_" + slot.name,
+                            validator=slot.name,
+                        )
+                    )
 
             new_implementation = Implementation(
-                implemented_steps, combined_implementation_config, input_slots, output_slots
+                implemented_steps,
+                combined_implementation_config,
+                combined_input_slots,
+                combined_output_slots,
             )
             self.add_node(combined_implementation, implementation=new_implementation)
 
