@@ -129,7 +129,7 @@ step_1_and_step_2_parallel_python_pandas:
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
-    INPUT_ENV_VARS: "STEP_1_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,STEP_2_DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+    INPUT_ENV_VARS: "STEP_1_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS"
   outputs:
     step_2_main_output: result.parquet
 step_3_and_step_4_combined_python_pandas:

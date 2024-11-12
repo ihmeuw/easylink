@@ -2,11 +2,19 @@ import itertools
 from collections import defaultdict, Counter
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
+from copy import deepcopy
 
 import networkx as nx
 
 from easylink.configuration import Config
-from easylink.graph_components import EdgeParams, ImplementationGraph, InputSlot, OutputSlot
+from easylink.graph_components import (
+    EdgeParams,
+    ImplementationGraph,
+    InputSlot,
+    OutputSlot,
+    InputSlotMapping,
+    OutputSlotMapping,
+)
 from easylink.implementation import Implementation
 
 
@@ -49,20 +57,30 @@ class PipelineGraph(ImplementationGraph):
             self.validate_implementation_topology(nodes_to_merge, metadata_steps)
             separate_input_slots = set()
             separate_output_slots = set()
+            separate_in_edges = defaultdict(list)
+            separate_out_edges = defaultdict(list)
 
+            # Find separate input and output slots
             for node in nodes_to_merge:
                 for pred, succ, data in self.in_edges(node, data=True):
                     if pred not in nodes_to_merge:
                         input_slot = data["input_slot"]
                         step_name = self.nodes[node]["implementation"].schema_steps[0]
                         separate_input_slots.add((step_name, input_slot))
+                        separate_in_edges[(step_name, input_slot)].append(
+                            EdgeParams.from_graph_edge(pred, succ, data)
+                        )
 
                 for _, succ, data in self.out_edges(node, data=True):
                     if succ not in nodes_to_merge:
                         output_slot = data["output_slot"]
                         step_name = self.nodes[node]["implementation"].schema_steps[0]
                         separate_output_slots.add((step_name, output_slot))
+                        separate_out_edges[(step_name, output_slot)].append(
+                            EdgeParams.from_graph_edge(pred, succ, data)
+                        )
 
+            # Find duplicate slots
             name_freq = Counter([slot.name for step_name, slot in separate_input_slots])
             env_var_freq = Counter([slot.env_var for step_name, slot in separate_input_slots])
             duplicate_names = [name for name, count in name_freq.items() if count > 1]
@@ -76,43 +94,53 @@ class PipelineGraph(ImplementationGraph):
                 if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
             }
 
+            # Create new input slots
+            combined_in_edges = set()
             combined_input_slots = set()
             for slot_tuple in separate_input_slots:
                 step_name, slot = slot_tuple
+                separate_edges = separate_in_edges[slot_tuple]
                 if slot_tuple in duplicate_slots:
-                    combined_input_slots.add(
-                        InputSlot(
-                            name=step_name + "_" + slot.name,
-                            env_var=step_name + "_" + slot.name,
-                            validator=slot.name,
-                        )
+                    combined_slot = InputSlot(
+                        name=step_name + "_" + slot.name,
+                        env_var=step_name.upper() + "_" + slot.env_var,
+                        validator=slot.validator,
                     )
+                else:
+                    combined_slot = deepcopy(slot)
 
-            name_freq = Counter([slot.name for step_name, slot in separate_input_slots])
-            env_var_freq = Counter([slot.env_var for step_name, slot in separate_input_slots])
-            duplicate_names = [name for name, count in name_freq.items() if count > 1]
-            duplicate_env_vars = [
-                env_var for env_var, count in env_var_freq.items() if count > 1
-            ]
+                combined_input_slots.add(combined_slot)
+                slot_mapping = InputSlotMapping(
+                    slot.name, combined_implementation, combined_slot.name
+                )
+                combined_in_edges.update(
+                    [slot_mapping.remap_edge(edge) for edge in separate_edges]
+                )
 
-            duplicate_slots = {
-                (step_name, slot)
-                for (step_name, slot) in separate_input_slots
-                if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
-            }
-
-            combined_input_slots = set()
-            for slot_tuple in separate_input_slots:
+            # Create new output slots
+            combined_out_edges = set()
+            combined_output_slots = set()
+            for slot_tuple in separate_output_slots:
                 step_name, slot = slot_tuple
-                if slot_tuple in duplicate_slots:
-                    combined_input_slots.add(
-                        OutputSlot(
-                            name=step_name + "_" + slot.name,
-                            env_var=step_name + "_" + slot.name,
-                            validator=slot.name,
-                        )
+                separate_edges = separate_out_edges[slot_tuple]
+                if (step_name, slot) in duplicate_slots:
+                    combined_slot = OutputSlot(
+                        name=step_name + "_" + slot.name,
+                        env_var=step_name.upper() + "_" + slot.env_var,
+                        validator=slot.validator,
                     )
+                else:
+                    combined_slot = deepcopy(slot)
 
+                combined_output_slots.add(combined_slot)
+                slot_mapping = OutputSlotMapping(
+                    slot.name, combined_implementation, combined_slot.name
+                )
+                combined_out_edges.update(
+                    [slot_mapping.remap_edge(edge) for edge in separate_edges]
+                )
+
+            # Create new implementation
             new_implementation = Implementation(
                 implemented_steps,
                 combined_implementation_config,
@@ -121,6 +149,7 @@ class PipelineGraph(ImplementationGraph):
             )
             self.add_node(combined_implementation, implementation=new_implementation)
 
+            combined_edges = combined_in_edges.union(combined_out_edges)
             # Redirect edges
             for edge in combined_edges:
                 self.add_edge_from_params(edge)
@@ -132,6 +161,22 @@ class PipelineGraph(ImplementationGraph):
                 raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
             except nx.NetworkXNoCycle:
                 pass
+
+    def get_output_slot(self, source_node, input_slot):
+        for _, succ, data in self.out_edges(source_node, data=True):
+            if data["input_slot"] == input_slot:
+                return data["output_slot"]
+        raise ValueError(
+            f"No output slot found for input slot {input_slot} in node {source_node}"
+        )
+
+    def get_input_slot(self, target_node, output_slot):
+        for pred, _, data in self.in_edges(target_node, data=True):
+            if data["output_slot"] == output_slot:
+                return data["input_slot"]
+        raise ValueError(
+            f"No input slot found for output slot {output_slot} in node {target_node}"
+        )
 
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
