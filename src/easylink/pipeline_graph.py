@@ -1,7 +1,7 @@
 import itertools
 from collections import defaultdict, Counter
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Iterable
 from copy import deepcopy
 
 import networkx as nx
@@ -55,90 +55,10 @@ class PipelineGraph(ImplementationGraph):
             ]
             metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
             self.validate_implementation_topology(nodes_to_merge, metadata_steps)
-            separate_input_slots = set()
-            separate_output_slots = set()
-            separate_in_edges = defaultdict(list)
-            separate_out_edges = defaultdict(list)
 
-            # Find separate input and output slots
-            for node in nodes_to_merge:
-                for pred, succ, data in self.in_edges(node, data=True):
-                    if pred not in nodes_to_merge:
-                        input_slot = data["input_slot"]
-                        step_name = self.nodes[node]["implementation"].schema_steps[0]
-                        separate_input_slots.add((step_name, input_slot))
-                        separate_in_edges[(step_name, input_slot)].append(
-                            EdgeParams.from_graph_edge(pred, succ, data)
-                        )
-
-                for _, succ, data in self.out_edges(node, data=True):
-                    if succ not in nodes_to_merge:
-                        output_slot = data["output_slot"]
-                        step_name = self.nodes[node]["implementation"].schema_steps[0]
-                        separate_output_slots.add((step_name, output_slot))
-                        separate_out_edges[(step_name, output_slot)].append(
-                            EdgeParams.from_graph_edge(pred, succ, data)
-                        )
-
-            # Find duplicate slots
-            name_freq = Counter([slot.name for step_name, slot in separate_input_slots])
-            env_var_freq = Counter([slot.env_var for step_name, slot in separate_input_slots])
-            duplicate_names = [name for name, count in name_freq.items() if count > 1]
-            duplicate_env_vars = [
-                env_var for env_var, count in env_var_freq.items() if count > 1
-            ]
-
-            duplicate_slots = {
-                (step_name, slot)
-                for (step_name, slot) in separate_input_slots
-                if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
-            }
-
-            # Create new input slots
-            combined_in_edges = set()
-            combined_input_slots = set()
-            for slot_tuple in separate_input_slots:
-                step_name, slot = slot_tuple
-                separate_edges = separate_in_edges[slot_tuple]
-                if slot_tuple in duplicate_slots:
-                    combined_slot = InputSlot(
-                        name=step_name + "_" + slot.name,
-                        env_var=step_name.upper() + "_" + slot.env_var,
-                        validator=slot.validator,
-                    )
-                else:
-                    combined_slot = deepcopy(slot)
-
-                combined_input_slots.add(combined_slot)
-                slot_mapping = InputSlotMapping(
-                    slot.name, combined_implementation, combined_slot.name
-                )
-                combined_in_edges.update(
-                    [slot_mapping.remap_edge(edge) for edge in separate_edges]
-                )
-
-            # Create new output slots
-            combined_out_edges = set()
-            combined_output_slots = set()
-            for slot_tuple in separate_output_slots:
-                step_name, slot = slot_tuple
-                separate_edges = separate_out_edges[slot_tuple]
-                if (step_name, slot) in duplicate_slots:
-                    combined_slot = OutputSlot(
-                        name=step_name + "_" + slot.name,
-                        env_var=step_name.upper() + "_" + slot.env_var,
-                        validator=slot.validator,
-                    )
-                else:
-                    combined_slot = deepcopy(slot)
-
-                combined_output_slots.add(combined_slot)
-                slot_mapping = OutputSlotMapping(
-                    slot.name, combined_implementation, combined_slot.name
-                )
-                combined_out_edges.update(
-                    [slot_mapping.remap_edge(edge) for edge in separate_edges]
-                )
+            combined_input_slots, combined_output_slots, combined_edges = (
+                self.get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
+            )
 
             # Create new implementation
             new_implementation = Implementation(
@@ -149,7 +69,6 @@ class PipelineGraph(ImplementationGraph):
             )
             self.add_node(combined_implementation, implementation=new_implementation)
 
-            combined_edges = combined_in_edges.union(combined_out_edges)
             # Redirect edges
             for edge in combined_edges:
                 self.add_edge_from_params(edge)
@@ -162,21 +81,91 @@ class PipelineGraph(ImplementationGraph):
             except nx.NetworkXNoCycle:
                 pass
 
-    def get_output_slot(self, source_node, input_slot):
-        for _, succ, data in self.out_edges(source_node, data=True):
-            if data["input_slot"] == input_slot:
-                return data["output_slot"]
-        raise ValueError(
-            f"No output slot found for input slot {input_slot} in node {source_node}"
-        )
+    def get_combined_slots_and_edges(
+        self, combined_implementation: str, nodes_to_merge: list[str]
+    ) -> tuple[set[InputSlot], set[OutputSlot], set[EdgeParams]]:
+        slot_types = ["input_slot", "output_slot"]
+        combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
+        edges_by_slot_and_type = self.get_edges_by_slot(nodes_to_merge)
+        transform_mappings = (InputSlotMapping, OutputSlotMapping)
 
-    def get_input_slot(self, target_node, output_slot):
-        for pred, _, data in self.in_edges(target_node, data=True):
-            if data["output_slot"] == output_slot:
-                return data["input_slot"]
-        raise ValueError(
-            f"No input slot found for output slot {output_slot} in node {target_node}"
-        )
+        combined_edges = set()
+
+        for slot_type, combined_slots, edges_by_slot, transform_mapping in zip(
+            slot_types, combined_slots_by_type, edges_by_slot_and_type, transform_mappings
+        ):
+            separate_slots = edges_by_slot.keys()
+            duplicate_slots = self.get_duplicate_slots(separate_slots, slot_type)
+            for slot_tuple in separate_slots:
+                step_name, slot = slot_tuple
+                edges = edges_by_slot[slot_tuple]
+                if slot_tuple in duplicate_slots:
+                    combined_slot = slot.__class__(
+                        name=step_name + "_" + slot.name,
+                        env_var=step_name.upper() + "_" + slot.env_var,
+                        validator=slot.validator,
+                    )
+                else:
+                    combined_slot = deepcopy(slot)
+                combined_slots.add(combined_slot)
+                slot_mapping = transform_mapping(
+                    slot.name, combined_implementation, combined_slot.name
+                )
+                combined_edges.update([slot_mapping.remap_edge(edge) for edge in edges])
+        return combined_input_slots, combined_output_slots, combined_edges
+
+    def get_edges_by_slot(
+        self,
+        nodes_to_merge: list[str],
+    ) -> tuple[
+        dict[tuple[str, InputSlot], EdgeParams], dict[tuple[str, OutputSlot], EdgeParams]
+    ]:
+
+        in_edges_by_slot = defaultdict(list)
+        out_edges_by_slot = defaultdict(list)
+
+        # Find separate input and output slots
+        for node in nodes_to_merge:
+            for pred, succ, data in self.in_edges(node, data=True):
+                if pred not in nodes_to_merge:
+                    input_slot = data["input_slot"]
+                    step_name = self.nodes[node]["implementation"].schema_steps[0]
+                    in_edges_by_slot[(step_name, input_slot)].append(
+                        EdgeParams.from_graph_edge(pred, succ, data)
+                    )
+
+            for pred, succ, data in self.out_edges(node, data=True):
+
+                if succ not in nodes_to_merge:
+                    output_slot = data["output_slot"]
+                    step_name = self.nodes[node]["implementation"].schema_steps[0]
+                    out_edges_by_slot[(step_name, output_slot)].append(
+                        EdgeParams.from_graph_edge(pred, succ, data)
+                    )
+        return in_edges_by_slot, out_edges_by_slot
+
+    def get_duplicate_slots(
+        self, slots_tuple: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
+    ):
+        name_freq = Counter([slot.name for step_name, slot in slots_tuple])
+        duplicate_names = [name for name, count in name_freq.items() if count > 1]
+        if slot_type == "input_slot":
+            env_var_freq = Counter([slot.env_var for step_name, slot in slots_tuple])
+            duplicate_env_vars = [
+                env_var for env_var, count in env_var_freq.items() if count > 1
+            ]
+            duplicate_slots = {
+                (step_name, slot)
+                for (step_name, slot) in slots_tuple
+                if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
+            }
+        else:
+            duplicate_slots = {
+                (step_name, slot)
+                for (step_name, slot) in slots_tuple
+                if slot.name in duplicate_names
+            }
+        return duplicate_slots
 
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
