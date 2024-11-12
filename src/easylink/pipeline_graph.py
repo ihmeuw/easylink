@@ -56,9 +56,11 @@ class PipelineGraph(ImplementationGraph):
             metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
             self.validate_implementation_topology(nodes_to_merge, metadata_steps)
 
-            combined_input_slots, combined_output_slots, combined_edges = (
-                self.get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
-            )
+            (
+                combined_input_slots,
+                combined_output_slots,
+                combined_edges,
+            ) = self.get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
 
             # Create new implementation
             new_implementation = Implementation(
