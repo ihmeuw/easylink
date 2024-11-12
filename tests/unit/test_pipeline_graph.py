@@ -421,20 +421,111 @@ def test_merge_combined_implementations_iteration(default_config_params, test_di
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
-# TODO MIC-5466: Deduplicate slots so this fails with cycle error
-@pytest.mark.skip(reason="Not implemented")
+def test_merge_combined_implementations_parallel(default_config_params, test_dir) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_parallel"]
+    pipeline_graph = PipelineGraph(Config(config_params))
+    expected_nodes = {
+        "input_data",
+        "step_1_parallel_split_1_step_1_python_pandas",
+        "step_1_parallel_split_2_step_1_python_pandas",
+        "steps_1_and_2_combined",
+        "step_3_python_pandas",
+        "step_4_python_pandas",
+        "results",
+    }
+    expected_edges = {
+        ("input_data", "step_1_parallel_split_1_step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "step_1_parallel_split_2_step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "steps_1_and_2_combined"): {
+            "input_slot_name": "step_1_step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "STEP_1_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "step_4_python_pandas"): {
+            "input_slot_name": "step_4_secondary_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("step_1_parallel_split_1_step_1_python_pandas", "steps_1_and_2_combined"): {
+            "input_slot_name": "step_2_step_2_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(
+                    "intermediate/step_1_parallel_split_1_step_1_python_pandas/result.parquet"
+                ),
+            ),
+        },
+        ("step_1_parallel_split_2_step_1_python_pandas", "steps_1_and_2_combined"): {
+            "input_slot_name": "step_2_step_2_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(
+                    "intermediate/step_1_parallel_split_2_step_1_python_pandas/result.parquet"
+                ),
+            ),
+        },
+        ("steps_1_and_2_combined", "step_3_python_pandas"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_2_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/steps_1_and_2_combined/result.parquet"),),
+        },
+        ("step_3_python_pandas", "step_4_python_pandas"): {
+            "input_slot_name": "step_4_main_input",
+            "output_slot_name": "step_3_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_3_python_pandas/result.parquet"),),
+        },
+        ("step_4_python_pandas", "results"): {
+            "input_slot_name": "result",
+            "output_slot_name": "step_4_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": None,
+            "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
+        },
+    }
+    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+
+
 def test_cycle_error(default_config_params) -> None:
     config_params = default_config_params
     config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
     with pytest.raises(ValueError, match=("The MultiDiGraph contains a cycle:")):
-        PipelineGraph(Config(config_params))
-
-
-# TODO MIC-5466: Deduplicate slots so this configuration is permissible
-def test_duplicate_error(default_config_params) -> None:
-    config_params = default_config_params
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_parallel"]
-    with pytest.raises(ValueError):
         PipelineGraph(Config(config_params))
 
 
