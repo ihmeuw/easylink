@@ -1,8 +1,8 @@
 import itertools
-from collections import defaultdict, Counter
-from pathlib import Path
-from typing import Dict, List, Tuple, Union, Iterable
+from collections import Counter, defaultdict
 from copy import deepcopy
+from pathlib import Path
+from typing import Dict, Iterable, List, Tuple, Union
 
 import networkx as nx
 
@@ -11,8 +11,8 @@ from easylink.graph_components import (
     EdgeParams,
     ImplementationGraph,
     InputSlot,
-    OutputSlot,
     InputSlotMapping,
+    OutputSlot,
     OutputSlotMapping,
 )
 from easylink.implementation import Implementation
