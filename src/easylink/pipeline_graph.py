@@ -172,8 +172,9 @@ class PipelineGraph(ImplementationGraph):
                     )
         return in_edges_by_slot, out_edges_by_slot
 
+    @staticmethod
     def _get_duplicate_slots(
-        self, slot_tuples: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
+        slot_tuples: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
     ) -> set[tuple[str, InputSlot | OutputSlot]]:
         """Given a list of slots, return only those which have duplicate names or environment
         variables.

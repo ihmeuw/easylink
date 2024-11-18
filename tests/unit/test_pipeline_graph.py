@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from easylink.configuration import Config
-from easylink.graph_components import InputSlot
+from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_graph import PipelineGraph
 from easylink.utilities.validation_utils import validate_input_file_dummy
 from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
@@ -85,6 +85,59 @@ def test_implementations(default_config: Config) -> None:
     ]
     assert implementation_names == expected_names
     assert pipeline_graph.implementation_nodes == expected_names
+
+
+@pytest.mark.parametrize(
+    "slot_type, is_duplicated, slot_tuples",
+    [
+        (
+            "input_slot",
+            False,
+            {
+                ("step_a", InputSlot("foo", env_var="bar", validator=None)),
+                ("step_b", InputSlot("baz", env_var="spam", validator=None)),
+            },
+        ),
+        (
+            "input_slot",
+            True,
+            {
+                ("step_a", InputSlot("foo", env_var="bar", validator=None)),
+                ("step_b", InputSlot("foo", env_var="spam", validator=None)),
+            },
+        ),
+        (
+            "input_slot",
+            True,
+            {
+                ("step_a", InputSlot("foo", env_var="bar", validator=None)),
+                ("step_b", InputSlot("baz", env_var="bar", validator=None)),
+            },
+        ),
+        (
+            "output_slot",
+            False,
+            {
+                ("step_a", OutputSlot("foo")),
+                ("step_b", OutputSlot("baz")),
+            },
+        ),
+        (
+            "output_slot",
+            True,
+            {
+                ("step_a", OutputSlot("foo")),
+                ("step_b", OutputSlot("foo")),
+            },
+        ),
+    ],
+)
+def test__get_duplicate_slots(slot_tuples, slot_type, is_duplicated) -> None:
+    duplicates = PipelineGraph._get_duplicate_slots(slot_tuples, slot_type)
+    if is_duplicated:
+        assert duplicates == slot_tuples
+    else:
+        assert not duplicates
 
 
 def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
