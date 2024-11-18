@@ -95,9 +95,11 @@ class Implementation:
 
 class NullImplementation:
     """A NullImplementation is used to represent a step that does not have an implementation.
+
     For example, the IO steps in the pipeline schema do not correspond to implementations
     but ImplementationGraph requires an "implementation" attribute with input and output slots
-    for each node."""
+    for each node.
+    """
 
     def __init__(
         self,
