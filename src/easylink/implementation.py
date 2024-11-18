@@ -24,7 +24,6 @@ class Implementation:
         implementation_config: LayeredConfigTree,
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
-        combined_name: str | None = None,
     ):
         self.name = implementation_config.name
         self.input_slots = {slot.name: slot for slot in input_slots}
@@ -32,7 +31,6 @@ class Implementation:
         self._metadata = self._load_metadata()
         self.environment_variables = self._get_env_vars(implementation_config)
         self.metadata_steps = self._metadata["steps"]
-        self.combined_name = combined_name
         self.schema_steps = schema_steps
         self.requires_spark = self._metadata.get("requires_spark", False)
 
@@ -104,3 +102,17 @@ class NullImplementation:
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.schema_steps = [self.name]
         self.combined_name = None
+
+
+class PartialImplementation:
+    def __init__(
+        self,
+        combined_name: str,
+        schema_step: str,
+        input_slots: Iterable["InputSlot"] = (),
+        output_slots: Iterable["OutputSlot"] = (),
+    ):
+        self.combined_name = combined_name
+        self.schema_step = schema_step
+        self.input_slots = {slot.name: slot for slot in input_slots}
+        self.output_slots = {slot.name: slot for slot in output_slots}

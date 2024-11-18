@@ -15,7 +15,9 @@ from easylink.graph_components import (
     OutputSlot,
     OutputSlotMapping,
 )
-from easylink.implementation import Implementation
+from easylink.implementation import Implementation, PartialImplementation
+from easylink.utilities import paths
+from easylink.utilities.data_utils import load_yaml
 
 
 class PipelineGraph(ImplementationGraph):
@@ -34,6 +36,7 @@ class PipelineGraph(ImplementationGraph):
         self = nx.freeze(self)
 
     def merge_combined_implementations(self, config):
+        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         for (
             combined_implementation,
             combined_implementation_config,
@@ -43,17 +46,24 @@ class PipelineGraph(ImplementationGraph):
             nodes_to_merge = [
                 node
                 for node, data in self.nodes(data=True)
-                if data["implementation"].combined_name == combined_implementation
+                if isinstance(data["implementation"], PartialImplementation)
+                and data["implementation"].combined_name == combined_implementation
             ]
             if not nodes_to_merge:
                 continue
 
-            implemented_steps = [
-                step
-                for node in nodes_to_merge
-                for step in self.nodes[node]["implementation"].schema_steps
+            partial_implementations_to_merge = [
+                self.nodes[node]["implementation"] for node in nodes_to_merge
             ]
-            metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
+
+            implemented_steps = [
+                implementation.schema_step
+                for implementation in partial_implementations_to_merge
+            ]
+
+            metadata_steps = implementation_metadata[combined_implementation_config["name"]][
+                "steps"
+            ]
             self.validate_implementation_topology(nodes_to_merge, metadata_steps)
 
             (
@@ -157,8 +167,8 @@ class PipelineGraph(ImplementationGraph):
             for pred, succ, data in self.in_edges(node, data=True):
                 if pred not in nodes_to_merge:
                     input_slot = data["input_slot"]
-                    step_name = self.nodes[node]["implementation"].schema_steps[0]
-                    in_edges_by_slot[(step_name, input_slot)].append(
+                    partial_implementation = self.nodes[node]["implementation"]
+                    in_edges_by_slot[(partial_implementation.schema_step, input_slot)].append(
                         EdgeParams.from_graph_edge(pred, succ, data)
                     )
 
@@ -166,10 +176,10 @@ class PipelineGraph(ImplementationGraph):
 
                 if succ not in nodes_to_merge:
                     output_slot = data["output_slot"]
-                    step_name = self.nodes[node]["implementation"].schema_steps[0]
-                    out_edges_by_slot[(step_name, output_slot)].append(
-                        EdgeParams.from_graph_edge(pred, succ, data)
-                    )
+                    partial_implementation = self.nodes[node]["implementation"]
+                    out_edges_by_slot[
+                        (partial_implementation.schema_step, output_slot)
+                    ].append(EdgeParams.from_graph_edge(pred, succ, data))
         return in_edges_by_slot, out_edges_by_slot
 
     @staticmethod
@@ -309,15 +319,10 @@ class PipelineGraph(ImplementationGraph):
         subgraph = ImplementationGraph(self).subgraph(nodes)
 
         # Relabel nodes by schema step
-        mapping = {}
-        for node, data in subgraph.nodes(data=True):
-            schema_steps = data["implementation"].schema_steps
-            if len(schema_steps) == 1:
-                mapping[node] = schema_steps[0]
-            else:
-                raise ValueError(
-                    f"Node '{node}' must implement exactly one step before combination."
-                )
+        mapping = {
+            node: data["implementation"].schema_step
+            for node, data in subgraph.nodes(data=True)
+        }
         if not set(mapping.values()) == set(metadata_steps):
             raise ValueError(
                 f"Pipeline configuration nodes {list(mapping.values())} do not match metadata steps {metadata_steps}."
