@@ -156,9 +156,9 @@ for i, step in enumerate(steps):
         implementation_specific_input_file_format = implementation_specific_input_file.split(
             "."
         )[-1]
-        env_var_args["EXTRA_IMPLEMENTATION_SPECIFIC_INPUT_FILE_PATH"] = (
-            implementation_specific_input_file
-        )
+        env_var_args[
+            "EXTRA_IMPLEMENTATION_SPECIFIC_INPUT_FILE_PATH"
+        ] = implementation_specific_input_file
         bindings.append(
             (implementation_specific_input_file, implementation_specific_input_file)
         )
