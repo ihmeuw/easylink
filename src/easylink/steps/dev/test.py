@@ -1,6 +1,6 @@
-import subprocess
 import os
 import shutil
+import subprocess
 
 # This script just tests that the dummy containers can actually be iterated (each taking as input the
 # output of the previous). It is not part of the dummy containers themselves!
