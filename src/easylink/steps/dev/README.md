@@ -79,10 +79,6 @@ python test.py
 
 `DUMMY_CONTAINERS_TEST_INPUT_FILE` configures which initial input file to use (defaults to input_file_2.csv).
 
-`DUMMY_CONTAINERS_TEST_CONTAINER_ENGINE` configures which engine to use -- "docker" or "singularity". Singularity is the default.
-
-If `DUMMY_CONTAINERS_TEST_FROM_TAR` is true and the container engine is docker, loads the images from .tar.gz files.
-
 If `DUMMY_CONTAINERS_TEST_INCLUDE_BROKEN` is true, will randomly introduce containers that do not follow the specification.
 As you might imagine, this will make the chain fail.
 
