@@ -60,7 +60,7 @@ class PipelineGraph(ImplementationGraph):
                 combined_input_slots,
                 combined_output_slots,
                 combined_edges,
-            ) = self.get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
+            ) = self._get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
 
             # Create new implementation
             new_implementation = Implementation(
@@ -83,12 +83,26 @@ class PipelineGraph(ImplementationGraph):
             except nx.NetworkXNoCycle:
                 pass
 
-    def get_combined_slots_and_edges(
+    def _get_combined_slots_and_edges(
         self, combined_implementation: str, nodes_to_merge: list[str]
     ) -> tuple[set[InputSlot], set[OutputSlot], set[EdgeParams]]:
+        """Get all the input slots, output slots, and edges needed to construct the
+        combined implementation
+
+        Parameters
+        ----------
+        combined_implementation
+            Name of the combined implementation.
+        nodes_to_merge
+            A list of nodes to combine.
+
+        Returns
+        -------
+        The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
+        """
         slot_types = ["input_slot", "output_slot"]
         combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
-        edges_by_slot_and_type = self.get_edges_by_slot(nodes_to_merge)
+        edges_by_slot_and_type = self._get_edges_by_slot(nodes_to_merge)
         transform_mappings = (InputSlotMapping, OutputSlotMapping)
 
         combined_edges = set()
@@ -97,7 +111,7 @@ class PipelineGraph(ImplementationGraph):
             slot_types, combined_slots_by_type, edges_by_slot_and_type, transform_mappings
         ):
             separate_slots = edges_by_slot.keys()
-            duplicate_slots = self.get_duplicate_slots(separate_slots, slot_type)
+            duplicate_slots = self._get_duplicate_slots(separate_slots, slot_type)
             for slot_tuple in separate_slots:
                 step_name, slot = slot_tuple
                 edges = edges_by_slot[slot_tuple]
@@ -116,12 +130,24 @@ class PipelineGraph(ImplementationGraph):
                 combined_edges.update([slot_mapping.remap_edge(edge) for edge in edges])
         return combined_input_slots, combined_output_slots, combined_edges
 
-    def get_edges_by_slot(
+    def _get_edges_by_slot(
         self,
         nodes_to_merge: list[str],
     ) -> tuple[
         dict[tuple[str, InputSlot], EdgeParams], dict[tuple[str, OutputSlot], EdgeParams]
     ]:
+        """Get all the edges corresponding to each input and output slot in the list of nodes to be
+        combined.
+
+        Parameters
+        ----------
+        nodes_to_merge
+            A list of PipelineGraph nodes to be combined.
+
+        Returns
+        -------
+        A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
+        """
 
         in_edges_by_slot = defaultdict(list)
         out_edges_by_slot = defaultdict(list)
@@ -146,25 +172,39 @@ class PipelineGraph(ImplementationGraph):
                     )
         return in_edges_by_slot, out_edges_by_slot
 
-    def get_duplicate_slots(
-        self, slots_tuple: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
-    ):
-        name_freq = Counter([slot.name for step_name, slot in slots_tuple])
+    def _get_duplicate_slots(
+        self, slot_tuples: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
+    ) -> set[tuple[str, InputSlot | OutputSlot]]:
+        """Given a list of slots, return only those which have duplicate names or environment
+        variables.
+
+        Parameters
+        ----------
+        slot_tuples
+            A set of (step_name, slot) tuples to check for duplication.
+        slot_type
+            "input_slot" or "output_slot"
+
+        Returns
+        -------
+        A set of (step_name, slot) tuples that have duplicate names or environment variables.
+        """
+        name_freq = Counter([slot.name for step_name, slot in slot_tuples])
         duplicate_names = [name for name, count in name_freq.items() if count > 1]
         if slot_type == "input_slot":
-            env_var_freq = Counter([slot.env_var for step_name, slot in slots_tuple])
+            env_var_freq = Counter([slot.env_var for step_name, slot in slot_tuples])
             duplicate_env_vars = [
                 env_var for env_var, count in env_var_freq.items() if count > 1
             ]
             duplicate_slots = {
                 (step_name, slot)
-                for (step_name, slot) in slots_tuple
+                for (step_name, slot) in slot_tuples
                 if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
             }
         else:
             duplicate_slots = {
                 (step_name, slot)
-                for (step_name, slot) in slots_tuple
+                for (step_name, slot) in slot_tuples
                 if slot.name in duplicate_names
             }
         return duplicate_slots
