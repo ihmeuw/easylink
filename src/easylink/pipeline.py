@@ -1,6 +1,5 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 from loguru import logger
 
@@ -19,8 +18,12 @@ class Pipeline:
 
     def __init__(self, config: Config):
         self.config = config
+        """The ``Config`` object."""
         self.pipeline_graph = PipelineGraph(config)
+        """The ``PipelineGraph`` object."""
         self.spark_is_required = self.pipeline_graph.spark_is_required()
+        """A boolean indicating whether the pipeline requires Spark."""
+
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
 
@@ -32,7 +35,7 @@ class Pipeline:
         if errors:
             exit_with_validation_error(errors)
 
-    def _validate_implementations(self) -> Dict:
+    def _validate_implementations(self) -> dict:
         """Validates each individual Implementation instance."""
         errors = defaultdict(dict)
         for implementation in self.pipeline_graph.implementations:
@@ -43,6 +46,7 @@ class Pipeline:
 
     @property
     def snakefile_path(self) -> Path:
+        """The path to the dynamically-generated snakefile."""
         return self.config.results_dir / "Snakefile"
 
     def build_snakefile(self) -> Path:
@@ -63,7 +67,7 @@ class Pipeline:
             f.write("from easylink.utilities import validation_utils")
 
     def write_target_rules(self) -> None:
-        """Write the rule for the final output and its validation"""
+        """Writes the rule for the final output and its validation"""
         ## The "input" files to the result node/the target rule are the final output themselves.
         final_output, _ = self.pipeline_graph.get_input_output_files("results")
         validator_file = str("input_validations/final_validator")
@@ -85,7 +89,7 @@ class Pipeline:
         final_validation.write_to_snakefile(self.snakefile_path)
 
     def write_implementation_rules(self, node: str) -> None:
-        """Write the rules for each implemented step."""
+        """Writes the rules for each implemented step."""
         implementation = self.pipeline_graph.nodes[node]["implementation"]
         _input_files, output_files = self.pipeline_graph.get_input_output_files(node)
         input_slots = self.pipeline_graph.get_input_slots(node)
@@ -164,7 +168,7 @@ use rule start_spark_worker from spark_cluster with:
             f.write(module)
 
     @staticmethod
-    def get_validations(node, input_slots) -> Tuple[List[str], List[InputValidationRule]]:
+    def get_validations(node, input_slots) -> tuple[list[str], list[InputValidationRule]]:
         """Get validator file and validation rule for each slot for a given node"""
         validation_files = []
         validation_rules = []

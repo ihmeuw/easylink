@@ -142,7 +142,7 @@ def test__get_duplicate_slots(slot_tuples, slot_type, is_duplicated) -> None:
 
 def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
-    pipeline_graph.update_slot_filepaths(default_config)
+    pipeline_graph._update_slot_filepaths(default_config)
     expected_filepaths = {
         ("input_data", "step_1_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
@@ -254,7 +254,7 @@ def test_condense_input_slots() -> None:
             "filepaths": ["file5", "file6", "file7", "file8"],
         },
     }
-    condensed_slots = PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+    condensed_slots = PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
     for slot_name, expected_slot in expected.items():
         slot = condensed_slots[slot_name]
         assert slot["env_var"] == expected_slot["env_var"]
@@ -280,7 +280,7 @@ def test_condense_input_slots_duplicate_slots() -> None:
         ["file3", "file4"],
     ]
     with pytest.raises(ValueError):
-        PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+        PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_condense_input_slots_duplicate_slots() -> None:
@@ -299,7 +299,7 @@ def test_condense_input_slots_duplicate_slots() -> None:
         ["file3", "file4"],
     ]
     with pytest.raises(ValueError):
-        PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+        PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_get_input_output_files(default_config: Config, test_dir: str) -> None:

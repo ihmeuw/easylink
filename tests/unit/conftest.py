@@ -1,6 +1,5 @@
 import csv
 from pathlib import Path
-from typing import Dict, List
 
 import pytest
 import yaml
@@ -493,7 +492,7 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
 }
 
 
-def _write_csv(filepath: str, rows: List) -> None:
+def _write_csv(filepath: str, rows: list) -> None:
     with open(filepath, "w") as file:
         writer = csv.writer(file)
         writer.writerows(rows)
@@ -608,7 +607,7 @@ def results_dir(test_dir) -> Path:
 
 
 @pytest.fixture()
-def default_config_paths(test_dir, results_dir) -> Dict[str, Path]:
+def default_config_paths(test_dir, results_dir) -> dict[str, Path]:
     return {
         "pipeline_specification": Path(f"{test_dir}/pipeline.yaml"),
         "input_data": Path(f"{test_dir}/input_data.yaml"),
@@ -618,7 +617,7 @@ def default_config_paths(test_dir, results_dir) -> Dict[str, Path]:
 
 
 @pytest.fixture()
-def default_config_params(default_config_paths) -> Dict[str, Path]:
+def default_config_params(default_config_paths) -> dict[str, Path]:
     return load_params_from_specification(**default_config_paths)
 
 

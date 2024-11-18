@@ -3,7 +3,8 @@ import functools
 import shutil
 import sys
 from bdb import BdbQuit
-from typing import Any, Callable, Dict, TextIO
+from collections.abc import Callable
+from typing import Any, TextIO
 
 import yaml
 from loguru import logger
@@ -34,14 +35,7 @@ def handle_exceptions(
 
 
 def configure_logging_to_terminal(verbose: int):
-    """Sets up logging to ``sys.stdout``.
-
-    Parameters
-    ----------
-    verbose
-        Verbosity of the logger.
-
-    """
+    """Sets up logging to ``sys.stdout``."""
     logger.remove(0)  # Clear default configuration
     _add_logging_sink(sys.stdout, verbose, colorize=True)
 
@@ -51,8 +45,8 @@ def _add_logging_sink(
 ):
     """Adds a logging sink to the global process logger.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     sink
         Either a file or system file descriptor like ``sys.stdout``.
     verbose
@@ -86,11 +80,11 @@ def _add_logging_sink(
         )
 
 
-def exit_with_validation_error(error_msg: Dict) -> None:
+def exit_with_validation_error(error_msg: dict) -> None:
     """Exits the program with a validation error.
 
-    Parameters
-    ----------
+    Arguments
+    ---------
     error_msg
         The error message to print to the user.
 

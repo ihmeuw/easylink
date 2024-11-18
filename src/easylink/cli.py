@@ -1,5 +1,3 @@
-from typing import Optional
-
 import click
 from loguru import logger
 
@@ -23,7 +21,10 @@ SHARED_OPTIONS = [
         "--input-data",
         required=True,
         type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-        help="The path to the input data specification yaml file (not the paths to the input data themselves).",
+        help=(
+            "The path to the input data specification yaml file (not the paths to "
+            "the input data themselves)."
+        ),
     ),
     click.option(
         "-o",
@@ -52,10 +53,7 @@ def pass_shared_options(func):
 
 @click.group()
 def easylink():
-    """A command line utility for running an EasyLink pipeline.
-
-    You may initiate a new run with the ``run`` sub-command.
-    """
+    """The command line entrypoint to the EasyLink utility."""
     pass
 
 
@@ -67,7 +65,11 @@ def easylink():
     default=None,
     show_default=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-    help=("Path to a computing environment yaml file on which to launch the step."),
+    help=(
+        "Path to the specification yaml defining the computing environment to "
+        "run the pipeline on. If no value is passed, the pipeline will be run "
+        "locally."
+    ),
 )
 @click.option("-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True)
 @click.option(
@@ -80,9 +82,9 @@ def easylink():
 def run(
     pipeline_specification: str,
     input_data: str,
-    output_dir: Optional[str],
+    output_dir: str | None,
     timestamp: bool,
-    computing_environment: Optional[str],
+    computing_environment: str | None,
     verbose: int,
     with_debugger: bool,
 ) -> None:
@@ -111,10 +113,10 @@ def run(
 def generate_dag(
     pipeline_specification: str,
     input_data: str,
-    output_dir: Optional[str],
+    output_dir: str | None,
     timestamp: bool,
 ) -> None:
-    """Generate a DAG file from the command line."""
+    """Generate an image of the proposed pipeline DAG."""
     logger.info("Generating DAG")
     results_dir = get_results_directory(output_dir, timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")

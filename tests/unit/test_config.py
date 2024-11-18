@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from layered_config_tree import LayeredConfigTree
@@ -20,7 +20,7 @@ def test__get_schema(default_config: Config) -> None:
 
 
 def test_load_params_from_specification(
-    test_dir: str, default_config_params: Dict[str, Dict[str, Any]]
+    test_dir: str, default_config_params: dict[str, dict[str, Any]]
 ) -> None:
     assert default_config_params == {
         "pipeline": {

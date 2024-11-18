@@ -2,7 +2,6 @@ import os
 import socket
 import subprocess
 from pathlib import Path
-from typing import List
 
 from graphviz import Source
 from loguru import logger
@@ -23,11 +22,33 @@ def main(
     command: str,
     pipeline_specification: str,
     input_data: str,
-    computing_environment: str,
+    computing_environment: str | None,
     results_dir: str,
     debug=False,
 ) -> None:
-    """Set up and run the pipeline"""
+    """Run the ``command`` passed in.
+
+    This function is intended to be accessed via the cli.py module's command
+    line interface functions.
+
+    Arguments
+    ---------
+    command
+        The command to run. Current supported commands include "run" and "generate_dag".
+    pipeline_specification
+        The path to the pipeline specification yaml file.
+    input_data
+        The path to the input data specification yaml file (not the paths to the
+        input data themselves).
+    computing_environment
+        The path to the specification yaml defining the computing environment to
+        run the pipeline on. If None, the pipeline will be run locally.
+    results_dir
+        The directory to write results and incidental files (logs, etc.) to.
+    debug
+        If False (the default), will suppress some of the workflow output. This
+        is intended to only be used for testing and development purposes.
+    """
     config_params = load_params_from_specification(
         pipeline_specification, input_data, computing_environment, results_dir
     )
@@ -44,7 +65,7 @@ def main(
     copy_configuration_files_to_results_directory(
         Path(pipeline_specification),
         Path(input_data),
-        Path(computing_environment),
+        Path(computing_environment) if computing_environment else computing_environment,
         Path(results_dir),
     )
     environment_args = get_environment_args(config)
@@ -94,7 +115,7 @@ def get_singularity_args(config: Config) -> str:
     return singularity_args
 
 
-def get_environment_args(config: Config) -> List[str]:
+def get_environment_args(config: Config) -> list[str]:
     # Set up computing environment
     if config.computing_environment == "local":
         return []

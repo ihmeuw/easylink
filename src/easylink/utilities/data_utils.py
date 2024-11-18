@@ -2,7 +2,6 @@ import os
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Union
 
 import yaml
 
@@ -34,7 +33,7 @@ def create_results_intermediates(results_dir: Path) -> None:
 def copy_configuration_files_to_results_directory(
     pipeline_specification: Path,
     input_data: Path,
-    computing_environment: Optional[Path],
+    computing_environment: Path | None,
     results_dir: Path,
 ) -> None:
     shutil.copy(pipeline_specification, results_dir)
@@ -43,7 +42,7 @@ def copy_configuration_files_to_results_directory(
         shutil.copy(computing_environment, results_dir)
 
 
-def get_results_directory(output_dir: Optional[str], timestamp: bool) -> Path:
+def get_results_directory(output_dir: str | None, timestamp: bool) -> Path:
     results_dir = Path("results" if output_dir is None else output_dir).resolve()
     if timestamp:
         launch_time = _get_timestamp()
@@ -55,7 +54,7 @@ def _get_timestamp():
     return datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
 
-def load_yaml(filepath: Union[str, Path]) -> Dict:
+def load_yaml(filepath: str | Path) -> dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
