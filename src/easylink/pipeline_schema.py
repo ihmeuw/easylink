@@ -42,6 +42,12 @@ class PipelineSchema(HierarchicalStep):
     def configure_pipeline(
         self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
     ) -> None:
+        """Configures the PipelineSchema and corresponding StepGraphs.
+
+        Notes
+        -----
+        This recursively updates the StepGraphs until all non-leaf nodes are resolved.
+        """
         self._configuration_state = NonLeafConfigurationState(
             self,
             pipeline_config["steps"],
