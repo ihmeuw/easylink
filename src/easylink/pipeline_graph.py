@@ -29,8 +29,8 @@ class PipelineGraph(ImplementationGraph):
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
-        self._merge_combined_implementations(config)
-        self._update_slot_filepaths(config)
+        self.merge_combined_implementations(config)
+        self.update_slot_filepaths(config)
         self = nx.freeze(self)
 
     def merge_combined_implementations(self, config):
@@ -254,10 +254,10 @@ class PipelineGraph(ImplementationGraph):
             list(edge_attrs["filepaths"])
             for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
-        return self._condense_input_slots(input_slots, filepaths_by_slot)
+        return self.condense_input_slots(input_slots, filepaths_by_slot)
 
     @staticmethod
-    def _condense_input_slots(
+    def condense_input_slots(
         input_slots: list[InputSlot], filepaths_by_slot: list[str]
     ) -> dict[str, dict[str, str | list[str]]]:
         condensed_slot_dict = {}
@@ -309,7 +309,7 @@ class PipelineGraph(ImplementationGraph):
         """Check if the pipeline requires spark resources."""
         return any([implementation.requires_spark for implementation in self.implementations])
 
-    def _validate_implementation_topology(
+    def validate_implementation_topology(
         self, nodes: list[str], metadata_steps: list[str]
     ) -> None:
         """Check that the subgraph induced by the nodes implemented by this implementation
