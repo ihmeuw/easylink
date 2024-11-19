@@ -115,6 +115,7 @@ class PartialImplementation:
     replace them with a single node with a true Implementation representing the combined
     implementation.
     """
+
     def __init__(
         self,
         combined_name: str,
