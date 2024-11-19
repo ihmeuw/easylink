@@ -1,13 +1,23 @@
 import itertools
-from collections import defaultdict
+from collections import Counter, defaultdict
+from copy import deepcopy
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Iterable, List, Tuple, Union
 
 import networkx as nx
 
 from easylink.configuration import Config
-from easylink.graph_components import EdgeParams, ImplementationGraph, InputSlot
-from easylink.implementation import Implementation
+from easylink.graph_components import (
+    EdgeParams,
+    ImplementationGraph,
+    InputSlot,
+    InputSlotMapping,
+    OutputSlot,
+    OutputSlotMapping,
+)
+from easylink.implementation import Implementation, PartialImplementation
+from easylink.utilities import paths
+from easylink.utilities.data_utils import load_yaml
 
 
 class PipelineGraph(ImplementationGraph):
@@ -26,6 +36,7 @@ class PipelineGraph(ImplementationGraph):
         self = nx.freeze(self)
 
     def merge_combined_implementations(self, config):
+        implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         for (
             combined_implementation,
             combined_implementation_config,
@@ -35,58 +46,38 @@ class PipelineGraph(ImplementationGraph):
             nodes_to_merge = [
                 node
                 for node, data in self.nodes(data=True)
-                if data["implementation"].combined_name == combined_implementation
+                if isinstance(data["implementation"], PartialImplementation)
+                and data["implementation"].combined_name == combined_implementation
             ]
             if not nodes_to_merge:
                 continue
 
-            implemented_steps = [
-                step
-                for node in nodes_to_merge
-                for step in self.nodes[node]["implementation"].schema_steps
+            partial_implementations_to_merge = [
+                self.nodes[node]["implementation"] for node in nodes_to_merge
             ]
-            metadata_steps = self.nodes[nodes_to_merge[0]]["implementation"].metadata_steps
+
+            implemented_steps = [
+                implementation.schema_step
+                for implementation in partial_implementations_to_merge
+            ]
+
+            metadata_steps = implementation_metadata[combined_implementation_config["name"]][
+                "steps"
+            ]
             self.validate_implementation_topology(nodes_to_merge, metadata_steps)
-            input_slots = []
-            output_slots = []
-            in_edge_params = []
-            combined_edges = []
 
-            for node in nodes_to_merge:
-                for pred, succ, data in self.in_edges(node, data=True):
-                    if pred not in nodes_to_merge:
-                        input_slots.append(data["input_slot"])
-                        in_edge_params.append(EdgeParams.from_graph_edge(pred, succ, data))
-                        combined_edges.append(
-                            EdgeParams.from_graph_edge(pred, combined_implementation, data)
-                        )
+            (
+                combined_input_slots,
+                combined_output_slots,
+                combined_edges,
+            ) = self._get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
 
-                for _, succ, data in self.out_edges(node, data=True):
-                    if succ not in nodes_to_merge:
-                        output_slots.append(data["output_slot"])
-                        combined_edges.append(
-                            EdgeParams.from_graph_edge(combined_implementation, succ, data)
-                        )
-
-            for slots in (input_slots, output_slots):
-                seen_names = []
-                seen_env_vars = []
-                for slot in slots:
-                    # Check for duplicate names
-                    if slot.name in seen_names:
-                        raise ValueError(f"Duplicate slot name found: '{slot.name}'")
-                    seen_names.append(slot.name)
-
-                    # Check for duplicate env_vars
-                    if isinstance(slot, InputSlot):
-                        if slot.env_var in seen_env_vars:
-                            raise ValueError(
-                                f"Duplicate environment variable found: '{slot.env_var}'"
-                            )
-                        seen_env_vars.append(slot.env_var)
-
+            # Create new implementation
             new_implementation = Implementation(
-                implemented_steps, combined_implementation_config, input_slots, output_slots
+                implemented_steps,
+                combined_implementation_config,
+                combined_input_slots,
+                combined_output_slots,
             )
             self.add_node(combined_implementation, implementation=new_implementation)
 
@@ -101,6 +92,133 @@ class PipelineGraph(ImplementationGraph):
                 raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
             except nx.NetworkXNoCycle:
                 pass
+
+    def _get_combined_slots_and_edges(
+        self, combined_implementation: str, nodes_to_merge: list[str]
+    ) -> tuple[set[InputSlot], set[OutputSlot], set[EdgeParams]]:
+        """Get all the input slots, output slots, and edges needed to construct the
+        combined implementation
+
+        Parameters
+        ----------
+        combined_implementation
+            Name of the combined implementation.
+        nodes_to_merge
+            A list of nodes to combine.
+
+        Returns
+        -------
+        The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
+        """
+        slot_types = ["input_slot", "output_slot"]
+        combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
+        edges_by_slot_and_type = self._get_edges_by_slot(nodes_to_merge)
+        transform_mappings = (InputSlotMapping, OutputSlotMapping)
+
+        combined_edges = set()
+
+        for slot_type, combined_slots, edges_by_slot, transform_mapping in zip(
+            slot_types, combined_slots_by_type, edges_by_slot_and_type, transform_mappings
+        ):
+            separate_slots = edges_by_slot.keys()
+            duplicate_slots = self._get_duplicate_slots(separate_slots, slot_type)
+            for slot_tuple in separate_slots:
+                step_name, slot = slot_tuple
+                edges = edges_by_slot[slot_tuple]
+                if slot_tuple in duplicate_slots:
+                    combined_slot = slot.__class__(
+                        name=step_name + "_" + slot.name,
+                        env_var=step_name.upper() + "_" + slot.env_var,
+                        validator=slot.validator,
+                    )
+                else:
+                    combined_slot = deepcopy(slot)
+                combined_slots.add(combined_slot)
+                slot_mapping = transform_mapping(
+                    slot.name, combined_implementation, combined_slot.name
+                )
+                combined_edges.update([slot_mapping.remap_edge(edge) for edge in edges])
+        return combined_input_slots, combined_output_slots, combined_edges
+
+    def _get_edges_by_slot(
+        self,
+        nodes_to_merge: list[str],
+    ) -> tuple[
+        dict[tuple[str, InputSlot], EdgeParams], dict[tuple[str, OutputSlot], EdgeParams]
+    ]:
+        """Get all the edges corresponding to each input and output slot in the list of nodes to be
+        combined.
+
+        Parameters
+        ----------
+        nodes_to_merge
+            A list of PipelineGraph nodes to be combined.
+
+        Returns
+        -------
+        A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
+        """
+
+        in_edges_by_slot = defaultdict(list)
+        out_edges_by_slot = defaultdict(list)
+
+        # Find separate input and output slots
+        for node in nodes_to_merge:
+            for pred, succ, data in self.in_edges(node, data=True):
+                if pred not in nodes_to_merge:
+                    input_slot = data["input_slot"]
+                    partial_implementation = self.nodes[node]["implementation"]
+                    in_edges_by_slot[(partial_implementation.schema_step, input_slot)].append(
+                        EdgeParams.from_graph_edge(pred, succ, data)
+                    )
+
+            for pred, succ, data in self.out_edges(node, data=True):
+
+                if succ not in nodes_to_merge:
+                    output_slot = data["output_slot"]
+                    partial_implementation = self.nodes[node]["implementation"]
+                    out_edges_by_slot[
+                        (partial_implementation.schema_step, output_slot)
+                    ].append(EdgeParams.from_graph_edge(pred, succ, data))
+        return in_edges_by_slot, out_edges_by_slot
+
+    @staticmethod
+    def _get_duplicate_slots(
+        slot_tuples: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
+    ) -> set[tuple[str, InputSlot | OutputSlot]]:
+        """Given a list of slots, return only those which have duplicate names or environment
+        variables.
+
+        Parameters
+        ----------
+        slot_tuples
+            A set of (step_name, slot) tuples to check for duplication.
+        slot_type
+            "input_slot" or "output_slot"
+
+        Returns
+        -------
+        A set of (step_name, slot) tuples that have duplicate names or environment variables.
+        """
+        name_freq = Counter([slot.name for step_name, slot in slot_tuples])
+        duplicate_names = [name for name, count in name_freq.items() if count > 1]
+        if slot_type == "input_slot":
+            env_var_freq = Counter([slot.env_var for step_name, slot in slot_tuples])
+            duplicate_env_vars = [
+                env_var for env_var, count in env_var_freq.items() if count > 1
+            ]
+            duplicate_slots = {
+                (step_name, slot)
+                for (step_name, slot) in slot_tuples
+                if slot.name in duplicate_names or slot.env_var in duplicate_env_vars
+            }
+        else:
+            duplicate_slots = {
+                (step_name, slot)
+                for (step_name, slot) in slot_tuples
+                if slot.name in duplicate_names
+            }
+        return duplicate_slots
 
     def update_slot_filepaths(self, config: Config) -> None:
         """Fill graph edges with appropriate filepath information."""
@@ -201,15 +319,10 @@ class PipelineGraph(ImplementationGraph):
         subgraph = ImplementationGraph(self).subgraph(nodes)
 
         # Relabel nodes by schema step
-        mapping = {}
-        for node, data in subgraph.nodes(data=True):
-            schema_steps = data["implementation"].schema_steps
-            if len(schema_steps) == 1:
-                mapping[node] = schema_steps[0]
-            else:
-                raise ValueError(
-                    f"Node '{node}' must implement exactly one step before combination."
-                )
+        mapping = {
+            node: data["implementation"].schema_step
+            for node, data in subgraph.nodes(data=True)
+        }
         if not set(mapping.values()) == set(metadata_steps):
             raise ValueError(
                 f"Pipeline configuration nodes {list(mapping.values())} do not match metadata steps {metadata_steps}."

@@ -24,7 +24,6 @@ class Implementation:
         implementation_config: LayeredConfigTree,
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
-        combined_name: str | None = None,
     ):
         self.name = implementation_config.name
         self.input_slots = {slot.name: slot for slot in input_slots}
@@ -32,7 +31,6 @@ class Implementation:
         self._metadata = self._load_metadata()
         self.environment_variables = self._get_env_vars(implementation_config)
         self.metadata_steps = self._metadata["steps"]
-        self.combined_name = combined_name
         self.schema_steps = schema_steps
         self.requires_spark = self._metadata.get("requires_spark", False)
 
@@ -104,3 +102,28 @@ class NullImplementation:
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.schema_steps = [self.name]
         self.combined_name = None
+
+
+class PartialImplementation:
+    """
+    A PartialImplementation is what is initially added to the implementation graph when
+    a combined implementation is used (i.e. an implementation that spans multiple steps).
+    We initially add a node for _each_ step, which has as its "implementation" attribute a
+    PartialImplementation. Such a graph is not yet fit to run. When we make our second
+    pass through, after the flat (non-hierarchical) PipelineGraph has been created, we find the set of
+    PartialImplementation nodes corresponding to each combined implementation and
+    replace them with a single node with a true Implementation representing the combined
+    implementation.
+    """
+
+    def __init__(
+        self,
+        combined_name: str,
+        schema_step: str,
+        input_slots: Iterable["InputSlot"] = (),
+        output_slots: Iterable["OutputSlot"] = (),
+    ):
+        self.combined_name = combined_name
+        self.schema_step = schema_step
+        self.input_slots = {slot.name: slot for slot in input_slots}
+        self.output_slots = {slot.name: slot for slot in output_slots}

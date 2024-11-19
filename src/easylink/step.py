@@ -17,7 +17,11 @@ from easylink.graph_components import (
     SlotMapping,
     StepGraph,
 )
-from easylink.implementation import Implementation, NullImplementation
+from easylink.implementation import (
+    Implementation,
+    NullImplementation,
+    PartialImplementation,
+)
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 
@@ -72,17 +76,21 @@ class LeafConfigurationState(ConfigurationState):
     def get_implementation_graph(self) -> ImplementationGraph:
         """Return a single node with an implementation attribute."""
         implementation_graph = ImplementationGraph()
-        combined_name = (
-            self.pipeline_config[COMBINED_IMPLEMENTATION_KEY] if self.is_combined else None
-        )
         implementation_node_name = self._step.implementation_node_name
-        implementation = Implementation(
-            schema_steps=[self._step.step_name],
-            implementation_config=self.implementation_config,
-            input_slots=self._step.input_slots.values(),
-            output_slots=self._step.output_slots.values(),
-            combined_name=combined_name,
-        )
+        if self.is_combined:
+            implementation = PartialImplementation(
+                combined_name=self.pipeline_config[COMBINED_IMPLEMENTATION_KEY],
+                schema_step=self._step.step_name,
+                input_slots=self._step.input_slots.values(),
+                output_slots=self._step.output_slots.values(),
+            )
+        else:
+            implementation = Implementation(
+                schema_steps=[self._step.step_name],
+                implementation_config=self.implementation_config,
+                input_slots=self._step.input_slots.values(),
+                output_slots=self._step.output_slots.values(),
+            )
         implementation_graph.add_node_from_implementation(
             implementation_node_name,
             implementation=implementation,
