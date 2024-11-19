@@ -22,7 +22,7 @@ From: apache/spark-py@sha256:489f904a77f21134df4840de5f8bd9f110925e7b439ca6a04b7
 
 %runscript
     cd /workdir
-    python /code/dummy_step.py "$@"
+    python3 /code/dummy_step.py "$@"
 
 %labels
     Author Patrick Nast
