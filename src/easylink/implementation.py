@@ -105,6 +105,16 @@ class NullImplementation:
 
 
 class PartialImplementation:
+    """
+    A PartialImplementation is what is initially added to the implementation graph when
+    a combined implementation is used (i.e. an implementation that spans multiple steps).
+    We initially add a node for _each_ step, which has as its "implementation" attribute a
+    PartialImplementation. Such a graph is not yet fit to run. When we make our second
+    pass through, after the flat (non-hierarchical) PipelineGraph has been created, we find the set of
+    PartialImplementation nodes corresponding to each combined implementation and
+    replace them with a single node with a true Implementation representing the combined
+    implementation.
+    """
     def __init__(
         self,
         combined_name: str,
