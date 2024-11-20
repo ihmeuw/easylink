@@ -18,7 +18,7 @@ class Rule(ABC):
 
     @abstractmethod
     def _build_rule(self) -> str:
-        """Builds the snakemake rul to be written to the snakefile.
+        """Builds the snakemake rule to be written to the Snakefile.
 
         This is an abstract method and must be implemented by concrete instances.
         """
