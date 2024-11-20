@@ -113,7 +113,8 @@ class NullImplementation:
 
 
 class PartialImplementation:
-    """
+    """A representation of one part of a combined implementation that spans multiple steps.
+
     A PartialImplementation is what is initially added to the implementation graph when
     a combined implementation is used (i.e. an implementation that spans multiple steps).
     We initially add a node for _each_ step, which has as its "implementation" attribute a
