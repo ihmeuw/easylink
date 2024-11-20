@@ -242,8 +242,8 @@ class Step:
         input_slot_mappings: Iterable[InputSlotMapping] = (),
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
     ) -> None:
-        self.name = name if name else step_name
         self.step_name = step_name
+        self.name = name if name else step_name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.nodes = nodes

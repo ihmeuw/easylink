@@ -7,18 +7,17 @@ entity resolution (ER) pipelines.
 
 There are a few things to install in order to use this package:
 
-- Install docker
+- Install singularity. If this is not already installed on your system, you will
+likely need to request it from your system admin. Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html
 
-    - Mac: https://docs.docker.com/desktop/install/mac-install/
-    - Windows: https://docs.docker.com/desktop/install/windows-install/
 
-- Install graphviz
+- Install graphviz via
 
     ```
     $ conda install graphviz
     ```
 
-- Install EasyLink
+- Install EasyLink via
 
     ```
     $ pip install easylink
