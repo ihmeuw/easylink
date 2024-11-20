@@ -40,7 +40,7 @@ class Implementation:
         """Whether this implementation requires a Spark environment."""
 
     def __repr__(self) -> str:
-        return f"Implementation.{self.step_name}.{self.name}"
+        return f"Implementation.{self.name}"
 
     def validate(self) -> list[str]:
         """Validates individual Implementation instances.
