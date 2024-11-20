@@ -35,7 +35,13 @@ def handle_exceptions(
 
 
 def configure_logging_to_terminal(verbose: int):
-    """Sets up logging to ``sys.stdout``."""
+    """Sets up logging to ``sys.stdout``.
+    
+    Arguments
+    ---------
+    verbose
+        Verbosity of the logger.
+    """
     logger.remove(0)  # Clear default configuration
     _add_logging_sink(sys.stdout, verbose, colorize=True)
 
