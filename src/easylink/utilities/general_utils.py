@@ -36,7 +36,7 @@ def handle_exceptions(
 
 def configure_logging_to_terminal(verbose: int):
     """Sets up logging to ``sys.stdout``.
-    
+
     Arguments
     ---------
     verbose
