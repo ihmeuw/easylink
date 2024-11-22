@@ -37,8 +37,8 @@ def handle_exceptions(
 def configure_logging_to_terminal(verbose: int):
     """Sets up logging to ``sys.stdout``.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     verbose
         Verbosity of the logger.
     """
@@ -51,8 +51,8 @@ def _add_logging_sink(
 ):
     """Adds a logging sink to the global process logger.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     sink
         Either a file or system file descriptor like ``sys.stdout``.
     verbose
@@ -89,8 +89,8 @@ def _add_logging_sink(
 def exit_with_validation_error(error_msg: dict) -> None:
     """Exits the program with a validation error.
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     error_msg
         The error message to print to the user.
 
