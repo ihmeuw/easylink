@@ -2,7 +2,6 @@ import itertools
 from collections import Counter, defaultdict
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple, Union
 
 import networkx as nx
 
@@ -21,12 +20,11 @@ from easylink.utilities.data_utils import load_yaml
 
 
 class PipelineGraph(ImplementationGraph):
-    """
-    The Pipeline Graph is the structure of the pipeline. It is a DAG composed of
-    Implementations and their file dependencies. The Pipeline Graph is created by
-    "flattening" the Pipeline Schema (a nested Step Graph) with parameters set in
-    the configuration.
+    """The structure of the pipeline.
 
+    The PipelineGraph is a DAG composed of Implementations and their file dependencies.
+    It is created by "flattening" the PipelineSchema (a nested StepGraph) with parameters
+    set in the configuration.
     """
 
     def __init__(self, config: Config) -> None:
@@ -247,7 +245,7 @@ class PipelineGraph(ImplementationGraph):
                         ),
                     )
 
-    def get_input_slots(self, node: str) -> dict[str, dict[str, Union[str, list[str]]]]:
+    def get_input_slots(self, node: str) -> dict[str, dict[str, str | list[str]]]:
         """Get all of a node's input slots from edges."""
         input_slots = [
             edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
@@ -260,8 +258,8 @@ class PipelineGraph(ImplementationGraph):
 
     @staticmethod
     def condense_input_slots(
-        input_slots: List[InputSlot], filepaths_by_slot: List[str]
-    ) -> Dict[str, dict[str, Union[str, list[str]]]]:
+        input_slots: list[InputSlot], filepaths_by_slot: list[str]
+    ) -> dict[str, dict[str, str | list[str]]]:
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
             slot_name, env_var, validator = (
@@ -287,7 +285,7 @@ class PipelineGraph(ImplementationGraph):
                 }
         return condensed_slot_dict
 
-    def get_input_output_files(self, node: str) -> Tuple[List[str], List[str]]:
+    def get_input_output_files(self, node: str) -> tuple[list[str], list[str]]:
         """Get all of a node's input and output files from edges."""
         input_files = list(
             itertools.chain.from_iterable(

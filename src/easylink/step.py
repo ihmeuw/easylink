@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
 from layered_config_tree import LayeredConfigTree
 
@@ -29,8 +29,9 @@ COMBINED_IMPLEMENTATION_KEY = "combined_implementation_key"
 
 
 class ConfigurationState(ABC):
-    """
-    Configuration States define the exact pipeline configuration state for a given step, including the
+    """A given step's configuration state.
+
+    A ConfigurationState defines the exact pipeline configuration state for a given step, including the
     strategy required to get the implementation graph from the step. There are two possible configured
     step states: "Leaf" and "Non-Leaf".
     """
@@ -59,7 +60,10 @@ class ConfigurationState(ABC):
 
 
 class LeafConfigurationState(ConfigurationState):
-    """Leaf State corresponds to a leaf node in the pipeline graph that is implemented by a single implementation."""
+    """A concrete instance of ConfigurationState for a leaf node in the pipeline graph.
+
+    This corresponds to a leaf node in the pipeline graph that is implemented by a single implementation.
+    """
 
     @property
     def is_combined(self) -> bool:
@@ -131,7 +135,9 @@ class LeafConfigurationState(ConfigurationState):
 
 
 class NonLeafConfigurationState(ConfigurationState):
-    """A Non-Leaf State is selected when a step has a non-trivial step graph and has been configured
+    """A concrete instance of ConfigurationState for a non-leaf node in the pipeline graph.
+
+    This class type is selected when a step has a non-trivial step graph and has been configured
     to use the step graph (e.g. through a configuration key in the pipeline specification yaml).
     """
 
@@ -216,7 +222,9 @@ class NonLeafConfigurationState(ConfigurationState):
 
 
 class Step:
-    """Steps contain information about the purpose of the interoperable elements of
+    """The highest-level pipeline building block abstraction.
+
+    Steps contain information about the purpose of the interoperable elements of
     the sequence called a *Pipeline* and how those elements relate to one another.
     In turn, steps are implemented by Implementations, such that each step may have
     several implementations but each implementation must have exactly one step.
@@ -226,7 +234,7 @@ class Step:
     def __init__(
         self,
         step_name: str,
-        name: str = None,
+        name: str | None = None,
         input_slots: Iterable[InputSlot] = (),
         output_slots: Iterable[OutputSlot] = (),
         nodes: Iterable[Step] = (),
@@ -234,8 +242,8 @@ class Step:
         input_slot_mappings: Iterable[InputSlotMapping] = (),
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
     ) -> None:
-        self.name = name if name else step_name
         self.step_name = step_name
+        self.name = name if name else step_name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
         self.nodes = nodes
@@ -385,14 +393,16 @@ class Step:
 
     @property
     def implementation_node_name(self) -> str:
-        """Resolve a sensible unique node name for the implementation graph.
+        """Determines a sensible unique node name for the implementation graph.
+
         This method compares the step node names with the step names through the step hierarchy and
         uses the full suffix of step names starting from wherever the two first differ. For example,
         loop steps may have multiple loops with the same implementation and step, e.g. "step_3" and "step_3_python_pandas".
         If we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
         will be step_3_loop_1_step_3_python_pandas. If all the node names and step names match, we have not
         introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
-        name."""
+        name.
+        """
         step = self
         implementation_name = (
             self.configuration_state.pipeline_config[COMBINED_IMPLEMENTATION_KEY]
@@ -497,9 +507,12 @@ class OutputStep(IOStep):
 
 
 class HierarchicalStep(Step):
-    """A HierarchicalStep can be a single implementation or several 'substeps'. This requires
+    """An abstraction to represent a step that may contain substeps.
+
+    A HierarchicalStep can be a single implementation or several 'substeps'. This requires
     a "substeps" key in the step configuration. If no substeps key is present, it will be treated as
-    a single implemented step."""
+    a single implemented step.
+    """
 
     @property
     def config_key(self):
@@ -507,8 +520,12 @@ class HierarchicalStep(Step):
 
 
 class TemplatedStep(Step):
-    """TemplatedStep is a class of step that transforms a template step into multiple instances according to
-    a specified transformation rule and the user-specified configuration."""
+    """A helper class to represent a step that potentially contains some multiplicity.
+
+    Some steps may contain a specified amount of multiplicity, such as a loop or parallel split.
+    This class is a helper class intended to be subclassed by discrete concrete instances
+    of these multiples according to a specified transformation rule and the user-specified configuration.
+    """
 
     def __init__(
         self,
@@ -604,11 +621,11 @@ class TemplatedStep(Step):
 
 
 class LoopStep(TemplatedStep):
-    """A LoopStep allows a user to loop a single step or a sequence of steps a user-configured number of times."""
+    """A LoopStep allows a user to loop a single step or a sequence of steps multiple times."""
 
     def __init__(
         self,
-        template_step: Step = None,
+        template_step: Step | None = None,
         self_edges: Iterable[EdgeParams] = (),
     ) -> None:
         super().__init__(template_step)
@@ -623,8 +640,7 @@ class LoopStep(TemplatedStep):
         return "loop"
 
     def _update_step_graph(self, num_repeats) -> StepGraph:
-        """Make N copies of the iterated graph and chain them together according
-        to the self edges."""
+        """Makes N copies of the iterated graph and chain them together according to the self edges."""
         graph = StepGraph()
         nodes = []
         edges = []
@@ -654,8 +670,7 @@ class LoopStep(TemplatedStep):
         return graph
 
     def _update_slot_mappings(self, num_repeats) -> dict:
-        """Get the appropriate slot mappings based on the number of loops
-        and the non-self-edge input and output slots."""
+        """Gets the appropriate slot mappings based on the number of loops and the non-self-edge input and output slots."""
         input_mappings = []
         self_edge_input_slots = {edge.input_slot for edge in self.self_edges}
         external_input_slots = self.input_slots.keys() - self_edge_input_slots
@@ -691,8 +706,7 @@ class ParallelStep(TemplatedStep):
         return "parallel_split"
 
     def _update_step_graph(self, num_repeats) -> StepGraph:
-        """Make N copies of the template step that are independent and contain the same edges as the
-        current step"""
+        """Makes N copies of the template step that are independent and contain the same edges as the current step"""
         graph = StepGraph()
 
         for i in range(num_repeats):
@@ -704,8 +718,7 @@ class ParallelStep(TemplatedStep):
         return graph
 
     def _update_slot_mappings(self, num_repeats) -> dict[str, list[SlotMapping]]:
-        """Get the appropriate slot mappings based on the number of parallel copies
-        and the existing input and output slots."""
+        """Gets the appropriate slot mappings based on the number of parallel copies and the existing input and output slots."""
         input_mappings = [
             InputSlotMapping(slot, f"{self.name}_{self.node_prefix}_{n+1}", slot)
             for n in range(num_repeats)

@@ -1,7 +1,5 @@
-from __future__ import annotations
-
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from layered_config_tree import LayeredConfigTree
 
@@ -11,9 +9,9 @@ from easylink.utilities.data_utils import load_yaml
 
 
 class Implementation:
-    """
-    Implementations exist at a lower level than Steps. They are representations of the
-    actual containers that will be executed for a particular step in the pipeline. This class
+    """A representation of an actual container that will be executed for a particular step.
+
+    Implementations exist at a lower level than Steps. This class
     contains information about what container to use, what environment variables to set
     inside the container, and some metadata about the container.
     """
@@ -26,20 +24,28 @@ class Implementation:
         output_slots: Iterable["OutputSlot"] = (),
     ):
         self.name = implementation_config.name
+        """The name of the implementation."""
         self.input_slots = {slot.name: slot for slot in input_slots}
+        """A mapping of input slot names to InputSlot instances."""
         self.output_slots = {slot.name: slot for slot in output_slots}
+        """A mapping of output slot names to OutputSlot instances."""
         self._metadata = self._load_metadata()
         self.environment_variables = self._get_env_vars(implementation_config)
+        """A mapping of environment variables to set."""
         self.metadata_steps = self._metadata["steps"]
+        """The specific step details that this implementation is associated with."""
         self.schema_steps = schema_steps
+        """The high-level pipeline schema steps that this implementation is associated with."""
         self.requires_spark = self._metadata.get("requires_spark", False)
+        """Whether this implementation requires a Spark environment."""
 
     def __repr__(self) -> str:
-        return f"Implementation.{self.step_name}.{self.name}"
+        return f"Implementation.{self.name}"
 
     def validate(self) -> list[str]:
-        """Validates individual Implementation instances. This is intended to be
-        run from the Pipeline validate method.
+        """Validates individual Implementation instances.
+
+        This is intended to be run from the Pipeline validate method.
         """
         logs = []
         logs = self._validate_expected_step(logs)
@@ -87,9 +93,11 @@ class Implementation:
 
 class NullImplementation:
     """A NullImplementation is used to represent a step that does not have an implementation.
+
     For example, the IO steps in the pipeline schema do not correspond to implementations
     but ImplementationGraph requires an "implementation" attribute with input and output slots
-    for each node."""
+    for each node.
+    """
 
     def __init__(
         self,
@@ -105,7 +113,8 @@ class NullImplementation:
 
 
 class PartialImplementation:
-    """
+    """A representation of one part of a combined implementation that spans multiple steps.
+
     A PartialImplementation is what is initially added to the implementation graph when
     a combined implementation is used (i.e. an implementation that spans multiple steps).
     We initially add a node for _each_ step, which has as its "implementation" attribute a

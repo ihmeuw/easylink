@@ -1,13 +1,15 @@
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Dict, List, Optional, Union
 
 
 class Rule(ABC):
-    """
-    Abstract class to define interface between Steps and Implementations
-    and 'Rules' in Snakemake syntax that must be written to the Snakefile
+    """Abstract class to define interface between Steps and Implementations.
+
+    This class is responsible for converting the defined interfaces between
+    Steps and Implementations to a Snakemake rule and writing it out to the
+    snakefile to be run.
     """
 
     def write_to_snakefile(self, snakefile_path) -> None:
@@ -16,23 +18,24 @@ class Rule(ABC):
 
     @abstractmethod
     def _build_rule(self) -> str:
-        "What actually gets written to the Snakefile. Must be implemented by subclasses."
+        """Builds the snakemake rule to be written to the Snakefile.
+
+        This is an abstract method and must be implemented by concrete instances.
+        """
         pass
 
 
 @dataclass
 class TargetRule(Rule):
-    """
-    A rule that defines the final output of the pipeline
+    """A rule that defines the final output of the pipeline.
+
     Snakemake will determine the DAG based on this target.
-
-    Parameters:
-    target_files: List of file paths
-    validation: name of file created by InputValidationRule
     """
 
-    target_files: List[str]
+    target_files: list[str]
+    """List of file paths."""
     validation: str
+    """Name of file created by InputValidationRule."""
     requires_spark: bool
 
     def _build_rule(self) -> str:
@@ -61,35 +64,32 @@ rule all:
 
 @dataclass
 class ImplementedRule(Rule):
-    """
-    A rule that defines the execution of an implementation
-
-    Parameters:
-    name: Name to give rule
-    step_name: Name of step
-    implementation_name: Name of implementation
-    execution_input: List of file paths required by implementation
-    validation: name of file created by InputValidationRule to check for compatible input
-    output: List of file paths created by implementation
-    resources: Computational resources used by executor (e.g. SLURM)
-    envvars: Dictionary of environment variables to set
-    diagnostics_dir: Directory for diagnostic files
-    image_path: Path to Singularity image
-    script_cmd: Command to execute
-    """
+    """A rule that defines the execution of an implementation"""
 
     name: str
+    """Name to give the rule."""
     step_name: str
+    """Name of the step."""
     implementation_name: str
-    input_slots: Dict[str, Dict[str, Union[str, list[str]]]]
-    validations: List[str]
-    output: List[str]
-    resources: Optional[dict]
+    """Name of the implementation."""
+    input_slots: dict[str, dict[str, str | list[str]]]
+    """List of file paths required by implementation."""
+    validations: list[str]
+    """Names of files created by InputValidationRule to check for compatible input."""
+    output: list[str]
+    """List of file paths created by implementation."""
+    resources: dict | None
+    """Computational resources used by executor (e.g. SLURM)."""
     envvars: dict
+    """ Dictionary of environment variables to set."""
     diagnostics_dir: str
+    """Directory for diagnostic files."""
     image_path: str
+    """Path to Singularity image."""
     script_cmd: str
+    """Command to execute"""
     requires_spark: bool
+    """Whether this implementation requires a Spark environment."""
 
     def _build_rule(self) -> str:
         return self._build_io() + self._build_resources() + self._build_shell_command()
@@ -159,22 +159,18 @@ rule:
 
 @dataclass
 class InputValidationRule(Rule):
-    """
-    A rule that validates input files against validator for
-    an implementation or the final output
-
-    Parameters:
-    name: Name
-    input: List of file paths to validate
-    output: file path to touch on successful validation. Must be used as an input for next rule.
-    validator: Callable that takes a file path as input. Raises an error if invalid.
-    """
+    """A rule that validates input files against validator for an implementation or the final output"""
 
     name: str
+    """Name of the rule."""
     slot_name: str
-    input: List[str]
+    """Name of the input slot."""
+    input: list[str]
+    """List of file paths to validate."""
     output: str
+    """File path to touch on successful validation. It must be used as an input for next rule."""
     validator: Callable
+    """Callable that takes a file path as input. Raises an error if invalid."""
 
     def _build_rule(self) -> str:
         return f"""
