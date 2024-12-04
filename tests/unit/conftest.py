@@ -51,9 +51,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -85,9 +88,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -119,9 +125,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -139,9 +148,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -161,9 +173,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -183,9 +198,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -203,9 +221,12 @@ PIPELINE_CONFIG_DICT = {
         "step_3": {
             "iterate": [],
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -223,18 +244,19 @@ PIPELINE_CONFIG_DICT = {
         "step_3": {
             "iterate": {"implementation": "step_3_python_pandas"},
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
     "missing_substep_keys": {
-        "step_4": {
-            "substeps": {
-                "step_4a": {
-                    "implementation": {},
-                },
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
             },
         },
         "step_2": {
@@ -247,9 +269,14 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_1": {
-            "implementation": {
-                "name": "step_1_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "substeps": {
+                    "step_4a": {
+                        "implementation": {},
+                    },
+                },
             },
         },
     },
@@ -274,9 +301,12 @@ PIPELINE_CONFIG_DICT = {
                 "name": "step_3_python_pandas",
             },
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_1_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
@@ -294,12 +324,17 @@ PIPELINE_CONFIG_DICT = {
         "step_3": {
             "combined_implementation_key": "foo",
         },
-        "step_4": {
-            "implementation": {
-                "name": "step_4_python_pandas",
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
             },
         },
     },
+    # todo choice step validation
+    # missing "type" key, "type" does not match the actual thing, "type" key something other than simple or complex
 }
 
 INPUT_DATA_FORMAT_DICT = {
@@ -323,8 +358,11 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
             "step_3": {
                 "combined_implementation_key": "step_3_4",
             },
-            "step_4": {
-                "combined_implementation_key": "step_3_4",
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "combined_implementation_key": "step_3_4",
+                },
             },
         },
         "combined_implementations": {
@@ -357,8 +395,11 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
                     },
                 ]
             },
-            "step_4": {
-                "combined_implementation_key": "step_3_4",
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "combined_implementation_key": "step_3_4",
+                },
             },
         },
         "combined_implementations": {
@@ -391,8 +432,11 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
                     },
                 ]
             },
-            "step_4": {
-                "combined_implementation_key": "step_3_4",
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "combined_implementation_key": "step_3_4",
+                },
             },
         },
         "combined_implementations": {
@@ -427,10 +471,13 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
                     "name": "step_3_python_pandas",
                 }
             },
-            "step_4": {
-                "implementation": {
-                    "name": "step_4_python_pandas",
-                }
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "implementation": {
+                        "name": "step_4_python_pandas",
+                    },
+                },
             },
         },
         "combined_implementations": {
@@ -452,8 +499,11 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
             "step_3": {
                 "combined_implementation_key": "step_3_4",
             },
-            "step_4": {
-                "combined_implementation_key": "step_3_4",
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "combined_implementation_key": "step_3_4",
+                },
             },
         },
         "combined_implementations": {
@@ -479,8 +529,11 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
                     "name": "step_3_python_pandas",
                 },
             },
-            "step_4": {
-                "combined_implementation_key": "step_3_4",
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "combined_implementation_key": "step_3_4",
+                },
             },
         },
         "combined_implementations": {

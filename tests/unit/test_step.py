@@ -1,3 +1,13 @@
+"""Unit tests for the various Step classes.
+
+Notes
+-----
+These unit tests often instantiate a Step object using parameters that would not
+actually pass validation in a real-world scenario (i.e. they do not conform to the pipeline
+schema). This is intentional because it's easier to flex complexity and edge cases here
+rather than try to get full coverage in the e2e tests.
+"""
+
 from typing import Any
 
 import pytest
@@ -12,7 +22,14 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.pipeline_schema_constants.development import NODES
-from easylink.step import HierarchicalStep, IOStep, LoopStep, ParallelStep, Step
+from easylink.step import (
+    ChoiceStep,
+    HierarchicalStep,
+    IOStep,
+    LoopStep,
+    ParallelStep,
+    Step,
+)
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 STEP_KEYS = {step.name: step for step in NODES}
@@ -40,7 +57,7 @@ def io_step_params() -> dict[str, Any]:
     }
 
 
-def test_io_step(io_step_params: dict[str, Any]) -> None:
+def test_io_step_slots(io_step_params: dict[str, Any]) -> None:
     step = IOStep(**io_step_params)
     assert step.name == step.step_name == "io"
     assert step.input_slots == {
@@ -74,7 +91,7 @@ def implemented_step_params() -> dict[str, Any]:
     }
 
 
-def test_implemented_step(implemented_step_params: dict[str, Any]) -> None:
+def test_implemented_step_slots(implemented_step_params: dict[str, Any]) -> None:
     step = Step(**implemented_step_params)
     assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
@@ -145,7 +162,7 @@ def hierarchical_step_params() -> dict[str, Any]:
     }
 
 
-def test_hierarchical_step(hierarchical_step_params: dict[str, Any]) -> None:
+def test_hierarchical_step_slots(hierarchical_step_params: dict[str, Any]) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
     assert step.name == "step_4"
     assert step.input_slots == {
@@ -313,7 +330,7 @@ def loop_step_params() -> dict[str, Any]:
     }
 
 
-def test_loop_step(loop_step_params: dict[str, Any]) -> None:
+def test_loop_step_slots(loop_step_params: dict[str, Any]) -> None:
     step = LoopStep(**loop_step_params)
     assert step.name == step.step_name == "step_3"
     assert isinstance(step, LoopStep)
@@ -487,7 +504,7 @@ def parallel_step_params() -> dict[str, Any]:
     }
 
 
-def test_parallel_step(parallel_step_params: dict[str, Any]) -> None:
+def test_parallel_step_slots(parallel_step_params: dict[str, Any]) -> None:
     step = ParallelStep(**parallel_step_params)
     assert step.name == "step_1"
     assert step.input_slots == {
@@ -613,3 +630,224 @@ def test_parallel_step_get_implementation_graph(
     assert len(subgraph.edges) == len(expected_edges)
     for edge in expected_edges:
         assert edge in subgraph.edges(data=True)
+
+
+@pytest.fixture
+def choice_step_params() -> dict[str, Any]:
+    return {
+        "step_name": "choice_section",
+        "input_slots": [
+            InputSlot(
+                name="choice_section_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            ),
+            InputSlot(
+                name="choice_section_secondary_input",
+                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            ),
+        ],
+        "output_slots": [OutputSlot("choice_section_main_output")],
+        "choices": {
+            "simple": {
+                "nodes": [
+                    HierarchicalStep(
+                        step_name="step_4",
+                        input_slots=[
+                            InputSlot(
+                                name="step_4_main_input",
+                                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                validator=validate_input_file_dummy,
+                            ),
+                            InputSlot(
+                                name="step_4_secondary_input",
+                                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                                validator=validate_input_file_dummy,
+                            ),
+                        ],
+                        output_slots=[OutputSlot("step_4_main_output")],
+                        nodes=[
+                            Step(
+                                step_name="step_4a",
+                                input_slots=[
+                                    InputSlot(
+                                        name="step_4a_main_input",
+                                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                        validator=validate_input_file_dummy,
+                                    ),
+                                    InputSlot(
+                                        name="step_4a_secondary_input",
+                                        env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                                        validator=validate_input_file_dummy,
+                                    ),
+                                ],
+                                output_slots=[OutputSlot("step_4a_main_output")],
+                            ),
+                            Step(
+                                step_name="step_4b",
+                                input_slots=[
+                                    InputSlot(
+                                        name="step_4b_main_input",
+                                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                        validator=validate_input_file_dummy,
+                                    ),
+                                    InputSlot(
+                                        name="step_4b_secondary_input",
+                                        env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                                        validator=validate_input_file_dummy,
+                                    ),
+                                ],
+                                output_slots=[OutputSlot("step_4b_main_output")],
+                            ),
+                        ],
+                        edges=[
+                            EdgeParams(
+                                source_node="step_4a",
+                                target_node="step_4b",
+                                output_slot="step_4a_main_output",
+                                input_slot="step_4b_main_input",
+                            ),
+                        ],
+                        input_slot_mappings=[
+                            InputSlotMapping(
+                                parent_slot="step_4_main_input",
+                                child_node="step_4a",
+                                child_slot="step_4a_main_input",
+                            ),
+                            InputSlotMapping(
+                                parent_slot="step_4_secondary_input",
+                                child_node="step_4a",
+                                child_slot="step_4a_secondary_input",
+                            ),
+                            InputSlotMapping(
+                                parent_slot="step_4_secondary_input",
+                                child_node="step_4b",
+                                child_slot="step_4b_secondary_input",
+                            ),
+                        ],
+                        output_slot_mappings=[
+                            OutputSlotMapping(
+                                parent_slot="step_4_main_output",
+                                child_node="step_4b",
+                                child_slot="step_4b_main_output",
+                            ),
+                        ],
+                    ),
+                ],
+                "edges": [],
+                "input_slot_mappings": [
+                    InputSlotMapping(
+                        parent_slot="choice_section_main_input",
+                        child_node="step_4",
+                        child_slot="step_4_main_input",
+                    ),
+                    InputSlotMapping(
+                        parent_slot="choice_section_secondary_input",
+                        child_node="step_4",
+                        child_slot="step_4_secondary_input",
+                    ),
+                ],
+                "output_slot_mappings": [
+                    OutputSlotMapping(
+                        parent_slot="choice_section_main_output",
+                        child_node="step_4",
+                        child_slot="step_4_main_output",
+                    ),
+                ],
+            },
+            # "complex": {},  # tbd
+        },
+    }
+
+
+def test_choice_step_slots(choice_step_params: dict[str, Any]) -> None:
+    step = ChoiceStep(**choice_step_params)
+    assert step.name == "choice_section"
+    assert step.input_slots == {
+        "choice_section_main_input": InputSlot(
+            "choice_section_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+        "choice_section_secondary_input": InputSlot(
+            "choice_section_secondary_input",
+            "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
+    }
+    assert step.output_slots == {
+        "choice_section_main_output": OutputSlot("choice_section_main_output")
+    }
+
+
+def test_simple_choice_step_get_implementation_graph(
+    choice_step_params: dict[str, Any]
+) -> None:
+    step = ChoiceStep(**choice_step_params)
+
+    # Test get_implementation_graph for single step (no substeps)
+    pipeline_dict = {
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
+            },
+        },
+    }
+    pipeline_params = LayeredConfigTree(pipeline_dict)
+    step.set_configuration_state(pipeline_params, {}, {})
+    subgraph = step.get_implementation_graph()
+    assert list(subgraph.nodes) == ["step_4_python_pandas"]
+    assert list(subgraph.edges) == []
+
+    # Test get_implementation_graph for a step with substeps
+    pipeline_dict = {
+        "choice_section": {
+            "type": "simple",
+            "step_4": {
+                "substeps": {
+                    "step_4a": {
+                        "implementation": {
+                            "name": "step_4a_python_pandas",
+                        },
+                    },
+                    "step_4b": {
+                        "implementation": {
+                            "name": "step_4b_python_r",
+                        },
+                    },
+                },
+            },
+        },
+    }
+    pipeline_params = LayeredConfigTree(pipeline_dict)
+    step.set_configuration_state(pipeline_params, {}, {})
+    subgraph = step.get_implementation_graph()
+    assert list(subgraph.nodes) == [
+        "step_4a_python_pandas",
+        "step_4b_python_r",
+    ]
+    expected_edges = [
+        (
+            "step_4a_python_pandas",
+            "step_4b_python_r",
+            {
+                "input_slot": InputSlot(
+                    "step_4b_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_4a_main_output"),
+                "filepaths": None,
+            },
+        ),
+    ]
+    assert len(subgraph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in subgraph.edges(data=True)
+
+
+# TODO: Implement test_complex_choice_step

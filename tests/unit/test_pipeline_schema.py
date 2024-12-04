@@ -20,7 +20,7 @@ def test_schema_instantiation() -> None:
         "step_1",
         "step_2",
         "step_3",
-        "step_4",
+        "choice_section",
         "results",
     ]
     step_types = [node["step"] for node in sorted_graph]

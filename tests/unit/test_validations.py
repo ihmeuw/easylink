@@ -102,9 +102,9 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
+                        "step choice_section": ["The step is not configured."],
                         "step step_1": ["The step is not configured."],
                         "step step_3": ["The step is not configured."],
-                        "step step_4": ["The step is not configured."],
                     },
                 },
             },
