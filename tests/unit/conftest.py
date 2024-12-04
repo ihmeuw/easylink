@@ -274,8 +274,9 @@ PIPELINE_CONFIG_DICT = {
             "step_4": {
                 "substeps": {
                     "step_4a": {
-                        "implementation": {},
+                        "implementation": {},  # missing name key
                     },
+                    # missing step_4b
                 },
             },
         },

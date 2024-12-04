@@ -762,7 +762,32 @@ class ChoiceStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
-        pass  # TODO
+        """Validates the ChoiceStep.
+
+        Notes
+        -----
+        We update the step graph and slot mappings here in validation as opposed to
+        in set_configuration_state (as is done in TemplatedSteps) because ChoiceStep
+        validation happens prior to set_configuration_state and actually requires
+        the step graph and mappings.
+        """
+        # ChoiceStep-specific errors
+        # choice_errors = ...
+
+        # if choice_errors:
+        #     return choice_errors
+
+        subgraph = self.choices[step_config["type"]]
+        self.step_graph = self._update_step_graph(subgraph)
+        self.slot_mappings = self._update_slot_mappings(subgraph)
+        chosen_step_config = LayeredConfigTree(
+            {key: value for key, value in step_config.items() if key != "type"}
+        )
+
+        # A ChoiceStep is by definition non-leaf step
+        return self.validate_nonleaf(
+            chosen_step_config, combined_implementations, input_data_config
+        )
 
     def set_configuration_state(
         self,
@@ -770,9 +795,14 @@ class ChoiceStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        subgraph = self.choices[parent_config[self.name]["type"]]
-        self.step_graph = self._update_step_graph(subgraph)
-        self.slot_mappings = self._update_slot_mappings(subgraph)
+        """Sets the configuration state for a ChoiceStep.
+
+        Notes
+        -----
+        We update the step graph and slot mappings validate_step as opposed to here
+        (as is done in TemplatedSteps) because ChoiceStep validation happens prior
+        this but actually requires the step graph and mappings.
+        """
 
         chosen_parent_config = LayeredConfigTree(
             {key: value for key, value in parent_config[self.name].items() if key != "type"}

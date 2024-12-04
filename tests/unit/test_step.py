@@ -798,6 +798,8 @@ def test_simple_choice_step_get_implementation_graph(
         },
     }
     pipeline_params = LayeredConfigTree(pipeline_dict)
+    # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
+    step.validate_step(pipeline_dict["choice_section"], {}, {})
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
