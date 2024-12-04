@@ -18,6 +18,7 @@ class PipelineSchema(HierarchicalStep):
 
     def __init__(self, name: str, nodes: Iterable[Step], edges: Iterable[EdgeParams]) -> None:
         super().__init__(name, nodes=nodes, edges=edges)
+        self.allowable_schema_params = ALLOWED_SCHEMA_PARAMS[name]
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"

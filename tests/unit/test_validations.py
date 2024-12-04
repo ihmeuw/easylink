@@ -70,7 +70,6 @@ def test_batch_validation():
 @pytest.mark.parametrize(
     "pipeline, expected_msg",
     [
-        # missing 'implementation' key
         (
             "missing_implementations",
             {
@@ -83,7 +82,6 @@ def test_batch_validation():
                 },
             },
         ),
-        # missing implementation 'name' key
         (
             "missing_implementation_name",
             {
@@ -96,7 +94,6 @@ def test_batch_validation():
                 },
             },
         ),
-        # missing a step
         (
             "missing_step",
             {
@@ -132,7 +129,7 @@ def test_batch_validation():
             },
         ),
         (
-            "missing_substep_keys",
+            "missing_substeps",
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
@@ -167,6 +164,40 @@ def test_batch_validation():
                     "development": {
                         "step step_3": [
                             "The step refers to a combined implementation but 'foo' is not a valid combined implementation."
+                        ]
+                    }
+                }
+            },
+        ),
+        (
+            "missing_type_key",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step choice_section": ["The step requires a 'type' key."]
+                    }
+                }
+            },
+        ),
+        (
+            "bad_type_key",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step choice_section": [
+                            "'foo' is not a supported 'type'. Valid choices are: \['simple'\]."
+                        ]
+                    }
+                }
+            },
+        ),
+        (
+            "type_config_mismatch",
+            {
+                PIPELINE_ERRORS_KEY: {
+                    "development": {
+                        "step choice_section": [
+                            "Invalid configuration for 'simple' type. Valid steps are \['step_4'\]."
                         ]
                     }
                 }

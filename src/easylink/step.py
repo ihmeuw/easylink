@@ -770,19 +770,37 @@ class ChoiceStep(Step):
         in set_configuration_state (as is done in TemplatedSteps) because ChoiceStep
         validation happens prior to set_configuration_state and actually requires
         the step graph and mappings.
+
+        We do not attempt to validate the subgraph here if the 'type' key is unable
+        to be validated.
         """
-        # ChoiceStep-specific errors
-        # choice_errors = ...
 
-        # if choice_errors:
-        #     return choice_errors
-
-        subgraph = self.choices[step_config["type"]]
-        self.step_graph = self._update_step_graph(subgraph)
-        self.slot_mappings = self._update_slot_mappings(subgraph)
+        chosen_type = step_config.get("type")
+        # Handle problems with the 'type' key
+        if not chosen_type:
+            return {f"step {self.name}": ["The step requires a 'type' key."]}
+        if chosen_type not in self.choices:
+            return {
+                f"step {self.name}": [
+                    f"'{step_config['type']}' is not a supported 'type'. Valid choices are: {list(self.choices)}."
+                ]
+            }
+        # Handle type-subgraph inconsistencies
+        subgraph = self.choices[chosen_type]
         chosen_step_config = LayeredConfigTree(
             {key: value for key, value in step_config.items() if key != "type"}
         )
+        allowable_steps = [node.name for node in subgraph["nodes"]]
+        if set(allowable_steps) != set(chosen_step_config):
+            return {
+                f"step {self.name}": [
+                    f"Invalid configuration for '{chosen_type}' type. Valid steps are {allowable_steps}."
+                ]
+            }
+
+        # Handle the actual chosen step_config
+        self.step_graph = self._update_step_graph(subgraph)
+        self.slot_mappings = self._update_slot_mappings(subgraph)
 
         # A ChoiceStep is by definition non-leaf step
         return self.validate_nonleaf(

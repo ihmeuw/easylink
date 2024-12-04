@@ -253,7 +253,7 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
-    "missing_substep_keys": {
+    "missing_substeps": {
         "step_1": {
             "implementation": {
                 "name": "step_1_python_pandas",
@@ -334,8 +334,86 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
-    # todo choice step validation
-    # missing "type" key, "type" does not match the actual thing, "type" key something other than simple or complex
+    "missing_type_key": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "choice_section": {
+            # missing 'type' key
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
+            },
+        },
+    },
+    "bad_type_key": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "choice_section": {
+            "type": "foo",  # Not a supported 'type'
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
+                },
+            },
+        },
+    },
+    "type_config_mismatch": {
+        "step_1": {
+            "implementation": {
+                "name": "step_1_python_pandas",
+            },
+        },
+        "step_2": {
+            "implementation": {
+                "name": "step_2_python_pandas",
+            },
+        },
+        "step_3": {
+            "implementation": {
+                "name": "step_3_python_pandas",
+            },
+        },
+        "choice_section": {
+            "type": "simple",
+            "step_5": {
+                "implementation": {
+                    "name": "step_5_python_pandas",
+                },
+            },
+            "step_6": {
+                "implementation": {
+                    "name": "step_6_python_pandas",
+                },
+            },
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {
