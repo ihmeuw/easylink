@@ -185,7 +185,7 @@ def test_batch_validation():
                 PIPELINE_ERRORS_KEY: {
                     "development": {
                         "step choice_section": [
-                            "'foo' is not a supported 'type'. Valid choices are: \['simple'\]."
+                            "'foo' is not a supported 'type'. Valid choices are: \['simple', 'complex'\]."
                         ]
                     }
                 }

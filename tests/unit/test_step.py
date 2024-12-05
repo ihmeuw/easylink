@@ -5,7 +5,8 @@ Notes
 These unit tests often instantiate a Step object using parameters that would not
 actually pass validation in a real-world scenario (i.e. they do not conform to the pipeline
 schema). This is intentional because it's easier to flex complexity and edge cases here
-rather than try to get full coverage in the e2e tests.
+rather than try to get full coverage in the e2e tests. It also allows us to test for
+future pipeline schema expansion/flexibility in a relative simple manner now.
 """
 
 from typing import Any
@@ -35,10 +36,25 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 STEP_KEYS = {step.name: step for step in NODES}
 
 
+@pytest.fixture
+def basic_step_params() -> dict[str, Any]:
+    return {
+        "step_name": "step_1",
+        "input_slots": [
+            InputSlot(
+                "step_1_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            )
+        ],
+        "output_slots": [OutputSlot("step_1_main_output")],
+    }
+
+
 def test_implementation_node_name(
-    implemented_step_params: dict[str, Any], default_config: Config
+    basic_step_params: dict[str, Any], default_config: Config
 ) -> None:
-    step = Step(**implemented_step_params)
+    step = Step(**basic_step_params)
     step.set_configuration_state(default_config["pipeline"]["steps"], {}, {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
@@ -76,23 +92,8 @@ def test_io_get_implementation_graph(
     assert list(subgraph.edges) == []
 
 
-@pytest.fixture
-def implemented_step_params() -> dict[str, Any]:
-    return {
-        "step_name": "step_1",
-        "input_slots": [
-            InputSlot(
-                "step_1_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-            )
-        ],
-        "output_slots": [OutputSlot("step_1_main_output")],
-    }
-
-
-def test_implemented_step_slots(implemented_step_params: dict[str, Any]) -> None:
-    step = Step(**implemented_step_params)
+def test_basic_step_slots(basic_step_params: dict[str, Any]) -> None:
+    step = Step(**basic_step_params)
     assert step.name == step.step_name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
@@ -104,10 +105,10 @@ def test_implemented_step_slots(implemented_step_params: dict[str, Any]) -> None
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
 
-def test_implemented_step_get_implementation_graph(
-    implemented_step_params: dict[str, Any], default_config: Config
+def test_basic_step_get_implementation_graph(
+    basic_step_params: dict[str, Any], default_config: Config
 ) -> None:
-    step = Step(**implemented_step_params)
+    step = Step(**basic_step_params)
     step.set_configuration_state(default_config["pipeline"]["steps"], {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
@@ -756,7 +757,65 @@ def choice_step_params() -> dict[str, Any]:
                     ),
                 ],
             },
-            # "complex": {},  # todo
+            "complex": {
+                "nodes": [
+                    Step(
+                        step_name="step_5",
+                        input_slots=[
+                            InputSlot(
+                                name="step_5_main_input",
+                                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                validator=validate_input_file_dummy,
+                            ),
+                        ],
+                        output_slots=[OutputSlot("step_5_main_output")],
+                    ),
+                    # Add a more complicated (unsupported) loop step to ensure flexibility
+                    LoopStep(
+                        template_step=Step(
+                            step_name="step_6",
+                            input_slots=[
+                                InputSlot(
+                                    name="step_6_main_input",
+                                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                    validator=validate_input_file_dummy,
+                                ),
+                            ],
+                            output_slots=[OutputSlot("step_6_main_output")],
+                        ),
+                        self_edges=[
+                            EdgeParams(
+                                source_node="step_6",
+                                target_node="step_6",
+                                output_slot="step_6_main_output",
+                                input_slot="step_6_main_input",
+                            )
+                        ],
+                    ),
+                ],
+                "edges": [
+                    EdgeParams(
+                        source_node="step_5",
+                        target_node="step_6",
+                        output_slot="step_5_main_output",
+                        input_slot="step_6_main_input",
+                    )
+                ],
+                "input_slot_mappings": [
+                    InputSlotMapping(
+                        parent_slot="choice_section_main_input",
+                        child_node="step_5",
+                        child_slot="step_5_main_input",
+                    ),
+                ],
+                "output_slot_mappings": [
+                    OutputSlotMapping(
+                        parent_slot="choice_section_main_output",
+                        child_node="step_6",
+                        child_slot="step_6_main_output",
+                    ),
+                ],
+            },
         },
     }
 
@@ -852,4 +911,77 @@ def test_simple_choice_step_get_implementation_graph(
         assert edge in subgraph.edges(data=True)
 
 
-# TODO: Implement test_complex_choice_step
+def test_complex_choice_step_get_implementation_graph(
+    choice_step_params: dict[str, Any]
+) -> None:
+    step = ChoiceStep(**choice_step_params)
+
+    pipeline_dict = {
+        "choice_section": {
+            "type": "complex",
+            "step_5": {
+                "implementation": {
+                    "name": "step_5_python_pandas",
+                },
+            },
+            "step_6": {
+                "iterate": [
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_6_python_pandas",
+                            }
+                        }
+                    ),
+                    LayeredConfigTree(
+                        {
+                            "implementation": {
+                                "name": "step_6_python_pandas",
+                            }
+                        }
+                    ),
+                ],
+            },
+        },
+    }
+    pipeline_params = LayeredConfigTree(pipeline_dict)
+    # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
+    step.validate_step(pipeline_dict["choice_section"], {}, {})
+    step.set_configuration_state(pipeline_params, {}, {})
+    subgraph = step.get_implementation_graph()
+    assert list(subgraph.nodes) == [
+        "step_5_python_pandas",
+        "step_6_loop_1_step_6_python_pandas",
+        "step_6_loop_2_step_6_python_pandas",
+    ]
+    expected_edges = [
+        (
+            "step_5_python_pandas",
+            "step_6_loop_1_step_6_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_6_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_5_main_output"),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_6_loop_1_step_6_python_pandas",
+            "step_6_loop_2_step_6_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_6_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_6_main_output"),
+                "filepaths": None,
+            },
+        ),
+    ]
+    assert len(subgraph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in subgraph.edges(data=True)

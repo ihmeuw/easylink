@@ -29,6 +29,24 @@ step_4_python_pandas:
     INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
     step_4_main_output: result.parquet
+step_5_python_pandas:
+  steps: 
+    - step_5
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+  outputs:
+    step_5_main_output: result.parquet
+step_6_python_pandas:
+  steps: 
+    - step_6
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+  outputs:
+    step_6_main_output: result.parquet
 step_4a_python_pandas:
   steps: 
     - step_4a
