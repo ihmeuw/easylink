@@ -38,9 +38,11 @@ RESULT_CHECKSUM = "d56f3d12c0c9ca89b6ce0f42810bb79cd16772535f73807722e5430819b6b
     ],
 )
 def test_easylink_run(pipeline_specification, input_data, computing_environment, capsys):
-    """e2e tests for 'easylink run' command
+    """Tests the 'easylink run' command
 
-    NOTE: We use various print statements in this test because they show up in the
+    Notes
+    -----
+    We use various print statements in this test because they show up in the
     Jenkins logs.
     """
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
