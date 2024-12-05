@@ -818,7 +818,7 @@ def test_simple_choice_step_get_implementation_graph(
                     },
                     "step_4b": {
                         "implementation": {
-                            "name": "step_4b_python_r",
+                            "name": "step_4b_r",
                         },
                     },
                 },
@@ -830,12 +830,12 @@ def test_simple_choice_step_get_implementation_graph(
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_4a_python_pandas",
-        "step_4b_python_r",
+        "step_4b_r",
     ]
     expected_edges = [
         (
             "step_4a_python_pandas",
-            "step_4b_python_r",
+            "step_4b_r",
             {
                 "input_slot": InputSlot(
                     "step_4b_main_input",
