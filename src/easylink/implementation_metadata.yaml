@@ -167,5 +167,3 @@ step_3_and_step_4_combined_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_4_main_output: result.parquet
-
-# todo add steps 6, 7

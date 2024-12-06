@@ -208,7 +208,7 @@ def test_batch_validation():
 def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):
     config_params = default_config_params
     config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT[pipeline]
-
+    breakpoint()
     with pytest.raises(SystemExit) as e:
         Config(config_params)
 

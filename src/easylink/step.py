@@ -801,8 +801,7 @@ class ChoiceStep(Step):
         # Handle the actual chosen step_config
         self.step_graph = self._update_step_graph(subgraph)
         self.slot_mappings = self._update_slot_mappings(subgraph)
-
-        # A ChoiceStep is by definition non-leaf step
+        # NOTE: A ChoiceStep is by definition non-leaf step
         return self.validate_nonleaf(
             chosen_step_config, combined_implementations, input_data_config
         )
