@@ -21,6 +21,7 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 def test_slurm(mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
     """Test that the pipeline runs on SLURM with appropriate resources."""
     nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
+    mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
     mocker.patch(
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("integration", nodes=nodes, edges=edges),

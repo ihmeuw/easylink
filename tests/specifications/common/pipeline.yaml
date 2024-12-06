@@ -8,6 +8,8 @@ steps:
   step_3:
     implementation:
       name: step_3_python_pandas
-  step_4:
-    implementation:
-      name: step_4_python_pandas
+  choice_section:
+    type: simple
+    step_4:
+      implementation:
+        name: step_4_python_pandas
