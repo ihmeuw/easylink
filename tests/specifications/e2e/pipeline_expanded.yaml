@@ -19,11 +19,13 @@ steps:
           name: step_3_python_pandas
       - implementation:
           name: step_3_python_pandas
-  step_4:
-    substeps:
-      step_4a:
-        implementation:
-          name: step_4a_python_pandas
-      step_4b:
-        implementation:
-          name: step_4b_python_pandas
+  choice_section:
+    type: simple
+    step_4:
+      substeps:
+        step_4a:
+          implementation:
+            name: step_4a_python_pandas
+        step_4b:
+          implementation:
+            name: step_4b_python_pandas

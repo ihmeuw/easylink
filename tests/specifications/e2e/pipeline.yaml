@@ -12,8 +12,10 @@ steps:
       name: step_3_python_pandas
       configuration:
         DUMMY_CONTAINER_INCREMENT: 702
-  step_4:
-    implementation:
-      name: step_4_r
-      configuration:
-        DUMMY_CONTAINER_INCREMENT: 912
+  choice_section:
+    type: simple
+    step_4:
+      implementation:
+        name: step_4_r
+        configuration:
+          DUMMY_CONTAINER_INCREMENT: 912

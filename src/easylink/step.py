@@ -4,6 +4,7 @@ import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
+from typing import Any
 
 from layered_config_tree import LayeredConfigTree
 
@@ -243,6 +244,7 @@ class Step:
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
     ) -> None:
         self.step_name = step_name
+        # TODO: try removing name as an arg and just set self.name = self.step_name
         self.name = name if name else step_name
         self.input_slots = {slot.name: slot for slot in input_slots}
         self.output_slots = {slot.name: slot for slot in output_slots}
@@ -483,7 +485,7 @@ class IOStep(Step):
 class InputStep(IOStep):
     def __init__(
         self,
-        output_slots: Iterable[InputSlot] = (OutputSlot("all"),),
+        output_slots: Iterable[OutputSlot] = (OutputSlot("all"),),
     ) -> None:
         super().__init__(step_name="input_data", output_slots=output_slots)
 
@@ -610,7 +612,10 @@ class TemplatedStep(Step):
         return step_config
 
     def set_configuration_state(
-        self, parent_config, combined_implementations, input_data_config
+        self,
+        parent_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
     ):
         num_repeats = len(self.get_state_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
@@ -705,7 +710,7 @@ class ParallelStep(TemplatedStep):
     def node_prefix(self):
         return "parallel_split"
 
-    def _update_step_graph(self, num_repeats) -> StepGraph:
+    def _update_step_graph(self, num_repeats: int) -> StepGraph:
         """Makes N copies of the template step that are independent and contain the same edges as the current step"""
         graph = StepGraph()
 
@@ -717,7 +722,7 @@ class ParallelStep(TemplatedStep):
             graph.add_node_from_step(updated_step)
         return graph
 
-    def _update_slot_mappings(self, num_repeats) -> dict[str, list[SlotMapping]]:
+    def _update_slot_mappings(self, num_repeats: int) -> dict[str, list[SlotMapping]]:
         """Gets the appropriate slot mappings based on the number of parallel copies and the existing input and output slots."""
         input_mappings = [
             InputSlotMapping(slot, f"{self.name}_{self.node_prefix}_{n+1}", slot)
@@ -729,4 +734,115 @@ class ParallelStep(TemplatedStep):
             for n in range(num_repeats)
             for slot in self.output_slots
         ]
+        return {"input": input_mappings, "output": output_mappings}
+
+
+class ChoiceStep(Step):
+    """A ChoiceStep allows a user to select a single path from a set of possible paths."""
+
+    def __init__(
+        self,
+        step_name: str,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+        choices: dict[
+            str, dict[str, list[Step | EdgeParams | InputSlotMapping | OutputSlotMapping]]
+        ],
+    ) -> None:
+        super().__init__(
+            step_name,
+            input_slots=input_slots,
+            output_slots=output_slots,
+        )
+        self.choices = choices
+
+    def validate_step(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
+        """Validates the ChoiceStep.
+
+        Notes
+        -----
+        We update the step graph and slot mappings here in validation as opposed to
+        in set_configuration_state (as is done in TemplatedSteps) because ChoiceStep
+        validation happens prior to set_configuration_state and actually requires
+        the step graph and mappings.
+
+        We do not attempt to validate the subgraph here if the 'type' key is unable
+        to be validated.
+        """
+
+        chosen_type = step_config.get("type")
+        # Handle problems with the 'type' key
+        if not chosen_type:
+            return {f"step {self.name}": ["The step requires a 'type' key."]}
+        if chosen_type not in self.choices:
+            return {
+                f"step {self.name}": [
+                    f"'{step_config['type']}' is not a supported 'type'. Valid choices are: {list(self.choices)}."
+                ]
+            }
+        # Handle type-subgraph inconsistencies
+        subgraph = self.choices[chosen_type]
+        chosen_step_config = LayeredConfigTree(
+            {key: value for key, value in step_config.items() if key != "type"}
+        )
+        allowable_steps = [node.name for node in subgraph["nodes"]]
+        if set(allowable_steps) != set(chosen_step_config):
+            return {
+                f"step {self.name}": [
+                    f"Invalid configuration for '{chosen_type}' type. Valid steps are {allowable_steps}."
+                ]
+            }
+
+        # Handle the actual chosen step_config
+        self.step_graph = self._update_step_graph(subgraph)
+        self.slot_mappings = self._update_slot_mappings(subgraph)
+        # NOTE: A ChoiceStep is by definition non-leaf step
+        return self.validate_nonleaf(
+            chosen_step_config, combined_implementations, input_data_config
+        )
+
+    def set_configuration_state(
+        self,
+        parent_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ):
+        """Sets the configuration state for a ChoiceStep.
+
+        Notes
+        -----
+        We update the step graph and slot mappings validate_step as opposed to here
+        (as is done in TemplatedSteps) because ChoiceStep validation happens prior
+        this but actually requires the step graph and mappings.
+        """
+
+        chosen_parent_config = LayeredConfigTree(
+            {key: value for key, value in parent_config[self.name].items() if key != "type"}
+        )
+        # ChoiceSteps by definition cannot be in a LeafConfigurationState.
+        self._configuration_state = NonLeafConfigurationState(
+            self, chosen_parent_config, combined_implementations, input_data_config
+        )
+
+    @staticmethod
+    def _update_step_graph(subgraph: dict[str, Any]):
+        nodes = subgraph["nodes"]
+        edges = subgraph["edges"]
+
+        graph = StepGraph()
+        for node in nodes:
+            graph.add_node_from_step(node)
+        for edge in edges:
+            graph.add_edge_from_params(edge)
+        return graph
+
+    @staticmethod
+    def _update_slot_mappings(subgraph: dict[str, Any]) -> dict[str, list[SlotMapping]]:
+        input_mappings = subgraph["input_slot_mappings"]
+        output_mappings = subgraph["output_slot_mappings"]
         return {"input": input_mappings, "output": output_mappings}

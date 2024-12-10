@@ -21,6 +21,7 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
 def test_spark_slurm(mocker, caplog):
     """Test that the pipeline runs spark on SLURM with appropriate resources."""
     nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
+    mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
     mocker.patch(
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("integration", nodes=nodes, edges=edges),

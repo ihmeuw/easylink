@@ -39,10 +39,11 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
     ],
 )
 def test_step_types(pipeline_specification, implementations, capsys):
-    """e2e Tests for various permutations of complex step types. The goal is to test
-    that EasyLink generates the correct output implementations depending on the configuration.
-    That is, if we have a substeps key in the config, we get an implementation for each, but if we don't,
-    we get just one.
+    """Tests against various permutations of complex step types.
+
+    The goal is to test that EasyLink generates the correct output implementations
+    depending on the configuration; i.e. if we have a 'substeps' key in the config,
+    we get an implementation for each (or else we get a single implementation).
     """
     # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
     # because other nodes do not have access to it. Also, do not use a context manager
