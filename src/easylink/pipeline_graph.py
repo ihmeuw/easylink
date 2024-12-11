@@ -318,6 +318,9 @@ class PipelineGraph(ImplementationGraph):
         is topologically consistent with the list of steps intended to be implemented.
         """
         subgraph = ImplementationGraph(self).subgraph(nodes)
+        # NOTE: The subgraph is not necessarily able to be topologically sorted
+        # in a reproducible way. We instead rely on node name sorting for
+        # error messages.
 
         # Relabel nodes by schema step
         mapping = {
@@ -326,7 +329,7 @@ class PipelineGraph(ImplementationGraph):
         }
         if not set(mapping.values()) == set(metadata_steps):
             raise ValueError(
-                f"Pipeline configuration nodes {list(mapping.values())} do not match metadata steps {metadata_steps}."
+                f"Pipeline configuration nodes {sorted(mapping.values())} do not match metadata steps {metadata_steps}."
             )
         subgraph = nx.relabel_nodes(subgraph, mapping)
         # Check for topological inconsistency, i.e. if there is a path from a later node to an earlier node.

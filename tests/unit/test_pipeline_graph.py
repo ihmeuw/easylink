@@ -602,6 +602,11 @@ def test_merge_combined_implementations_parallel(default_config_params, test_dir
             "Pipeline configuration nodes ['step_1a', 'step_1b'] are not topologically consistent with the intended implementations for ['step_1a', 'step_1b']:\nThere is a path from successor step_1b to predecessor step_1a.",
             True,
         ),
+        (
+            "combined_bad_implementation_names",
+            "Pipeline configuration nodes ['step_2', 'step_4'] do not match metadata steps ['step_3', 'step_4'].",
+            False,
+        ),
     ],
 )
 def test_bad_configuration_raises(

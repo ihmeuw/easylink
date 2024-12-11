@@ -77,7 +77,7 @@ step_4a_python_pandas:
 step_4b_python_pandas:
   steps: 
     - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
@@ -86,7 +86,7 @@ step_4b_python_pandas:
 step_4b_r:
   steps: 
     - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
   script_cmd: Rscript /dummy_step.R
   env:
     INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
