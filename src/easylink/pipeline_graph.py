@@ -312,8 +312,11 @@ class PipelineGraph(ImplementationGraph):
     def validate_implementation_topology(
         self, nodes: list[str], metadata_steps: list[str]
     ) -> None:
-        """Check that the subgraph induced by the nodes implemented by this implementation
-        is topologically consistent with the list of metadata steps."""
+        """Validates implementation topology against intended implementation.
+
+        Check that the subgraph induced by the nodes implemented by this implementation
+        is topologically consistent with the list of steps intended to be implemented.
+        """
         subgraph = ImplementationGraph(self).subgraph(nodes)
 
         # Relabel nodes by schema step
@@ -326,12 +329,14 @@ class PipelineGraph(ImplementationGraph):
                 f"Pipeline configuration nodes {list(mapping.values())} do not match metadata steps {metadata_steps}."
             )
         subgraph = nx.relabel_nodes(subgraph, mapping)
-        # Check for topological inconsistency, i.e. if there
-        # is a path from a later node to an earlier node.
-        for i in range(len(metadata_steps)):
-            for j in range(i + 1, len(metadata_steps)):
-                if nx.has_path(subgraph, metadata_steps[j], metadata_steps[i]):
+        # Check for topological inconsistency, i.e. if there is a path from a later node to an earlier node.
+        for predecessor in range(len(metadata_steps)):
+            for successor in range(predecessor + 1, len(metadata_steps)):
+                if nx.has_path(
+                    subgraph, metadata_steps[successor], metadata_steps[predecessor]
+                ):
                     raise ValueError(
-                        f"Pipeline configuration nodes {set(subgraph.nodes())} are not topologically consistent with metadata steps {set(metadata_steps)}:"
-                        f"There is a path from successor {metadata_steps[j]} to predecessor {metadata_steps[i]}"
+                        f"Pipeline configuration nodes {sorted(subgraph.nodes())} are not topologically consistent with "
+                        f"the intended implementations for {list(metadata_steps)}:\n"
+                        f"There is a path from successor {metadata_steps[successor]} to predecessor {metadata_steps[predecessor]}."
                     )
