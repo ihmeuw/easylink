@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 import pytest
@@ -262,7 +263,7 @@ def test_condense_input_slots() -> None:
         assert slot["filepaths"] == expected_slot["filepaths"]
 
 
-def test_condense_input_slots_duplicate_slots() -> None:
+def test_condense_input_slots_duplicate_slots_raises() -> None:
     input_slots = [
         InputSlot(
             "step_1_main_input",
@@ -283,7 +284,7 @@ def test_condense_input_slots_duplicate_slots() -> None:
         PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
 
 
-def test_condense_input_slots_duplicate_slots() -> None:
+def test_condense_input_slots_duplicate_slots_raises() -> None:
     input_slots = [
         InputSlot(
             "step_1_main_input",
@@ -575,30 +576,28 @@ def test_merge_combined_implementations_parallel(default_config_params, test_dir
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
-def test_cycle_error(default_config_params) -> None:
+@pytest.mark.parametrize(
+    "problem_key, error_msg",
+    [
+        (
+            "with_iteration_cycle",
+            "The MultiDiGraph contains a cycle: [('step_3_4', 'step_3_loop_2_step_3_python_pandas', 0), "
+            "('step_3_loop_2_step_3_python_pandas', 'step_3_4', 0)]",
+        ),
+        (
+            "with_extra_node",
+            "Pipeline configuration nodes ['step_2', 'step_3', 'step_4'] do not match metadata steps ['step_3', 'step_4'].",
+        ),
+        (
+            "with_missing_node",
+            "Pipeline configuration nodes ['step_4'] do not match metadata steps ['step_3', 'step_4'].",
+        ),
+    ],
+)
+def test_bad_configuration_raises(problem_key, error_msg, default_config_params) -> None:
     config_params = default_config_params
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration_cycle"]
-    with pytest.raises(ValueError, match=("The MultiDiGraph contains a cycle:")):
-        PipelineGraph(Config(config_params))
-
-
-def test_combined_extra_step(default_config_params):
-    config_params = default_config_params
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_extra_node"]
-    with pytest.raises(
-        ValueError,
-        match=r"Pipeline configuration nodes \['step_2', 'step_3', 'step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
-    ):
-        PipelineGraph(Config(config_params))
-
-
-def test_combined_missing_node(default_config_params):
-    config_params = default_config_params
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_missing_node"]
-    with pytest.raises(
-        ValueError,
-        match=r"Pipeline configuration nodes \['step_4'\] do not match metadata steps \['step_3', 'step_4'\].",
-    ):
+    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS[problem_key]
+    with pytest.raises(ValueError, match=re.escape(error_msg)):
         PipelineGraph(Config(config_params))
 
 
