@@ -599,7 +599,7 @@ def test_merge_combined_implementations_parallel(default_config_params, test_dir
         ),
         (
             "combined_bad_topology",
-            "Pipeline configuration nodes ['step_1a', 'step_1b'] are not topologically consistent with the intended implementations for ['step_1a', 'step_1b']:\nThere is a path from successor step_1b to predecessor step_1a.",
+            "Pipeline configuration nodes ['step_1b', 'step_1a'] are not topologically consistent with the intended implementations for ['step_1a', 'step_1b']:\nThere is a path from successor step_1b to predecessor step_1a.",
             True,
         ),
         (
@@ -609,7 +609,7 @@ def test_merge_combined_implementations_parallel(default_config_params, test_dir
         ),
     ],
 )
-def test_bad_configuration_raises(
+def test_bad_combined_configuration_raises(
     problem_key, error_msg, use_custom_schema, default_config_params
 ) -> None:
     config_params = default_config_params
