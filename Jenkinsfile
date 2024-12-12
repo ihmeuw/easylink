@@ -11,7 +11,7 @@ def githubUsernameToSlackName(github_author) {
 }
 
 pipeline_name="easylink"
-conda_env_name="${pipeline_name}-${BUILD_NUMBER}"
+conda_env_name="${pipeline_name}-${BRANCH_NAME}-${BUILD_NUMBER}"
 // using /tmp for things is MUCH faster but not shared between nodes.
 shared_filesystem_path="/mnt/team/simulation_science/priv/engineering/tests"
 conda_env_path="${shared_filesystem_path}/venv/${conda_env_name}"

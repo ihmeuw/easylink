@@ -1,3 +1,7 @@
+**0.1.2 - 12/12/24**
+
+ - Add branch name to jenkins conda env
+
 **0.1.1 - 12/10/24**
 
  - Implement pipeline choice sections
