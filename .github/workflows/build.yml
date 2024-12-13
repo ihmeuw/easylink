@@ -1,6 +1,11 @@
 # -----------------------------------------------------------------------------
 #   - invoked on push, pull_request, or manual trigger
-#   - test under at least 3 versions of python
+#   - tests under multiple versions of python
+#   - only quick tests are run here
+#
+#   NOTE: We do not run tests marked as slow nor do we schedule runs here.
+#   Slow tests and scheduled runs are handled via Jenkins because that has 
+#   access to the cluster which is required for some tests.
 # -----------------------------------------------------------------------------
 name: build
 on: [push, pull_request, workflow_dispatch]
