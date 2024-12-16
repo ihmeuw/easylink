@@ -621,6 +621,74 @@ COMBINED_IMPLEMENTATION_CONFIGS = {
             },
         },
     },
+    "combined_bad_topology": {
+        "steps": {
+            "step_1": {
+                "iterate": [
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "implementation": {
+                                    "name": "step_1a_python_pandas",
+                                },
+                            },
+                            "step_1b": {
+                                "combined_implementation_key": "step_1a_1b",
+                            },
+                        },
+                    },
+                    {
+                        "substeps": {
+                            "step_1a": {
+                                "combined_implementation_key": "step_1a_1b",
+                            },
+                            "step_1b": {
+                                "implementation": {
+                                    "name": "step_1b_python_pandas",
+                                },
+                            },
+                        },
+                    },
+                ],
+            },
+        },
+        "combined_implementations": {
+            "step_1a_1b": {
+                "name": "step_1a_and_step_1b_combined_python_pandas",
+            },
+        },
+    },
+    "combined_bad_implementation_names": {
+        "steps": {
+            "step_1": {
+                "implementation": {
+                    "name": "step_1_python_pandas",
+                },
+            },
+            "step_2": {
+                "implementation": {
+                    "name": "step_2_python_pandas",
+                },
+                "combined_implementation_key": "step_3_4",  # incorrect key
+            },
+            "step_3": {
+                "implementation": {
+                    "name": "step_3_python_pandas",
+                },
+            },
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "combined_implementation_key": "step_3_4",
+                },
+            },
+        },
+        "combined_implementations": {
+            "step_3_4": {
+                "name": "step_3_and_step_4_combined_python_pandas",
+            },
+        },
+    },
 }
 
 
