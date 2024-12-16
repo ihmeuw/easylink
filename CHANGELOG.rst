@@ -1,6 +1,7 @@
 **0.1.2 - 12/16/24**
 
  - Add optional arg to pass allowable schemas to the Config constructor
+ - Initial documentation publication
 
 **0.1.1 - 12/10/24**
 

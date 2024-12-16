@@ -148,7 +148,7 @@ pipeline {
       }
     }
 
-    stage("Test") {
+    stage("Test and Build Docs") {
       parallel {
         stage("Run End-to-End Tests") {
           steps {
@@ -192,6 +192,12 @@ pipeline {
               reportName: "Coverage Report - Unit Tests",
               reportTitles: ''
             ])
+          }
+        }
+
+        stage("Build Docs") {
+          steps {
+            sh "${ACTIVATE} && make build-doc"
           }
         }
       }
