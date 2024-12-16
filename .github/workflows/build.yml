@@ -42,6 +42,5 @@ jobs:
           pytest ./tests
       - name: Build Docs
         run: |
-          pip install -r docs/requirements.txt
           make html -C docs/ SPHINXOPTS="-W --keep-going -n"
           
