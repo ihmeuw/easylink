@@ -1,4 +1,4 @@
-**0.1.2 - 12/12/24**
+**0.1.2 - 12/16/24**
 
  - Add optional arg to pass allowable schemas to the Config constructor
 
