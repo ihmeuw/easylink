@@ -33,11 +33,21 @@ if __name__ == "__main__":
     setup_requires = ["setuptools_scm"]
 
     # use "pip install -e .[dev]" to install required components + extra components
-    data_requires = []
     test_requirements = [
         "pytest",
         "pytest-cov",
         "pytest-mock",
+    ]
+    doc_requirements = [
+        "sphinx>=4.0,<8.0.0",
+        "sphinx-rtd-theme>=0.6",
+        "sphinx-autodoc-typehints",
+        "sphinx-click",
+    ]
+    lint_requirements = [
+        "black==22.3.0",
+        "isort",
+        "mypy",
     ]
 
     setup(
@@ -53,9 +63,9 @@ if __name__ == "__main__":
         include_package_data=True,
         install_requires=install_requirements,
         extras_require={
+            "docs": doc_requirements,
             "test": test_requirements,
-            "data": data_requires,
-            "dev": test_requirements + data_requires,
+            "dev": doc_requirements + test_requirements + lint_requirements,
         },
         zip_safe=False,
         use_scm_version={

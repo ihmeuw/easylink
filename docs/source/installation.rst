@@ -1,3 +1,5 @@
+.. _installation:
+
 ===================
 Installing EasyLink
 ===================
@@ -9,5 +11,6 @@ Installing EasyLink
 
 .. highlight:: console
 
-tbd
+.. todo::
 
+   Everything

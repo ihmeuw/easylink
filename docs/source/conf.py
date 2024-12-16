@@ -59,8 +59,6 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx_click.ext",
-    "matplotlib.sphinxext.plot_directive",
-    "sphinxcontrib.video",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
