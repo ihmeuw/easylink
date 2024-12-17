@@ -5,59 +5,46 @@ EasyLink
 EasyLink is a framework that allows users to build and run highly configurable
 entity resolution (ER) pipelines.
 
+.. _python_support:
+
+Supported Python versions: 3.11, 3.12
+
+.. _end_python_support:
+
 Installation
 ============
 
+.. _installation:
+
 There are a few things to install in order to use this package:
 
-- Install singularity. If this is not already installed on your system, you will likely need to request it from your system admin. Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html
+- Install singularity. If this is not already installed on your system, you will 
+  likely need to request it from your system admin. 
+  Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html
 
-- Install graphviz via
+.. highlight:: console
+
+- Install graphviz via:
     
-    ``> conda install graphviz``
+    :: 
 
-- Install EasyLink via
+    $ conda install graphviz
 
-    ``> pip install easylink``
+- Install EasyLink.
 
-    OR
+    Option 1 - Install from PyPI with pip::
 
-    ``> cd <path/to/repositories/>``
+    $ pip install easylink
 
-    ``> git clone git@github.com:ihmeuw/easylink.git``
+    Option 2 - Build from source with pip::
 
-    ``> # OR git clone https://github.com/ihmeuw/easylink.git``
+    $ git clone git@github.com:ihmeuw/easylink.git  # or git clone https://github.com/ihmeuw/easylink.git
+    $ cd easylink
+    $ pip install .
 
-    ``> cd easylink``
-
-    ``> pip install .``
-
-Quickstart
-==========
-
-To run a pipeline, use `easylink run` from the command line and pass in the
-paths to both a pipeline specification and an input data specification:
-
-    ``> easylink run -p <PIPELINE-SPECIFICATION> -i <INPUT-DATA-SPECIFICATION>``
-
-There are several other optional arguments to `easylink run` as well;
-for help, use `easylink run --help`
-
-Note that a schematic of the pipeline's directed acyclic graph (DAG) that is run 
-is automatically generated. If this schematic is desired _without_ actually
-running the pipeline, use `easylink generate-dag`:
-
-    ``> easylink generate-dag -p <PIPELINE-SPECIFICATION> -i <INPUT-DATA-SPECIFICATION>``
-
-As before, refer to `easylink generate-dag --help` for information on other
-options.
-
-Requirements
-============
-
-TBD
+.. _end_installation:
 
 Documentation
 =============
 
-TBD
+You can view documentation at https://easylink.readthedocs.io/en/latest/

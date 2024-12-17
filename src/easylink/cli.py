@@ -45,7 +45,7 @@ SHARED_OPTIONS = [
 ]
 
 
-def pass_shared_options(func):
+def _pass_shared_options(func):
     for option in SHARED_OPTIONS:
         func = option(func)
     return func
@@ -58,7 +58,7 @@ def easylink():
 
 
 @easylink.command()
-@pass_shared_options
+@_pass_shared_options
 @click.option(
     "-e",
     "--computing-environment",
@@ -109,7 +109,7 @@ def run(
 
 
 @easylink.command()
-@pass_shared_options
+@_pass_shared_options
 def generate_dag(
     pipeline_specification: str,
     input_data: str,

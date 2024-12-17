@@ -4,8 +4,6 @@
 Glossary
 ========
 
-tbd
+.. todo::
 
-
-    
-
+   Everything
