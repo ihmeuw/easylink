@@ -7,5 +7,5 @@ Command Line Interface
 .. automodule:: easylink.cli
 
 .. click:: easylink.cli:easylink
-   :prog: command line
+   :prog: easylink
    :show-nested:
