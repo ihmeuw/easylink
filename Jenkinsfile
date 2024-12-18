@@ -160,16 +160,23 @@ pipeline {
 
           stage("Test and Build Docs") {
             stages {
-              stage("Run End-to-End Tests") {
+
+              stage("Build Docs") {
                 steps {
-                  sh "${ACTIVATE} && make e2e"
+                  sh "${ACTIVATE} && make build-doc"
+                }
+              }
+
+              stage("Run Unit Tests") {
+                steps {
+                  sh "${ACTIVATE} && make unit"
                   publishHTML([
                     allowMissing: true,
                     alwaysLinkToLastBuild: false,
                     keepAll: true,
-                    reportDir: "output/htmlcov_e2e",
+                    reportDir: "output/htmlcov_unit",
                     reportFiles: "index.html",
-                    reportName: "Coverage Report - E2E Tests",
+                    reportName: "Coverage Report - Unit Tests",
                     reportTitles: ''
                   ])
                 }
@@ -189,25 +196,19 @@ pipeline {
                   ])
                 }
               }
-            
-              stage("Run Unit Tests") {
+              
+              stage("Run End-to-End Tests") {
                 steps {
-                  sh "${ACTIVATE} && make unit"
+                  sh "${ACTIVATE} && make e2e"
                   publishHTML([
                     allowMissing: true,
                     alwaysLinkToLastBuild: false,
                     keepAll: true,
-                    reportDir: "output/htmlcov_unit",
+                    reportDir: "output/htmlcov_e2e",
                     reportFiles: "index.html",
-                    reportName: "Coverage Report - Unit Tests",
+                    reportName: "Coverage Report - E2E Tests",
                     reportTitles: ''
                   ])
-                }
-              }
-
-              stage("Build Docs") {
-                steps {
-                  sh "${ACTIVATE} && make build-doc"
                 }
               }
             }  
