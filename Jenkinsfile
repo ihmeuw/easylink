@@ -161,7 +161,7 @@ pipeline {
           }
 
           stage("Quality Checks") {
-            parallel {
+            stages {
               stage("Format") {
                 steps {
                   sh "${ACTIVATE} && make format"
@@ -180,10 +180,10 @@ pipeline {
                 }
               }
             }
-          }  // End of quality checks parallel stage
+          }  // End of quality checks
 
           stage("Test and Build Docs") {
-            parallel {
+            stages {
               stage("Run End-to-End Tests") {
                 steps {
                   sh "${ACTIVATE} && make e2e"
@@ -235,7 +235,7 @@ pipeline {
                 }
               }
             }  
-          }  // End of test and build docs parallel stage
+          }  // End of test and build docs stage
         }  // End of matrix stages
 
         post {
