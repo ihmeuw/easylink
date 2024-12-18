@@ -44,25 +44,6 @@ pipeline {
     )
   }
 
-  environment {
-    // Get the branch being built and strip everything but the text after the last "/"
-    BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
-    TIMESTAMP = sh(script: 'date', returnStdout: true)
-    // Specify the path to the .condarc file via environment variable.
-    // This file configures the shared conda package cache.
-    CONDARC = "${shared_jenkins_node_path}/miniconda3/.condarc"
-    CONDA_BIN_PATH = "${shared_jenkins_node_path}/miniconda3/bin"
-    // Specify conda env by build number so that we don't have collisions if builds from
-    // different branches happen concurrently.
-    CONDA_ENV_NAME = "${conda_env_name}"
-    CONDA_ENV_PATH = "${conda_env_path}"
-    // Set the Pip cache.
-    XDG_CACHE_HOME = "${shared_jenkins_node_path}/pip-cache"
-    // Jenkins commands run in separate processes, so need to activate the environment every
-    // time we run pip, poetry, etc.
-    ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
-  }
-
   stages {
     stage("Initialization") {
       steps {
@@ -94,23 +75,22 @@ pipeline {
         }
 
         environment {
-            // Get the branch being built and strip everything but the text after the last "/"
-            BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
-            TIMESTAMP = sh(script: 'date', returnStdout: true)
-            // Specify the path to the .condarc file via environment variable.
-            // This file configures the shared conda package cache.
-            CONDARC = "${shared_path}/miniconda3/.condarc"
-            CONDA_BIN_PATH = "${shared_path}/miniconda3/bin"
-            // Specify conda env by build number so that we don't have collisions if builds from
-            // different branches happen concurrently.
-            PYTHON_DEPLOY_VERSION = "3.11"
-            CONDA_ENV_NAME = "${conda_env_name}"
-            CONDA_ENV_PATH = "${conda_env_path}_${PYTHON_VERSION}"
-            // Set the Pip cache.
-            XDG_CACHE_HOME = "${shared_path}/pip-cache"
-            // Jenkins commands run in separate processes, so need to activate the environment every
-            // time we run pip, poetry, etc.
-            ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
+          // Get the branch being built and strip everything but the text after the last "/"
+          BRANCH = sh(script: "echo ${GIT_BRANCH} | rev | cut -d '/' -f1 | rev", returnStdout: true).trim()
+          TIMESTAMP = sh(script: 'date', returnStdout: true)
+          // Specify the path to the .condarc file via environment variable.
+          // This file configures the shared conda package cache.
+          CONDARC = "${shared_jenkins_node_path}/miniconda3/.condarc"
+          CONDA_BIN_PATH = "${shared_jenkins_node_path}/miniconda3/bin"
+          // Specify conda env by build number so that we don't have collisions if builds from
+          // different branches happen concurrently.
+          CONDA_ENV_NAME = "${conda_env_name}"
+          CONDA_ENV_PATH = "${conda_env_path}_${PYTHON_VERSION}"
+          // Set the Pip cache.
+          XDG_CACHE_HOME = "${shared_jenkins_node_path}/pip-cache"
+          // Jenkins commands run in separate processes, so need to activate the environment every
+          // time we run pip, poetry, etc.
+          ACTIVATE = "source ${CONDA_BIN_PATH}/activate ${CONDA_ENV_PATH} &> /dev/null"
         }
 
         stages {
