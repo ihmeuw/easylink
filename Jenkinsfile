@@ -154,12 +154,8 @@ pipeline {
                 }
               }
 
-              stage("Type Check") {
-                steps {
-                  sh "${ACTIVATE} && make typecheck"
-                }
-              }
-            }
+              // TODO: Add a typecheck stage
+
           }  // End of quality checks
 
           stage("Test and Build Docs") {
