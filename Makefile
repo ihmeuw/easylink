@@ -89,6 +89,10 @@ unit: $(MAKE_SOURCES) # Run unit tests
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit tests/unit/
 	@echo "Ignore, Created by Makefile, `date`" > $@
 
+build-doc: $(MAKE_SOURCES) # Build the Sphinx docs
+	$(MAKE) -C docs/ html
+	@echo "Ignore, Created by Makefile, `date`" > $@
+
 clean: # Delete build artifacts and do any custom cleanup such as spinning down services
 	@rm -rf format lint typecheck build-doc build-package unit e2e integration .pytest_cache .pytype
 	@rm -rf dist output
