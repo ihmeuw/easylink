@@ -425,8 +425,7 @@ class Step:
             if step_name != node_name:
                 prefix = node_names[i:]
                 break
-        # If we didn't include the step name already for a combined implementation,
-        # do so now.
+        # If we didn't include the step name already for a combined implementation, do so now.
         if self.configuration_state.is_combined and not prefix:
             prefix.append(self.name)
         prefix.append(implementation_name)

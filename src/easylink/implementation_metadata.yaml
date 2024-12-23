@@ -6,6 +6,24 @@ step_1_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
+step_1a_python_pandas:
+  steps: 
+    - step_1a
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+  outputs:
+    step_1a_main_output: result.parquet
+step_1b_python_pandas:
+  steps: 
+    - step_1b
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  env:
+    INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
+  outputs:
+    step_1b_main_output: result.parquet
 step_2_python_pandas:
   steps: 
     - step_2
@@ -59,8 +77,8 @@ step_4a_python_pandas:
 step_4b_python_pandas:
   steps: 
     - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
-  script_cmd: Rscript /dummy_step.R
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
@@ -68,8 +86,8 @@ step_4b_python_pandas:
 step_4b_r:
   steps: 
     - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
-  script_cmd: python /dummy_step.py
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  script_cmd: Rscript /dummy_step.R
   env:
     INPUT_ENV_VARS: "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"
   outputs:
@@ -167,3 +185,11 @@ step_3_and_step_4_combined_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_4_main_output: result.parquet
+step_1a_and_step_1b_combined_python_pandas:
+  steps:
+    - step_1a
+    - step_1b
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  script_cmd: python /dummy_step.py
+  outputs:
+    step_1_main_output: result.parquet
