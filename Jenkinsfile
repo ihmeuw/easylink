@@ -68,8 +68,8 @@ pipeline {
         // customWorkspace setting must be ran within a node
         agent {
           node {
-            // Run child tasks on simsci-jenkinsagent-ci-p01.
-              label "matrix-tasks"
+            // Run child tasks on slurm jenkins node.
+              label "slurm"
           }
         }
         axes {
