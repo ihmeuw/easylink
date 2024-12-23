@@ -161,7 +161,7 @@ pipeline {
               }
 
               // TODO: Add a typecheck stage
-
+            }
           }  // End of quality checks
 
           stage("Test and Build Docs") {
