@@ -68,7 +68,8 @@ pipeline {
         // customWorkspace setting must be ran within a node
         agent {
           node {
-              label "svc-simsci"
+            // Run child tasks on simsci-jenkinsagent-ci-p01.
+              label "matrix-tasks"
           }
         }
         axes {
