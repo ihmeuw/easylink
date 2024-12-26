@@ -37,10 +37,10 @@ SHARED_OPTIONS = [
         ),
     ),
     click.option(
-        "--timestamp/--no-timestamp",
-        default=True,
-        show_default=True,
-        help="Save the results in a timestamped sub-directory of --output-dir.",
+        "--no-timestamp",
+        is_flag=True,
+        default=False,
+        help="Do not save the results in a timestamped sub-directory of ``--output-dir``.",
     ),
 ]
 
@@ -66,9 +66,8 @@ def easylink():
     show_default=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
     help=(
-        "Path to the specification yaml defining the computing environment to "
-        "run the pipeline on. If no value is passed, the pipeline will be run "
-        "locally."
+        "Path to the computing environment specification yaml. If no value is passed, "
+        "the pipeline will be run locally."
     ),
 )
 @click.option("-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True)
@@ -83,17 +82,22 @@ def run(
     pipeline_specification: str,
     input_data: str,
     output_dir: str | None,
-    timestamp: bool,
+    no_timestamp: bool,
     computing_environment: str | None,
     verbose: int,
     with_debugger: bool,
 ) -> None:
-    """Run a pipeline from the command line."""
+    """Runs a pipeline from the command line.
+
+    In addition to running the pipeline, this command will also generate the
+    DAG image. If you only want to generate the image without actually running
+    the pipeline, use the ``easylink generate-dag`` command.
+    """
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
-    results_dir = get_results_directory(output_dir, timestamp).as_posix()
+    results_dir = get_results_directory(output_dir, no_timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")
-    # TODO [MIC-4493]: Add configuration validation
+    # TODO [MIC-4493]: Add configuration validation``
 
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
@@ -114,11 +118,15 @@ def generate_dag(
     pipeline_specification: str,
     input_data: str,
     output_dir: str | None,
-    timestamp: bool,
+    no_timestamp: bool,
 ) -> None:
-    """Generate an image of the proposed pipeline DAG."""
+    """Generates an image of the proposed pipeline DAG.
+
+    This command only generates the DAG image of the pipeline; it does not attempt
+    to actually run it. To run the pipeline, use the ``easylink run`` command.
+    """
     logger.info("Generating DAG")
-    results_dir = get_results_directory(output_dir, timestamp).as_posix()
+    results_dir = get_results_directory(output_dir, no_timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")
     # TODO [MIC-4493]: Add configuration validation
     runner.main(
