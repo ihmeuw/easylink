@@ -97,7 +97,7 @@ def run(
     logger.info("Running pipeline")
     results_dir = get_results_directory(output_dir, no_timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")
-    # TODO [MIC-4493]: Add configuration validation
+    # TODO [MIC-4493]: Add configuration validation``
 
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
@@ -122,7 +122,7 @@ def generate_dag(
 ) -> None:
     """Generates an image of the proposed pipeline DAG.
 
-    This command only generates the DAG image of the pipeline; it does not  actually
+    This command only generates the DAG image of the pipeline; it does not actually
     run it. To run the pipeline, use the ``easylink run`` command.
     """
     logger.info("Generating DAG")
