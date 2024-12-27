@@ -1,5 +1,5 @@
-API Reference
-=============
+Utilities
+=========
 
 .. automodule:: easylink.utilities
 

@@ -1,5 +1,5 @@
-API Reference
-=============
+PipelineSchema Constants
+========================
 
 .. automodule:: easylink.pipeline_schema_constants
 
