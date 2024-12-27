@@ -3,7 +3,7 @@
 EasyLink
 ========
 
-Research repository for the EasyLink ER ecosystem project.
+Research repository for the EasyLink entity resolution (ER) ecosystem project.
 
 """
 

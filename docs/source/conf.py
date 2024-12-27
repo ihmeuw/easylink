@@ -213,7 +213,9 @@ autodoc_default_options = {
     # Generate docs even if an item has no docstring.
     "undoc-members": True,
     # Don't document things with a leading underscore.
-    "private-members": False,
+    "private-members": True,
+    # Include special members.
+    "special-members": "__init__",
 }
 # Display type hints in the description instead of the signature.
 autodoc_typehints = "description"
