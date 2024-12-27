@@ -1,11 +1,10 @@
 API Reference
 =============
 
-.. automodule:: easylink
+.. automodule:: easylink.utilities
 
 .. toctree::
     :maxdepth: 1
     :glob:
 
     *
-    */index

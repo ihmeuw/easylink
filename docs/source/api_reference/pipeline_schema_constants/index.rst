@@ -1,11 +1,10 @@
 API Reference
 =============
 
-.. automodule:: easylink
+.. automodule:: easylink.pipeline_schema_constants
 
 .. toctree::
     :maxdepth: 1
     :glob:
 
     *
-    */index
