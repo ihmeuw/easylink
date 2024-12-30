@@ -103,7 +103,6 @@ class Config(LayeredConfigTree):
             A list of potential schemas to validate the pipeline configuration against.
             This is primarily used for testing purposes. Defaults to the supported schemas.
         """
-        breakpoint()
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
@@ -118,7 +117,6 @@ class Config(LayeredConfigTree):
         self.update({"schema": self._get_schema(potential_schemas)}, layer="initial_data")
         self.schema.configure_pipeline(self.pipeline, self.input_data)
         self._validate()
-        breakpoint()
         self.freeze()
 
     @property
