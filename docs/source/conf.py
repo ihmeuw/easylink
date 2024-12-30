@@ -217,6 +217,8 @@ autodoc_default_options = {
     "private-members": True,
     # Include special members.
     "special-members": "__init__",
+    # Show class inheritance.
+    "show-inheritance": True,
 }
 # Display type hints in the description instead of the signature.
 autodoc_typehints = "description"
