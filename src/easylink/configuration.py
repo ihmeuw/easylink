@@ -114,7 +114,6 @@ class Config(LayeredConfigTree):
         self.update({"schema": self._get_schema(potential_schemas)}, layer="initial_data")
         self.schema.configure_pipeline(self.pipeline, self.input_data)
         self._validate()
-        breakpoint()
         self.freeze()
 
     @property
