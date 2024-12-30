@@ -43,6 +43,7 @@ if __name__ == "__main__":
         "sphinx-rtd-theme>=0.6",
         "sphinx-autodoc-typehints",
         "sphinx-click",
+        "typing_extensions",
     ]
     lint_requirements = [
         "black==22.3.0",
