@@ -190,11 +190,8 @@ class Config(LayeredConfigTree):
         Returns
         -------
             The first pipeline schema that successfully validates the requested pipeline.
-
-        Exits
-        -----
-        errno.EINVAL
-            If no pipeline schema successfully validates the requested pipeline.
+            If no validated pipeline schema is found, `exit()` is called with `errno.EINVAL`
+            and any validation errors are logged.
 
         Notes
         -----
@@ -217,15 +214,10 @@ class Config(LayeredConfigTree):
         exit_with_validation_error(dict(errors))
 
     def _validate(self) -> None:
-        """Validates the configuration.
+        """Validates the ``Config``.
 
-        Errors are batch-logged into a dictionary and then raised as a single
-        ValidationError.
-
-        Exits
-        -----
-        errno.EINVAL
-            If any validation errors are found.
+        If any errors are found, they are batch-logged into a dictionary and `exit()`
+        is called with `errno.EINVAL`.
 
         Notes
         -----

@@ -98,11 +98,10 @@ def exit_with_validation_error(error_msg: dict) -> None:
     error_msg
         The error message to print to the user.
 
-    Exits
+    Notes
     -----
-    errno.EINVAL
-        Calls `exit()` with `errno.EINVAL` to terminate the program execution due
-        to previously-determined validation errors.
+    Calls `exit()` with `errno.EINVAL` to terminate the program execution due
+    to previously-determined validation errors.
 
     """
 

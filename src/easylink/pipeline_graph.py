@@ -106,7 +106,7 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-        The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
+            The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
         """
         slot_types = ["input_slot", "output_slot"]
         combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
@@ -154,7 +154,7 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-        A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
+            A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
         """
 
         in_edges_by_slot = defaultdict(list)
@@ -196,7 +196,7 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-        A set of (step_name, slot) tuples that have duplicate names or environment variables.
+            A set of (step_name, slot) tuples that have duplicate names or environment variables.
         """
         name_freq = Counter([slot.name for step_name, slot in slot_tuples])
         duplicate_names = [name for name, count in name_freq.items() if count > 1]
