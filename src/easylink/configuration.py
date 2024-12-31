@@ -3,9 +3,7 @@
 Configuration
 =============
 
-The configuration module is responsible for managing an easylink run's configuration
-and includes the ``Config`` container class as well as various configuration-related
-utility functions.
+This module is responsible for managing an easylink run's configuration.
 
 """
 
@@ -63,6 +61,16 @@ class Config(LayeredConfigTree):
     specifications. If any of these are invalid, a validation error is raised with
     as much information as can possibly be provided.
 
+    Parameters
+    ----------
+    config_params
+        A dictionary of all specifications required to run the pipeline. This
+        includes the pipeline, input data, and computing environment specifications,
+        as well as the results directory.
+    potential_schemas
+        A list of potential schemas to validate the pipeline configuration against.
+        This is primarily used for testing purposes. Defaults to the supported schemas.
+
     Attributes
     ----------
     environment
@@ -91,18 +99,6 @@ class Config(LayeredConfigTree):
         config_params: dict[str, Any],
         potential_schemas: list[PipelineSchema] | PipelineSchema = PIPELINE_SCHEMAS,
     ) -> None:
-        """Initializes an instance of the ``Config`` class.
-
-        Parameters
-        ----------
-        config_params
-            A dictionary of all specifications required to run the pipeline. This
-            includes the pipeline, input data, and computing environment specifications,
-            as well as the results directory.
-        potential_schemas
-            A list of potential schemas to validate the pipeline configuration against.
-            This is primarily used for testing purposes. Defaults to the supported schemas.
-        """
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
