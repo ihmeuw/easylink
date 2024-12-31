@@ -39,8 +39,8 @@ class InputSlot:
     name: str
     """The name of the input slot."""
     env_var: str | None
-    """The environment variable that this input slot will use to pass a list of data filepaths
-    to an Implementation."""
+    """The environment variable that this input slot will use to pass a list of 
+    data filepaths to an Implementation."""
     validator: Callable[[str], None]
     """A callable that validates the input data being passed into the pipeline
     via this input slot. If the data is invalid, the callable should raise an exception
