@@ -61,7 +61,7 @@ class Config(LayeredConfigTree):
 
     The ``Config`` is also reponsible for various validation checks on the provided
     specifications. If any of these are invalid, a validation error is raised with
-    as much information as possible provided.
+    as much information as can possibly be provided.
 
     Attributes
     ----------

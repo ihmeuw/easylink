@@ -122,8 +122,8 @@ def generate_dag(
 ) -> None:
     """Generates an image of the proposed pipeline DAG.
 
-    This command only generates the DAG image of the pipeline; it does not attempt
-    to actually run it. To run the pipeline, use the ``easylink run`` command.
+    This command only generates the DAG image of the pipeline; it does not  actually
+    run it. To run the pipeline, use the ``easylink run`` command.
     """
     logger.info("Generating DAG")
     results_dir = get_results_directory(output_dir, no_timestamp).as_posix()
