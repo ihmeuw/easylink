@@ -22,17 +22,17 @@ def test_create_results_directory(test_dir):
 
 
 @pytest.mark.parametrize(
-    "output_dir_provided, timestamp",
+    "output_dir_provided, no_timestamp",
     [
-        (False, False),
         (False, True),
-        (True, False),
+        (False, False),
         (True, True),
+        (True, False),
     ],
 )
-def test_get_results_directory(test_dir, output_dir_provided, timestamp, mocker):
+def test_get_results_directory(test_dir, output_dir_provided, no_timestamp, mocker):
     """Tests expected behavior. If directory is provided then a "results/" folder
-    is created at the working directory. If timestamp is True, then a timestamped
+    is created at the working directory. If no_timestamp is False, then a timestamped
     directory is created within the results directory.
     """
     if output_dir_provided:
@@ -44,12 +44,12 @@ def test_get_results_directory(test_dir, output_dir_provided, timestamp, mocker)
     mocker.patch(
         "easylink.utilities.data_utils._get_timestamp", return_value="2024_01_01_00_00_00"
     )
-    results_dir = get_results_directory(output_dir, timestamp)
+    results_dir = get_results_directory(output_dir, no_timestamp)
 
     expected_results_dir = Path(test_dir)
     if not output_dir_provided:
         expected_results_dir = expected_results_dir / "results"
-    if timestamp:
+    if not no_timestamp:
         expected_results_dir = expected_results_dir / "2024_01_01_00_00_00"
 
     assert expected_results_dir == results_dir
