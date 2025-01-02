@@ -214,8 +214,11 @@ class Config(LayeredConfigTree):
     def _validate(self) -> None:
         """Validates the ``Config``.
 
-        If any errors are found, they are batch-logged into a dictionary and `exit()`
-        is called with `errno.EINVAL`.
+        Raises
+        ------
+        SystemExit
+            If any errors are found, they are batch-logged into a dictionary and
+            the program exits with a non-zero code.
 
         Notes
         -----

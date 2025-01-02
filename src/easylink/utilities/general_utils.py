@@ -87,7 +87,7 @@ def _add_logging_sink(
 
 
 def exit_with_validation_error(error_msg: dict) -> None:
-    """Exits the program with a validation error.
+    """Logs error messages and exits the program.
 
     This function logs the provided validation error messages using a structured
     YAML format and terminates the program execution with a non-zero exit code
@@ -98,10 +98,11 @@ def exit_with_validation_error(error_msg: dict) -> None:
     error_msg
         The error message to print to the user.
 
-    Notes
-    -----
-    Calls `exit()` with `errno.EINVAL` to terminate the program execution due
-    to previously-determined validation errors.
+    Raises
+    ------
+    SystemExit
+        Exits the program with an EINVAL (invalid argument) code due to
+        previously-determined validation errors.
 
     """
 
@@ -112,7 +113,7 @@ def exit_with_validation_error(error_msg: dict) -> None:
         "\nValidation errors found. Please see above."
         "\n==========================================\n"
     )
-    exit(errno.EINVAL)
+    sys.exit(errno.EINVAL)
 
 
 def is_on_slurm() -> bool:
