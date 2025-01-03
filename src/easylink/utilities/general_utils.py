@@ -93,6 +93,10 @@ def exit_with_validation_error(error_msg: dict) -> None:
     YAML format and terminates the program execution with a non-zero exit code
     (indicating an error).
 
+    This function logs the provided validation error messages using a structured
+    YAML format and terminates the program execution with a non-zero exit code
+    (indicating an error).
+
     Parameters
     ----------
     error_msg
