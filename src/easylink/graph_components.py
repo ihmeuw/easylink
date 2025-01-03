@@ -241,7 +241,7 @@ class SlotMapping(ABC):
 
     SlotMapping is an interface intended to be used by concrete :class:`InputSlotMapping`
     and :class:`OutputSlotMapping` classes. It represents a mapping between
-    parent and child nodes/:class:`Steps<easylink.step.Step>` at different levels 
+    parent and child nodes/:class:`Steps<easylink.step.Step>` at different levels
     of a potentially-nested :class:`~easylink.pipeline_schema.PipelineSchema`.
     """
 
