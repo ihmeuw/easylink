@@ -59,7 +59,7 @@ class Implementation:
         """A mapping of environment variables to set."""
         self.metadata_steps = self._metadata["steps"]
         """The names of the specific :class:`Steps<easylink.step.Step>` for which
-        this Implementation is reesponsible."""
+        this Implementation is responsible."""
         self.schema_steps = schema_steps
         """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
         :class:`~easylink.step.Step` names for which this Implementation is 
