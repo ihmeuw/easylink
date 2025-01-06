@@ -7,7 +7,7 @@ entity resolution (ER) pipelines.
 
 .. _python_support:
 
-**Supported Python versions: 3.11, 3.12**
+**Supported Python versions: 3.1, 3.2**
 
 .. _end_python_support:
 
