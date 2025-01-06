@@ -27,15 +27,15 @@ class InputSlot:
     """An abstraction representing a single input slot to a specific :class:`~easylink.step.Step`.
 
     In order to pass data between :class:`Steps<easylink.step.Step>`, an InputSlot
-    of one can be connected to an :class:`OutputSlot` of another via an :class:`EdgeParams`
+    of one Step can be connected to an :class:`OutputSlot` of another Step via an :class:`EdgeParams`
     instance.
     """
 
     name: str
     """The name of the input slot."""
     env_var: str | None
-    """The environment variable that contains a list of the filepaths to input data 
-    to be passed into the pipeline via this input slot."""
+    """The environment variable that this input slot will use to pass a list of data filepaths
+    to an Implementation."""
     validator: Callable
     """A callable that validates the input data being passed into the pipeline
     via this input slot."""
@@ -46,13 +46,13 @@ class OutputSlot:
     """An abstraction representing a single output slot from a specific :class:`~easylink.step.Step`.
 
     In order to pass data between :class:`Steps<easylink.step.Step>`, an OutputSlot
-    of one can be connected to an :class:`InputSlot` of another via an :class:`EdgeParams`
+    of one Step can be connected to an :class:`InputSlot` of another Step via an :class:`EdgeParams`
     instance.
 
     Notes
     -----
     Input data is validated via the :class:`InputSlot's<InputSlot>` required
-    :attr:`~InputSlot.validator` attribute. However, in order to prevent multiple
+    :attr:`~InputSlot.validator` attribute. In order to prevent multiple
     validations of the same files (since outputs of one :class:`~easylink.step.Step`
     can be inputs to another), no such validator is stored here on the OutputSlot.
     """
@@ -65,8 +65,8 @@ class OutputSlot:
 class EdgeParams:
     """A representation of an edge between two nodes (:class:`Steps<easylink.step.Step>`) in a graph.
 
-    EdgeParams connect the :class:`OutputSlot` of a source node to the :class:`InputSlot`
-    of a target node.
+    EdgeParams connect the :class:`OutputSlot` of a source Step to the :class:`InputSlot`
+    of a target Step.
     """
 
     source_node: str
@@ -202,7 +202,7 @@ class ImplementationGraph(nx.MultiDiGraph):
         return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
 
     def add_node_from_implementation(self, node_name, implementation: Implementation) -> None:
-        """Adds a new node.
+        """Adds a new node to the ImplementationGraph.
 
         Parameters
         ----------
@@ -215,7 +215,7 @@ class ImplementationGraph(nx.MultiDiGraph):
         self.add_node(node_name, implementation=implementation)
 
     def add_edge_from_params(self, edge_params: EdgeParams) -> None:
-        """Adds a new edge.
+        """Adds a new edge to the ImplementationGraph.
 
         Parameters
         ----------
@@ -237,7 +237,7 @@ class ImplementationGraph(nx.MultiDiGraph):
 
 @dataclass(frozen=True)
 class SlotMapping(ABC):
-    """A mapping between parent and child nodes.
+    """A mapping between a slot on a parent Step and a slot on (one of) its child Steps.
 
     SlotMapping is an interface intended to be used by concrete :class:`InputSlotMapping`
     and :class:`OutputSlotMapping` classes. It represents a mapping between

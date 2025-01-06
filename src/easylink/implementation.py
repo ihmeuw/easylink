@@ -63,7 +63,7 @@ class Implementation:
         self.schema_steps = schema_steps
         """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
         :class:`~easylink.step.Step` names for which this Implementation is 
-        expected to be responsible."""
+        requested to be responsible in the pipeline."""
         self.requires_spark = self._metadata.get("requires_spark", False)
         """Whether this Implementation requires a Spark environment."""
 
