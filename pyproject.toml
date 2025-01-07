@@ -1,6 +1,8 @@
 [build-system]
 requires = ["packaging", "setuptools"]
 
+[tool.setuptools_scm]
+
 [tool.black]
 line_length = 94
 

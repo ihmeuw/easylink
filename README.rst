@@ -22,11 +22,10 @@ There are a few things to install in order to use this package:
   likely need to request it from your system admin. 
   Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html
 
-.. code-block:: console
 
 - Install graphviz via:
-    
-    :: 
+
+  .. code-block:: console
 
     $ conda install graphviz
 
@@ -34,13 +33,17 @@ There are a few things to install in order to use this package:
 
     Option 1 - Install from PyPI with pip::
 
-    $ pip install easylink
+      .. code-block:: console
+
+        $ pip install easylink
 
     Option 2 - Build from source with pip::
 
-    $ git clone git@github.com:ihmeuw/easylink.git  # or git clone https://github.com/ihmeuw/easylink.git
-    $ cd easylink
-    $ pip install .
+      .. code-block:: console
+
+        $ git clone git@github.com:ihmeuw/easylink.git  # or git clone https://github.com/ihmeuw/easylink.git
+        $ cd easylink
+        $ pip install .
 
 .. _end_installation:
 
