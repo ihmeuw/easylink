@@ -110,11 +110,11 @@ class EdgeParams:
 
 
 class StepGraph(nx.MultiDiGraph):
-    """A DAG of :class:`Steps<easylink.step.Step>`.
+    """A DAG of :class:`Steps<easylink.step.Step>` and the data dependencies between them.
 
     StepGraphs are DAGs with :class:`Steps<easylink.step.Step>`
-    for nodes and the file dependencies between them for edges. Self-edges as well
-    as multiple edges between nodes are permitted.
+    for nodes and the file dependencies between them for edges. Multiple edges
+    between nodes are permitted.
 
     Notes
     -----
