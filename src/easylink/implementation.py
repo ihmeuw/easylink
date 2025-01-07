@@ -138,7 +138,7 @@ class Implementation:
 
 
 class NullImplementation:
-    """An partial :class:`Implementation` interface that represents that no container needs to run.
+    """A partial :class:`Implementation` interface that represents that no container needs to run.
 
     The primary use case for this class is when adding an :class:`~easylink.step.IOStep` -
     which does not have a corresponding :class:`Implementation` - to an
