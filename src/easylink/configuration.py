@@ -52,9 +52,8 @@ SLURM_SPARK_MEM_BUFFER = 500  # MB
 class Config(LayeredConfigTree):
     """A container for configuration information.
 
-    A ``Config`` (which inherits from :class:`~layered_config_tree.LayeredConfigTree`)
-    is a container that includes the combination of the user-provided pipeline,
-    input data, and computing environment  specifications. It is a nested
+    A ``Config`` is a container that includes the combination of the user-provided 
+    pipeline, input data, and computing environment specifications. It is a nested
     dictionary-like object that supports prioritized layers of configuration settings
     as well as dot-notation access to its attributes.
 
@@ -89,9 +88,9 @@ class Config(LayeredConfigTree):
     Notes
     -----
     The requested pipeline is checked against a set of supported
-    :class:`pipeline schemas <easylink.pipeline_schema.PipelineSchema>`. The first
-    schema that successfully validates is assumed to be the correct one and is attached
-    to the ``Config`` object and its :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline`
+    ``PipelineSchemas``. The first schema that successfully validates is assumed 
+    to be the correct one and is attached to the ``Config`` object and its 
+    :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline`
     method is called.
     """
 
@@ -175,12 +174,12 @@ class Config(LayeredConfigTree):
     #################
 
     def _get_schema(self, potential_schemas: list[PipelineSchema]) -> PipelineSchema:
-        """Returns the first pipeline schema that successfully validates the requested pipeline.
+        """Returns the first ``PipelineSchema`` that successfully validates the requested pipeline.
 
         Parameters
         ----------
         potential_schemas
-            Pipeline schemas to validate the pipeline configuration against.
+            ``PipelineSchemas`` to validate the pipeline configuration against.
 
         Returns
         -------
@@ -191,10 +190,10 @@ class Config(LayeredConfigTree):
         Notes
         -----
         This acts as the pipeline configuration file's validation method since
-        we can only find a matching schema if that file is valid.
+        we can only find a matching ``PipelineSchema`` if that file is valid.
 
-        This method returns the first schema that successfully validates and does
-        not attempt to validate additional ones.
+        This method returns the first ``PipelineSchema`` that successfully validates 
+        and does not attempt to validate additional ones.
         """
         errors = defaultdict(dict)
         # Try each schema until one is validated
@@ -279,7 +278,7 @@ def load_params_from_specification(
 
     This gathers the pipeline, input data, and computing environment specifications
     as well as the results directory into a single dictionary for insertion into
-    the ``Config`` object.
+    the :class:`Config` object.
 
     Parameters
     ----------
