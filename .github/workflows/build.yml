@@ -11,11 +11,25 @@ name: build
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
+  get-python-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install jq
+        run: sudo apt-get install jq
+      - name: Get Python versions
+        id: set-matrix
+        run: |
+          echo "MATRIX_RESULT=$(jq -c . python_versions.json)" >> $GITHUB_ENV
+    outputs:
+      matrix: ${{ env.MATRIX_RESULT }}
   build:
+    needs: get-python-versions
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ${{ fromJSON(needs.get-python-versions.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
