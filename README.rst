@@ -31,19 +31,15 @@ There are a few things to install in order to use this package:
 
 - Install EasyLink.
 
-    Option 1 - Install from PyPI with pip::
+  Option 1 - Install from PyPI with pip::
 
-      .. code-block:: console
+    $ pip install easylink
 
-        $ pip install easylink
+  Option 2 - Build from source with pip::
 
-    Option 2 - Build from source with pip::
-
-      .. code-block:: console
-
-        $ git clone git@github.com:ihmeuw/easylink.git  # or git clone https://github.com/ihmeuw/easylink.git
-        $ cd easylink
-        $ pip install .
+    $ git clone git@github.com:ihmeuw/easylink.git  # or git clone https://github.com/ihmeuw/easylink.git
+    $ cd easylink
+    $ pip install .
 
 .. _end_installation:
 
