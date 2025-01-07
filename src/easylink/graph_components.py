@@ -36,9 +36,10 @@ class InputSlot:
     env_var: str | None
     """The environment variable that this input slot will use to pass a list of data filepaths
     to an Implementation."""
-    validator: Callable
+    validator: Callable[[str], None]
     """A callable that validates the input data being passed into the pipeline
-    via this input slot."""
+    via this input slot. If the data is invalid, the callable should raise an exception
+    with a descriptive error message which will then be reported to the user."""
 
 
 @dataclass(frozen=True)
@@ -109,9 +110,9 @@ class EdgeParams:
 
 
 class StepGraph(nx.MultiDiGraph):
-    """A graph representation of a particular :class:`~easylink.step.Step`.
+    """A DAG of :class:`Steps<easylink.step.Step>`.
 
-    StepGraphs are directed graphs with :class:`Steps<easylink.step.Step>`
+    StepGraphs are DAGs with :class:`Steps<easylink.step.Step>`
     for nodes and the file dependencies between them for edges. Self-edges as well
     as multiple edges between nodes are permitted.
 
@@ -140,7 +141,7 @@ class StepGraph(nx.MultiDiGraph):
         return [self.nodes[node]["step"] for node in self.step_nodes]
 
     def add_node_from_step(self, step: Step) -> None:
-        """Adds a new node.
+        """Adds a new node to the StepGraph.
 
         Parameters
         ----------
@@ -150,7 +151,7 @@ class StepGraph(nx.MultiDiGraph):
         self.add_node(step.name, step=step)
 
     def add_edge_from_params(self, edge_params: EdgeParams) -> None:
-        """Adds a new edge.
+        """Adds a new edge to the StepGraph.
 
         Parameters
         ----------
