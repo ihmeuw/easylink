@@ -22,7 +22,7 @@ There are a few things to install in order to use this package:
   likely need to request it from your system admin. 
   Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html
 
-.. highlight:: console
+.. code-block:: console
 
 - Install graphviz via:
     
