@@ -184,7 +184,7 @@ class ImplementationGraph(nx.MultiDiGraph):
     is in contrast to a :class:`StepGraph`, which can be an intricate nested structure
     due to the various complex and self-similar :class:`~easylink.step.Step` instances
     (which represent abstract operations such as "loop this step N times"). An
-    ImplementationGraph the flattened and concrete graph of
+    ImplementationGraph is the flattened and concrete graph of
     :class:`Implementations<easylink.implementation.Implementation>` to run.
 
     The highest level ImplementationGraph is the that of the entire
