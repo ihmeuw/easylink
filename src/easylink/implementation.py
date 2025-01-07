@@ -75,14 +75,16 @@ class Implementation:
 
         Returns
         -------
-            A list of logs containing any validation errors.
+            A list of logs containing any validation errors. Each item in the list
+            is a distinct message about a particular validation error (e.g. if a
+            required container does not exist).
 
         Notes
         -----
         This is intended to be run from :meth:`easylink.pipeline.Pipeline._validate`.
         """
         logs = []
-        logs = self._validate_expected_step(logs)
+        logs = self._validate_expected_steps(logs)
         logs = self._validate_container_exists(logs)
         return logs
 
@@ -95,11 +97,12 @@ class Implementation:
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         return metadata[self.name]
 
-    def _validate_expected_step(self, logs: list[str]) -> list[str]:
+    def _validate_expected_steps(self, logs: list[str]) -> list[str]:
         """Validates that the Implementation is responsible for the correct steps."""
         if not set(self.schema_steps) == set(self.metadata_steps):
             logs.append(
-                f"Pipeline configuration nodes {self.schema_steps} do not match metadata steps {self.metadata_steps}."
+                f"Pipeline configuration nodes {self.schema_steps} do not match "
+                f"metadata steps {self.metadata_steps}."
             )
         return logs
 
@@ -133,7 +136,13 @@ class Implementation:
 
 
 class NullImplementation:
-    """A representation of a :class:`~easylink.step.Step` that does not have an :class:`Implementation`.
+    """An object with a partial :class:`Implementation` interface that represents that no container needs to run.
+
+    The primary use case for this class is when adding an :class:`~easylink.step.IOStep` -
+    which does not have a corresponding :class:`Implementation` - to an
+    :class:`~easylink.graph_components.ImplementationGraph` since adding any new
+    node requires an object with :class:`~easylink.graph_components.InputSlot`
+    and :class:`~easylink.graph_components.OutputSlot` names.
 
     Parameters
     ----------
@@ -143,15 +152,6 @@ class NullImplementation:
         The :class:`InputSlots<easylink.graph_components.InputSlot>` for this NullImplementation.
     output_slots
         The :class:`OutputSlots<easylink.graph_components.OutputSlot>` for this NullImplementation.
-
-    Notes
-    -----
-    The primary use case for this class is when adding an :class:`~easylink.step.IOStep` -
-    which does not have a corresponding :class:`Implementation` - to an
-    :class:`~easylink.graph_components.ImplementationGraph`. Adding a new node
-    requires an ``implementation`` attribute with :class:`~easylink.graph_components.InputSlot`
-    and :class:`~easylink.graph_components.OutputSlot` names.
-
     """
 
     def __init__(

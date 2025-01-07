@@ -179,11 +179,16 @@ class ImplementationGraph(nx.MultiDiGraph):
 
     Notes
     -----
-    Unlike a :class:`StepGraph`, an ImplementationGraph is a low-level abstraction;
-    it represents the actual implementations of each :class:`~easylink.step.Step`
-    in the pipeline.
+    An ImplementationGraph is a low-level abstraction; it represents the _actual
+    implementations_ of each :class:`~easylink.step.Step` in the pipeline. This
+    is in contrast to a :class:`StepGraph`, which can be an intricate nested structure
+    due to the various complex and self-similar :class:`~easylink.step.Step` instances
+    (which represent abstract operations such as "loop this step N times"). An
+    ImplementationGraph the flattened and concrete graph of
+    :class:`Implementations<easylink.implementation.Implementation>` to run.
 
-    The highest level ImplementationGraph is the that of the entire :class:`~easylink.pipeline_graph.PipelineGraph`.
+    The highest level ImplementationGraph is the that of the entire
+    :class:`~easylink.pipeline_graph.PipelineGraph`.
 
     See Also
     --------
