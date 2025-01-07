@@ -1,4 +1,4 @@
-**0.1.3 - 1/6/25**
+**0.1.3 - 1/7/25**
 
  - Validate currently-installed python version during setup
  - Automatically update README when supported python versions change
