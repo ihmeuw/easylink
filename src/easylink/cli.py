@@ -89,9 +89,9 @@ def run(
 ) -> None:
     """Runs a pipeline from the command line.
 
-    In addition to running the pipeline, this command will also generate the
-    DAG image. If you only want to generate the image without actually running
-    the pipeline, use the ``easylink generate-dag`` command.
+    In addition to running the pipeline, this command will also generate the directed
+    acyclic graph (DAG) image. If you only want to generate the image without actually
+    running the pipeline, use the ``easylink generate-dag`` command.
     """
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
@@ -120,7 +120,7 @@ def generate_dag(
     output_dir: str | None,
     no_timestamp: bool,
 ) -> None:
-    """Generates an image of the proposed pipeline DAG.
+    """Generates an image of the proposed pipeline directed acyclic graph (DAG).
 
     This command only generates the DAG image of the pipeline; it does not actually
     run it. To run the pipeline, use the ``easylink run`` command.

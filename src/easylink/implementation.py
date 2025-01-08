@@ -4,7 +4,8 @@ Implementations
 ===============
 
 This module is responsible for defining the abstractions that represent actual
-implementations of steps in a pipeline.
+implementations of steps in a pipeline. Typically, these abstractions contain
+information about what container to run for the step and other related details.
 
 """
 
@@ -136,7 +137,7 @@ class Implementation:
 
 
 class NullImplementation:
-    """An object with a partial :class:`Implementation` interface that represents that no container needs to run.
+    """An partial :class:`Implementation` interface that represents that no container needs to run.
 
     The primary use case for this class is when adding an :class:`~easylink.step.IOStep` -
     which does not have a corresponding :class:`Implementation` - to an
@@ -170,11 +171,10 @@ class NullImplementation:
         names to their instances."""
         self.schema_steps = [self.name]
         """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` names for which this NullImplementation is
-        expected to be responsible."""
+        :class:`~easylink.step.Step` names this ``NullImplementation`` implements."""
         self.combined_name = None
-        """The name of the combined implementation that this NullImplementation 
-        is part of. This is definitionally None for a NullImplementation."""
+        """The name of the combined implementation of which ``NullImplementation`` 
+        is a constituent. This is definitionally None for a ``NullImplementation``."""
 
 
 class PartialImplementation:
@@ -194,12 +194,12 @@ class PartialImplementation:
     Parameters
     ----------
     combined_name
-        The name of the combined implementation that this PartialImplementation
-        is part of.
+        The name of the combined implementation of which this ``PartialImplementation``
+        is a part.
     schema_step
         The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` name for which this PartialImplementation is
-        expected to be responsible.
+        :class:`~easylink.step.Step` name that this ``PartialImplementation``
+        partially implements.
     input_slots
         The :class:`InputSlots<easylink.graph_components.InputSlot>` for this PartialImplementation.
     output_slots
@@ -215,12 +215,12 @@ class PartialImplementation:
         output_slots: Iterable["OutputSlot"] = (),
     ):
         self.combined_name = combined_name
-        """The name of the combined implementation that this PartialImplementation
-        is part of."""
+        """The name of the combined implementation of which this ``PartialImplementation``
+        is a part."""
         self.schema_step = schema_step
         """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` name for which this PartialImplementation is
-        expected to be responsible."""
+        :class:`~easylink.step.Step` name that this ``PartialImplementation`` 
+        partially implements."""
         self.input_slots = {slot.name: slot for slot in input_slots}
         """A mapping of :class:`InputSlots<easylink.graph_components.InputSlot>`
         names to their instances."""

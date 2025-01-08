@@ -3,8 +3,8 @@
 Graph Components
 ================
 
-This module is responsible for defining the abstractions that represent the graph
-components of a pipeline. 
+This module is responsible for defining the modular building-block objects that 
+can be composed to create graph representations of pipelines.
 
 """
 
@@ -24,11 +24,16 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class InputSlot:
-    """An abstraction representing a single input slot to a specific :class:`~easylink.step.Step`.
+    """An abstraction representing a single input slot to a specific node.
 
-    In order to pass data between :class:`Steps<easylink.step.Step>`, an InputSlot
-    of one Step can be connected to an :class:`OutputSlot` of another Step via an :class:`EdgeParams`
-    instance.
+    ``InputSlots`` represent distinct semantic categories of input files, between
+    which a node must be able to differentiate. In order to pass data between nodes,
+    an ``InputSlot`` of one node can be connected to an :class:`OutputSlot` of another
+    node via an :class:`EdgeParams` instance.
+
+    Notes
+    -----
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<~easylink.implementation.Implementation>`.
     """
 
     name: str
@@ -44,18 +49,19 @@ class InputSlot:
 
 @dataclass(frozen=True)
 class OutputSlot:
-    """An abstraction representing a single output slot from a specific :class:`~easylink.step.Step`.
+    """An abstraction representing a single output slot from a specific node.
 
-    In order to pass data between :class:`Steps<easylink.step.Step>`, an OutputSlot
-    of one Step can be connected to an :class:`InputSlot` of another Step via an :class:`EdgeParams`
-    instance.
+    In order to pass data between nodes, an OutputSlot of one node can be connected
+    to an :class:`InputSlot` of another node via an :class:`EdgeParams` instance.
 
     Notes
     -----
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<~easylink.implementation.Implementation>`.
+
     Input data is validated via the :class:`InputSlot's<InputSlot>` required
     :attr:`~InputSlot.validator` attribute. In order to prevent multiple
-    validations of the same files (since outputs of one :class:`~easylink.step.Step`
-    can be inputs to another), no such validator is stored here on the OutputSlot.
+    validations of the same files (since outputs of one node can be inputs to another),
+    no such validator is stored here on the OutputSlot.
     """
 
     name: str
@@ -64,10 +70,14 @@ class OutputSlot:
 
 @dataclass(frozen=True)
 class EdgeParams:
-    """A representation of an edge between two nodes (:class:`Steps<easylink.step.Step>`) in a graph.
+    """A representation of an edge between two nodes in a graph.
 
-    EdgeParams connect the :class:`OutputSlot` of a source Step to the :class:`InputSlot`
-    of a target Step.
+    EdgeParams connect the :class:`OutputSlot` of a source node to the :class:`InputSlot`
+    of a target node.
+
+    Notes
+    -----
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<~easylink.implementation.Implementation>`.
     """
 
     source_node: str
@@ -110,7 +120,7 @@ class EdgeParams:
 
 
 class StepGraph(nx.MultiDiGraph):
-    """A DAG of :class:`Steps<easylink.step.Step>` and the data dependencies between them.
+    """A directed acyclic graph (DAG) of :class:`Steps<easylink.step.Step>` and the data dependencies between them.
 
     StepGraphs are DAGs with :class:`Steps<easylink.step.Step>`
     for nodes and the file dependencies between them for edges. Multiple edges

@@ -671,6 +671,7 @@ class LoopStep(TemplatedStep):
             graph.add_node_from_step(node)
         for edge in edges:
             graph.add_edge_from_params(edge)
+        breakpoint()
         return graph
 
     def _update_slot_mappings(self, num_repeats) -> dict:
