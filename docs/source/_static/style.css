@@ -1,3 +1,12 @@
 .wy-nav-content {
     max-width: 1000px !important;
 }
+/* make links red and bold */
+code.xref {
+    color: red !important;
+    font-weight: bold !important;
+}
+/* make inline code black */
+code {
+    color: black !important;
+}
