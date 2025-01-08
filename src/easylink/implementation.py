@@ -190,7 +190,7 @@ class PartialImplementation:
         The name of the combined implementation of which this ``PartialImplementation``
         is a part.
     schema_step
-        The requested ``Step`` name that this ``PartialImplementation`` partially 
+        The requested ``Step`` name that this ``PartialImplementation`` partially
         implements.
     input_slots
         The :class:`InputSlots<easylink.graph_components.InputSlot>` for this ``PartialImplementation``.

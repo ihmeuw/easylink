@@ -58,9 +58,9 @@ class OutputSlot:
     -----
     Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<easylink.implementation.Implementation>`.
 
-    Input data is validated via the ``InputSlot`` required :attr:`~InputSlot.validator` 
-    attribute. In order to prevent multiple validations of the same files (since 
-    outputs of one node can be inputs to another), no such validator is stored 
+    Input data is validated via the ``InputSlot`` required :attr:`~InputSlot.validator`
+    attribute. In order to prevent multiple validations of the same files (since
+    outputs of one node can be inputs to another), no such validator is stored
     here on the ``OutputSlot``.
     """
 
