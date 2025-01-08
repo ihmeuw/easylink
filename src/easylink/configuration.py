@@ -174,7 +174,7 @@ class Config(LayeredConfigTree):
     #################
 
     def _get_schema(self, potential_schemas: list[PipelineSchema]) -> PipelineSchema:
-        """Returns the first ``PipelineSchema`` that successfully validates the requested pipeline.
+        """Returns the first :class:`~easylink.pipeline_schema.PipelineSchema` that validates the requested pipeline.
 
         Parameters
         ----------
@@ -183,17 +183,17 @@ class Config(LayeredConfigTree):
 
         Returns
         -------
-            The first pipeline schema that successfully validates the requested pipeline.
-            If no validated pipeline schema is found, `exit()` is called with `errno.EINVAL`
-            and any validation errors are logged.
+            The first ``PipelineSchema`` that validates the requested pipeline.
+            If no validated ``PipelineSchema`` is found, `exit()` is called with
+            `errno.EINVAL` and any validation errors are logged.
 
         Notes
         -----
         This acts as the pipeline configuration file's validation method since
         we can only find a matching ``PipelineSchema`` if that file is valid.
 
-        This method returns the first ``PipelineSchema`` that successfully validates
-        and does not attempt to validate additional ones.
+        This method returns the *first* ``PipelineSchema`` that validates and does
+        not attempt to check additional ones.
         """
         errors = defaultdict(dict)
         # Try each schema until one is validated
@@ -283,11 +283,11 @@ def load_params_from_specification(
     Parameters
     ----------
     pipeline_specification
-        The path to the pipeline specification yaml file.
+        The path to the pipeline specification file.
     input_data
-        The path to the input data yaml file.
+        The path to the input data file.
     computing_environment
-        The path to the computing environment yaml file.
+        The path to the computing environment file.
     results_dir
         The path to the results directory.
 
@@ -306,7 +306,7 @@ def load_params_from_specification(
 def _load_input_data_paths(
     input_data_specification_path: str | Path,
 ) -> dict[str, list[Path]]:
-    """Creates a dictionary of input data paths from the input data yaml file."""
+    """Creates a dictionary of input data paths from the input data specification file."""
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(
@@ -322,13 +322,13 @@ def _load_input_data_paths(
 def _load_computing_environment(
     computing_environment_specification_path: str | None,
 ) -> dict[Any, Any]:
-    """Loads the computing environment yaml file and returns the contents as a dict."""
+    """Loads the computing environment specification file and returns the contents as a dict."""
     if not computing_environment_specification_path:
         return {}  # handles empty environment.yaml
     elif not Path(computing_environment_specification_path).is_file():
         raise FileNotFoundError(
             "Computing environment is expected to be a path to an existing"
-            f" yaml file. Input was: '{computing_environment_specification_path}'"
+            f" specification file. Input was: '{computing_environment_specification_path}'"
         )
     else:
         return load_yaml(computing_environment_specification_path)

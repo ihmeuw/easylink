@@ -22,21 +22,21 @@ from easylink.utilities.data_utils import load_yaml
 class Implementation:
     """A representation of an actual container that will be executed for a :class:`~easylink.step.Step`.
 
-    ``Implementations`` exist at a lower level than Steps. This class contains
+    ``Implementations`` exist at a lower level than ``Steps``. This class contains
     information about what container to use, what environment variables to set
     inside the container, and some metadata about the container.
 
     Parameters
     ----------
     schema_steps
-        The requested Step names for which this ``Implementation`` is expected to
-        be responsible.
+        The user-requested ``Step`` names for which this ``Implementation`` is
+        expected to implement.
     implementation_config
-        The configuration for this ``Implementation``.
+        The configuration details required to run the relevant container.
     input_slots
-        The :class:`InputSlots<easylink.graph_components.InputSlot>` for this ``Implementation``.
+        All required :class:`InputSlots<easylink.graph_components.InputSlot>`.
     output_slots
-        The :class:`OutputSlots<easylink.graph_components.OutputSlot>` for this ``Implementation``.
+        All required :class:`OutputSlots<easylink.graph_components.OutputSlot>`.
     """
 
     def __init__(
@@ -57,10 +57,10 @@ class Implementation:
         """A mapping of environment variables to set."""
         self.metadata_steps = self._metadata["steps"]
         """The names of the specific ``Steps`` for which this ``Implementation`` 
-        is responsible to implement."""
+        has been designed to implement."""
         self.schema_steps = schema_steps
-        """The *user-requested* ``Step`` names for which this ``Implementation`` 
-        is responsible to implement."""
+        """The names of the specific ``Steps`` that the user has requested to be
+        implemented by this particular ``Implementation``."""
         self.requires_spark = self._metadata.get("requires_spark", False)
         """Whether this ``Implementation`` requires a Spark environment."""
 
@@ -90,7 +90,7 @@ class Implementation:
     ##################
 
     def _load_metadata(self) -> dict[str, str]:
-        """Loads the metadata for this ``Implementation`` instance."""
+        """Loads the relevant implementation metadata."""
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         return metadata[self.name]
 
@@ -104,36 +104,36 @@ class Implementation:
         return logs
 
     def _validate_container_exists(self, logs: list[str]) -> list[str]:
-        """Validates that the container for this ``Implementation`` exists."""
+        """Validates that the container to run exists."""
         err_str = f"Container '{self.singularity_image_path}' does not exist."
         if not Path(self.singularity_image_path).exists():
             logs.append(err_str)
         return logs
 
     def _get_env_vars(self, implementation_config: LayeredConfigTree) -> dict[str, str]:
-        """Gets the environment variables relevant to this ``Implementation``."""
+        """Gets the relevant environment variables."""
         env_vars = self._metadata.get("env", {})
         env_vars.update(implementation_config.get("configuration", {}))
         return env_vars
 
     @property
     def singularity_image_path(self) -> str:
-        """The path to the Singularity image for this ``Implementation``."""
+        """The path to the required Singularity image."""
         return self._metadata["image_path"]
 
     @property
     def script_cmd(self) -> str:
-        """The command to run inside of the container for this ``Implementation``."""
+        """The command to run inside of the container."""
         return self._metadata["script_cmd"]
 
     @property
     def outputs(self) -> dict[str, list[str]]:
-        """The outputs expected from this ``Implementation``."""
+        """The expected output metadata."""
         return self._metadata["outputs"]
 
 
 class NullImplementation:
-    """A partial :class:`Implementation` interface that represents that no container needs to run.
+    """A partial :class:`Implementation` interface when no container is needed to run.
 
     The primary use case for this class is when adding an
     :class:`~easylink.step.IOStep` - which does not have a corresponding
@@ -146,9 +146,9 @@ class NullImplementation:
     name
         The name of this ``NullImplementation``.
     input_slots
-        The ``InputSlots`` for this ``NullImplementation``.
+        All required ``InputSlots``.
     output_slots
-        The ``OutputSlots`` for this ``NullImplementation``.
+        All required ``OutputSlots``.
     """
 
     def __init__(
@@ -171,7 +171,7 @@ class NullImplementation:
 
 
 class PartialImplementation:
-    """A representation of one part of a combined implementation that spans multiple :class:`Steps<easylink.step.Step>`.
+    """One part of a combined implementation that spans multiple :class:`Steps<easylink.step.Step>`.
 
     A ``PartialImplementation`` is what is initially added to the
     :class:`~easylink.graph_components.ImplementationGraph` when a so-called

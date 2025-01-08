@@ -78,7 +78,7 @@ def test__load_computing_environment(test_dir, environment_file, expected):
 def test_load_missing_computing_environment_fails():
     with pytest.raises(
         FileNotFoundError,
-        match="Computing environment is expected to be a path to an existing yaml file. .*",
+        match="Computing environment is expected to be a path to an existing specification file. .*",
     ):
         _load_computing_environment(Path("some/bogus/path.yaml"))
 

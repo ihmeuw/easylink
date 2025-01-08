@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class InputSlot:
-    """An abstraction representing a single input slot to a specific node.
+    """A single input slot to a specific node.
 
     ``InputSlots`` represent distinct semantic categories of input files, between
     which a node must be able to differentiate. In order to pass data between nodes,
@@ -39,20 +39,24 @@ class InputSlot:
     name: str
     """The name of the ``InputSlot``."""
     env_var: str | None
-    """The environment variable that this ``InputSlot`` will use to pass a list 
-    of data filepaths to an ``Implementation``."""
+    """The environment variable that is used to pass a list  of data filepaths to 
+    an ``Implementation``."""
     validator: Callable[[str], None]
-    """A callable that validates the input data being passed into the pipeline via 
-    this ``InputSlot``. If the data is invalid, the callable should raise an exception 
-    with a descriptive error message which will then be reported to the user."""
+    """A function that validates the input data being passed into the pipeline via 
+    this ``InputSlot``. If the data is invalid, the function should raise an exception 
+    with a descriptive error message which will then be reported to the user.
+    **Note that the function *must* be defined in the :mod:`easylink.utilities.validation_utils` 
+    module!**"""
 
 
 @dataclass(frozen=True)
 class OutputSlot:
-    """An abstraction representing a single output slot from a specific node.
+    """A single output slot from a specific node.
 
-    In order to pass data between nodes, an ``OutputSlot`` of one node can be connected
-    to an :class:`InputSlot` of another node via an :class:`EdgeParams` instance.
+    ``Outputslots`` represent distinct semantic categories of output files, between
+    which a node must be able to differentiate. In order to pass data between nodes,
+    an ``OutputSlot`` of one node can be connected to an :class:`InputSlot` of another
+    node via an :class:`EdgeParams` instance.
 
     Notes
     -----
@@ -70,9 +74,9 @@ class OutputSlot:
 
 @dataclass(frozen=True)
 class EdgeParams:
-    """A representation of an edge between two nodes in a graph.
+    """The details of an edge between two nodes in a graph.
 
-    EdgeParams connect the :class:`OutputSlot` of a source node to the :class:`InputSlot`
+    ``EdgeParams`` connect the :class:`OutputSlot` of a source node to the :class:`InputSlot`
     of a target node.
 
     Notes
@@ -81,15 +85,15 @@ class EdgeParams:
     """
 
     source_node: str
-    """The name of the source node/``Step``."""
+    """The name of the source node."""
     target_node: str
-    """The name of the target node/``Step``."""
+    """The name of the target node."""
     output_slot: str
-    """The name of the ``OutputSlot`` of the source node/``Step``."""
+    """The name of the source node's ``OutputSlot``."""
     input_slot: str
-    """The name of the ``InputSlot`` of the target node/``Step``."""
+    """The name of the target node's ``InputSlot``."""
     filepaths: tuple[str] | None = None
-    """The filepaths that are passed from the source node/``Step`` to the target node/``Step``."""
+    """The filepaths that are passed from the source node to the target node."""
 
     @classmethod
     def from_graph_edge(
@@ -103,12 +107,13 @@ class EdgeParams:
         Parameters
         ----------
         source
-            The name of the source node/``Step``.
+            The name of the source node.
         sink
-            The name of the target node/``Step``.
+            The name of the target node.
         edge_attrs
-            The attributes of the edge connecting the source and target nodes/``Steps``.
-            'output_slot' and 'input_slot' are required keys and 'filepaths' is optional.
+            The attributes of the edge connecting the source and target nodes.
+            'output_slot' and 'input_slot' are required keys while 'filepaths' is
+            optional.
         """
         return cls(
             source,
@@ -120,10 +125,11 @@ class EdgeParams:
 
 
 class StepGraph(nx.MultiDiGraph):
-    """A directed acyclic graph (DAG) of :class:`Steps<easylink.step.Step>` and the data dependencies between them.
+    """A directed acyclic graph (DAG) of :class:`Steps<easylink.step.Step>`.
 
-    ``StepGraphs`` are DAGs with ``Steps`` for nodes and the file dependencies between
-    them for edges. Multiple edges between nodes are permitted.
+    ``StepGraphs`` are DAGs with ``Step`` names for nodes and their corresponding
+    ``Step`` instances as attributes on those nodes. The file dependencies between
+    nodes are the graph edges; multiple edges between nodes are permitted.
 
     Notes
     -----
@@ -135,13 +141,13 @@ class StepGraph(nx.MultiDiGraph):
 
     @property
     def step_nodes(self) -> list[str]:
-        """The topologically sorted list of node/``Step`` names."""
+        """The topologically sorted list of ``Step`` names."""
         ordered_nodes = list(nx.topological_sort(self))
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
     def steps(self) -> list[Step]:
-        """The list of all ``Steps`` in the graph."""
+        """The topologically sorted list of all ``Steps`` in the graph."""
         return [self.nodes[node]["step"] for node in self.step_nodes]
 
     def add_node_from_step(self, step: Step) -> None:
@@ -196,13 +202,13 @@ class ImplementationGraph(nx.MultiDiGraph):
 
     @property
     def implementation_nodes(self) -> list[str]:
-        """The topologically sorted list of node/``Implementation`` names."""
+        """The topologically sorted list of ``Implementation`` names."""
         ordered_nodes = list(nx.topological_sort(self))
         return [node for node in ordered_nodes if node != "input_data" and node != "results"]
 
     @property
     def implementations(self) -> list[Implementation]:
-        """The list of all ``Implementations`` in the graph."""
+        """The topologically sorted  list of all ``Implementations`` in the graph."""
         return [self.nodes[node]["implementation"] for node in self.implementation_nodes]
 
     def add_node_from_implementation(self, node_name, implementation: Implementation) -> None:
@@ -240,29 +246,33 @@ class ImplementationGraph(nx.MultiDiGraph):
 
 @dataclass(frozen=True)
 class SlotMapping(ABC):
-    """A mapping between a slot on a parent :class:`~easylink.step.Step` and a slot on one of its child ``Steps``.
+    """A mapping between a slot on a parent node and a slot on one of its child nodes.
 
     ``SlotMapping`` is an interface intended to be used by concrete :class:`InputSlotMapping`
     and :class:`OutputSlotMapping` classes. It represents a mapping between
-    parent and child nodes/``Steps`` at different levels of a potentially-nested
+    parent and child nodes at different levels of a potentially-nested
     :class:`~easylink.pipeline_schema.PipelineSchema`.
+
+    Notes
+    -----
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<easylink.implementation.Implementation>`.
     """
 
     parent_slot: str
     """The name of the parent slot."""
     child_node: str
-    """The name of the child node/``Step``."""
+    """The name of the child node."""
     child_slot: str
     """The name of the child slot."""
 
     @abstractmethod
     def remap_edge(self, edge: EdgeParams) -> EdgeParams:
-        """Remaps an edge to connect the parent and child nodes/``Steps``."""
+        """Remaps an edge to connect the parent and child nodes."""
         pass
 
 
 class InputSlotMapping(SlotMapping):
-    """A mapping between :class:`InputSlots<InputSlot>` of a parent node/:class:`~easylink.step.Step` and a child node/``Step``."""
+    """A mapping between :class:`InputSlots<InputSlot>` of a parent node and a child node."""
 
     def remap_edge(self, edge: EdgeParams) -> EdgeParams:
         """Remaps an edge's ``InputSlot``.
@@ -293,7 +303,7 @@ class InputSlotMapping(SlotMapping):
 
 
 class OutputSlotMapping(SlotMapping):
-    """A mapping between :class:`InputSlots<InputSlot>` of a parent node/:class:`~easylink.step.Step` and a child node/``Step``."""
+    """A mapping between :class:`InputSlots<InputSlot>` of a parent node and a child node."""
 
     def remap_edge(self, edge: EdgeParams) -> EdgeParams:
         """Remaps an edge's :class:`OutputSlot`.
