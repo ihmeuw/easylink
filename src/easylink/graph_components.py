@@ -33,7 +33,7 @@ class InputSlot:
 
     Notes
     -----
-    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<~easylink.implementation.Implementation>`.
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<easylink.implementation.Implementation>`.
     """
 
     name: str
@@ -56,7 +56,7 @@ class OutputSlot:
 
     Notes
     -----
-    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<~easylink.implementation.Implementation>`.
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<easylink.implementation.Implementation>`.
 
     Input data is validated via the :class:`InputSlot's<InputSlot>` required
     :attr:`~InputSlot.validator` attribute. In order to prevent multiple
@@ -77,7 +77,7 @@ class EdgeParams:
 
     Notes
     -----
-    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<~easylink.implementation.Implementation>`.
+    Nodes can be either :class:`Steps<easylink.step.Step>` or :class:`Implementations<easylink.implementation.Implementation>`.
     """
 
     source_node: str
