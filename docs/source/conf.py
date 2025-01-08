@@ -215,8 +215,6 @@ autodoc_default_options = {
     "undoc-members": True,
     # Don't document things with a leading underscore.
     "private-members": True,
-    # Include special members.
-    "special-members": "__init__",
     # Show class inheritance.
     "show-inheritance": True,
 }

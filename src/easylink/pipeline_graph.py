@@ -22,9 +22,9 @@ from easylink.utilities.data_utils import load_yaml
 class PipelineGraph(ImplementationGraph):
     """The structure of the pipeline.
 
-    The PipelineGraph is a DAG composed of Implementations and their file dependencies.
-    It is created by "flattening" the PipelineSchema (a nested StepGraph) with parameters
-    set in the configuration.
+    The PipelineGraph is a directed acyclic graph (DAG) composed of Implementations
+    and their file dependencies. It is created by "flattening" the PipelineSchema
+    (a nested StepGraph) with parameters set in the configuration.
     """
 
     def __init__(self, config: Config) -> None:
