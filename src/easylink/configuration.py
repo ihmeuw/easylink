@@ -1,3 +1,13 @@
+"""
+=============
+Configuration
+=============
+
+This module is responsible for managing an easylink run's configuration as defined
+by various user-input specification files.
+
+"""
+
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -23,6 +33,8 @@ DEFAULT_ENVIRONMENT = {
         },
     }
 }
+"""The default environment configuration settings."""
+
 SPARK_DEFAULTS = {
     "workers": {
         "num_workers": 2,
@@ -32,24 +44,62 @@ SPARK_DEFAULTS = {
     },
     "keep_alive": False,
 }
+"""The default spark configuration settings."""
 
-# Allow some buffer so that slurm doesn't kill spark workers
-SLURM_SPARK_MEM_BUFFER = 500
+SLURM_SPARK_MEM_BUFFER = 500  # MB
 
 
 class Config(LayeredConfigTree):
     """A container for configuration information.
 
-    This class combines the pipeline, input data, and computing environment
-    specifications into a single LayeredConfigTree object. It is also responsible
-    for validating these specifications.
+    A ``Config`` (which inherits from :class:`~layered_config_tree.LayeredConfigTree`)
+    is a container that includes the combination of the user-provided pipeline,
+    input data, and computing environment  specifications. It is a nested
+    dictionary-like object that supports prioritized layers of configuration settings
+    as well as dot-notation access to its attributes.
+
+    The ``Config`` is also reponsible for various validation checks on the provided
+    specifications. If any of these are invalid, a validation error is raised with
+    as much information as can possibly be provided.
+
+    Parameters
+    ----------
+    config_params
+        A dictionary of all specifications required to run the pipeline. This
+        includes the pipeline, input data, and computing environment specifications,
+        as well as the results directory.
+    potential_schemas
+        A list of potential schemas to validate the pipeline configuration against.
+        This is primarily used for testing purposes. Defaults to the supported schemas.
+
+    Attributes
+    ----------
+    environment
+        The environment configuration, including computing environment,
+        container engine, implementation resources, and slurm- and spark-specific
+        requests.
+    pipeline
+        The pipeline configuration.
+    input_data
+        The input data filepaths.
+    schema
+        The :class:`~easylink.pipeline_schema.PipelineSchema` that successfully
+        validated the requested pipeline.
+
+    Notes
+    -----
+    The requested pipeline is checked against a set of supported
+    :class:`pipeline schemas <easylink.pipeline_schema.PipelineSchema>`. The first
+    schema that successfully validates is assumed to be the correct one and is attached
+    to the ``Config`` object and its :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline`
+    method is called.
     """
 
     def __init__(
         self,
         config_params: dict[str, Any],
         potential_schemas: list[PipelineSchema] | PipelineSchema = PIPELINE_SCHEMAS,
-    ):
+    ) -> None:
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
         self.update(config_params, layer="user_configured")
@@ -67,13 +117,13 @@ class Config(LayeredConfigTree):
         self.freeze()
 
     @property
-    def computing_environment(self) -> dict[str, Any]:
-        """The computing environment to run on (generally either 'local' or 'slurm')."""
+    def computing_environment(self) -> str:
+        """The computing environment to run on ('local' or 'slurm')."""
         return self.environment.computing_environment
 
     @property
     def slurm(self) -> dict[str, Any]:
-        """A dictionary of slurm configuration settings."""
+        """A dictionary of slurm-specific configuration settings."""
         if not self.environment.computing_environment == "slurm":
             return {}
         else:
@@ -81,12 +131,12 @@ class Config(LayeredConfigTree):
 
     @property
     def spark(self) -> dict[str, Any]:
-        """A dictionary of spark configuration settings."""
+        """A dictionary of spark-specific configuration settings."""
         return self.environment.spark.to_dict()
 
     @property
     def slurm_resources(self) -> dict[str, str]:
-        """A flat dictionary of the slurm resources."""
+        """A flat dictionary of slurm resource requests."""
         if not self.computing_environment == "slurm":
             return {}
         raw_slurm_resources = {
@@ -103,7 +153,7 @@ class Config(LayeredConfigTree):
 
     @property
     def spark_resources(self) -> dict[str, Any]:
-        """A flat dictionary of the spark resources."""
+        """A flat dictionary of spark resource requests."""
         spark_workers_raw = self.spark["workers"]
         spark_workers = {
             "num_workers": spark_workers_raw.get("num_workers"),
@@ -125,14 +175,26 @@ class Config(LayeredConfigTree):
     #################
 
     def _get_schema(self, potential_schemas: list[PipelineSchema]) -> PipelineSchema:
-        """Validates the requested pipeline against supported schemas.
+        """Returns the first pipeline schema that successfully validates the requested pipeline.
+
+        Parameters
+        ----------
+        potential_schemas
+            Pipeline schemas to validate the pipeline configuration against.
+
+        Returns
+        -------
+            The first pipeline schema that successfully validates the requested pipeline.
+            If no validated pipeline schema is found, `exit()` is called with `errno.EINVAL`
+            and any validation errors are logged.
 
         Notes
         -----
         This acts as the pipeline configuration file's validation method since
-        we can only find a matching schema if the file is valid.
+        we can only find a matching schema if that file is valid.
 
-        We use the first schema that validates the pipeline configuration.
+        This method returns the first schema that successfully validates and does
+        not attempt to validate additional ones.
         """
         errors = defaultdict(dict)
         # Try each schema until one is validated
@@ -147,6 +209,18 @@ class Config(LayeredConfigTree):
         exit_with_validation_error(dict(errors))
 
     def _validate(self) -> None:
+        """Validates the ``Config``.
+
+        Raises
+        ------
+        SystemExit
+            If any errors are found, they are batch-logged into a dictionary and
+            the program exits with a non-zero code.
+
+        Notes
+        -----
+        Pipeline validations are handled in :meth:`~easylink.configuration.Config._get_schema`.
+        """
         # TODO [MIC-4880]: refactor into validation object
         errors = {
             # NOTE: pipeline configuration validation happens in '_get_schema()'
@@ -157,6 +231,12 @@ class Config(LayeredConfigTree):
             exit_with_validation_error(errors)
 
     def _validate_input_data(self) -> dict[Any, Any]:
+        """Validates the input data configuration.
+
+        Returns
+        -------
+            A dictionary of input data configuration validation errors.
+        """
         errors = defaultdict(dict)
         input_data_dict = self.input_data.to_dict()
         if not input_data_dict:
@@ -168,6 +248,12 @@ class Config(LayeredConfigTree):
         return errors
 
     def _validate_environment(self) -> dict[Any, Any]:
+        """Validates the environment configuration.
+
+        Returns
+        -------
+            A dictionary of environment configuration validation errors.
+        """
         errors = defaultdict(dict)
         if not self.environment.container_engine in ["docker", "singularity", "undefined"]:
             errors[ENVIRONMENT_ERRORS_KEY]["container_engine"] = [
@@ -189,11 +275,26 @@ def load_params_from_specification(
     computing_environment: str | None,
     results_dir: str,
 ) -> dict[str, Any]:
-    """Gather together all specification data.
+    """Gathers together all specification data.
 
     This gathers the pipeline, input data, and computing environment specifications
     as well as the results directory into a single dictionary for insertion into
-    the Config object.
+    the ``Config`` object.
+
+    Parameters
+    ----------
+    pipeline_specification
+        The path to the pipeline specification yaml file.
+    input_data
+        The path to the input data yaml file.
+    computing_environment
+        The path to the computing environment yaml file.
+    results_dir
+        The path to the results directory.
+
+    Returns
+    -------
+        A dictionary of all provided specification data.
     """
     return {
         "pipeline": load_yaml(pipeline_specification),
@@ -206,7 +307,7 @@ def load_params_from_specification(
 def _load_input_data_paths(
     input_data_specification_path: str | Path,
 ) -> dict[str, list[Path]]:
-    """Create dictionary of input data paths from the input data yaml file."""
+    """Creates a dictionary of input data paths from the input data yaml file."""
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(
@@ -222,7 +323,7 @@ def _load_input_data_paths(
 def _load_computing_environment(
     computing_environment_specification_path: str | None,
 ) -> dict[Any, Any]:
-    """Load the computing environment yaml file and return the contents as a dict."""
+    """Loads the computing environment yaml file and returns the contents as a dict."""
     if not computing_environment_specification_path:
         return {}  # handles empty environment.yaml
     elif not Path(computing_environment_specification_path).is_file():

@@ -22,9 +22,9 @@ from easylink.utilities.data_utils import load_yaml
 class PipelineGraph(ImplementationGraph):
     """The structure of the pipeline.
 
-    The PipelineGraph is a DAG composed of Implementations and their file dependencies.
-    It is created by "flattening" the PipelineSchema (a nested StepGraph) with parameters
-    set in the configuration.
+    The PipelineGraph is a directed acyclic graph (DAG) composed of Implementations
+    and their file dependencies. It is created by "flattening" the PipelineSchema
+    (a nested StepGraph) with parameters set in the configuration.
     """
 
     def __init__(self, config: Config) -> None:
@@ -106,7 +106,7 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-        The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
+            The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
         """
         slot_types = ["input_slot", "output_slot"]
         combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
@@ -154,7 +154,7 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-        A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
+            A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
         """
 
         in_edges_by_slot = defaultdict(list)
@@ -196,7 +196,7 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-        A set of (step_name, slot) tuples that have duplicate names or environment variables.
+            A set of (step_name, slot) tuples that have duplicate names or environment variables.
         """
         name_freq = Counter([slot.name for step_name, slot in slot_tuples])
         duplicate_names = [name for name, count in name_freq.items() if count > 1]

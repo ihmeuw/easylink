@@ -63,31 +63,25 @@ install: # Install setuptools, install this package in editable mode
 format: setup.py pyproject.toml $(MAKE_SOURCES) # Run the code formatter and import sorter
 	-black $(LOCATIONS)
 	-isort $(LOCATIONS)
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 lint: .flake8 .bandit $(MAKE_SOURCES) # Run the code linter and package security vulnerability checker
 	-flake8 $(LOCATIONS)
 	-safety check
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 typecheck: pytype.cfg $(MAKE_SOURCES) # Run the type checker
 	-pytype --config=pytype.cfg $(LOCATIONS)
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 e2e: $(MAKE_SOURCES) # Run the e2e tests
 	export COVERAGE_FILE=./output/.coverage.e2e
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_e2e tests/e2e/
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 integration: $(MAKE_SOURCES) # Run unit tests
 	export COVERAGE_FILE=./output/.coverage.integration
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_integration tests/integration/
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 unit: $(MAKE_SOURCES) # Run unit tests
 	export COVERAGE_FILE=./output/.coverage.unit
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit tests/unit/
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
 	pip install build
@@ -96,7 +90,6 @@ build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
 
 build-doc: $(MAKE_SOURCES) # Build the Sphinx docs
 	$(MAKE) -C docs/ html
-	@echo "Ignore, Created by Makefile, `date`" > $@
 
 clean: # Delete build artifacts and do any custom cleanup such as spinning down services
 	@rm -rf format lint typecheck build-doc build-package unit e2e integration .pytest_cache .pytype

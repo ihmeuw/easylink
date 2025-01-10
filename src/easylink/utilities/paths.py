@@ -1,3 +1,9 @@
+"""
+=========
+Filepaths
+=========
+"""
+
 from pathlib import Path
 
 # TODO: We'll need to update this to be more generic for external users and have a way of configuring this

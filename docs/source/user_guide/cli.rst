@@ -4,8 +4,7 @@
 Command Line Interface
 ======================
 
-.. automodule:: easylink.cli
-
 .. click:: easylink.cli:easylink
    :prog: easylink
-   :show-nested:
+   :nested: full
+   :commands: run, generate-dag

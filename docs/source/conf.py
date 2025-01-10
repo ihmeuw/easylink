@@ -198,6 +198,7 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
     "networkx": ("https://networkx.org/documentation/stable/", None),
     "layered_config_tree": ("https://layered-config-tree.readthedocs.io/en/latest/", None),
+    "loguru": ("https://loguru.readthedocs.io/en/stable/", None),
 }
 
 
@@ -213,10 +214,16 @@ autodoc_default_options = {
     # Generate docs even if an item has no docstring.
     "undoc-members": True,
     # Don't document things with a leading underscore.
-    "private-members": False,
+    "private-members": True,
+    # Show class inheritance.
+    "show-inheritance": True,
 }
 # Display type hints in the description instead of the signature.
 autodoc_typehints = "description"
+# Mock problematic imports
+autodoc_mock_imports = [
+    "networkx",
+]
 
 
 # -- nitpicky mode --------------------------------------------------------

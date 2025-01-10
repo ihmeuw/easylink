@@ -42,9 +42,9 @@ def copy_configuration_files_to_results_directory(
         shutil.copy(computing_environment, results_dir)
 
 
-def get_results_directory(output_dir: str | None, timestamp: bool) -> Path:
+def get_results_directory(output_dir: str | None, no_timestamp: bool) -> Path:
     results_dir = Path("results" if output_dir is None else output_dir).resolve()
-    if timestamp:
+    if not no_timestamp:
         launch_time = _get_timestamp()
         results_dir = results_dir / launch_time
     return results_dir

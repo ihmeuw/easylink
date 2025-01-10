@@ -29,7 +29,7 @@ class Rule(ABC):
 class TargetRule(Rule):
     """A rule that defines the final output of the pipeline.
 
-    Snakemake will determine the DAG based on this target.
+    Snakemake will determine the directed acyclic graph (DAG) based on this target.
     """
 
     target_files: list[str]

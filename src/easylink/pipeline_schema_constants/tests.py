@@ -1,3 +1,9 @@
+"""
+=====================
+Test Pipeline Schemas
+=====================
+"""
+
 from easylink.graph_components import (
     EdgeParams,
     InputSlot,

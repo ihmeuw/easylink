@@ -1,0 +1,3 @@
+py:class LayeredConfigTree
+py:class layered_config_tree.LayeredConfigTree
+py:class layered_config_tree.main.LayeredConfigTree
