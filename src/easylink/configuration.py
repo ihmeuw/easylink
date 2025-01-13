@@ -52,7 +52,7 @@ SLURM_SPARK_MEM_BUFFER = 500  # MB
 class Config(LayeredConfigTree):
     """A container for configuration information.
 
-    The ``Config`` contains the user-provided specifications for the pipeline, 
+    The ``Config`` contains the user-provided specifications for the pipeline,
     input data, and computing environment specifications. It is a nested
     dictionary-like object that supports prioritized layers of configuration settings
     as well as dot-notation access to its attributes.
