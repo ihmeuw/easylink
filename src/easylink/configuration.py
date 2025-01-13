@@ -52,9 +52,8 @@ SLURM_SPARK_MEM_BUFFER = 500  # MB
 class Config(LayeredConfigTree):
     """A container for configuration information.
 
-    A ``Config`` (which inherits from :class:`~layered_config_tree.LayeredConfigTree`)
-    is a container that includes the combination of the user-provided pipeline,
-    input data, and computing environment  specifications. It is a nested
+    The ``Config`` contains the user-provided specifications for the pipeline,
+    input data, and computing environment specifications. It is a nested
     dictionary-like object that supports prioritized layers of configuration settings
     as well as dot-notation access to its attributes.
 
@@ -89,9 +88,9 @@ class Config(LayeredConfigTree):
     Notes
     -----
     The requested pipeline is checked against a set of supported
-    :class:`pipeline schemas <easylink.pipeline_schema.PipelineSchema>`. The first
-    schema that successfully validates is assumed to be the correct one and is attached
-    to the ``Config`` object and its :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline`
+    ``PipelineSchemas``. The first schema that successfully validates is assumed
+    to be the correct one and is attached to the ``Config`` object and its
+    :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline`
     method is called.
     """
 
@@ -175,26 +174,26 @@ class Config(LayeredConfigTree):
     #################
 
     def _get_schema(self, potential_schemas: list[PipelineSchema]) -> PipelineSchema:
-        """Returns the first pipeline schema that successfully validates the requested pipeline.
+        """Returns the first :class:`~easylink.pipeline_schema.PipelineSchema` that validates the requested pipeline.
 
         Parameters
         ----------
         potential_schemas
-            Pipeline schemas to validate the pipeline configuration against.
+            ``PipelineSchemas`` to validate the pipeline configuration against.
 
         Returns
         -------
-            The first pipeline schema that successfully validates the requested pipeline.
-            If no validated pipeline schema is found, `exit()` is called with `errno.EINVAL`
-            and any validation errors are logged.
+            The first ``PipelineSchema`` that validates the requested pipeline.
+            If no validated ``PipelineSchema`` is found, `exit()` is called with
+            `errno.EINVAL` and any validation errors are logged.
 
         Notes
         -----
         This acts as the pipeline configuration file's validation method since
-        we can only find a matching schema if that file is valid.
+        we can only find a matching ``PipelineSchema`` if that file is valid.
 
-        This method returns the first schema that successfully validates and does
-        not attempt to validate additional ones.
+        This method returns the *first* ``PipelineSchema`` that validates and does
+        not attempt to check additional ones.
         """
         errors = defaultdict(dict)
         # Try each schema until one is validated
@@ -279,16 +278,16 @@ def load_params_from_specification(
 
     This gathers the pipeline, input data, and computing environment specifications
     as well as the results directory into a single dictionary for insertion into
-    the ``Config`` object.
+    the :class:`Config` object.
 
     Parameters
     ----------
     pipeline_specification
-        The path to the pipeline specification yaml file.
+        The path to the pipeline specification file.
     input_data
-        The path to the input data yaml file.
+        The path to the input data file.
     computing_environment
-        The path to the computing environment yaml file.
+        The path to the computing environment file.
     results_dir
         The path to the results directory.
 
@@ -307,7 +306,7 @@ def load_params_from_specification(
 def _load_input_data_paths(
     input_data_specification_path: str | Path,
 ) -> dict[str, list[Path]]:
-    """Creates a dictionary of input data paths from the input data yaml file."""
+    """Creates a dictionary of input data paths from the input data specification file."""
     input_data_paths = load_yaml(input_data_specification_path)
     if not isinstance(input_data_paths, dict):
         raise TypeError(
@@ -323,13 +322,13 @@ def _load_input_data_paths(
 def _load_computing_environment(
     computing_environment_specification_path: str | None,
 ) -> dict[Any, Any]:
-    """Loads the computing environment yaml file and returns the contents as a dict."""
+    """Loads the computing environment specification file and returns the contents as a dict."""
     if not computing_environment_specification_path:
         return {}  # handles empty environment.yaml
     elif not Path(computing_environment_specification_path).is_file():
         raise FileNotFoundError(
             "Computing environment is expected to be a path to an existing"
-            f" yaml file. Input was: '{computing_environment_specification_path}'"
+            f" specification file. Input was: '{computing_environment_specification_path}'"
         )
     else:
         return load_yaml(computing_environment_specification_path)

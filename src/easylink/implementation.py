@@ -22,22 +22,21 @@ from easylink.utilities.data_utils import load_yaml
 class Implementation:
     """A representation of an actual container that will be executed for a :class:`~easylink.step.Step`.
 
-    Implementations exist at a lower level than :class:`Steps<easylink.step.Step>`.
-    This class contains information about what container to use, what environment
-    variables to set inside the container, and some metadata about the container.
+    ``Implementations`` exist at a lower level than ``Steps``. This class contains
+    information about what container to use, what environment variables to set
+    inside the container, and some metadata about the container.
 
     Parameters
     ----------
     schema_steps
-        The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` names for which this Implementation is
-        expected to be responsible.
+        The user-requested ``Step`` names for which this ``Implementation`` is
+        expected to implement.
     implementation_config
-        The configuration for this Implementation.
+        The configuration details required to run the relevant container.
     input_slots
-        The :class:`InputSlots<easylink.graph_components.InputSlot>` for this Implementation.
+        All required :class:`InputSlots<easylink.graph_components.InputSlot>`.
     output_slots
-        The :class:`OutputSlots<easylink.graph_components.OutputSlot>` for this Implementation.
+        All required :class:`OutputSlots<easylink.graph_components.OutputSlot>`.
     """
 
     def __init__(
@@ -48,31 +47,28 @@ class Implementation:
         output_slots: Iterable["OutputSlot"] = (),
     ):
         self.name = implementation_config.name
-        """The name of this Implementation."""
+        """The name of this ``Implementation``."""
         self.input_slots = {slot.name: slot for slot in input_slots}
-        """A mapping of :class:`InputSlots<easylink.graph_components.InputSlot>`
-        names to their instances."""
+        """A mapping of ``InputSlot`` names to their instances."""
         self.output_slots = {slot.name: slot for slot in output_slots}
-        """A mapping of :class:`OutputSlots<easylink.graph_components.OutputSlot>` 
-        names to their instances."""
+        """A mapping of ``OutputSlot`` names to their instances."""
         self._metadata = self._load_metadata()
         self.environment_variables = self._get_env_vars(implementation_config)
         """A mapping of environment variables to set."""
         self.metadata_steps = self._metadata["steps"]
-        """The names of the specific :class:`Steps<easylink.step.Step>` for which
-        this Implementation is responsible."""
+        """The names of the specific ``Steps`` for which this ``Implementation`` 
+        has been designed to implement."""
         self.schema_steps = schema_steps
-        """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` names for which this Implementation is 
-        requested to be responsible in the pipeline."""
+        """The names of the specific ``Steps`` that the user has requested to be
+        implemented by this particular ``Implementation``."""
         self.requires_spark = self._metadata.get("requires_spark", False)
-        """Whether this Implementation requires a Spark environment."""
+        """Whether this ``Implementation`` requires a Spark environment."""
 
     def __repr__(self) -> str:
         return f"Implementation.{self.name}"
 
     def validate(self) -> list[str]:
-        """Validates individual Implementation instances.
+        """Validates individual ``Implementation`` instances.
 
         Returns
         -------
@@ -94,12 +90,12 @@ class Implementation:
     ##################
 
     def _load_metadata(self) -> dict[str, str]:
-        """Loads the metadata for this Implementation instance."""
+        """Loads the relevant implementation metadata."""
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         return metadata[self.name]
 
     def _validate_expected_steps(self, logs: list[str]) -> list[str]:
-        """Validates that the Implementation is responsible for the correct steps."""
+        """Validates that the ``Implementation`` is responsible for the correct steps."""
         if not set(self.schema_steps) == set(self.metadata_steps):
             logs.append(
                 f"Pipeline configuration nodes {self.schema_steps} do not match "
@@ -108,51 +104,51 @@ class Implementation:
         return logs
 
     def _validate_container_exists(self, logs: list[str]) -> list[str]:
-        """Validates that the container for this Implementation exists."""
+        """Validates that the container to run exists."""
         err_str = f"Container '{self.singularity_image_path}' does not exist."
         if not Path(self.singularity_image_path).exists():
             logs.append(err_str)
         return logs
 
     def _get_env_vars(self, implementation_config: LayeredConfigTree) -> dict[str, str]:
-        """Gets the environment variables relevant to this Implementation."""
+        """Gets the relevant environment variables."""
         env_vars = self._metadata.get("env", {})
         env_vars.update(implementation_config.get("configuration", {}))
         return env_vars
 
     @property
     def singularity_image_path(self) -> str:
-        """The path to the Singularity image for this Implementation."""
+        """The path to the required Singularity image."""
         return self._metadata["image_path"]
 
     @property
     def script_cmd(self) -> str:
-        """The command to run inside of the container for this Implementation."""
+        """The command to run inside of the container."""
         return self._metadata["script_cmd"]
 
     @property
     def outputs(self) -> dict[str, list[str]]:
-        """The outputs expected from this Implementation."""
+        """The expected output metadata."""
         return self._metadata["outputs"]
 
 
 class NullImplementation:
-    """An partial :class:`Implementation` interface that represents that no container needs to run.
+    """A partial :class:`Implementation` interface when no container is needed to run.
 
-    The primary use case for this class is when adding an :class:`~easylink.step.IOStep` -
-    which does not have a corresponding :class:`Implementation` - to an
-    :class:`~easylink.graph_components.ImplementationGraph` since adding any new
-    node requires an object with :class:`~easylink.graph_components.InputSlot`
+    The primary use case for this class is when adding an
+    :class:`~easylink.step.IOStep` - which does not have a corresponding
+    ``Implementation`` - to an :class:`~easylink.graph_components.ImplementationGraph`
+    since adding any new node requires an object with :class:`~easylink.graph_components.InputSlot`
     and :class:`~easylink.graph_components.OutputSlot` names.
 
     Parameters
     ----------
     name
-        The name of this NullImplementation.
+        The name of this ``NullImplementation``.
     input_slots
-        The :class:`InputSlots<easylink.graph_components.InputSlot>` for this NullImplementation.
+        All required ``InputSlots``.
     output_slots
-        The :class:`OutputSlots<easylink.graph_components.OutputSlot>` for this NullImplementation.
+        All required ``OutputSlots``.
     """
 
     def __init__(
@@ -162,33 +158,30 @@ class NullImplementation:
         output_slots: Iterable["OutputSlot"] = (),
     ):
         self.name = name
-        """The name of this NullImplementation."""
+        """The name of this ``NullImplementation``."""
         self.input_slots = {slot.name: slot for slot in input_slots}
-        """A mapping of :class:`InputSlots<easylink.graph_components.InputSlot>`
-        names to their instances."""
+        """A mapping of ``InputSlot`` names to their instances."""
         self.output_slots = {slot.name: slot for slot in output_slots}
-        """A mapping of :class:`OutputSlots<easylink.graph_components.OutputSlot>`
-        names to their instances."""
+        """A mapping of ``OutputSlot`` names to their instances."""
         self.schema_steps = [self.name]
-        """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` names this ``NullImplementation`` implements."""
+        """The requested :class:`~easylink.step.Step` names this ``NullImplementation`` implements."""
         self.combined_name = None
         """The name of the combined implementation of which ``NullImplementation`` 
-        is a constituent. This is definitionally None for a ``NullImplementation``."""
+        is a constituent. This is definitionally None."""
 
 
 class PartialImplementation:
-    """A representation of one part of a combined implementation that spans multiple :class:`Steps<easylink.step.Step>`.
+    """One part of a combined implementation that spans multiple :class:`Steps<easylink.step.Step>`.
 
-    A PartialImplementation is what is initially added to the :class:`~easylink.graph_components.ImplementationGraph`
-    when a so-called "combined implementation" is used (i.e. an :class:`Implementation`
-    that spans multiple :class:`Steps<easylink.step.Step>`).
-    We initially add a node for _each_ :class:`~easylink.step.Step`, which has as
-    its ``implementation`` attribute a PartialImplementation. Such a graph is not
+    A ``PartialImplementation`` is what is initially added to the
+    :class:`~easylink.graph_components.ImplementationGraph` when a so-called
+    "combined implementation" is used (i.e. an :class:`Implementation` that spans
+    multiple ``Steps``). We initially add a node for *each* ``Step``, which has as
+    its ``implementation`` attribute a ``PartialImplementation``. Such a graph is not
     yet fit to run. When we make our second pass through, after the flat (non-hierarchical)
     :class:`~easylink.pipeline_graph.PipelineGraph` has been created, we find the
-    set of PartialImplementation nodes corresponding to each combined implementation
-    and replace them with a single node with a true :class:`Implementation` representing
+    set of ``PartialImplementation`` nodes corresponding to each combined implementation
+    and replace them with a single node with a true ``Implementation`` representing
     the combined implementation.
 
     Parameters
@@ -197,13 +190,12 @@ class PartialImplementation:
         The name of the combined implementation of which this ``PartialImplementation``
         is a part.
     schema_step
-        The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` name that this ``PartialImplementation``
-        partially implements.
+        The requested ``Step`` name that this ``PartialImplementation`` partially
+        implements.
     input_slots
-        The :class:`InputSlots<easylink.graph_components.InputSlot>` for this PartialImplementation.
+        The :class:`InputSlots<easylink.graph_components.InputSlot>` for this ``PartialImplementation``.
     output_slots
-        The :class:`OutputSlots<easylink.graph_components.OutputSlot>` for this PartialImplementation.
+        The :class:`OutputSlots<easylink.graph_components.OutputSlot>` for this ``PartialImplementation``.
 
     """
 
@@ -218,12 +210,9 @@ class PartialImplementation:
         """The name of the combined implementation of which this ``PartialImplementation``
         is a part."""
         self.schema_step = schema_step
-        """The requested :class:`~easylink.pipeline_schema.PipelineSchema`
-        :class:`~easylink.step.Step` name that this ``PartialImplementation`` 
-        partially implements."""
+        """The requested ``Step`` name that this ``PartialImplementation`` partially 
+        implements."""
         self.input_slots = {slot.name: slot for slot in input_slots}
-        """A mapping of :class:`InputSlots<easylink.graph_components.InputSlot>`
-        names to their instances."""
+        """A mapping of ``InputSlot`` names to their instances."""
         self.output_slots = {slot.name: slot for slot in output_slots}
-        """A mapping of :class:`OutputSlots<easylink.graph_components.OutputSlot>`
-        names to their instances."""
+        """A mapping of ``OutputSlot`` names to their instances."""
