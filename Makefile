@@ -83,6 +83,11 @@ unit: $(MAKE_SOURCES) # Run unit tests
 	export COVERAGE_FILE=./output/.coverage.unit
 	pytest -vvv --runslow --cov --cov-report term --cov-report html:./output/htmlcov_unit tests/unit/
 
+build-package: $(MAKE_SOURCES) # Build the package as a pip wheel
+	pip install build
+	python -m build
+	@echo "Ignore, Created by Makefile, `date`" > $@
+
 build-doc: $(MAKE_SOURCES) # Build the Sphinx docs
 	$(MAKE) -C docs/ html
 
