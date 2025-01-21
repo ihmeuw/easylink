@@ -34,7 +34,7 @@ class PipelineGraph(ImplementationGraph):
 
     The ``PipelineGraph`` is a DAG of the entire pipeline to run. It has
     :class:`Implementations<easylink.implementation.Implementation>` for nodes
-    and the file dependencies between them for edges. Multiple edges between nodes 
+    and the file dependencies between them for edges. Multiple edges between nodes
     are permitted.
 
     This is the highest level type of :class:`~easylink.graph_components.ImplementationGraph`.
