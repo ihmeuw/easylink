@@ -34,8 +34,8 @@ class PipelineGraph(ImplementationGraph):
 
     The ``PipelineGraph`` is a DAG of the entire pipeline to run. It has
     :class:`Implementations<easylink.implementation.Implementation>` for nodes
-    and the file dependencies between them for edges. Self-edges as well as multiple
-    edges between nodes are permitted.
+    and the file dependencies between them for edges. Multiple edges between nodes 
+    are permitted.
 
     This is the highest level type of :class:`~easylink.graph_components.ImplementationGraph`.
 
@@ -277,7 +277,7 @@ class PipelineGraph(ImplementationGraph):
         combined_implementation
             The name of the combined implementation.
         nodes_to_merge
-            The names of the nodes to combine.
+            The names of the nodes being merged.
 
         Returns
         -------
@@ -364,7 +364,7 @@ class PipelineGraph(ImplementationGraph):
         """Gets duplicate slots.
 
         Combining nodes can lead to duplicate slots. In order to deduplicate them,
-        this helper method returns turn only those which have duplicate names or
+        this helper method returns only those which have duplicate names or
         environment variables.
 
         Parameters
