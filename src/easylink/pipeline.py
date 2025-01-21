@@ -69,7 +69,7 @@ class Pipeline:
     def write_target_rules(self) -> None:
         """Writes the rule for the final output and its validation"""
         ## The "input" files to the result node/the target rule are the final output themselves.
-        final_output, _ = self.pipeline_graph.get_input_output_files("results")
+        final_output, _ = self.pipeline_graph.get_io_filepaths("results")
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
         # before the validation
@@ -91,8 +91,8 @@ class Pipeline:
     def write_implementation_rules(self, node: str) -> None:
         """Writes the rules for each implemented step."""
         implementation = self.pipeline_graph.nodes[node]["implementation"]
-        _input_files, output_files = self.pipeline_graph.get_input_output_files(node)
-        input_slots = self.pipeline_graph.get_input_slots(node)
+        _input_files, output_files = self.pipeline_graph.get_io_filepaths(node)
+        input_slots = self.pipeline_graph.get_input_slot_attributes(node)
         diagnostics_dir = Path("diagnostics") / node
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
         resources = (

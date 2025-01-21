@@ -145,7 +145,7 @@ def test__get_duplicate_slots(slot_tuples, slot_type, is_duplicated) -> None:
 
 def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
     pipeline_graph = PipelineGraph(default_config)
-    pipeline_graph.update_slot_filepaths(default_config)
+    pipeline_graph._update_slot_filepaths(default_config)
     expected_filepaths = {
         ("input_data", "step_1_python_pandas"): (
             str(Path(f"{test_dir}/input_data1/file1.csv")),
@@ -208,7 +208,7 @@ def test_get_input_slots(default_config: Config, test_dir: str) -> None:
     }
     pipeline_graph = PipelineGraph(default_config)
     for node, expected_slots in expected.items():
-        slots = pipeline_graph.get_input_slots(node)
+        slots = pipeline_graph.get_input_slot_attributes(node)
         for slot_name, expected_slot in expected_slots.items():
             slot = slots[slot_name]
             assert slot["env_var"] == expected_slot["env_var"]
@@ -257,7 +257,7 @@ def test_condense_input_slots() -> None:
             "filepaths": ["file5", "file6", "file7", "file8"],
         },
     }
-    condensed_slots = PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+    condensed_slots = PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
     for slot_name, expected_slot in expected.items():
         slot = condensed_slots[slot_name]
         assert slot["env_var"] == expected_slot["env_var"]
@@ -283,7 +283,7 @@ def test_condense_input_slots_duplicate_slots_raises() -> None:
         ["file3", "file4"],
     ]
     with pytest.raises(ValueError):
-        PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+        PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_condense_input_slots_duplicate_slots_raises() -> None:
@@ -302,7 +302,7 @@ def test_condense_input_slots_duplicate_slots_raises() -> None:
         ["file3", "file4"],
     ]
     with pytest.raises(ValueError):
-        PipelineGraph.condense_input_slots(input_slots, filepaths_by_slot)
+        PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
@@ -333,7 +333,7 @@ def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
     }
     pipeline_graph = PipelineGraph(default_config)
     for node, (expected_input_files, expected_output_files) in expected.items():
-        input_files, output_files = pipeline_graph.get_input_output_files(node)
+        input_files, output_files = pipeline_graph.get_io_filepaths(node)
         assert input_files == expected_input_files
         assert output_files == expected_output_files
 
@@ -583,7 +583,7 @@ def test_merge_combined_implementations_parallel(default_config_params, test_dir
     [
         (
             "with_iteration_cycle",
-            "The MultiDiGraph contains a cycle: [('step_3_4', 'step_3_loop_2_step_3_python_pandas', 0), "
+            "The pipeline graph contains a cycle after combining implementations: [('step_3_4', 'step_3_loop_2_step_3_python_pandas', 0), "
             "('step_3_loop_2_step_3_python_pandas', 'step_3_4', 0)]",
             False,
         ),

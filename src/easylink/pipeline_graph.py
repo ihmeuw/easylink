@@ -1,3 +1,13 @@
+"""
+==============
+Pipeline Graph
+==============
+
+This module is responsible for managing the directed acyclic graph (DAG) of the
+entire pipeline to be run from an ``easylink run`` call.
+
+"""
+
 import itertools
 from collections import Counter, defaultdict
 from copy import deepcopy
@@ -20,20 +30,130 @@ from easylink.utilities.data_utils import load_yaml
 
 
 class PipelineGraph(ImplementationGraph):
-    """The structure of the pipeline.
+    """A directed acyclic graph (DAG) of the pipeline to run.
 
-    The PipelineGraph is a directed acyclic graph (DAG) composed of Implementations
-    and their file dependencies. It is created by "flattening" the PipelineSchema
-    (a nested StepGraph) with parameters set in the configuration.
+    The ``PipelineGraph`` is a DAG of the entire pipeline to run. It has
+    :class:`Implementations<easylink.implementation.Implementation>` for nodes
+    and the file dependencies between them for edges. Self-edges as well as multiple
+    edges between nodes are permitted.
+
+    This is the highest level type of :class:`~easylink.graph_components.ImplementationGraph`.
+
+    See :class:`~easylink.graph_components.ImplementationGraph` for inherited attributes.
+
+    Parameters
+    ----------
+    config
+        The :class:`~easylink.configuration.Config` object.
+
+    Notes
+    -----
+    The ``PipelineGraph`` is a low-level abstraction; it represents the *actual
+    implementations* of each :class:`~easylink.step.Step` in the resolved pipeline
+    being run. This is in contrast to the :class:`~easylink.pipeline_schema.PipelineSchema`,
+    which can be an intricate nested structure due to the various complex and self-similar
+    ``Step`` instances (which represent abstract operations  such as "loop this
+    step N times"). A ``PipelineGraph`` is the flattened and concrete graph of
+    ``Implementations`` to run.
     """
 
     def __init__(self, config: Config) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
-        self.merge_combined_implementations(config)
-        self.update_slot_filepaths(config)
+        self._merge_combined_implementations(config)
+        self._update_slot_filepaths(config)
         self = nx.freeze(self)
 
-    def merge_combined_implementations(self, config):
+    def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
+        """Gets all of a node's input and output filepaths from its edges.
+
+        Parameters
+        ----------
+        node
+            The node name to get input and output filepaths for.
+
+        Returns
+        -------
+            The input and output filepaths for the node.
+        """
+        input_files = list(
+            itertools.chain.from_iterable(
+                [
+                    edge_attrs["filepaths"]
+                    for _, _, edge_attrs in self.in_edges(node, data=True)
+                ]
+            )
+        )
+        output_files = list(
+            itertools.chain.from_iterable(
+                [
+                    edge_attrs["filepaths"]
+                    for _, _, edge_attrs in self.out_edges(node, data=True)
+                ]
+            )
+        )
+        return input_files, output_files
+
+    def spark_is_required(self) -> bool:
+        """Checks if the pipeline requires spark resources.
+
+        This method returns True if *any* of the nodes in the  ``PipelineGraph``
+        require spark resources.
+
+        Returns
+        -------
+            A boolean indicating whether the pipeline requires Spark.
+        """
+        return any([implementation.requires_spark for implementation in self.implementations])
+
+    def get_input_slot_attributes(self, node: str) -> dict[str, dict[str, str | list[str]]]:
+        """Gets all of a node's input slot attributes from edges.
+
+        Parameters
+        ----------
+        node
+            The node name to get input slot attributes for.
+
+        Returns
+        -------
+            A mapping of node name to input slot attributes.
+        """
+        input_slots = [
+            edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
+        ]
+        filepaths_by_slot = [
+            list(edge_attrs["filepaths"])
+            for _, _, edge_attrs in self.in_edges(node, data=True)
+        ]
+        return self._condense_input_slots(input_slots, filepaths_by_slot)
+
+    ##################
+    # Helper Methods #
+    ##################
+
+    def _merge_combined_implementations(self, config: Config) -> None:
+        """Merge nodes with the same combined implementation into a single node.
+
+        It is sometimes useful to use a single :class:`~easylink.implementation.Implementation`
+        that implements multiple steps of a pipeline at once. If the user has specified
+        such a scenario (via the pipeline configuration), this method will merge
+        all nodes that use the same combined implementation into a single node.
+
+        Parameters
+        ----------
+        config
+            The :class:`~easylink.configuration.Config` object.
+
+        Raises
+        ------
+        ValueError
+            If the ``PipelineGraph`` contains a cycle after combining implementations.
+
+        Notes
+        -----
+        There are no special class abstractions to represent combined implementations.
+        Rather, the merging of nodes is explicitly called directly on the original
+        ``PipelineGraph``.
+        """
         implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         for (
             combined_implementation,
@@ -62,7 +182,7 @@ class PipelineGraph(ImplementationGraph):
             metadata_steps = implementation_metadata[combined_implementation_config["name"]][
                 "steps"
             ]
-            self.validate_combined_implementation_topology(nodes_to_merge, metadata_steps)
+            self._validate_combined_implementation_topology(nodes_to_merge, metadata_steps)
 
             (
                 combined_input_slots,
@@ -87,26 +207,84 @@ class PipelineGraph(ImplementationGraph):
             self.remove_nodes_from(nodes_to_merge)
             try:
                 cycle = nx.find_cycle(self)
-                raise ValueError("The MultiDiGraph contains a cycle: {}".format(cycle))
+                raise ValueError(
+                    "The pipeline graph contains a cycle after combining "
+                    "implementations: {}".format(cycle)
+                )
             except nx.NetworkXNoCycle:
                 pass
+
+    def _validate_combined_implementation_topology(
+        self, nodes: list[str], metadata_steps: list[str]
+    ) -> None:
+        """Validates the combined implementation topology against intended implementation.
+
+        Parameters
+        ----------
+        nodes
+            Sorted names of the nodes to validate.
+        metadata_steps
+            Sorted names of the steps that the nodes are intended to implement.
+
+        Raises
+        ------
+        ValueError
+            If there is a mismatch between the nodes and the steps they intend
+            to implement or if the nodes are no longer topologically consistent.
+        """
+        # HACK: We cannot just call self.subgraph(nodes) because networkx will
+        # try and instantiate another PipelineGraph which requires a Config object
+        # to be passed to the constructor.
+        subgraph = ImplementationGraph(self).subgraph(nodes)
+
+        # Relabel nodes by schema step
+        mapping = {
+            node: data["implementation"].schema_step
+            for node, data in subgraph.nodes(data=True)
+        }
+        if not set(mapping.values()) == set(metadata_steps):
+            # NOTE: It's possible that we've combined nodes in such a way that removed
+            # an edge from the graph and so nx is unable to reliably sort the subgraph.
+            full_pipeline_sorted_nodes = list(nx.topological_sort(self))
+            sorted_nodes = [node for node in full_pipeline_sorted_nodes if node in mapping]
+            raise ValueError(
+                f"Pipeline configuration nodes {[mapping[node] for node in sorted_nodes]} "
+                f"do not match metadata steps {metadata_steps}."
+            )
+        subgraph = nx.relabel_nodes(subgraph, mapping)
+        # Check for topological inconsistency, i.e. if there is a path from a later
+        # node to an earlier node.
+        for predecessor in range(len(metadata_steps)):
+            for successor in range(predecessor + 1, len(metadata_steps)):
+                if nx.has_path(
+                    subgraph, metadata_steps[successor], metadata_steps[predecessor]
+                ):
+                    raise ValueError(
+                        f"Pipeline configuration nodes {list(nx.topological_sort(subgraph))} "
+                        "are not topologically consistent with the intended implementations "
+                        f"for {list(metadata_steps)}:\n"
+                        f"There is a path from successor {metadata_steps[successor]} "
+                        f"to predecessor {metadata_steps[predecessor]}."
+                    )
 
     def _get_combined_slots_and_edges(
         self, combined_implementation: str, nodes_to_merge: list[str]
     ) -> tuple[set[InputSlot], set[OutputSlot], set[EdgeParams]]:
-        """Get all the input slots, output slots, and edges needed to construct the
-        combined implementation
+        """Gets all edge information required for the combined implementation.
 
         Parameters
         ----------
         combined_implementation
-            Name of the combined implementation.
+            The name of the combined implementation.
         nodes_to_merge
-            A list of nodes to combine.
+            The names of the nodes to combine.
 
         Returns
         -------
-            The set of InputSlots, OutputSlots, and EdgeParams needed to construct the combined implementation
+            The :class:`InputSlots<easylink.graph_components.InputSlot>`,
+            :class:`OutputSlots<easylink.graph_components.OutputSlot>`, and
+            :class:`~easylink.graph_components.EdgeParams` needed to construct the
+            combined implementation.
         """
         slot_types = ["input_slot", "output_slot"]
         combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
@@ -144,17 +322,16 @@ class PipelineGraph(ImplementationGraph):
     ) -> tuple[
         dict[tuple[str, InputSlot], EdgeParams], dict[tuple[str, OutputSlot], EdgeParams]
     ]:
-        """Get all the edges corresponding to each input and output slot in the list of nodes to be
-        combined.
+        """Gets the edge information for all nodes to be combined.
 
         Parameters
         ----------
         nodes_to_merge
-            A list of PipelineGraph nodes to be combined.
+            A list of ``PipelineGraph`` nodes to be combined.
 
         Returns
         -------
-            A tuple of dictionaries keyed by slot, with values for edges corresponding to that slot.
+            Input and output slot-edge mappings.
         """
 
         in_edges_by_slot = defaultdict(list)
@@ -184,8 +361,11 @@ class PipelineGraph(ImplementationGraph):
     def _get_duplicate_slots(
         slot_tuples: set[tuple[str, InputSlot | OutputSlot]], slot_type: str
     ) -> set[tuple[str, InputSlot | OutputSlot]]:
-        """Given a list of slots, return only those which have duplicate names or environment
-        variables.
+        """Gets duplicate slots.
+
+        Combining nodes can lead to duplicate slots. In order to deduplicate them,
+        this helper method returns turn only those which have duplicate names or
+        environment variables.
 
         Parameters
         ----------
@@ -196,7 +376,8 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-            A set of (step_name, slot) tuples that have duplicate names or environment variables.
+            A set of (step_name, slot) tuples that have duplicate names or environment
+            variables to be deduplicated.
         """
         name_freq = Counter([slot.name for step_name, slot in slot_tuples])
         duplicate_names = [name for name, count in name_freq.items() if count > 1]
@@ -218,26 +399,35 @@ class PipelineGraph(ImplementationGraph):
             }
         return duplicate_slots
 
-    def update_slot_filepaths(self, config: Config) -> None:
-        """Fill graph edges with appropriate filepath information."""
-        # Update input data edges to direct to correct filenames from config
-        for source, sink, edge_attrs in self.out_edges("input_data", data=True):
-            for edge_idx in self[source][sink]:
+    def _update_slot_filepaths(self, config: Config) -> None:
+        """Fills graph edges with appropriate filepath information.
+
+        The combining of nodes necessitates the need to update the graph edges
+        with correct filepaths.
+
+        Parameters
+        ----------
+        config
+            The :class:`~easylink.configuration.Config`.
+        """
+        # Update input data edges to correct filenames from config
+        for src, sink, edge_attrs in self.out_edges("input_data", data=True):
+            for edge_idx in self[src][sink]:
                 if edge_attrs["output_slot"].name == "all":
-                    self[source][sink][edge_idx]["filepaths"] = tuple(
+                    self[src][sink][edge_idx]["filepaths"] = tuple(
                         str(path) for path in config.input_data.to_dict().values()
                     )
                 else:
-                    self[source][sink][edge_idx]["filepaths"] = (
+                    self[src][sink][edge_idx]["filepaths"] = (
                         str(config.input_data[edge_attrs["output_slot"].name]),
                     )
 
         # Update implementation nodes with yaml metadata
         for node in self.implementation_nodes:
             imp_outputs = self.nodes[node]["implementation"].outputs
-            for source, sink, edge_attrs in self.out_edges(node, data=True):
+            for src, sink, edge_attrs in self.out_edges(node, data=True):
                 for edge_idx in self[node][sink]:
-                    self[source][sink][edge_idx]["filepaths"] = (
+                    self[src][sink][edge_idx]["filepaths"] = (
                         str(
                             Path("intermediate")
                             / node
@@ -245,21 +435,29 @@ class PipelineGraph(ImplementationGraph):
                         ),
                     )
 
-    def get_input_slots(self, node: str) -> dict[str, dict[str, str | list[str]]]:
-        """Get all of a node's input slots from edges."""
-        input_slots = [
-            edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
-        ]
-        filepaths_by_slot = [
-            list(edge_attrs["filepaths"])
-            for _, _, edge_attrs in self.in_edges(node, data=True)
-        ]
-        return self.condense_input_slots(input_slots, filepaths_by_slot)
-
     @staticmethod
-    def condense_input_slots(
+    def _condense_input_slots(
         input_slots: list[InputSlot], filepaths_by_slot: list[str]
     ) -> dict[str, dict[str, str | list[str]]]:
+        """Condenses input slots into a dictionary with filepaths.
+
+        Parameters
+        ----------
+        input_slots
+            The :class:`InputSlots<easylink.graph_components.InputSlot>` condense.
+        filepaths_by_slot
+            The filepaths associated with each ``InputSlot``.
+
+        Returns
+        -------
+            A dictionary mapping ``InputSlot`` names to their attributes and filepaths.
+
+        Raises
+        ------
+        ValueError
+            If duplicate slot names are found with different environment variables
+            or validators.
+        """
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
             slot_name, env_var, validator = (
@@ -270,11 +468,13 @@ class PipelineGraph(ImplementationGraph):
             if slot_name in condensed_slot_dict:
                 if env_var != condensed_slot_dict[slot_name]["env_var"]:
                     raise ValueError(
-                        f"Duplicate slot name {slot_name} with different env vars."
+                        f"Duplicate input slots named '{slot_name}' have different env vars."
                     )
-                if validator != condensed_slot_dict[slot_name]["validator"]:
+                condensed_slot_validator = condensed_slot_dict[slot_name]["validator"]
+                if validator != condensed_slot_validator:
                     raise ValueError(
-                        f"Duplicate slot name {slot_name} with different validators."
+                        f"Duplicate input slots named '{slot_name}' have different validators: "
+                        f"'{validator.__name__}' and '{condensed_slot_validator.__name__}'."
                     )
                 condensed_slot_dict[slot_name]["filepaths"].extend(filepaths)
             else:
@@ -284,66 +484,3 @@ class PipelineGraph(ImplementationGraph):
                     "filepaths": filepaths,
                 }
         return condensed_slot_dict
-
-    def get_input_output_files(self, node: str) -> tuple[list[str], list[str]]:
-        """Get all of a node's input and output files from edges."""
-        input_files = list(
-            itertools.chain.from_iterable(
-                [
-                    edge_attrs["filepaths"]
-                    for _, _, edge_attrs in self.in_edges(node, data=True)
-                ]
-            )
-        )
-        output_files = list(
-            itertools.chain.from_iterable(
-                [
-                    edge_attrs["filepaths"]
-                    for _, _, edge_attrs in self.out_edges(node, data=True)
-                ]
-            )
-        )
-        return input_files, output_files
-
-    def spark_is_required(self) -> bool:
-        """Check if the pipeline requires spark resources."""
-        return any([implementation.requires_spark for implementation in self.implementations])
-
-    def validate_combined_implementation_topology(
-        self, nodes: list[str], metadata_steps: list[str]
-    ) -> None:
-        """Validates the combined implementation topology against intended implementation.
-
-        Check that the subgraph induced by the nodes implemented by this implementation
-        is topologically consistent with the list of steps intended to be implemented.
-        """
-        # HACK: We cannot just call self.subgraph(nodes) because networkx will
-        # try and instantiate another PipelineGraph which requires a Config object
-        # to be passed to the constructor.
-        subgraph = ImplementationGraph(self).subgraph(nodes)
-
-        # Relabel nodes by schema step
-        mapping = {
-            node: data["implementation"].schema_step
-            for node, data in subgraph.nodes(data=True)
-        }
-        if not set(mapping.values()) == set(metadata_steps):
-            # NOTE: It's possible that we've combined nodes in such a way that removed
-            # an edge from the graph and so nx is unable to reliably sort the subgraph.
-            full_pipeline_sorted_nodes = list(nx.topological_sort(self))
-            sorted_nodes = [node for node in full_pipeline_sorted_nodes if node in mapping]
-            raise ValueError(
-                f"Pipeline configuration nodes {[mapping[node] for node in sorted_nodes]} do not match metadata steps {metadata_steps}."
-            )
-        subgraph = nx.relabel_nodes(subgraph, mapping)
-        # Check for topological inconsistency, i.e. if there is a path from a later node to an earlier node.
-        for predecessor in range(len(metadata_steps)):
-            for successor in range(predecessor + 1, len(metadata_steps)):
-                if nx.has_path(
-                    subgraph, metadata_steps[successor], metadata_steps[predecessor]
-                ):
-                    raise ValueError(
-                        f"Pipeline configuration nodes {list(nx.topological_sort(subgraph))} are not topologically consistent with "
-                        f"the intended implementations for {list(metadata_steps)}:\n"
-                        f"There is a path from successor {metadata_steps[successor]} to predecessor {metadata_steps[predecessor]}."
-                    )
