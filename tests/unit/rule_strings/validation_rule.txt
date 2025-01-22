@@ -7,4 +7,4 @@ rule:
     message: "Validating foo input slot foo_input"
     run:
         for f in input:
-            validation_utils.bar(f)
+            validation_utils._bar(f)

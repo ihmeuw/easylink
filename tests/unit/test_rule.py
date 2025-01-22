@@ -34,14 +34,7 @@ def test_target_rule_build_rule():
         requires_spark=False,
     )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["target_rule"]
-    with open(file_path) as expected_file:
-        expected = expected_file.read()
-    rulestring = rule._build_rule()
-    rulestring_lines = rulestring.split("\n")
-    expected_lines = expected.split("\n")
-    assert len(rulestring_lines) == len(expected_lines)
-    for i, expected_line in enumerate(expected_lines):
-        assert rulestring_lines[i].strip() == expected_line.strip()
+    _check_rule(rule, file_path)
 
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
@@ -86,26 +79,25 @@ def test_implemented_rule_build_rule(computing_environment):
         Path(os.path.dirname(__file__))
         / RULE_STRINGS[f"implemented_rule_{computing_environment}"]
     )
-    with open(file_path) as expected_file:
-        expected = expected_file.read()
-    rulestring = rule._build_rule()
-    rulestring_lines = rulestring.split("\n")
-    expected_lines = expected.split("\n")
-    assert len(rulestring_lines) == len(expected_lines)
-    for i, expected_line in enumerate(expected_lines):
-        assert rulestring_lines[i].strip() == expected_line.strip()
-
-
-def bar():
-    pass
+    _check_rule(rule, file_path)
 
 
 def test_validation_rule_build_rule():
     rule = InputValidationRule(
-        name="foo", slot_name="foo_input", input=["foo", "bar"], output="baz", validator=bar
+        name="foo", slot_name="foo_input", input=["foo", "bar"], output="baz", validator=_bar
     )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["validation_rule"]
-    with open(file_path) as expected_file:
+    _check_rule(rule, file_path)
+
+
+####################
+# Helper functions #
+####################
+
+
+def _check_rule(rule: Rule, expected_rule_path: str):
+    """Compares the ``Rule's`` built rule to the expected rule in the file."""
+    with open(expected_rule_path) as expected_file:
         expected = expected_file.read()
     rulestring = rule._build_rule()
     rulestring_lines = rulestring.split("\n")
@@ -113,3 +105,8 @@ def test_validation_rule_build_rule():
     assert len(rulestring_lines) == len(expected_lines)
     for i, expected_line in enumerate(expected_lines):
         assert rulestring_lines[i].strip() == expected_line.strip()
+
+
+def _bar():
+    """Dummy validator function"""
+    pass
