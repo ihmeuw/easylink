@@ -136,7 +136,7 @@ class StepGraph(nx.MultiDiGraph):
     These are high-level abstractions; they represent a conceptual pipeline
     graph with no detail as to how each ``Step`` is implemented.
 
-    The largest ``StepGraph`` is the that of the entire :class:`~easylink.pipeline_schema.PipelineSchema`.
+    The largest ``StepGraph`` is that of the entire :class:`~easylink.pipeline_schema.PipelineSchema`.
     """
 
     @property
@@ -197,7 +197,7 @@ class ImplementationGraph(nx.MultiDiGraph):
     is the flattened and concrete graph of ``Implementations`` in a given pipeline.
 
     The largest ``ImplementationGraph`` (that is, the specific ``ImplementationGraph``
-    representing the entire pipeline to be run) is the that of the :class:`~easylink.pipeline_graph.PipelineGraph`.
+    representing the entire pipeline to be run) is that of the :class:`~easylink.pipeline_graph.PipelineGraph`.
     """
 
     @property
