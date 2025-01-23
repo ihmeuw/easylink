@@ -241,7 +241,7 @@ class Config(LayeredConfigTree):
         if not input_data_dict:
             errors[INPUT_DATA_ERRORS_KEY] = ["No input data is configured."]
         else:
-            input_data_errors = self.schema.validate_inputs(self.input_data.to_dict())
+            input_data_errors = self.schema.validate_inputs(input_data_dict)
             if input_data_errors:
                 errors[INPUT_DATA_ERRORS_KEY] = input_data_errors
         return errors

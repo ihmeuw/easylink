@@ -136,7 +136,7 @@ class StepGraph(nx.MultiDiGraph):
     These are high-level abstractions; they represent a conceptual pipeline
     graph with no detail as to how each ``Step`` is implemented.
 
-    The highest level ``StepGraph`` is the that of the entire :class:`~easylink.pipeline_schema.PipelineSchema`.
+    The largest ``StepGraph`` is that of the entire :class:`~easylink.pipeline_schema.PipelineSchema`.
     """
 
     @property
@@ -190,14 +190,14 @@ class ImplementationGraph(nx.MultiDiGraph):
     Notes
     -----
     An ``ImplementationGraph`` is a low-level abstraction; it represents the *actual
-    implementations* of each :class:`~easylink.step.Step` in the pipeline. This
-    is in contrast to a :class:`StepGraph`, which can be an intricate nested structure
+    implementations* of each :class:`~easylink.step.Step` in a pipeline. This is
+    in contrast to a :class:`StepGraph`, which can be an intricate nested structure
     due to the various complex and self-similar ``Step`` instances (which represent
     abstract operations such as "loop this step N times"). An ``ImplementationGraph``
-    is the flattened and concrete graph of ``Implementations`` to run.
+    is the flattened and concrete graph of ``Implementations`` in a given pipeline.
 
-    The highest level ``ImplementationGraph`` is the that of the entire
-    :class:`~easylink.pipeline_graph.PipelineGraph`.
+    The largest ``ImplementationGraph`` (that is, the specific ``ImplementationGraph``
+    representing the entire pipeline to be run) is that of the :class:`~easylink.pipeline_graph.PipelineGraph`.
     """
 
     @property
@@ -284,7 +284,6 @@ class InputSlotMapping(SlotMapping):
 
         Returns
         -------
-        EdgeParams
             The details of the remapped edge.
 
         Raises
@@ -315,7 +314,6 @@ class OutputSlotMapping(SlotMapping):
 
         Returns
         -------
-        EdgeParams
             The details of the remapped edge.
 
         Raises

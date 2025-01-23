@@ -5,7 +5,7 @@ Implementations
 
 This module is responsible for defining the abstractions that represent actual
 implementations of steps in a pipeline. Typically, these abstractions contain
-information about what container to run for the step and other related details.
+information about what container to run for a given step and other related details.
 
 """
 

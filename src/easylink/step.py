@@ -230,6 +230,11 @@ class Step:
     In turn, steps are implemented by Implementations, such that each step may have
     several implementations but each implementation must have exactly one step.
     In a sense, steps contain metadata about the implementations to which they relate.
+
+    Attributes
+    ----------
+    _configuration_state
+        The :class:`~easylink.step.ConfigurationState`.
     """
 
     def __init__(
@@ -279,11 +284,12 @@ class Step:
     ) -> dict[str, list[str]]:
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+        error_key = f"step {self.name}"
         if (
             "implementation" not in step_config
             and COMBINED_IMPLEMENTATION_KEY not in step_config
         ):
-            errors[f"step {self.name}"] = [
+            errors[error_key] = [
                 "The step configuration does not contain an 'implementation' key or a "
                 "reference to a combined implementation."
             ]
@@ -291,7 +297,7 @@ class Step:
             COMBINED_IMPLEMENTATION_KEY in step_config
             and not step_config[COMBINED_IMPLEMENTATION_KEY] in combined_implementations
         ):
-            errors[f"step {self.name}"] = [
+            errors[error_key] = [
                 f"The step refers to a combined implementation but {step_config[COMBINED_IMPLEMENTATION_KEY]} is not a "
                 f"valid combined implementation."
             ]
@@ -302,11 +308,11 @@ class Step:
                 else combined_implementations[step_config[COMBINED_IMPLEMENTATION_KEY]]
             )
             if not "name" in implementation_config:
-                errors[f"step {self.name}"] = [
+                errors[error_key] = [
                     "The implementation configuration does not contain a 'name' key."
                 ]
             elif not implementation_config["name"] in metadata:
-                errors[f"step {self.name}"] = [
+                errors[error_key] = [
                     f"Implementation '{implementation_config['name']}' is not supported. "
                     f"Supported implementations are: {list(metadata.keys())}."
                 ]
