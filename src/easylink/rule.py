@@ -1,3 +1,17 @@
+"""
+===============
+Snakemake Rules
+===============
+
+This module is responsible for generating the Snakemake rules to be run as well
+as writing them to the Snakefile.
+
+Note we have adopted the Snakemake term "rule" to refer to a singular component 
+in a Snakefile (i.e. in a Snakemake pipeline) that defines input files, output files,
+and the command to run to create those output files. These rules are generated
+dynamically as strings and appended to the Snakefile.
+"""
+
 import os
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -5,11 +19,12 @@ from dataclasses import dataclass
 
 
 class Rule(ABC):
-    """Abstract class to define interface between Steps and Implementations.
+    """An abstract class to define the interface between :class:`Steps<easylink.step.Step>` and their :class:`Implementations<easylink.implementation.Implementation>`.
 
-    This class is responsible for converting the defined interfaces between
-    Steps and Implementations to a Snakemake rule and writing it out to the
-    snakefile to be run.
+    This class is responsible for converting the defined interfaces between ``Steps``
+    and ``Implementations`` to a Snakemake rule and writing it out to the Snakefile
+    to be run.
+
     """
 
     def write_to_snakefile(self, snakefile_path) -> None:
@@ -27,18 +42,20 @@ class Rule(ABC):
 
 @dataclass
 class TargetRule(Rule):
-    """A rule that defines the final output of the pipeline.
+    """A :class:`Rule` that defines the final output of the pipeline.
 
     Snakemake will determine the directed acyclic graph (DAG) based on this target.
     """
 
     target_files: list[str]
-    """List of file paths."""
+    """List of final output filepaths."""
     validation: str
-    """Name of file created by InputValidationRule."""
+    """Name of file created by :class:`InputValidationRule`."""
     requires_spark: bool
+    """Whether or not this rule requires a Spark environment to run."""
 
     def _build_rule(self) -> str:
+        """Builds the Snakemake rule for the final output of the pipeline."""
         outputs = [os.path.basename(file_path) for file_path in self.target_files]
         rulestring = f"""
 rule all:
@@ -64,37 +81,40 @@ rule all:
 
 @dataclass
 class ImplementedRule(Rule):
-    """A rule that defines the execution of an implementation"""
+    """A :class:`Rule` that defines the execution of an :class:`~easylink.implementation.Implementation`."""
 
     name: str
-    """Name to give the rule."""
+    """Name of the rule."""
     step_name: str
-    """Name of the step."""
+    """Name of the step this rule/``Implementation`` is implementing."""
     implementation_name: str
-    """Name of the implementation."""
+    """Name of the ``Implementation`` to build the rule for."""
     input_slots: dict[str, dict[str, str | list[str]]]
-    """List of file paths required by implementation."""
+    """This ``Implementation's`` input slot attributes."""
     validations: list[str]
-    """Names of files created by InputValidationRule to check for compatible input."""
+    """Names of files created by :class:`InputValidationRule`. These files are empty
+    but used by Snakemake to link build the graph edges around validation rules."""
     output: list[str]
-    """List of file paths created by implementation."""
+    """Output data filepaths."""
     resources: dict | None
     """Computational resources used by executor (e.g. SLURM)."""
     envvars: dict
-    """ Dictionary of environment variables to set."""
+    """Environment variables to set."""
     diagnostics_dir: str
     """Directory for diagnostic files."""
     image_path: str
-    """Path to Singularity image."""
+    """Path to the Singularity image to run."""
     script_cmd: str
-    """Command to execute"""
+    """Command to execute."""
     requires_spark: bool
-    """Whether this implementation requires a Spark environment."""
+    """Whether or not this ``Implementation`` requires a Spark environment."""
 
     def _build_rule(self) -> str:
+        """Builds the Snakemake rule for this ``Implementation``."""
         return self._build_io() + self._build_resources() + self._build_shell_command()
 
     def _build_io(self) -> str:
+        """Builds the input/output portion of the rule."""
         return (
             f"""
 rule:
@@ -123,6 +143,7 @@ rule:
         return input_str
 
     def _build_resources(self) -> str:
+        """Builds the resources portion of the rule."""
         if not self.resources:
             return ""
         return f"""
@@ -134,6 +155,7 @@ rule:
         slurm_extra="--output '{self.diagnostics_dir}/{self.name}-slurm-%j.log'" """
 
     def _build_shell_command(self) -> str:
+        """Builds the shell command portion of the rule."""
         shell_cmd = f"""
     shell:
         '''
@@ -159,18 +181,25 @@ rule:
 
 @dataclass
 class InputValidationRule(Rule):
-    """A rule that validates input files against validator for an implementation or the final output"""
+    """A :class:`Rule` that validates input files.
+
+    Each file coming into the pipeline via an :class:`~easylink.graph_components.InputSlot`
+    must be validated against a specific validator function. This rule is responsible
+    for running those validations as well as creating the (empty) validation output
+    files that are used by Snakemake to build the graph edge from this rule to the
+    next.
+    """
 
     name: str
     """Name of the rule."""
     slot_name: str
-    """Name of the input slot."""
+    """Name of the ``InputSlot``."""
     input: list[str]
-    """List of file paths to validate."""
+    """List of filepaths to validate."""
     output: str
-    """File path to touch on successful validation. It must be used as an input for next rule."""
+    """Filepath of validation output. It must be used as an input for next rule."""
     validator: Callable
-    """Callable that takes a file path as input. Raises an error if invalid."""
+    """Callable that takes a filepath as input. Raises an error if invalid."""
 
     def _build_rule(self) -> str:
         return f"""
