@@ -184,8 +184,12 @@ class Config(LayeredConfigTree):
         Returns
         -------
             The first ``PipelineSchema`` that validates the requested pipeline.
-            If no validated ``PipelineSchema`` is found, `exit()` is called with
-            `errno.EINVAL` and any validation errors are logged.
+
+        Raises
+        ------
+        SystemExit
+            If no requested pipeline is validated, all validation errors found are
+            batch-logged into a dictionary and the program exits with a non-zero code.
 
         Notes
         -----
