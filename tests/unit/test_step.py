@@ -86,7 +86,7 @@ def test_io_get_implementation_graph(
     io_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = IOStep(**io_step_params)
-    step.get_state_config(default_config["pipeline"]["steps"])
+    step._get_state_config(default_config["pipeline"]["steps"])
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["io"]
     assert list(subgraph.edges) == []

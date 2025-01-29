@@ -1,3 +1,14 @@
+"""
+=====
+Steps
+=====
+
+This module is responsible for defining the abstractions that represent desired
+steps to run in a pipeline. These so-called "steps" are high level and do not indicate
+how they are to actually be implemented.
+
+"""
+
 from __future__ import annotations
 
 import copy
@@ -29,212 +40,43 @@ from easylink.utilities.data_utils import load_yaml
 COMBINED_IMPLEMENTATION_KEY = "combined_implementation_key"
 
 
-class ConfigurationState(ABC):
-    """A given step's configuration state.
-
-    A ConfigurationState defines the exact pipeline configuration state for a given step, including the
-    strategy required to get the implementation graph from the step. There are two possible configured
-    step states: "Leaf" and "Non-Leaf".
-    """
-
-    def __init__(
-        self,
-        step: Step,
-        pipeline_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ):
-        self._step = step
-        self.pipeline_config = pipeline_config
-        self.combined_implementations = combined_implementations
-        self.input_data_config = input_data_config
-
-    @abstractmethod
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Resolve the graph composed of Steps into a graph composed of Implementations."""
-        pass
-
-    @abstractmethod
-    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        """Propagate edges of StepGraph to ImplementationGraph."""
-        pass
-
-
-class LeafConfigurationState(ConfigurationState):
-    """A concrete instance of ConfigurationState for a leaf node in the pipeline graph.
-
-    This corresponds to a leaf node in the pipeline graph that is implemented by a single implementation.
-    """
-
-    @property
-    def is_combined(self) -> bool:
-        return True if COMBINED_IMPLEMENTATION_KEY in self.pipeline_config else False
-
-    @property
-    def implementation_config(self) -> LayeredConfigTree:
-        return (
-            self.combined_implementations[self.pipeline_config[COMBINED_IMPLEMENTATION_KEY]]
-            if self.is_combined
-            else self.pipeline_config["implementation"]
-        )
-
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Return a single node with an implementation attribute."""
-        implementation_graph = ImplementationGraph()
-        implementation_node_name = self._step.implementation_node_name
-        if self.is_combined:
-            implementation = PartialImplementation(
-                combined_name=self.pipeline_config[COMBINED_IMPLEMENTATION_KEY],
-                schema_step=self._step.step_name,
-                input_slots=self._step.input_slots.values(),
-                output_slots=self._step.output_slots.values(),
-            )
-        else:
-            implementation = Implementation(
-                schema_steps=[self._step.step_name],
-                implementation_config=self.implementation_config,
-                input_slots=self._step.input_slots.values(),
-                output_slots=self._step.output_slots.values(),
-            )
-        implementation_graph.add_node_from_implementation(
-            implementation_node_name,
-            implementation=implementation,
-        )
-        return implementation_graph
-
-    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        implementation_edges = []
-        if edge.source_node == self._step.name:
-            mappings = [
-                mapping
-                for mapping in self._step.implementation_slot_mappings()["output"]
-                if mapping.parent_slot == edge.output_slot
-            ]
-            for mapping in mappings:
-                imp_edge = mapping.remap_edge(edge)
-                implementation_edges.append(imp_edge)
-
-        elif edge.target_node == self._step.name:
-            mappings = [
-                mapping
-                for mapping in self._step.implementation_slot_mappings()["input"]
-                if mapping.parent_slot == edge.input_slot
-            ]
-            for mapping in mappings:
-                if (
-                    "input_data_file" in self.pipeline_config
-                    and edge.source_node == "pipeline_graph_input_data"
-                ):
-                    edge.output_slot = self.pipeline_config["input_data_file"]
-                imp_edge = mapping.remap_edge(edge)
-                implementation_edges.append(imp_edge)
-        else:
-            raise ValueError(f"Step {self._step.name} not in edge {edge}")
-        if not implementation_edges:
-            raise ValueError(f"No edges found for Step {self._step.name} in edge {edge}")
-        return implementation_edges
-
-
-class NonLeafConfigurationState(ConfigurationState):
-    """A concrete instance of ConfigurationState for a non-leaf node in the pipeline graph.
-
-    This class type is selected when a step has a non-trivial step graph and has been configured
-    to use the step graph (e.g. through a configuration key in the pipeline specification yaml).
-    """
-
-    def __init__(
-        self,
-        step: Step,
-        pipeline_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ):
-        super().__init__(step, pipeline_config, combined_implementations, input_data_config)
-        if not step.step_graph:
-            raise ValueError(
-                f"NonLeafConfigurationState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
-            )
-        self.configure_subgraph_steps()
-
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Call get_implementation_graph on each subgraph node and update the graph."""
-        implementation_graph = ImplementationGraph()
-        self.update_nodes(implementation_graph)
-        self.update_edges(implementation_graph)
-        return implementation_graph
-
-    def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
-        for node in self._step.step_graph.nodes:
-            step = self._step.step_graph.nodes[node]["step"]
-            implementation_graph.update(step.get_implementation_graph())
-
-    def update_edges(self, implementation_graph: ImplementationGraph) -> None:
-        for source, target, edge_attrs in self._step.step_graph.edges(data=True):
-            all_edges = []
-            edge = EdgeParams.from_graph_edge(source, target, edge_attrs)
-            parent_source_step = self._step.step_graph.nodes[source]["step"]
-            parent_target_step = self._step.step_graph.nodes[target]["step"]
-
-            source_edges = parent_source_step.get_implementation_edges(edge)
-            for source_edge in source_edges:
-                for target_edge in parent_target_step.get_implementation_edges(source_edge):
-                    all_edges.append(target_edge)
-
-            for edge in all_edges:
-                implementation_graph.add_edge_from_params(edge)
-
-    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        implementation_edges = []
-        if edge.source_node == self._step.name:
-            mappings = [
-                mapping
-                for mapping in self._step.slot_mappings["output"]
-                if mapping.parent_slot == edge.output_slot
-            ]
-            for mapping in mappings:
-                new_edge = mapping.remap_edge(edge)
-                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
-                imp_edges = new_step.get_implementation_edges(new_edge)
-                implementation_edges.extend(imp_edges)
-
-        elif edge.target_node == self._step.name:
-            mappings = [
-                mapping
-                for mapping in self._step.slot_mappings["input"]
-                if mapping.parent_slot == edge.input_slot
-            ]
-            for mapping in mappings:
-                new_edge = mapping.remap_edge(edge)
-                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
-                imp_edges = new_step.get_implementation_edges(new_edge)
-                implementation_edges.extend(imp_edges)
-        else:
-            raise ValueError(f" {self._step.name} not in edge {edge}")
-        if not implementation_edges:
-            raise ValueError(f"No edges found for {self._step.name} in edge {edge}")
-        return implementation_edges
-
-    def configure_subgraph_steps(self) -> None:
-        for node in self._step.step_graph.nodes:
-            step = self._step.step_graph.nodes[node]["step"]
-            step.set_configuration_state(
-                self.pipeline_config, self.combined_implementations, self.input_data_config
-            )
-
-
 class Step:
     """The highest-level pipeline building block abstraction.
 
-    Steps contain information about the purpose of the interoperable elements of
-    the sequence called a *Pipeline* and how those elements relate to one another.
-    In turn, steps are implemented by Implementations, such that each step may have
-    several implementations but each implementation must have exactly one step.
-    In a sense, steps contain metadata about the implementations to which they relate.
+    ``Steps`` contain information about the purpose of the interoperable elements of
+    the sequence called a "pipeline" and how those elements relate to one another.
+    In turn, ``Steps`` are implemented by :class:`Implementations<easylink.implementation.Implementation>`,
+    such that each ``Step`` may have several ``Implementations`` to choose from
+    but each ``Implementation`` must implemement exactly one ``Step`. In a sense,
+    ``Steps`` contain metadata about the ``Implementations`` to which they relate.
 
-    Attributes
+    Parameters
     ----------
-    _configuration_state
-        The :class:`~easylink.step.ConfigurationState`.
+    step_name
+        The name of the high-level pipeline step.
+    name
+        The name of the step *node*. This is used to disambiguate names as necessary,
+        e.g. if "step 1" is looped multiple times.
+    input_slots
+        All required :class:`InputSlots<easylink.graph_components.InputSlot>`.
+    output_slots
+        All required :class:`OutputSlots<easylink.graph_components.OutputSlot>`.
+    nodes
+        All sub-nodes (i.e. sub-``Steps``) of this particular ``Step`` instance.
+    edges
+        The :class:`~easylink.graph_components.EdgeParams` of this ``Step``.
+    input_slot_mappings
+        The :class:`InputSlotMapping<easylink.graph_components.InputSlotMapping>` of this ``Step``.
+    output_slot_mappings
+        The :class:`OutputSlotMapping<easylink.graph_components.OutputSlotMapping>` of this ``Step``.
+
+    Notes
+    -----
+    This is the most basic type of step object available in the pipeline; it
+    represents a single element of work to be run one time in the pipeline. Other
+    classes inherit from this and expand upon it to represent more complex structures,
+    e.g. to loop a step multiple times or to run multiple steps in parallel.
+
     """
 
     def __init__(
@@ -249,39 +91,236 @@ class Step:
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
     ) -> None:
         self.step_name = step_name
-        # TODO: try removing name as an arg and just set self.name = self.step_name
+        """The name of the high-level pipeline step."""
         self.name = name if name else step_name
+        """The name of the step *node*. This is used to disambiguate names as necessary, 
+        e.g. if "step 1" is looped multiple times. If not provided, defaults to the 
+        :attr:`step_name`."""
         self.input_slots = {slot.name: slot for slot in input_slots}
+        """A mapping of ``InputSlot`` names to their instances."""
         self.output_slots = {slot.name: slot for slot in output_slots}
+        """A mapping of ``OutputSlot`` names to their instances."""
         self.nodes = nodes
+        """All sub-nodes (i.e. sub-``Steps``) of this particular ``Step`` instance."""
         for node in self.nodes:
             node.set_parent_step(self)
         self.edges = edges
+        """The :class:`~easylink.graph_components.EdgeParams` of this ``Step``."""
         self.step_graph = self._get_step_graph(nodes, edges)
+        """The :class:`~easylink.graph_components.StepGraph` (directed acyclic graph)
+        of this ``Step``."""
         self.slot_mappings = {
             "input": list(input_slot_mappings),
             "output": list(output_slot_mappings),
         }
+        """A combined dictionary containing both the ``InputSlotMappings`` and
+        ``OutputSlotMappings`` of this ``Step``."""
         self.parent_step = None
+        """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
+        """This ``Step's`` :class:`~easylink.step.ConfigurationState`."""
 
     @property
     def config_key(self):
+        """The configuration key pertinent to this type of ``Step``."""
         return None
 
     @property
     def configuration_state(self) -> ConfigurationState:
+        """The :class:`~easylink.step.ConfigurationState` of this ``Step``."""
         if self._configuration_state is None:
             raise ValueError(
                 f"Step {self.name}'s configuration_state was invoked before being set"
             )
         return self._configuration_state
 
-    def validate_leaf(
+    @property
+    def implementation_node_name(self) -> str:
+        """The unique name to be used for this ``Step's`` node in the :class:`~easylink.graph_components.ImplementationGraph`.
+
+        This compares the ``Step`` *instance* name to its *node* name via the ``Step's``
+        ordered hierarchy of sub-``Steps`` and uses the full suffix of names starting
+        from wherever the two first differ.
+
+        For example, a ``Step`` named "step_3" may loop multiple times using the same
+        :class:`~easylink.implementation.Implementation` named "step_3_python_pandas".
+        However, to disambiguate between the different loops of "step_3", we might
+        designate the node name to be "step_3_loop_1" and then combine that with the
+        ``Implementation`` name such that the ``Implementation's`` node name is
+        "step_3_loop_1_step_3_python_pandas".
+
+        If all the node names and step names match, we have not introduced any step
+        degeneracies (with e.g. loops or multiples), and we can simply use the
+        implementation name directly.
+
+        Returns
+        -------
+            The unique name to be used for this ``Step's`` node in the ``ImplementationGraph``.
+        """
+        step = self
+        implementation_name = (
+            self.configuration_state.pipeline_config[COMBINED_IMPLEMENTATION_KEY]
+            if self.configuration_state.is_combined
+            else self.configuration_state.implementation_config.name
+        )
+        node_names = []
+        step_names = []
+        while step:
+            node_names.append(step.name)
+            step_names.append(step.step_name)
+            step = step.parent_step
+
+        prefix = []
+        step_names.reverse()
+        node_names.reverse()
+        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
+            if step_name != node_name:
+                prefix = node_names[i:]
+                break
+        # If we didn't include the step name already for a combined implementation, do so now.
+        if self.configuration_state.is_combined and not prefix:
+            prefix.append(self.name)
+        prefix.append(implementation_name)
+        return "_".join(prefix)
+
+    ###########
+    # Methods #
+    ###########
+
+    def validate_step(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
+        """Validates the ``Step``.
+
+        Parameters
+        ----------
+        step_config
+            The configuration of this ``Step``.
+        combined_implementations
+            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+        input_data_config
+            The input data configuration for the entire pipeline.
+
+        Returns
+        -------
+            A dictionary of errors, where the keys are the ``Step`` name and the
+            values are lists of as many error messages as could be generated.
+
+        Notes
+        -----
+        A ``Step`` can be in either a "leaf" or a "non-leaf" configuration state
+        and the validation process is different for each.
+
+        If the ``Step`` does not validate (i.e. errors are found and the returned
+        dictionary is non-empty), the tool will exit and the pipeline will not run.
+        """
+        if len(self.step_graph.nodes) == 0:
+            return self._validate_leaf(step_config, combined_implementations)
+        elif self.config_key in step_config:
+            return self._validate_nonleaf(
+                step_config[self.config_key], combined_implementations, input_data_config
+            )
+        else:
+            return self._validate_leaf(step_config, combined_implementations)
+
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph.
+
+        Returns
+        -------
+            The ``ImplementationGraph`` of this ``Step``.
+        """
+        return self.configuration_state.get_implementation_graph()
+
+    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
+        """Gets this ``Step's`` edge information.
+
+        Parameters
+        ----------
+        edge
+            The edge parameters.
+
+        Returns
+        -------
+            The parameters that define the edges of this ``Step``.
+        """
+        return self.configuration_state.get_implementation_edges(edge)
+
+    def set_parent_step(self, step: Step) -> None:
+        """Sets the parent of this ``Step``.
+
+        Parameters
+        ----------
+        step
+            The parent ``Step`` to be set for this instance's :attr:`parent_step`.
+        """
+        self.parent_step = step
+
+    def set_configuration_state(
+        self,
+        parent_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> None:
+        """Sets the configuration state for this ``Step``.
+
+        Parameters
+        ----------
+        parent_config
+            The configuration of the parent ``Step``.
+        combined_implementations
+            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
+        step_config = parent_config[self.name]
+        state_config = self._get_state_config(step_config)
+        if self.config_key is not None and self.config_key in step_config:
+            self._configuration_state = NonLeafConfigurationState(
+                self, state_config, combined_implementations, input_data_config
+            )
+        else:
+            self._configuration_state = LeafConfigurationState(
+                self, state_config, combined_implementations, input_data_config
+            )
+
+    def get_implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
+        """Gets the input and output :class:`~easylink.graph_components.SlotMapping`."""
+        return {
+            "input": [
+                InputSlotMapping(slot, self.implementation_node_name, slot)
+                for slot in self.input_slots
+            ],
+            "output": [
+                OutputSlotMapping(slot, self.implementation_node_name, slot)
+                for slot in self.output_slots
+            ],
+        }
+
+    ##################
+    # Helper methods #
+    ##################
+
+    def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
+        """Create a StepGraph from the nodes and edges the step was initialized with."""
+        step_graph = StepGraph()
+        for step in nodes:
+            step_graph.add_node_from_step(step)
+        for edge in edges:
+            step_graph.add_edge_from_params(edge)
+        return step_graph
+
+    def _validate_leaf(
         self,
         step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
     ) -> dict[str, list[str]]:
+        """Validates a leaf ``Step``."""
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         error_key = f"step {self.name}"
@@ -318,12 +357,13 @@ class Step:
                 ]
         return errors
 
-    def validate_nonleaf(
+    def _validate_nonleaf(
         self,
         step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
+        """Validates a non-leaf ``Step``."""
         errors = {}
         for node in self.step_graph.nodes:
             step = self.step_graph.nodes[node]["step"]
@@ -342,112 +382,31 @@ class Step:
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
 
-    def validate_step(
-        self,
-        step_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> dict[str, list[str]]:
-        if len(self.step_graph.nodes) == 0:
-            return self.validate_leaf(step_config, combined_implementations)
-        elif self.config_key in step_config:
-            return self.validate_nonleaf(
-                step_config[self.config_key], combined_implementations, input_data_config
-            )
-        else:
-            return self.validate_leaf(step_config, combined_implementations)
+    def _get_state_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Convenience method to get the state configuration.
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        return self.configuration_state.get_implementation_graph()
+        A ``Step`` can be either a leaf or a non-leaf. Each type of *non-leaf* ``Step``
+        has a unique :attr:`~easylink.step.Step.config_key` (defined by the user
+        via the pipeline specification file) that is used to specify the behavior
+        of the ``Step`` (e.g. looping, parallel, etc). This method simply returns
+        the ``Step's`` sub-configuration keyed to that ``config_key`` (if it exists,
+        i.e. is not a basic ``Step``).
 
-    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        return self.configuration_state.get_implementation_edges(edge)
+        Parameters
+        ----------
+        step_config
+            The high-level configuration of this ``Step``.
 
-    def set_parent_step(self, step: Step) -> None:
-        self.parent_step = step
-
-    def get_state_config(self, step_config: LayeredConfigTree) -> None:
+        Returns
+        -------
+            The sub-configuration of this ``Step`` based on the configuration state
+            (i.e. keyed on the ``config_key`` if it exists).
+        """
         return (
             step_config
             if not self.config_key in step_config
             else step_config[self.config_key]
         )
-
-    def set_configuration_state(
-        self,
-        parent_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> None:
-        step_config = parent_config[self.name]
-        state_config = self.get_state_config(step_config)
-        if self.config_key is not None and self.config_key in step_config:
-            self._configuration_state = NonLeafConfigurationState(
-                self, state_config, combined_implementations, input_data_config
-            )
-        else:
-            self._configuration_state = LeafConfigurationState(
-                self, state_config, combined_implementations, input_data_config
-            )
-
-    def _get_step_graph(self, nodes: list[Step], edges: list[EdgeParams]) -> StepGraph:
-        """Create a StepGraph from the nodes and edges the step was initialized with."""
-        step_graph = StepGraph()
-        for step in nodes:
-            step_graph.add_node_from_step(step)
-        for edge in edges:
-            step_graph.add_edge_from_params(edge)
-        return step_graph
-
-    @property
-    def implementation_node_name(self) -> str:
-        """Determines a sensible unique node name for the implementation graph.
-
-        This method compares the step node names with the step names through the step hierarchy and
-        uses the full suffix of step names starting from wherever the two first differ. For example,
-        loop steps may have multiple loops with the same implementation and step, e.g. "step_3" and "step_3_python_pandas".
-        If we have node names step_3_loop_1 step_3_python_pandas the resulting implementation node name
-        will be step_3_loop_1_step_3_python_pandas. If all the node names and step names match, we have not
-        introduced any step degeneracies with e.g. loops or multiples, and we can simply use the implementation
-        name.
-        """
-        step = self
-        implementation_name = (
-            self.configuration_state.pipeline_config[COMBINED_IMPLEMENTATION_KEY]
-            if self.configuration_state.is_combined
-            else self.configuration_state.implementation_config.name
-        )
-        node_names = []
-        step_names = []
-        while step:
-            node_names.append(step.name)
-            step_names.append(step.step_name)
-            step = step.parent_step
-
-        prefix = []
-        step_names.reverse()
-        node_names.reverse()
-        for i, (step_name, node_name) in enumerate(zip(step_names, node_names)):
-            if step_name != node_name:
-                prefix = node_names[i:]
-                break
-        # If we didn't include the step name already for a combined implementation, do so now.
-        if self.configuration_state.is_combined and not prefix:
-            prefix.append(self.name)
-        prefix.append(implementation_name)
-        return "_".join(prefix)
-
-    def implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
-        return {
-            "input": [
-                InputSlotMapping(slot, self.implementation_node_name, slot)
-                for slot in self.input_slots
-            ],
-            "output": [
-                OutputSlotMapping(slot, self.implementation_node_name, slot)
-                for slot in self.output_slots
-            ],
-        }
 
 
 class IOStep(Step):
@@ -606,7 +565,7 @@ class TemplatedStep(Step):
                 errors[f"step {self.name}"][f"{self.node_prefix}_{i+1}"] = parallel_errors
         return errors
 
-    def get_state_config(self, step_config: LayeredConfigTree) -> None:
+    def _get_state_config(self, step_config: LayeredConfigTree) -> None:
         if self.config_key in step_config:
             expanded_step_config = LayeredConfigTree()
             for i, sub_config in enumerate(step_config[self.config_key]):
@@ -622,7 +581,7 @@ class TemplatedStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        num_repeats = len(self.get_state_config(parent_config[self.name]))
+        num_repeats = len(self._get_state_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
         super().set_configuration_state(
@@ -807,7 +766,7 @@ class ChoiceStep(Step):
         self.step_graph = self._update_step_graph(subgraph)
         self.slot_mappings = self._update_slot_mappings(subgraph)
         # NOTE: A ChoiceStep is by definition non-leaf step
-        return self.validate_nonleaf(
+        return self._validate_nonleaf(
             chosen_step_config, combined_implementations, input_data_config
         )
 
@@ -851,3 +810,196 @@ class ChoiceStep(Step):
         input_mappings = subgraph["input_slot_mappings"]
         output_mappings = subgraph["output_slot_mappings"]
         return {"input": input_mappings, "output": output_mappings}
+
+
+class ConfigurationState(ABC):
+    """A given step's configuration state.
+
+    A ConfigurationState defines the exact pipeline configuration state for a given step, including the
+    strategy required to get the implementation graph from the step. There are two possible configured
+    step states: "Leaf" and "Non-Leaf".
+    """
+
+    def __init__(
+        self,
+        step: Step,
+        pipeline_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ):
+        self._step = step
+        self.pipeline_config = pipeline_config
+        self.combined_implementations = combined_implementations
+        self.input_data_config = input_data_config
+
+    @abstractmethod
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Resolve the graph composed of Steps into a graph composed of Implementations."""
+        pass
+
+    @abstractmethod
+    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
+        """Propagate edges of StepGraph to ImplementationGraph."""
+        pass
+
+
+class LeafConfigurationState(ConfigurationState):
+    """A concrete instance of ConfigurationState for a leaf node in the pipeline graph.
+
+    This corresponds to a leaf node in the pipeline graph that is implemented by a single implementation.
+    """
+
+    @property
+    def is_combined(self) -> bool:
+        return True if COMBINED_IMPLEMENTATION_KEY in self.pipeline_config else False
+
+    @property
+    def implementation_config(self) -> LayeredConfigTree:
+        return (
+            self.combined_implementations[self.pipeline_config[COMBINED_IMPLEMENTATION_KEY]]
+            if self.is_combined
+            else self.pipeline_config["implementation"]
+        )
+
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Return a single node with an implementation attribute."""
+        implementation_graph = ImplementationGraph()
+        implementation_node_name = self._step.implementation_node_name
+        if self.is_combined:
+            implementation = PartialImplementation(
+                combined_name=self.pipeline_config[COMBINED_IMPLEMENTATION_KEY],
+                schema_step=self._step.step_name,
+                input_slots=self._step.input_slots.values(),
+                output_slots=self._step.output_slots.values(),
+            )
+        else:
+            implementation = Implementation(
+                schema_steps=[self._step.step_name],
+                implementation_config=self.implementation_config,
+                input_slots=self._step.input_slots.values(),
+                output_slots=self._step.output_slots.values(),
+            )
+        implementation_graph.add_node_from_implementation(
+            implementation_node_name,
+            implementation=implementation,
+        )
+        return implementation_graph
+
+    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
+        implementation_edges = []
+        if edge.source_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.get_implementation_slot_mappings()["output"]
+                if mapping.parent_slot == edge.output_slot
+            ]
+            for mapping in mappings:
+                imp_edge = mapping.remap_edge(edge)
+                implementation_edges.append(imp_edge)
+
+        elif edge.target_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.get_implementation_slot_mappings()["input"]
+                if mapping.parent_slot == edge.input_slot
+            ]
+            for mapping in mappings:
+                if (
+                    "input_data_file" in self.pipeline_config
+                    and edge.source_node == "pipeline_graph_input_data"
+                ):
+                    edge.output_slot = self.pipeline_config["input_data_file"]
+                imp_edge = mapping.remap_edge(edge)
+                implementation_edges.append(imp_edge)
+        else:
+            raise ValueError(f"Step {self._step.name} not in edge {edge}")
+        if not implementation_edges:
+            raise ValueError(f"No edges found for Step {self._step.name} in edge {edge}")
+        return implementation_edges
+
+
+class NonLeafConfigurationState(ConfigurationState):
+    """A concrete instance of ConfigurationState for a non-leaf node in the pipeline graph.
+
+    This class type is selected when a step has a non-trivial step graph and has been configured
+    to use the step graph (e.g. through a configuration key in the pipeline specification yaml).
+    """
+
+    def __init__(
+        self,
+        step: Step,
+        pipeline_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ):
+        super().__init__(step, pipeline_config, combined_implementations, input_data_config)
+        if not step.step_graph:
+            raise ValueError(
+                f"NonLeafConfigurationState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
+            )
+        self.configure_subgraph_steps()
+
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Call get_implementation_graph on each subgraph node and update the graph."""
+        implementation_graph = ImplementationGraph()
+        self.update_nodes(implementation_graph)
+        self.update_edges(implementation_graph)
+        return implementation_graph
+
+    def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
+        for node in self._step.step_graph.nodes:
+            step = self._step.step_graph.nodes[node]["step"]
+            implementation_graph.update(step.get_implementation_graph())
+
+    def update_edges(self, implementation_graph: ImplementationGraph) -> None:
+        for source, target, edge_attrs in self._step.step_graph.edges(data=True):
+            all_edges = []
+            edge = EdgeParams.from_graph_edge(source, target, edge_attrs)
+            parent_source_step = self._step.step_graph.nodes[source]["step"]
+            parent_target_step = self._step.step_graph.nodes[target]["step"]
+
+            source_edges = parent_source_step.get_implementation_edges(edge)
+            for source_edge in source_edges:
+                for target_edge in parent_target_step.get_implementation_edges(source_edge):
+                    all_edges.append(target_edge)
+
+            for edge in all_edges:
+                implementation_graph.add_edge_from_params(edge)
+
+    def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
+        implementation_edges = []
+        if edge.source_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.slot_mappings["output"]
+                if mapping.parent_slot == edge.output_slot
+            ]
+            for mapping in mappings:
+                new_edge = mapping.remap_edge(edge)
+                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
+                imp_edges = new_step.get_implementation_edges(new_edge)
+                implementation_edges.extend(imp_edges)
+
+        elif edge.target_node == self._step.name:
+            mappings = [
+                mapping
+                for mapping in self._step.slot_mappings["input"]
+                if mapping.parent_slot == edge.input_slot
+            ]
+            for mapping in mappings:
+                new_edge = mapping.remap_edge(edge)
+                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
+                imp_edges = new_step.get_implementation_edges(new_edge)
+                implementation_edges.extend(imp_edges)
+        else:
+            raise ValueError(f" {self._step.name} not in edge {edge}")
+        if not implementation_edges:
+            raise ValueError(f"No edges found for {self._step.name} in edge {edge}")
+        return implementation_edges
+
+    def configure_subgraph_steps(self) -> None:
+        for node in self._step.step_graph.nodes:
+            step = self._step.step_graph.nodes[node]["step"]
+            step.set_configuration_state(
+                self.pipeline_config, self.combined_implementations, self.input_data_config
+            )
