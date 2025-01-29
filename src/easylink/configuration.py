@@ -188,8 +188,8 @@ class Config(LayeredConfigTree):
         Raises
         ------
         SystemExit
-            If no requested pipeline is validated, all validation errors found are
-            batch-logged into a dictionary and the program exits with a non-zero code.
+            If no requested pipeline is validated, the program exits with a non-zero
+            code and all validation errors found are logged.
 
         Notes
         -----
