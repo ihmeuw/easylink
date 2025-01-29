@@ -1,3 +1,45 @@
+"""
+======================
+Command Line Interface
+======================
+
+This module is responsible for defining the command line interface (cli) for running
+the EasyLink utility. We use the `click <https://click.palletsprojects.com/en/stable/>`_ 
+library to define the commands and their respective options. All commands are accessible 
+via the ``easylink`` group.
+
+.. _example_cli:
+
+Once installed, you can run a pipeline by typing ``easylink run`` into the command 
+line and passing in the paths to both a pipeline specification and an input data 
+specification:
+
+.. highlight:: console
+
+::
+
+   $ easylink run -p <PIPELINE-SPECIFICATION> -i <INPUT-DATA-SPECIFICATION>
+
+There are several other optional arguments to ``easylink run`` as well;
+for help, use ``easylink run --help``.
+
+Note that a schematic of the pipeline's directed acyclic graph (DAG) that is run 
+is automatically generated. If this schematic is desired _without_ actually
+running the pipeline, use ``easylink generate-dag``:
+
+::
+
+   $ easylink generate-dag -p <PIPELINE-SPECIFICATION> -i <INPUT-DATA-SPECIFICATION
+
+As before, refer to ``easylink generate-dag --help`` for information on other options.
+
+.. _end_example_cli:
+
+For usage documentation, see :ref:`cli`.
+"""
+
+from collections.abc import Callable
+
 import click
 from loguru import logger
 
@@ -45,7 +87,21 @@ SHARED_OPTIONS = [
 ]
 
 
-def _pass_shared_options(func):
+def _pass_shared_options(func: Callable) -> Callable:
+    """Passes shared options to a click command.
+
+    This function is a decorator that takes a click command callable and adds the
+    shared options defined in ``SHARED_OPTIONS`` to it.
+
+    Parameters
+    ----------
+    func
+        The click command function to add shared options to.
+
+    Returns
+    -------
+        The click command function with the shared options added.
+    """
     for option in SHARED_OPTIONS:
         func = option(func)
     return func

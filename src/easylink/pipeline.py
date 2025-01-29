@@ -3,9 +3,9 @@
 Pipeline
 ========
 
-This module is responsible for the ``Pipeline`` class, whose primary purpose
-is to perform pipeline-level validations as well as generate the Snakefile
-to be used by Snakemake to execute the pipeline.
+This module is responsible for the ``Pipeline`` class, whose primary purpose is to 
+perform pipeline-level validations as well as generate the Snakefile to be used by 
+`Snakemake <https://snakemake.readthedocs.io/en/stable/>`_ to execute the pipeline.
 
 """
 

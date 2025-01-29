@@ -1,3 +1,13 @@
+"""
+======
+Runner
+======
+
+This module contains the main function for running a pipeline; it is intended to
+be called from the :mod:`~easylink.cli` module.
+
+"""
+
 import os
 import socket
 import subprocess
@@ -26,23 +36,26 @@ def main(
     results_dir: str,
     debug=False,
 ) -> None:
-    """Run the ``command`` passed in.
+    """Runs an EasyLink command.
 
-    This function is intended to be accessed via the cli.py module's command
-    line interface functions.
+    This function is used to run an EasyLink job and is intended to be accessed via
+    the :mod:`~easylink.cli` module's command line interface (cli) commands. It
+    configures the run and sets up the pipeline based on the user-provided specification
+    files and then calls on `snakemake <https://snakemake.readthedocs.io/en/stable/>`_
+    to act as the workflow manager.
 
     Arguments
     ---------
     command
         The command to run. Current supported commands include "run" and "generate_dag".
     pipeline_specification
-        The path to the pipeline specification yaml file.
+        The filepath to the pipeline specification file.
     input_data
-        The path to the input data specification yaml file (not the paths to the
+        The filepath to the input data specification file (_not_ the paths to the
         input data themselves).
     computing_environment
-        The path to the specification yaml defining the computing environment to
-        run the pipeline on. If None, the pipeline will be run locally.
+        The filepath to the specification yaml defining the computing environment
+        to run the pipeline on. If None, the pipeline will be run locally.
     results_dir
         The directory to write results and incidental files (logs, etc.) to.
     debug
@@ -57,7 +70,7 @@ def main(
     # After validation is completed, create the results directory
     create_results_directory(Path(results_dir))
     snakefile = pipeline.build_snakefile()
-    save_dag_image(snakefile, results_dir)
+    _save_dag_image(snakefile, results_dir)
     if command == "generate_dag":
         return
     # Copy the configuration files to the results directory if we actually plan to run the pipeline.
@@ -68,8 +81,8 @@ def main(
         Path(computing_environment) if computing_environment else computing_environment,
         Path(results_dir),
     )
-    environment_args = get_environment_args(config)
-    singularity_args = get_singularity_args(config)
+    environment_args = _get_environment_args(config)
+    singularity_args = _get_singularity_args(config)
     # Set source cache in appropriate location to avoid jenkins failures
     os.environ["XDG_CACHE_HOME"] = results_dir + "/.snakemake/source_cache"
     # We need to set a dummy environment variable to avoid logging a wall of text.
@@ -103,8 +116,8 @@ def main(
     snake_main(argv)
 
 
-def get_singularity_args(config: Config) -> str:
-    """Get the singularity arguments for the pipeline run."""
+def _get_singularity_args(config: Config) -> str:
+    """Gets the required singularity arguments."""
     input_file_paths = ",".join(
         file.as_posix() for file in config.input_data.to_dict().values()
     )
@@ -115,7 +128,8 @@ def get_singularity_args(config: Config) -> str:
     return singularity_args
 
 
-def get_environment_args(config: Config) -> list[str]:
+def _get_environment_args(config: Config) -> list[str]:
+    """Gets the required environment arguments."""
     # Set up computing environment
     if config.computing_environment == "local":
         return []
@@ -141,7 +155,16 @@ def get_environment_args(config: Config) -> list[str]:
         )
 
 
-def save_dag_image(snakefile, results_dir) -> None:
+def _save_dag_image(snakefile, results_dir) -> None:
+    """Saves the directed acyclic graph (DAG) of the pipeline to an image file.
+
+    Attributes
+    ----------
+    snakefile
+        The path to the snakefile.
+    results_dir
+        The directory to save the DAG image to.
+    """
     process = subprocess.run(
         ["snakemake", "--snakefile", str(snakefile), "--dag"],
         capture_output=True,
