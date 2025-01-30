@@ -228,7 +228,7 @@ class Step:
             return self._validate_leaf(step_config, combined_implementations)
 
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph.
+        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
 
         Returns
         -------
