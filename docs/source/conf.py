@@ -199,6 +199,7 @@ intersphinx_mapping = {
     "networkx": ("https://networkx.org/documentation/stable/", None),
     "layered_config_tree": ("https://layered-config-tree.readthedocs.io/en/latest/", None),
     "loguru": ("https://loguru.readthedocs.io/en/stable/", None),
+    "click": ("https://click.palletsprojects.com/en/stable/", None),
 }
 
 

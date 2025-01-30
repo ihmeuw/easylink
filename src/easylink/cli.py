@@ -4,9 +4,8 @@ Command Line Interface
 ======================
 
 This module is responsible for defining the command line interface (cli) for running
-the EasyLink utility. We use the `click <https://click.palletsprojects.com/en/stable/>`_ 
-library to define the commands and their respective options. All commands are accessible 
-via the ``easylink`` group.
+the EasyLink utility. We use the :mod:`click` library to define the commands and 
+their respective options. All commands are accessible via the ``easylink`` group.
 
 .. _example_cli:
 
