@@ -188,8 +188,8 @@ class Config(LayeredConfigTree):
         Raises
         ------
         SystemExit
-            If the pipeline configuration is not valid for any of the ``potential_schemas``, 
-            the program exits with a non-zero code and all validation errors found 
+            If the pipeline configuration is not valid for any of the ``potential_schemas``,
+            the program exits with a non-zero code and all validation errors found
             are logged.
 
         Notes
