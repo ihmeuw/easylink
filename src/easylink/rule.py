@@ -94,7 +94,7 @@ class ImplementedRule(Rule):
     """This ``Implementation's`` input slot attributes."""
     validations: list[str]
     """Names of files created by :class:`InputValidationRule`. These files are empty
-    but used by Snakemake to link build the graph edges around validation rules."""
+    but used by Snakemake to build the graph edges of dependency on validation rules."""
     output: list[str]
     """Output data filepaths."""
     resources: dict | None
