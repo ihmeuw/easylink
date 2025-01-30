@@ -45,8 +45,8 @@ class InputSlot:
     """A function that validates the input data being passed into the pipeline via 
     this ``InputSlot``. If the data is invalid, the function should raise an exception 
     with a descriptive error message which will then be reported to the user.
-    **Note that the function *must* be defined in the :mod:`easylink.utilities.validation_utils` 
-    module!**"""
+    **Note that the function must be defined in the** :mod:`easylink.utilities.validation_utils` 
+    **module!**"""
 
 
 @dataclass(frozen=True)
