@@ -20,15 +20,16 @@ from dataclasses import dataclass
 
 
 class Rule(ABC):
-    """An abstract class to define the interface between :class:`Steps<easylink.step.Step>` and their :class:`Implementations<easylink.implementation.Implementation>`.
-
-    This class is responsible for converting the defined interfaces between ``Steps``
-    and ``Implementations`` to a Snakemake rule and writing it out to the Snakefile
-    to be run.
-
-    """
+    """An abstract class used to generate Snakemake rules."""
 
     def write_to_snakefile(self, snakefile_path) -> None:
+        """Writes the rule to the Snakefile.
+
+        Parameters
+        ----------
+        snakefile_path
+            Path to the Snakefile to write the rule to.
+        """
         with open(snakefile_path, "a") as f:
             f.write(self._build_rule())
 
@@ -87,14 +88,14 @@ class ImplementedRule(Rule):
     name: str
     """Name of the rule."""
     step_name: str
-    """Name of the step this rule/``Implementation`` is implementing."""
+    """Name of the step this rule is implementing."""
     implementation_name: str
     """Name of the ``Implementation`` to build the rule for."""
     input_slots: dict[str, dict[str, str | list[str]]]
     """This ``Implementation's`` input slot attributes."""
     validations: list[str]
     """Names of files created by :class:`InputValidationRule`. These files are empty
-    but used by Snakemake to link build the graph edges around validation rules."""
+    but used by Snakemake to build the graph edges of dependency on validation rules."""
     output: list[str]
     """Output data filepaths."""
     resources: dict | None

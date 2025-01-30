@@ -183,13 +183,14 @@ class Config(LayeredConfigTree):
 
         Returns
         -------
-            The first ``PipelineSchema`` that validates the requested pipeline.
+            The first ``PipelineSchema`` that validates the requested pipeline configuration.
 
         Raises
         ------
         SystemExit
-            If no requested pipeline is validated, all validation errors found are
-            batch-logged into a dictionary and the program exits with a non-zero code.
+            If the pipeline configuration is not valid for any of the ``potential_schemas``,
+            the program exits with a non-zero code and all validation errors found
+            are logged.
 
         Notes
         -----

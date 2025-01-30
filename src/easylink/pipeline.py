@@ -3,8 +3,8 @@
 Pipeline
 ========
 
-This module is responsible for the ``Pipeline`` class, whose primary purpose is to 
-perform pipeline-level validations as well as generate the Snakefile to be used by 
+This module is responsible for the ``Pipeline`` class, whose primary purpose
+is to perform validations as well as generate the Snakefile to be used by 
 `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_ to execute the pipeline.
 
 """
@@ -130,7 +130,7 @@ class Pipeline:
 
         Notes
         -----
-        This is currently only applicable for spark-dependent rules.
+        This is currently only applicable for spark-dependent pipelines.
         """
         with open(self.snakefile_path, "a") as f:
             if self.spark_is_required:
