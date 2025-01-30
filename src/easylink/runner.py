@@ -4,7 +4,7 @@ Runner
 ======
 
 This module contains the main function for running a pipeline; it is intended to
-be called from the :mod:`~easylink.cli` module.
+be called from the :mod:`easylink.cli` module.
 
 """
 
@@ -39,7 +39,7 @@ def main(
     """Runs an EasyLink command.
 
     This function is used to run an EasyLink job and is intended to be accessed via
-    the :mod:`~easylink.cli` module's command line interface (cli) commands. It
+    the :mod:`easylink.cli` module's command line interface (cli) commands. It
     configures the run and sets up the pipeline based on the user-provided specification
     files and then calls on `snakemake <https://snakemake.readthedocs.io/en/stable/>`_
     to act as the workflow manager.
