@@ -39,7 +39,7 @@ def main(
     """Runs an EasyLink command.
 
     This function is used to run an EasyLink job and is intended to be accessed via
-    the ``easylink.cli`` module's command line interface (cli) commands. It
+    the ``easylink.cli`` module's command line interface (CLI) commands. It
     configures the run and sets up the pipeline based on the user-provided specification
     files and then calls on `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_
     to act as the workflow manager.

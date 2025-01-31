@@ -3,7 +3,7 @@
 Command Line Interface
 ======================
 
-This module is responsible for defining the command line interface (cli) for running
+This module is responsible for defining the command line interface (CLI) for running
 the EasyLink utility. We use the :mod:`click` library to define the commands and 
 their respective options. All commands are accessible via the ``easylink`` group.
 
