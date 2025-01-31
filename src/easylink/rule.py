@@ -3,8 +3,9 @@
 Snakemake Rules
 ===============
 
-This module is responsible for generating the Snakemake rules to be run as well
-as writing them to the Snakefile.
+We have chosen to use `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_ 
+as the EasyLink workflow manager. This module is responsible for generating the 
+Snakemake rules to be run as well as writing them to the Snakefile.
 
 Note we have adopted the Snakemake term "rule" to refer to a singular component 
 in a Snakefile (i.e. in a Snakemake pipeline) that defines input files, output files,

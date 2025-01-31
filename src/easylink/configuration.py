@@ -290,9 +290,9 @@ def load_params_from_specification(
     pipeline_specification
         The path to the pipeline specification file.
     input_data
-        The path to the input data file.
+        The path to the input data specification file.
     computing_environment
-        The path to the computing environment file.
+        The path to the computing environment specification file.
     results_dir
         The path to the results directory.
 
