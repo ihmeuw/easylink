@@ -58,7 +58,7 @@ SHARED_OPTIONS = [
         "--pipeline-specification",
         required=True,
         type=click.Path(exists=True, dir_okay=False, resolve_path=True),
-        help="The path to the pipeline specification yaml file.",
+        help="The path to the pipeline specification YAML file.",
     ),
     click.option(
         "-i",
@@ -66,7 +66,7 @@ SHARED_OPTIONS = [
         required=True,
         type=click.Path(exists=True, dir_okay=False, resolve_path=True),
         help=(
-            "The path to the input data specification yaml file (not the paths to "
+            "The path to the input data specification YAML file (not the paths to "
             "the input data themselves)."
         ),
     ),
@@ -124,7 +124,7 @@ def easylink():
     show_default=True,
     type=click.Path(exists=True, dir_okay=False, resolve_path=True),
     help=(
-        "Path to the computing environment specification yaml. If no value is passed, "
+        "Path to the computing environment specification YAML file. If no value is passed, "
         "the pipeline will be run locally."
     ),
 )

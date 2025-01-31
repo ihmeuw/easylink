@@ -54,7 +54,7 @@ def main(
         The filepath to the input data specification file (_not_ the paths to the
         input data themselves).
     computing_environment
-        The filepath to the specification yaml defining the computing environment
+        The filepath to the specification file defining the computing environment
         to run the pipeline on. If None, the pipeline will be run locally.
     results_dir
         The directory to write results and incidental files (logs, etc.) to.
