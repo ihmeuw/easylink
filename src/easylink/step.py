@@ -58,8 +58,8 @@ class Step:
     name
         The name of this step *node*. This can be different from the ``step_name``
         due to the need for disambiguation during the process of unrolling loops,
-        etc. For example, if step 1 is looped multiple times, each node would 
-        have a ``step_name`` of, perhaps, "step_1" but unique ``names`` 
+        etc. For example, if step 1 is looped multiple times, each node would
+        have a ``step_name`` of, perhaps, "step_1" but unique ``names``
         ("step_1_loop_1", etc).
     input_slots
         All required :class:`InputSlots<easylink.graph_components.InputSlot>`.
