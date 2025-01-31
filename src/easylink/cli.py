@@ -20,11 +20,14 @@ specification:
    $ easylink run -p <PIPELINE-SPECIFICATION> -i <INPUT-DATA-SPECIFICATION>
 
 There are several other optional arguments to ``easylink run`` as well;
-for help, use ``easylink run --help``.
+for help, use ``easylink run --help``. Notably, there is an optional argument to
+change where the results are saved (``-o``) as well as one to configure the computing
+environment (``-e``).
 
-Note that a schematic of the pipeline's directed acyclic graph (DAG) that is run 
-is automatically generated. If this schematic is desired _without_ actually
-running the pipeline, use ``easylink generate-dag``:
+Note that a schematic of the pipeline's directed acyclic graph (DAG) is automatically 
+generated and saved to the output directory as an SVG file which can be rendered 
+by most internet browsers. If this schematic is desired _without_ actually running 
+the pipeline, use ``easylink generate-dag``:
 
 ::
 

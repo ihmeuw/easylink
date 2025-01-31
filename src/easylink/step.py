@@ -47,8 +47,9 @@ class Step:
     the sequence called a "pipeline" and how those elements relate to one another.
     In turn, ``Steps`` are implemented by :class:`Implementations<easylink.implementation.Implementation>`,
     such that each ``Step`` may have several ``Implementations`` to choose from
-    but each ``Implementation`` must implemement exactly one ``Step`. In a sense,
-    ``Steps`` contain metadata about the ``Implementations`` to which they relate.
+    but each ``Implementation`` must implemement exactly one ``Step`. As such, the
+    pipeline for a given EasyLink run consists of ``Implementations`` that collectively
+    span the ``Steps`` in the :class:`~easylink.pipeline_schema.PipelineSchema`.
 
     Parameters
     ----------
@@ -93,9 +94,9 @@ class Step:
         self.step_name = step_name
         """The name of the high-level pipeline step."""
         self.name = name if name else step_name
-        """The name of the step *node*. This is used to disambiguate names as necessary, 
-        e.g. if "step 1" is looped multiple times. If not provided, defaults to the 
-        :attr:`step_name`."""
+        """The name of ``Step's`` node in its :class:`~easylink.graph_components.StepGraph`. 
+        This is a more descriptive name than the ``step_name``, e.g. if "step 1" 
+        is looped multiple times. If not provided, defaults to the :attr:`step_name`."""
         self.input_slots = {slot.name: slot for slot in input_slots}
         """A mapping of ``InputSlot`` names to their instances."""
         self.output_slots = {slot.name: slot for slot in output_slots}
@@ -107,8 +108,9 @@ class Step:
         self.edges = edges
         """The :class:`~easylink.graph_components.EdgeParams` of this ``Step``."""
         self.step_graph = self._get_step_graph(nodes, edges)
-        """The :class:`~easylink.graph_components.StepGraph` (directed acyclic graph)
-        of this ``Step``."""
+        """The :class:`~easylink.graph_components.StepGraph` of this ``Step``, i.e.
+        the directed acyclic graph (DAG) sub-nodes and their edges that make up this
+        ``Step`` instance."""
         self.slot_mappings = {
             "input": list(input_slot_mappings),
             "output": list(output_slot_mappings),
@@ -208,7 +210,7 @@ class Step:
         Returns
         -------
             A dictionary of errors, where the keys are the ``Step`` name and the
-            values are lists of as many error messages as could be generated.
+            values are lists of error messages associated with the given ``Step``.
 
         Notes
         -----
@@ -217,6 +219,11 @@ class Step:
 
         If the ``Step`` does not validate (i.e. errors are found and the returned
         dictionary is non-empty), the tool will exit and the pipeline will not run.
+
+        We attempt to batch error messages as much as possible, but there may be
+        times where the configuration is so ill-formed that we are unable to handle
+        all issues in one pass. In these cases, new errors may be found after the
+        initial ones are handled.
         """
         if len(self.step_graph.nodes) == 0:
             return self._validate_leaf(step_config, combined_implementations)
@@ -290,7 +297,7 @@ class Step:
             )
 
     def get_implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
-        """Gets the input and output :class:`~easylink.graph_components.SlotMapping`."""
+        """Gets the input and output :class:`SlotMappings<easylink.graph_components.SlotMapping>`."""
         return {
             "input": [
                 InputSlotMapping(slot, self.implementation_node_name, slot)
@@ -401,6 +408,11 @@ class Step:
         -------
             The sub-configuration of this ``Step`` based on the configuration state
             (i.e. keyed on the ``config_key`` if it exists).
+
+        Notes
+        -----
+        :class:`ChoiceSteps<ChoiseStep>` are a special type of ``Step`` that do *not*
+        have a :attr:`~easylink.step.Step.config_key` despite being non-leaf.
         """
         return (
             step_config
