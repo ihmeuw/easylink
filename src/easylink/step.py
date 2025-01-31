@@ -934,7 +934,7 @@ class NonLeafConfigurationState(ConfigurationState):
     """A concrete instance of ConfigurationState for a non-leaf node in the pipeline graph.
 
     This class type is selected when a step has a non-trivial step graph and has been configured
-    to use the step graph (e.g. through a configuration key in the pipeline specification yaml).
+    to use the step graph (e.g. through a configuration key in the pipeline specification file).
     """
 
     def __init__(
