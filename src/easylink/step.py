@@ -43,21 +43,24 @@ COMBINED_IMPLEMENTATION_KEY = "combined_implementation_key"
 class Step:
     """The highest-level pipeline building block abstraction.
 
-    ``Steps`` contain information about the purpose of the interoperable elements of
-    the sequence called a "pipeline" and how those elements relate to one another.
+    ``Steps`` contain information about the purpose of the interoperable tasks in
+    the sequence called a "pipeline" and how those tasks relate to one another.
     In turn, ``Steps`` are implemented by :class:`Implementations<easylink.implementation.Implementation>`,
     such that each ``Step`` may have several ``Implementations`` to choose from
-    but each ``Implementation`` must implemement exactly one ``Step`. As such, the
+    but each ``Implementation`` must implemement exactly one ``Step``. As such, the
     pipeline for a given EasyLink run consists of ``Implementations`` that collectively
     span the ``Steps`` in the :class:`~easylink.pipeline_schema.PipelineSchema`.
 
     Parameters
     ----------
     step_name
-        The name of the high-level pipeline step.
+        The name of the pipeline step in the ``PipelineSchema``.
     name
-        The name of the step *node*. This is used to disambiguate names as necessary,
-        e.g. if "step 1" is looped multiple times.
+        The name of this step *node*. This can be different from the ``step_name``
+        due to the need for disambiguation during the process of unrolling loops,
+        etc. For example, if step 1 is looped multiple times, each node would 
+        have a ``step_name`` of, perhaps, "step_1" but unique ``names`` 
+        ("step_1_loop_1", etc).
     input_slots
         All required :class:`InputSlots<easylink.graph_components.InputSlot>`.
     output_slots
@@ -109,8 +112,8 @@ class Step:
         """The :class:`~easylink.graph_components.EdgeParams` of this ``Step``."""
         self.step_graph = self._get_step_graph(nodes, edges)
         """The :class:`~easylink.graph_components.StepGraph` of this ``Step``, i.e.
-        the directed acyclic graph (DAG) sub-nodes and their edges that make up this
-        ``Step`` instance."""
+        the directed acyclic graph (DAG) of sub-nodes and their edges that make 
+        up this ``Step`` instance."""
         self.slot_mappings = {
             "input": list(input_slot_mappings),
             "output": list(output_slot_mappings),
