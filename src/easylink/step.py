@@ -411,7 +411,7 @@ class Step:
 
         Notes
         -----
-        :class:`ChoiceSteps<ChoiseStep>` are a special type of ``Step`` that do *not*
+        :class:`ChoiceSteps<ChoiceStep>` are a special type of ``Step`` that do *not*
         have a :attr:`~easylink.step.Step.config_key` despite being non-leaf.
         """
         return (
