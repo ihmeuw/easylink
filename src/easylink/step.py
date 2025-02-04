@@ -205,8 +205,7 @@ class Step:
         step_config
             The configuration of this ``Step``.
         combined_implementations
-            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
 
@@ -288,8 +287,7 @@ class Step:
         parent_config
             The configuration of the parent ``Step``.
         combined_implementations
-            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
@@ -494,9 +492,7 @@ class IOStep(Step):
             The configuration of the parent ``Step``. For ``IOSteps``, this will
             always be the entire pipeline configuration.
         combined_implementations
-            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
-            For ``IOSteps``, this will always be an empty configuration.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
@@ -561,9 +557,7 @@ class InputStep(IOStep):
             The configuration of the parent ``Step``. For ``IOSteps``, this will
             always be the entire pipeline configuration.
         combined_implementations
-            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
-            For ``IOSteps``, this will always be an empty configuration.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
@@ -613,7 +607,7 @@ class HierarchicalStep(Step):
         return "substeps"
 
 
-class TemplatedStep(Step):
+class TemplatedStep(Step, ABC):
     """A type of :class:`Step` that may contain multiplicity.
 
     A ``TemplatedStep`` is used to represents a ``Step`` that contains a specified
@@ -708,8 +702,7 @@ class TemplatedStep(Step):
         step_config
             The configuration of this ``TemplatedStep``.
         combined_implementations
-            The relevant configuration if this ``TemplatedStep's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
 
@@ -807,8 +800,7 @@ class TemplatedStep(Step):
         parent_config
             The configuration of the parent ``Step``.
         combined_implementations
-            The relevant configuration if this ``TemplatedStep's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
@@ -824,7 +816,7 @@ class LoopStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that allows for looping.
 
     A ``LoopStep`` allows a user to loop a single :class:`Step` or a sequence
-    of ``Steps`` multiple times.
+    of ``Steps`` multiple times such that each iteration depends on the previous.
 
     See :class:``TemplatedStep`` for inherited attributes.
 
@@ -833,7 +825,7 @@ class LoopStep(TemplatedStep):
     template_step
         The ``Step`` to be templated.
     self_edges
-        Any :class:`~easylink.graph_components.EdgeParams` that represent self-edges,
+        :class:`~easylink.graph_components.EdgeParams` that represent self-edges,
         i.e. edges that connect the output of one loop to the input of the next.
 
     """
@@ -845,7 +837,7 @@ class LoopStep(TemplatedStep):
     ) -> None:
         super().__init__(template_step)
         self.self_edges = self_edges
-        """Any :class:`~easylink.graph_components.EdgeParams` that represent self-edges,
+        """:class:`~easylink.graph_components.EdgeParams` that represent self-edges,
         i.e. edges that connect the output of one loop to the input of the next."""
 
     @property
@@ -941,7 +933,8 @@ class LoopStep(TemplatedStep):
 
 
 class ParallelStep(TemplatedStep):
-    """A type of :class:`TemplatedStep` that allows for running in parallel.
+    """A type of :class:`TemplatedStep` that creates multiple copies in parallel
+    with no dependencies between them.
 
     See :class:`TemplatedStep` for inherited attributes.
 
@@ -1072,8 +1065,7 @@ class ChoiceStep(Step):
         step_config
             The configuration of this ``ChoiceStep``.
         combined_implementations
-            The relevant configuration if this ``ChoiceStep's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
 
@@ -1147,8 +1139,7 @@ class ChoiceStep(Step):
         parent_config
             The configuration of the parent ``Step``.
         combined_implementations
-            The relevant configuration if this ``ChoiceStep's`` :class:`~easylink.implementation.Implementation`
-            has been requested to be combined with that of a different ``Step``.
+            The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
 
@@ -1215,7 +1206,7 @@ class ConfigurationState(ABC):
 
     A ``ConfigurationState`` defines the exact pipeline configuration state for a
     given ``Step``, including the strategy required to get the :class:`~easylink.graph_components.ImplementationGraph`
-    from it. There are two possible configuration states, "leaf" and "non-leaf",
+    from it. There are two possible types of configuration states, "leaf" and "non-leaf",
     and each has its own concrete class, :class:`LeafConfigurationState` and
     ``NonLeafConfigurationState``, respectively.
 
@@ -1226,8 +1217,7 @@ class ConfigurationState(ABC):
     pipeline_config
         The relevant configuration for the ``Step`` we are setting the state for.
     combined_implementations
-        The relevant configuration if the ``Step's`` :class:`~easylink.implementation.Implementation`
-        has been requested to be combined with that of a different ``Step``.
+        The configuration for any implementations to be combined.
     input_data_config
         The input data configuration for the entire pipeline.
 
@@ -1252,7 +1242,7 @@ class ConfigurationState(ABC):
 
     @abstractmethod
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Resolves the graph composed of ``Steps`` into one of ``Implementations``."""
+        """Resolves the graph composed of ``Steps`` into one composed of ``Implementations``."""
         pass
 
     @abstractmethod
@@ -1275,7 +1265,7 @@ class LeafConfigurationState(ConfigurationState):
     """The :class:`ConfigurationState` for a leaf :class:`Step`.
 
     A ``LeafConfigurationState`` is a concrete class that corresponds to a leaf
-    ``Step``, i.e. one what is implemented by a single :class:`~easylink.implementation.Implementation`.
+    ``Step``, i.e. one that is implemented by a single :class:`~easylink.implementation.Implementation`.
 
     See :class:`ConfigurationState` for inherited attributes.
 
@@ -1298,7 +1288,7 @@ class LeafConfigurationState(ConfigurationState):
     def get_implementation_graph(self) -> ImplementationGraph:
         """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
 
-        A ``Step`` in a non-leaf configuration state by defintion has no sub-``Steps``
+        A ``Step`` in a leaf configuration state by definition has no sub-``Steps``
         to unravel; we are able to directly instantiate an :class:`~easylink.implementation.Implementation`
         and generate an ``ImplementationGraph`` from it.
 
@@ -1394,8 +1384,7 @@ class NonLeafConfigurationState(ConfigurationState):
     pipeline_config
         The relevant configuration for the ``Step`` we are setting the state for.
     combined_implementations
-        The relevant configuration if the ``Step's`` :class:`~easylink.implementation.Implementation`
-        has been requested to be combined with that of a different ``Step``.
+        The configuration for any implementations to be combined.
     input_data_config
         The input data configuration for the entire pipeline.
 
@@ -1532,7 +1521,7 @@ class NonLeafConfigurationState(ConfigurationState):
         """Sets the configuration state for all ``Steps`` in the ``StepGraph``.
 
         This method recursively traverses the ``StepGraph`` and sets the configuration
-        state for each ``Step`` until all nodes are leaf nodes.
+        state for each ``Step`` until reaching all leaf nodes.
         """
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]

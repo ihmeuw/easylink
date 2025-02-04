@@ -122,7 +122,7 @@ class PipelineSchema(HierarchicalStep):
         ``PipelineSchema`` has non-leaf configuration state; this method thus assigns
         a :class:`~easylink.step.NonLeafConfigurationState` to the ``PipelineSchema``.
         Upon instantiation, this ``NonLeafConfigurationState`` recursively updates
-        the ``Stepgraphs`` until all non-leaf nodes are resolved.
+        the ``StepGraphs`` until all non-leaf nodes are resolved.
 
         Parameters
         ----------
