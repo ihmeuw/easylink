@@ -240,23 +240,28 @@ class Step:
     def get_implementation_graph(self) -> ImplementationGraph:
         """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
 
+        The ``ImplementationGraph`` and how it is determined depends on whether
+        this ``Step`` is a leaf or a non-leaf, i.e. what its :attr:`configuration_state`
+        is.
+
         Returns
         -------
-            The ``ImplementationGraph`` of this ``Step``.
+            The ``ImplementationGraph`` of this ``Step`` based on its ``configuration_state``.
         """
         return self.configuration_state.get_implementation_graph()
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        """Gets this ``Step's`` edge information.
+        """Gets the edge information for the ``Implementation`` related to this ``Step``.
 
         Parameters
         ----------
         edge
-            The edge parameters.
+            The ``Step's`` edge information to be propagated to the ``ImplementationGraph``.
 
         Returns
         -------
-            The parameters that define the edges of this ``Step``.
+            The ``Implementation's`` edge information based on this ``Step's`` configuration
+            state.
         """
         return self.configuration_state.get_implementation_edges(edge)
 
@@ -396,11 +401,10 @@ class Step:
         """Convenience method to get the state configuration.
 
         A ``Step`` can be either a leaf or a non-leaf. Each type of *non-leaf* ``Step``
-        has a unique :attr:`~easylink.step.Step.config_key` (defined by the user
-        via the pipeline specification file) that is used to specify the behavior
-        of the ``Step`` (e.g. looping, parallel, etc). This method simply returns
-        the ``Step's`` sub-configuration keyed to that ``config_key`` (if it exists,
-        i.e. is not a basic ``Step``).
+        has a unique :attr:`config_key` (defined by the user via the pipeline specification
+        file) that is used to specify the behavior of the ``Step`` (e.g. looping,
+        parallel, etc). This method simply returns the ``Step's`` sub-configuration
+        keyed to that ``config_key`` (if it exists, i.e. is not a basic ``Step``).
 
         Parameters
         ----------
@@ -415,7 +419,7 @@ class Step:
         Notes
         -----
         :class:`ChoiceSteps<ChoiceStep>` are a special type of ``Step`` that do *not*
-        have a :attr:`~easylink.step.Step.config_key` despite being non-leaf.
+        have a :attr:`config_key` despite being non-leaf.
         """
         return (
             step_config
@@ -425,10 +429,32 @@ class Step:
 
 
 class IOStep(Step):
-    """"""
+    """A special case type of :class:`Step` used to represent incoming and outgoing data.
+
+    ``IOSteps`` are used to handle the incoming and outgoing data to the pipeline;
+    they are inherited by concrete :class:`InputStep` and :class:`OutputStep`
+    classes. These are not typical ``Steps`` in that they do not represent a unit
+    of work to be performed in the pipeline (i.e. there is no container to run) and,
+    thus, are not implemented by an :class:`~easylink.implementation.Implementation`.
+
+    See :class:`Step` for inherited attributes.
+
+    """
 
     @property
     def implementation_node_name(self) -> str:
+        """Dummy name to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation` and thus do not
+        require a different node name than its own ``Step`` name. This property
+        only exists so that ``IOSteps`` can be used interchangeably with other
+        ``Steps`` in the codebase.
+
+        Returns
+        -------
+            The ``IOStep's`` name.
+        """
         return self.name
 
     def validate_step(
@@ -437,6 +463,18 @@ class IOStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
+        """Dummy validation method to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation` and thus do not
+        require any sort of validation since no new data is created. This method
+        only exists so that ``IOSteps`` can be used interchangeably with other
+        ``Steps`` in the codebase.
+
+        Returns
+        -------
+            An empty dictionary.
+        """
         return {}
 
     def set_configuration_state(
@@ -445,12 +483,41 @@ class IOStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> None:
+        """Sets the configuration state to leaf.
+
+        An ``IOStep`` is by definition a leaf ``Step`` and so we assign that here
+        instead of relying on the default behavior of the parent class.
+
+        Parameters
+        ----------
+        parent_config
+            The configuration of the parent ``Step``. For ``IOSteps``, this will
+            always be the entire pipeline configuration.
+        combined_implementations
+            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+            For ``IOSteps``, this will always be an empty configuration.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
         self._configuration_state = LeafConfigurationState(
             self, parent_config, combined_implementations, input_data_config
         )
 
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Add a single node to the graph based on step name."""
+        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+
+        Notes
+        -----
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation`. As such, we
+        leverage the :class:`~easylink.implementation.NullImplementation` class
+        to generate the graph node.
+
+        Returns
+        -------
+            The ``ImplementationGraph`` of this ``Step``.
+        """
         implementation_graph = ImplementationGraph()
         implementation_graph.add_node_from_implementation(
             self.name,
@@ -462,11 +529,18 @@ class IOStep(Step):
 
 
 class InputStep(IOStep):
-    def __init__(
-        self,
-        output_slots: Iterable[OutputSlot] = (OutputSlot("all"),),
-    ) -> None:
-        super().__init__(step_name="input_data", output_slots=output_slots)
+    """A special case type of :class:`Step` used to represent incoming data.
+
+    An ``InputStep`` is used to pass data into the pipeline. Since we do not know
+    what the data to pass into the pipeline will be a priori, we instantiate an
+    "all" :class:`~easylink.graph_components.OutputSlot` which is used to pass in
+    *all* data defined in the input data specification file.
+
+    See :class:`IOStep` for inherited attributes.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(step_name="input_data", output_slots=(OutputSlot("all"),))
 
     def set_configuration_state(
         self,
@@ -474,7 +548,25 @@ class InputStep(IOStep):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> None:
-        """Configure the step against the pipeline configuration and input data."""
+        """Sets the configuration state and updates the ``OutputSlots``.
+
+        In addition to setting ``InputStep`` to a leaf configuration state, this
+        method also updates the ``OutputSlots`` to include all of the dataset keys
+        in the input data specification file. This allows for future use of
+        specific datasets instead of only "all" of them.
+
+        Parameters
+        ----------
+        parent_config
+            The configuration of the parent ``Step``. For ``IOSteps``, this will
+            always be the entire pipeline configuration.
+        combined_implementations
+            The relevant configuration if this ``Step's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+            For ``IOSteps``, this will always be an empty configuration.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
         super().set_configuration_state(
             parent_config, combined_implementations, input_data_config
         )
@@ -483,29 +575,58 @@ class InputStep(IOStep):
 
 
 class OutputStep(IOStep):
+    """A special case type of :class:`Step` used to represent final results data.
+
+    An ``OutputStep`` is used to write the `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_
+    Snakefile target rule in the :meth:`~easylink.pipeline.pipeline.build_snakefile`
+    method.
+
+    See :class:`IOStep` for inherited attributes.
+
+    """
+
     def __init__(self, input_slots: Iterable[InputSlot]) -> None:
         super().__init__("results", input_slots=input_slots)
 
 
 class HierarchicalStep(Step):
-    """An abstraction to represent a step that may contain substeps.
+    """A type of :class:`Step` that can may contain sub-``Steps``.
 
-    A HierarchicalStep can be a single implementation or several 'substeps'. This requires
-    a "substeps" key in the step configuration. If no substeps key is present, it will be treated as
-    a single implemented step.
+    A ``HierarchicalStep`` can be represented by multiple sub-``Steps`` (and thus
+    implemented by the sub-``Steps'`` respective :class:`Implementations<easylink.implementation.Implementation>`.
+    For example, "step_1" might be represented by a "step_1a" and a "step_1b", each
+    of which has its own ``Implementation``.
+
+    See :class:`Step` for inherited attributes.
+
+    Notes
+    -----
+    To use this feature, the sub-``Steps`` must be defined in the pipeline specification
+    file under a "substeps" key. If no "substeps" key is present, it will be  treated
+    as a single ``Step``.
+
     """
 
     @property
     def config_key(self):
+        """The pipeline specification key required for a ``HierarchicalStep``."""
         return "substeps"
 
 
 class TemplatedStep(Step):
-    """A helper class to represent a step that potentially contains some multiplicity.
+    """A type of :class:`Step` that may contain multiplicity.
 
-    Some steps may contain a specified amount of multiplicity, such as a loop or parallel split.
-    This class is a helper class intended to be subclassed by discrete concrete instances
-    of these multiples according to a specified transformation rule and the user-specified configuration.
+    A ``TemplatedStep`` is used to represents a ``Step`` that contains a specified
+    amount of multiplicity, such as one that is looped or run in parallel; it is
+    inherited by concrete :class:`LoopStep` and :class:`ParallelStep` instances.
+
+    Parameters
+    ----------
+    template_step
+        The ``Step`` to be templated.
+
+    See :class:`Step` for inherited attributes.
+
     """
 
     def __init__(
@@ -519,21 +640,54 @@ class TemplatedStep(Step):
             template_step.output_slots.values(),
         )
         self.template_step = template_step
+        """The ``Step`` to be templated."""
         self.template_step.set_parent_step(self)
 
     @property
     @abstractmethod
     def node_prefix(self) -> str:
+        """The prefix to be used in the node name.
+
+        To disambiguate between the different types of nodes with multiplicity
+        (i.e. loops or parallel), we use a unique prefix to be used as necessary.
+
+        Returns
+        -------
+            The prefix to be used for the concrete ``TemplatedStep`` instances.
+        """
         pass
 
     @abstractmethod
     def _update_step_graph(self, state_config) -> StepGraph:
+        """Updates the :class:`~easylink.graph_components.StepGraph`.
+
+        The ``TemplatedStep`` concrete instances must handle the fact that there
+        is multiplicity in the ``StepGraph`` and update it accordingly.
+
+        Parameters
+        ----------
+        state_config
+            The configuration of the ``TemplatedStep``.
+
+        Returns
+        -------
+            The updated ``StepGraph`` with unrolled ``Steps``.
+        """
         pass
 
     @abstractmethod
     def _update_slot_mappings(self, state_config) -> dict[str, list[SlotMapping]]:
-        """Get the appropriate slot mappings based on the number of parallel copies
-        and the existing input and output slots."""
+        """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+        Parameters
+        ----------
+        state_config
+            The configuration of this ``TemplatedStep``.
+
+        Returns
+        -------
+            Updated ``SlotMappings`` that account for the ``TemplatedStep`` multiplicity.
+        """
         pass
 
     def validate_step(
@@ -542,6 +696,39 @@ class TemplatedStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
+        """Validates the ``TemplatedStep``.
+
+        Regardless of whether or not a :attr:`Step.config_key` is set, we always
+        validate the the base ``Step`` used to create the ``TemplatedStep``. If a
+        ``config_key`` is indeed set (that is, there is some multiplicity), we
+        complete additional validations.
+
+        Parameters
+        ----------
+        step_config
+            The configuration of this ``TemplatedStep``.
+        combined_implementations
+            The relevant configuration if this ``TemplatedStep's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+        input_data_config
+            The input data configuration for the entire pipeline.
+
+        Returns
+        -------
+            A dictionary of errors, where the keys are the ``TemplatedStep`` name
+            and the values are lists of error messages associated with the given
+            ``TemplatedStep``.
+
+        Notes
+        -----
+        If the ``Step`` does not validate (i.e. errors are found and the returned
+        dictionary is non-empty), the tool will exit and the pipeline will not run.
+
+        We attempt to batch error messages as much as possible, but there may be
+        times where the configuration is so ill-formed that we are unable to handle
+        all issues in one pass. In these cases, new errors may be found after the
+        initial ones are handled.
+        """
         if not self.config_key in step_config:
             return self.template_step.validate_step(
                 step_config, combined_implementations, input_data_config
@@ -552,7 +739,8 @@ class TemplatedStep(Step):
         if not isinstance(sub_config, list):
             return {
                 f"step {self.name}": [
-                    f"{self.node_prefix.capitalize()} instances must be formatted as a sequence in the pipeline configuration."
+                    f"{self.node_prefix.capitalize()} instances must be formatted "
+                    "as a sequence in the pipeline configuration."
                 ]
             }
 
@@ -580,7 +768,23 @@ class TemplatedStep(Step):
                 errors[f"step {self.name}"][f"{self.node_prefix}_{i+1}"] = parallel_errors
         return errors
 
-    def _get_state_config(self, step_config: LayeredConfigTree) -> None:
+    def _get_state_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Convenience method to get the state configuration.
+
+        ``TemplatedSteps`` may include multiplicity. In such cases, their configurations
+        must be modified to include the expanded ``Steps``.
+
+        Parameters
+        ----------
+        step_config
+            The high-level configuration of this ``TemplatedStep``.
+
+        Returns
+        -------
+            The expanded sub-configuration of this ``TemplatedStep`` based on the
+            configuration state (i.e. keyed on the :attr:`Step.config_key` and expanded
+            to include all looped or parallelized sub-``Steps``).
+        """
         if self.config_key in step_config:
             expanded_step_config = LayeredConfigTree()
             for i, sub_config in enumerate(step_config[self.config_key]):
@@ -596,6 +800,18 @@ class TemplatedStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
+        """Sets the configuration state and updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+        Parameters
+        ----------
+        parent_config
+            The configuration of the parent ``Step``.
+        combined_implementations
+            The relevant configuration if this ``TemplatedStep's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
         num_repeats = len(self._get_state_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
@@ -605,7 +821,22 @@ class TemplatedStep(Step):
 
 
 class LoopStep(TemplatedStep):
-    """A LoopStep allows a user to loop a single step or a sequence of steps multiple times."""
+    """A type of :class:`TemplatedStep` that allows for looping.
+
+    A ``LoopStep`` allows a user to loop a single :class:`Step` or a sequence
+    of ``Steps`` multiple times.
+
+    Parameters
+    ----------
+    template_step
+        The ``Step`` to be templated.
+    self_edges
+        Any :class:`~easylink.graph_components.EdgeParams` that represent self-edges,
+        i.e. edges that connect the output of one loop to the input of the next.
+
+    See :class:``TemplatedStep`` for inherited attributes.
+
+    """
 
     def __init__(
         self,
@@ -614,17 +845,35 @@ class LoopStep(TemplatedStep):
     ) -> None:
         super().__init__(template_step)
         self.self_edges = self_edges
+        """Any :class:`~easylink.graph_components.EdgeParams` that represent self-edges,
+        i.e. edges that connect the output of one loop to the input of the next."""
 
     @property
     def config_key(self):
+        """The pipeline specification key required for a ``LoopStep``."""
         return "iterate"
 
     @property
     def node_prefix(self):
+        """The prefix to be used in the ``LoopStep`` node name."""
         return "loop"
 
     def _update_step_graph(self, num_repeats) -> StepGraph:
-        """Makes N copies of the iterated graph and chain them together according to the self edges."""
+        """Updates the :class:`~easylink.graph_components.StepGraph` to include loops.
+
+        This makes ``num_repeats`` copies of the :class:`TemplatedStep` and chains
+        them together sequentially according to the self edges.
+
+        Parameters
+        ----------
+        num_repeats
+            The number of loops.
+
+        Returns
+        -------
+            The updated ``StepGraph`` with ``num_repeats`` serial :class:`Steps<Step>`
+            and their corrected edges.
+        """
         graph = StepGraph()
         nodes = []
         edges = []
@@ -653,8 +902,21 @@ class LoopStep(TemplatedStep):
             graph.add_edge_from_params(edge)
         return graph
 
-    def _update_slot_mappings(self, num_repeats) -> dict:
-        """Gets the appropriate slot mappings based on the number of loops and the non-self-edge input and output slots."""
+    def _update_slot_mappings(self, num_repeats) -> dict[str, list[SlotMapping]]:
+        """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+        This updates the appropriate slot mappings based on the number of loops
+        and the non-self-edge input and output slots.
+
+        Parameters
+        ----------
+        num_repeats
+            The number of loops.
+
+        Returns
+        -------
+            Updated ``SlotMappings`` that account for the number of loops requested.
+        """
         input_mappings = []
         self_edge_input_slots = {edge.input_slot for edge in self.self_edges}
         external_input_slots = self.input_slots.keys() - self_edge_input_slots
@@ -679,18 +941,38 @@ class LoopStep(TemplatedStep):
 
 
 class ParallelStep(TemplatedStep):
-    """A ParallelStep allows a user to run a sequence of steps in parallel."""
+    """A type of :class:`TemplatedStep` that allows for running in parallel.
+
+    See :class:`TemplatedStep` for inherited attributes.
+
+    """
 
     @property
     def config_key(self):
+        """The pipeline specification key required for a ``ParallelStep``."""
         return "parallel"
 
     @property
     def node_prefix(self):
+        """The prefix to be used in the ``ParallelStep`` node name."""
         return "parallel_split"
 
     def _update_step_graph(self, num_repeats: int) -> StepGraph:
-        """Makes N copies of the template step that are independent and contain the same edges as the current step"""
+        """Updates the :class:`~easylink.graph_components.StepGraph` to include parallelization.
+
+        This makes ``num_repeats`` copies of the ``TemplatedStep`` that are
+        independent but contain the same edges.
+
+        Parameters
+        ----------
+        num_repeats
+            The number of parallel ``TemplatedSteps``.
+
+        Returns
+        -------
+            The updated ``StepGraph`` with ``num_repeats`` parallel :class:`Steps<Step>`
+            and their corrected edges.
+        """
         graph = StepGraph()
 
         for i in range(num_repeats):
@@ -702,7 +984,20 @@ class ParallelStep(TemplatedStep):
         return graph
 
     def _update_slot_mappings(self, num_repeats: int) -> dict[str, list[SlotMapping]]:
-        """Gets the appropriate slot mappings based on the number of parallel copies and the existing input and output slots."""
+        """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+        This updates the appropriate slot mappings based on the number of parallel
+        copies and the existing input and output slots.
+
+        Parameters
+        ----------
+        num_repeats
+            The number of parallel copies.
+
+        Returns
+        -------
+            Updated ``SlotMappings`` that account for the number of copies requested.
+        """
         input_mappings = [
             InputSlotMapping(slot, f"{self.name}_{self.node_prefix}_{n+1}", slot)
             for n in range(num_repeats)
@@ -717,7 +1012,33 @@ class ParallelStep(TemplatedStep):
 
 
 class ChoiceStep(Step):
-    """A ChoiceStep allows a user to select a single path from a set of possible paths."""
+    """A type of :class:`Step` that allows for choosing between multiple paths.
+
+    A ``ChoiceStep`` allows a user to select a single path from a set of possible
+    paths.
+
+    Parameters
+    ----------
+    step_name
+        The name of the ``ChoiceStep``.
+    input_slots
+        All required :class:`InputSlots<easylink.graph_components.InputSlot>`.
+    output_slots
+        All required :class:`OutputSlots<easylink.graph_components.OutputSlot>`.
+    choices
+        A dictionary of choices, where the keys are the names/types of choices and
+        the values are dictionaries containing that type's nodes, edges, and
+        :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+    See :class:`Step` for inherited attributes.
+
+    Notes
+    -----
+    ``ChoiceSteps`` are by definition non-leaf but do *not* require the typical
+    :attr:`config_key` in the pipeline specification file. Instead, the pipeline
+    configuration must contain a 'type' key that specifies which option to choose.
+
+    """
 
     def __init__(
         self,
@@ -734,6 +1055,9 @@ class ChoiceStep(Step):
             output_slots=output_slots,
         )
         self.choices = choices
+        """A dictionary of choices, where the keys are the names/types of choices and 
+        the values are dictionaries containing that type's nodes, edges, and
+        :class:`SlotMappings<easylink.graph_components.SlotMapping>`."""
 
     def validate_step(
         self,
@@ -741,14 +1065,39 @@ class ChoiceStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
-        """Validates the ChoiceStep.
+        """Validates the ``ChoiceStep``.
+
+        Parameters
+        ----------
+        step_config
+            The configuration of this ``ChoiceStep``.
+        combined_implementations
+            The relevant configuration if this ``ChoiceStep's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+        input_data_config
+            The input data configuration for the entire pipeline.
+
+        Returns
+        -------
+            A dictionary of errors, where the keys are the ``ChoiceStep`` name and the
+            values are lists of error messages associated with the given ``Step``.
 
         Notes
         -----
-        We update the step graph and slot mappings here in validation as opposed to
-        in set_configuration_state (as is done in TemplatedSteps) because ChoiceStep
-        validation happens prior to set_configuration_state and actually requires
-        the step graph and mappings.
+        A ``ChoiceStep`` is by definition a "non-leaf" configuration state.
+
+        If the ``Step`` does not validate (i.e. errors are found and the returned
+        dictionary is non-empty), the tool will exit and the pipeline will not run.
+
+        We attempt to batch error messages as much as possible, but there may be
+        times where the configuration is so ill-formed that we are unable to handle
+        all issues in one pass. In these cases, new errors may be found after the
+        initial ones are handled.
+
+        We update the :class:`easylink.graph_components.StepGraph` and ``SlotMappings``
+        here as opposed to in :meth:`set_configuration_state` (as is done in :class:`TemplatedStep`)
+        because ``ChoiceStep`` validation happens prior to setting the configuration
+        state and actually requires the ``StepGraph`` and ``SlotMappings``.
 
         We do not attempt to validate the subgraph here if the 'type' key is unable
         to be validated.
@@ -791,13 +1140,25 @@ class ChoiceStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        """Sets the configuration state for a ChoiceStep.
+        """Sets the configuration state for a ``ChoiceStep``.
+
+        Parameters
+        ----------
+        parent_config
+            The configuration of the parent ``Step``.
+        combined_implementations
+            The relevant configuration if this ``ChoiceStep's`` :class:`~easylink.implementation.Implementation`
+            has been requested to be combined with that of a different ``Step``.
+        input_data_config
+            The input data configuration for the entire pipeline.
 
         Notes
         -----
-        We update the step graph and slot mappings validate_step as opposed to here
-        (as is done in TemplatedSteps) because ChoiceStep validation happens prior
-        this but actually requires the step graph and mappings.
+        We update the :class:`~easylink.graph_components.StepGraph` and
+        :class:`SlotMappings<easylink.graph_components.SlotMapping>` in
+        :meth:`validate_step` as opposed to here (as is done with
+        :class:`TemplatedSteps<TemplatedStep>`) because ``ChoiceStep`` validation
+        happens prior to this but requires the ``StepGraph`` and ``SlotMappings``.
         """
 
         chosen_parent_config = LayeredConfigTree(
@@ -809,7 +1170,18 @@ class ChoiceStep(Step):
         )
 
     @staticmethod
-    def _update_step_graph(subgraph: dict[str, Any]):
+    def _update_step_graph(subgraph: dict[str, Any]) -> StepGraph:
+        """Updates the :class:`~easylink.graph_components.StepGraph` with the choice.
+
+        Parameters
+        ----------
+        subgraph
+            Subgraph parameters (nodes, edges, and slot mappings) for the chosen type.
+
+        Returns
+        -------
+            The updated ``StepGraph`` for the chosen type.
+        """
         nodes = subgraph["nodes"]
         edges = subgraph["edges"]
 
@@ -822,17 +1194,43 @@ class ChoiceStep(Step):
 
     @staticmethod
     def _update_slot_mappings(subgraph: dict[str, Any]) -> dict[str, list[SlotMapping]]:
+        """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>` to the choice type.
+
+        Parameters
+        ----------
+        sub_graph
+            Subgraph parameters (nodes, edges, and slot mappings) for the chosen type.
+
+        Returns
+        -------
+            Updated ``SlotMappings`` that match the choice type.
+        """
         input_mappings = subgraph["input_slot_mappings"]
         output_mappings = subgraph["output_slot_mappings"]
         return {"input": input_mappings, "output": output_mappings}
 
 
 class ConfigurationState(ABC):
-    """A given step's configuration state.
+    """A given :class:`Step's<Step>` configuration state.
 
-    A ConfigurationState defines the exact pipeline configuration state for a given step, including the
-    strategy required to get the implementation graph from the step. There are two possible configured
-    step states: "Leaf" and "Non-Leaf".
+    A ``ConfigurationState`` defines the exact pipeline configuration state for a
+    given ``Step``, including the strategy required to get the :class:`~easylink.graph_components.ImplementationGraph`
+    from it. There are two possible configuration states, "leaf" and "non-leaf",
+    and each has its own concrete class, :class:`LeafConfigurationState` and
+    ``NonLeafConfigurationState``, respectively.
+
+    Parameters
+    ----------
+    step
+        The ``Step`` this ``ConfigurationState`` is tied to.
+    pipeline_config
+        The relevant configuration for the ``Step`` we are setting the state for.
+    combined_implementations
+        The relevant configuration if the ``Step's`` :class:`~easylink.implementation.Implementation`
+        has been requested to be combined with that of a different ``Step``.
+    input_data_config
+        The input data configuration for the entire pipeline.
+
     """
 
     def __init__(
@@ -843,33 +1241,54 @@ class ConfigurationState(ABC):
         input_data_config: LayeredConfigTree,
     ):
         self._step = step
+        """The ``Step`` this ``ConfigurationState`` is tied to."""
         self.pipeline_config = pipeline_config
+        """The relevant configuration for the ``Step`` we are setting the state for."""
         self.combined_implementations = combined_implementations
+        """The relevant configuration if the ``Step's`` ``Implementation``
+        has been requested to be combined with that of a different ``Step``."""
         self.input_data_config = input_data_config
+        """The input data configuration for the entire pipeline."""
 
     @abstractmethod
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Resolve the graph composed of Steps into a graph composed of Implementations."""
+        """Resolves the graph composed of ``Steps`` into one of ``Implementations``."""
         pass
 
     @abstractmethod
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        """Propagate edges of StepGraph to ImplementationGraph."""
+        """Gets the edge information for the ``Implementation`` related to this ``Step``.
+
+        Parameters
+        ----------
+        edge
+            The ``Step's`` edge information to be propagated to the ``ImplementationGraph``.
+
+        Returns
+        -------
+            The ``Implementation's`` edge information.
+        """
         pass
 
 
 class LeafConfigurationState(ConfigurationState):
-    """A concrete instance of ConfigurationState for a leaf node in the pipeline graph.
+    """The :class:`ConfigurationState` for a leaf :class:`Step`.
 
-    This corresponds to a leaf node in the pipeline graph that is implemented by a single implementation.
+    A ``LeafConfigurationState`` is a concrete class that corresponds to a leaf
+    ``Step``, i.e. one what is implemented by a single :class:`~easylink.implementation.Implementation>`.
+
+    See :class:`ConfigurationState` for inherited attributes.
+
     """
 
     @property
     def is_combined(self) -> bool:
+        """Whether or not this ``Step`` is combined with another ``Step``."""
         return True if COMBINED_IMPLEMENTATION_KEY in self.pipeline_config else False
 
     @property
     def implementation_config(self) -> LayeredConfigTree:
+        """The ``Step's`` specific ``Implementation`` configuration."""
         return (
             self.combined_implementations[self.pipeline_config[COMBINED_IMPLEMENTATION_KEY]]
             if self.is_combined
@@ -877,7 +1296,17 @@ class LeafConfigurationState(ConfigurationState):
         )
 
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Return a single node with an implementation attribute."""
+        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+
+        A ``Step`` in a non-leaf configuration state by defintion has no sub-``Steps``
+        to unravel; we are able to directly instantiate an :class:`~easylink.implementation.Implementation`
+        and generate an ``ImplementationGraph`` from it.
+
+        Returns
+        -------
+            The ``ImplementationGraph`` related to this ``Step``.
+        """
+
         implementation_graph = ImplementationGraph()
         implementation_node_name = self._step.implementation_node_name
         if self.is_combined:
@@ -901,6 +1330,22 @@ class LeafConfigurationState(ConfigurationState):
         return implementation_graph
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
+        """Gets the edge information for the ``Implementation`` related to this ``Step``.
+
+        Parameters
+        ----------
+        edge
+            The ``Step's`` edge information to be propagated to the ``ImplementationGraph``.
+
+        Raises
+        ------
+        ValueError
+            If the ``Step`` is not in the edge or if no edges related to this ``Step`` are found.
+
+        Returns
+        -------
+            The ``Implementation's`` edge information.
+        """
         implementation_edges = []
         if edge.source_node == self._step.name:
             mappings = [
@@ -919,6 +1364,7 @@ class LeafConfigurationState(ConfigurationState):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
+                # FIXME [MIC-5771]: Fix ParallelSteps
                 if (
                     "input_data_file" in self.pipeline_config
                     and edge.source_node == "pipeline_graph_input_data"
@@ -934,10 +1380,42 @@ class LeafConfigurationState(ConfigurationState):
 
 
 class NonLeafConfigurationState(ConfigurationState):
-    """A concrete instance of ConfigurationState for a non-leaf node in the pipeline graph.
+    """The :class:`ConfigurationState` for a non-leaf :class:`Step`.
 
-    This class type is selected when a step has a non-trivial step graph and has been configured
-    to use the step graph (e.g. through a configuration key in the pipeline specification file).
+    A ``NonLeafConfigurationState`` is a concrete class that corresponds to a non-leaf
+    ``Step``, i.e. one that has a non-trivial :class:`~easylink.graph_components.StepGraph`.
+
+    Parameters
+    ----------
+    step
+        The ``Step`` this ``ConfigurationState`` is tied to.
+    pipeline_config
+        The relevant configuration for the ``Step`` we are setting the state for.
+    combined_implementations
+        The relevant configuration if the ``Step's`` :class:`~easylink.implementation.Implementation`
+        has been requested to be combined with that of a different ``Step``.
+    input_data_config
+        The input data configuration for the entire pipeline.
+
+    See :class:`ConfigurationState` for inherited attributes.
+
+    Raises
+    ------
+    ValueError
+        If the ``Step`` does not have a ``StepGraph``.
+
+    Notes
+    -----
+    The first instance of a ``NonLeafConfigurationState`` is created when calling
+    :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline` on the
+    :class:`~easylink.pipeline_schema.PipelineSchema` that is chosen for a given
+    EasyLink run; the ``step`` passed in is the entire ``PipelineSchema`` and the
+    ``pipeline_config`` is that of the entire requested pipeline (and is by definition
+    a non-leaf ``Step``). During construction of this instance, the
+    :meth:`_configure_subgraph_steps` method is called which begins the process of
+    recursively working through the ``StepGraph`` and setting the configuration state
+    of each node until all ``Steps`` are in a :class:`LeafConfigurationState`.
+
     """
 
     def __init__(
@@ -950,23 +1428,45 @@ class NonLeafConfigurationState(ConfigurationState):
         super().__init__(step, pipeline_config, combined_implementations, input_data_config)
         if not step.step_graph:
             raise ValueError(
-                f"NonLeafConfigurationState requires a subgraph upon which to operate, but Step {step.name} has no step graph."
+                "NonLeafConfigurationState requires a subgraph upon which to operate, "
+                f"but Step {step.name} has no step graph."
             )
-        self.configure_subgraph_steps()
+        self._configure_subgraph_steps()
 
     def get_implementation_graph(self) -> ImplementationGraph:
-        """Call get_implementation_graph on each subgraph node and update the graph."""
+        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+
+        A ``Step`` in a non-leaf configuration state by definition has a ``StepGraph``
+        containing sub-``Steps`` that  need to be unrolled. This method recursively
+        traverses that ``StepGraph`` and generates a new one for each node until
+        all sub-``Steps`` are in a :class:`LeafConfigurationState`, i.e. all ``Steps``
+        are implemented by a single ``Implementation`` and we have our desired
+        ``ImplementationGraph``.
+
+        Returns
+        -------
+            The ``ImplementationGraph`` of this ``Step``.
+
+        Notes
+        -----
+        This method is first called on the entire :class:`~easylink.pipeline_schema.PipelineSchema`
+        when constructing the :class:`~easylink.graph_components.PipelineGraph`
+        to run.
+
+        """
         implementation_graph = ImplementationGraph()
-        self.update_nodes(implementation_graph)
-        self.update_edges(implementation_graph)
+        self.add_nodes(implementation_graph)
+        self.add_edges(implementation_graph)
         return implementation_graph
 
-    def update_nodes(self, implementation_graph: ImplementationGraph) -> None:
+    def add_nodes(self, implementation_graph: ImplementationGraph) -> None:
+        """Adds nodes for each ``Step`` to the ``ImplementationGraph``."""
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
             implementation_graph.update(step.get_implementation_graph())
 
-    def update_edges(self, implementation_graph: ImplementationGraph) -> None:
+    def add_edges(self, implementation_graph: ImplementationGraph) -> None:
+        """Adds the edges to the ``ImplementationGraph``."""
         for source, target, edge_attrs in self._step.step_graph.edges(data=True):
             all_edges = []
             edge = EdgeParams.from_graph_edge(source, target, edge_attrs)
@@ -982,6 +1482,22 @@ class NonLeafConfigurationState(ConfigurationState):
                 implementation_graph.add_edge_from_params(edge)
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
+        """Gets the edge information for the ``Implementation`` related to this ``Step``.
+
+        Parameters
+        ----------
+        edge
+            The ``Step's`` edge information to be propagated to the ``ImplementationGraph``.
+
+        Raises
+        ------
+        ValueError
+            If the ``Step`` is not in the edge or if no edges related to this ``Step`` are found.
+
+        Returns
+        -------
+            The ``Implementation's`` edge information.
+        """
         implementation_edges = []
         if edge.source_node == self._step.name:
             mappings = [
@@ -1012,7 +1528,12 @@ class NonLeafConfigurationState(ConfigurationState):
             raise ValueError(f"No edges found for {self._step.name} in edge {edge}")
         return implementation_edges
 
-    def configure_subgraph_steps(self) -> None:
+    def _configure_subgraph_steps(self) -> None:
+        """Sets the configuration state for all ``Steps`` in the ``StepGraph``.
+
+        This method recursively traverses the ``StepGraph`` and sets the configuration
+        state for each ``Step`` until all nodes are leaf nodes.
+        """
         for node in self._step.step_graph.nodes:
             step = self._step.step_graph.nodes[node]["step"]
             step.set_configuration_state(

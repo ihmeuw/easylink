@@ -255,12 +255,6 @@ EDGES = [
         input_slot="step_1_main_input",
     ),
     EdgeParams(
-        source_node="input_data",
-        target_node="choice_section",
-        output_slot="all",
-        input_slot="choice_section_secondary_input",
-    ),
-    EdgeParams(
         source_node="step_1",
         target_node="step_2",
         output_slot="step_1_main_output",
@@ -283,6 +277,12 @@ EDGES = [
         target_node="results",
         output_slot="choice_section_main_output",
         input_slot="result",
+    ),
+    EdgeParams(
+        source_node="input_data",
+        target_node="choice_section",
+        output_slot="all",
+        input_slot="choice_section_secondary_input",
     ),
 ]
 SCHEMA_PARAMS = (NODES, EDGES)
