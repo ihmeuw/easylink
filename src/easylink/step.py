@@ -578,7 +578,7 @@ class OutputStep(IOStep):
     """A special case type of :class:`Step` used to represent final results data.
 
     An ``OutputStep`` is used to write the `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_
-    Snakefile target rule in the :meth:`~easylink.pipeline.pipeline.build_snakefile`
+    Snakefile target rule in the :meth:`easylink.pipeline.Pipeline.build_snakefile`
     method.
 
     See :class:`IOStep` for inherited attributes.
@@ -620,12 +620,12 @@ class TemplatedStep(Step):
     amount of multiplicity, such as one that is looped or run in parallel; it is
     inherited by concrete :class:`LoopStep` and :class:`ParallelStep` instances.
 
+    See :class:`Step` for inherited attributes.
+
     Parameters
     ----------
     template_step
         The ``Step`` to be templated.
-
-    See :class:`Step` for inherited attributes.
 
     """
 
@@ -826,6 +826,8 @@ class LoopStep(TemplatedStep):
     A ``LoopStep`` allows a user to loop a single :class:`Step` or a sequence
     of ``Steps`` multiple times.
 
+    See :class:``TemplatedStep`` for inherited attributes.
+
     Parameters
     ----------
     template_step
@@ -833,8 +835,6 @@ class LoopStep(TemplatedStep):
     self_edges
         Any :class:`~easylink.graph_components.EdgeParams` that represent self-edges,
         i.e. edges that connect the output of one loop to the input of the next.
-
-    See :class:``TemplatedStep`` for inherited attributes.
 
     """
 
@@ -1017,6 +1017,8 @@ class ChoiceStep(Step):
     A ``ChoiceStep`` allows a user to select a single path from a set of possible
     paths.
 
+    See :class:`Step` for inherited attributes.
+
     Parameters
     ----------
     step_name
@@ -1030,12 +1032,10 @@ class ChoiceStep(Step):
         the values are dictionaries containing that type's nodes, edges, and
         :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
 
-    See :class:`Step` for inherited attributes.
-
     Notes
     -----
     ``ChoiceSteps`` are by definition non-leaf but do *not* require the typical
-    :attr:`config_key` in the pipeline specification file. Instead, the pipeline
+    :attr:`Step.config_key` in the pipeline specification file. Instead, the pipeline
     configuration must contain a 'type' key that specifies which option to choose.
 
     """
@@ -1275,7 +1275,7 @@ class LeafConfigurationState(ConfigurationState):
     """The :class:`ConfigurationState` for a leaf :class:`Step`.
 
     A ``LeafConfigurationState`` is a concrete class that corresponds to a leaf
-    ``Step``, i.e. one what is implemented by a single :class:`~easylink.implementation.Implementation>`.
+    ``Step``, i.e. one what is implemented by a single :class:`~easylink.implementation.Implementation`.
 
     See :class:`ConfigurationState` for inherited attributes.
 
@@ -1385,6 +1385,8 @@ class NonLeafConfigurationState(ConfigurationState):
     A ``NonLeafConfigurationState`` is a concrete class that corresponds to a non-leaf
     ``Step``, i.e. one that has a non-trivial :class:`~easylink.graph_components.StepGraph`.
 
+    See :class:`ConfigurationState` for inherited attributes.
+
     Parameters
     ----------
     step
@@ -1396,8 +1398,6 @@ class NonLeafConfigurationState(ConfigurationState):
         has been requested to be combined with that of a different ``Step``.
     input_data_config
         The input data configuration for the entire pipeline.
-
-    See :class:`ConfigurationState` for inherited attributes.
 
     Raises
     ------
@@ -1450,7 +1450,7 @@ class NonLeafConfigurationState(ConfigurationState):
         Notes
         -----
         This method is first called on the entire :class:`~easylink.pipeline_schema.PipelineSchema`
-        when constructing the :class:`~easylink.graph_components.PipelineGraph`
+        when constructing the :class:`~easylink.pipeline_graph.PipelineGraph`
         to run.
 
         """
