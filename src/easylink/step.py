@@ -1403,7 +1403,8 @@ class NonLeafConfigurationState(ConfigurationState):
     a non-leaf ``Step``). During construction of this instance, the
     :meth:`_configure_subgraph_steps` method is called which begins the process of
     recursively working through the ``StepGraph`` and setting the configuration state
-    of each node until all ``Steps`` are in a :class:`LeafConfigurationState`.
+    of each node until it has reached all leaf ``Steps``, each of which have a
+    :class:`LeafConfigurationState`.
 
     """
 
