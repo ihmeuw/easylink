@@ -292,14 +292,14 @@ class Step:
             The input data configuration for the entire pipeline.
         """
         step_config = parent_config[self.name]
-        state_config = self._get_state_config(step_config)
+        sub_config = self._get_config(step_config)
         if self.config_key is not None and self.config_key in step_config:
             self._configuration_state = NonLeafConfigurationState(
-                self, state_config, combined_implementations, input_data_config
+                self, sub_config, combined_implementations, input_data_config
             )
         else:
             self._configuration_state = LeafConfigurationState(
-                self, state_config, combined_implementations, input_data_config
+                self, sub_config, combined_implementations, input_data_config
             )
 
     def get_implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
@@ -395,14 +395,14 @@ class Step:
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
 
-    def _get_state_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
-        """Convenience method to get the state configuration.
+    def _get_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Convenience method to get a ``Step's`` configuration.
 
-        A ``Step`` can be either a leaf or a non-leaf. Each type of *non-leaf* ``Step``
-        has a unique :attr:`config_key` (defined by the user via the pipeline specification
-        file) that is used to specify the behavior of the ``Step`` (e.g. looping,
-        parallel, etc). This method simply returns the ``Step's`` sub-configuration
-        keyed to that ``config_key`` (if it exists, i.e. is not a basic ``Step``).
+        Some types of ``Steps`` have a unique :attr:`config_key` (defined by the
+        user via the pipeline specification file) that is used to specify the behavior
+        of the ``Step`` (e.g. looping, parallel, etc). This method simply returns
+        the ``Step's`` sub-configuration keyed to that ``config_key`` (if it exists,
+        i.e. is not a basic ``Step``).
 
         Parameters
         ----------
@@ -411,13 +411,9 @@ class Step:
 
         Returns
         -------
-            The sub-configuration of this ``Step`` based on the configuration state
-            (i.e. keyed on the ``config_key`` if it exists).
+            The sub-configuration of this ``Step`` keyed on the ``config_key``
+            (if it exists).
 
-        Notes
-        -----
-        :class:`ChoiceSteps<ChoiceStep>` are a special type of ``Step`` that do *not*
-        have a :attr:`config_key` despite being non-leaf.
         """
         return (
             step_config
@@ -652,7 +648,7 @@ class TemplatedStep(Step, ABC):
         pass
 
     @abstractmethod
-    def _update_step_graph(self, state_config) -> StepGraph:
+    def _update_step_graph(self, num_repeats: int) -> StepGraph:
         """Updates the :class:`~easylink.graph_components.StepGraph`.
 
         The ``TemplatedStep`` concrete instances must handle the fact that there
@@ -660,23 +656,31 @@ class TemplatedStep(Step, ABC):
 
         Parameters
         ----------
-        state_config
-            The configuration of the ``TemplatedStep``.
+        num_repeats
+            The number of copies to be made of the ``TemplatedStep``.
 
         Returns
         -------
             The updated ``StepGraph`` with unrolled ``Steps``.
+
+        Notes
+        -----
+        We do not know a priori - or even during instantiation of the
+        :class:`~easylink.pipeline_schema.PipelineSchema` - how many copies of any
+        ``TemplatedSteps`` to make; indeed, there may be no ``TemplatedSteps`` at
+        all. The user-provided pipeline configuration file must be read in in order
+        to determine the number of multiples to generate.
         """
         pass
 
     @abstractmethod
-    def _update_slot_mappings(self, state_config) -> dict[str, list[SlotMapping]]:
+    def _update_slot_mappings(self, num_repeats: int) -> dict[str, list[SlotMapping]]:
         """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
 
         Parameters
         ----------
-        state_config
-            The configuration of this ``TemplatedStep``.
+        num_repeats
+            The number of copies to be made of the ``TemplatedStep``.
 
         Returns
         -------
@@ -761,8 +765,8 @@ class TemplatedStep(Step, ABC):
                 errors[f"step {self.name}"][f"{self.node_prefix}_{i+1}"] = parallel_errors
         return errors
 
-    def _get_state_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
-        """Convenience method to get the state configuration.
+    def _get_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Convenience method to get the ``TemplatedStep's`` configuration.
 
         ``TemplatedSteps`` may include multiplicity. In such cases, their configurations
         must be modified to include the expanded ``Steps``.
@@ -775,8 +779,8 @@ class TemplatedStep(Step, ABC):
         Returns
         -------
             The expanded sub-configuration of this ``TemplatedStep`` based on the
-            configuration state (i.e. keyed on the :attr:`Step.config_key` and expanded
-            to include all looped or parallelized sub-``Steps``).
+            :attr:`Step.config_key` and expanded to include all looped or parallelized
+            sub-``Steps``).
         """
         if self.config_key in step_config:
             expanded_step_config = LayeredConfigTree()
@@ -804,7 +808,7 @@ class TemplatedStep(Step, ABC):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        num_repeats = len(self._get_state_config(parent_config[self.name]))
+        num_repeats = len(self._get_config(parent_config[self.name]))
         self.step_graph = self._update_step_graph(num_repeats)
         self.slot_mappings = self._update_slot_mappings(num_repeats)
         super().set_configuration_state(
@@ -1076,7 +1080,7 @@ class ChoiceStep(Step):
 
         Notes
         -----
-        A ``ChoiceStep`` is by definition a "non-leaf" configuration state.
+        A ``ChoiceStep`` by definition must be set with a :class:`NonLeafConfigurationState`.
 
         If the ``Step`` does not validate (i.e. errors are found and the returned
         dictionary is non-empty), the tool will exit and the pipeline will not run.
@@ -1399,12 +1403,14 @@ class NonLeafConfigurationState(ConfigurationState):
     :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline` on the
     :class:`~easylink.pipeline_schema.PipelineSchema` that is chosen for a given
     EasyLink run; the ``step`` passed in is the entire ``PipelineSchema`` and the
-    ``pipeline_config`` is that of the entire requested pipeline (and is by definition
-    a non-leaf ``Step``). During construction of this instance, the
-    :meth:`_configure_subgraph_steps` method is called which begins the process of
-    recursively working through the ``StepGraph`` and setting the configuration state
-    of each node until it has reached all leaf ``Steps``, each of which have a
-    :class:`LeafConfigurationState`.
+    ``pipeline_config`` is that of the entire requested pipeline (which is by definition
+    a non-leaf ``Step``).
+
+    Upon instantiation of a ``NonLeafConfigurationState``, the
+    :meth:`_configure_subgraph_steps` method is called which iterates through the
+    ``Step's`` children and sets their configuration state. If any of these child
+    ``Steps`` are also non-leaf, the process continues recursively until all
+    nodes are leaf ``Steps`` with a corresponding :class:`LeafConfigurationState`.
 
     """
 
@@ -1428,8 +1434,8 @@ class NonLeafConfigurationState(ConfigurationState):
 
         A ``Step`` in a non-leaf configuration state by definition has a ``StepGraph``
         containing sub-``Steps`` that  need to be unrolled. This method recursively
-        traverses that ``StepGraph`` and generates a new one for each node until
-        all sub-``Steps`` are in a :class:`LeafConfigurationState`, i.e. all ``Steps``
+        traverses that ``StepGraph`` and its childrens' ``StepGraphs`` until all
+        sub-``Steps`` are in a :class:`LeafConfigurationState`, i.e. all ``Steps``
         are implemented by a single ``Implementation`` and we have our desired
         ``ImplementationGraph``.
 
