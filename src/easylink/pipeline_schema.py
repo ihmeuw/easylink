@@ -118,11 +118,11 @@ class PipelineSchema(HierarchicalStep):
 
         The configuration state of any :class:`~easylink.step.Step` tells whether
         that ``Step`` is a leaf or a non-leaf node and is assigned to the
-        :attr:`easylink.step.Step._configuration_state` attribute. By definition,
-        the entire ``PipelineSchema`` has non-leaf configuration state; this method
-        thus assigns a :class:`~easylink.step.NonLeafConfigurationState` to the
-        ``PipelineSchema``. Upon instantiation, this ``NonLeafConfigurationState``
-        recursively updates the ``Stepgraphs`` until all non-leaf nodes are resolved.
+        :attr:`easylink.step.Step.configuration_state`. By definition, the entire
+        ``PipelineSchema`` has non-leaf configuration state; this method thus assigns
+        a :class:`~easylink.step.NonLeafConfigurationState` to the ``PipelineSchema``.
+        Upon instantiation, this ``NonLeafConfigurationState`` recursively updates
+        the ``StepGraphs`` until all non-leaf nodes are resolved.
 
         Parameters
         ----------
