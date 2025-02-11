@@ -105,26 +105,82 @@ class PipelineGraph(ImplementationGraph):
         """
         return any([implementation.requires_spark for implementation in self.implementations])
 
-    def get_input_slot_attributes(self, node: str) -> dict[str, dict[str, str | list[str]]]:
-        """Gets all of a node's input slot attributes from edges.
+    def get_whether_embarrassingly_parallel(self, node: str) -> bool:
+        """Determines whether a node is to be run in an embarrassingly parallel way.
 
         Parameters
         ----------
         node
-            The node name to get input slot attributes for.
+            The node name to determine whether or not it is to be run in an
+            embarrassingly parallel way.
 
         Returns
         -------
-            A mapping of node name to input slot attributes.
+            A boolean indicating whether the node is to be run in an embarrassingly
+            parallel way.
+        """
+        return self.nodes[node]["implementation"].is_embarrassingly_parallel
+
+    def any_embarrassingly_parallel(self) -> bool:
+        """Checks if any node is to be run in an embarrassingly parallel way."""
+        are_any = any(
+            [
+                self.get_whether_embarrassingly_parallel(node)
+                for node in self.implementation_nodes
+            ]
+        )
+        return are_any
+
+    def get_io_slot_attributes(
+        self, node: str
+    ) -> tuple[dict[str, dict[str, str | list[str]]], dict[str, dict[str, str | list[str]]]]:
+        """Gets all of a node's i/o slot attributes from edges.
+
+        Parameters
+        ----------
+        node
+            The node name to get slot attributes for.
+
+        Returns
+        -------
+            A tuple of mappings of node name to slot attributes.
         """
         input_slots = [
             edge_attrs["input_slot"] for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
-        filepaths_by_slot = [
+        input_filepaths_by_slot = [
             list(edge_attrs["filepaths"])
             for _, _, edge_attrs in self.in_edges(node, data=True)
         ]
-        return self._condense_input_slots(input_slots, filepaths_by_slot)
+        input_slot_attrs = self._deduplicate_input_slots(input_slots, input_filepaths_by_slot)
+
+        output_slots = [
+            edge_attrs["output_slot"] for _, _, edge_attrs in self.out_edges(node, data=True)
+        ]
+        output_filepaths_by_slot = [
+            list(edge_attrs["filepaths"])
+            for _, _, edge_attrs in self.out_edges(node, data=True)
+        ]
+        output_slot_attrs = self._deduplicate_output_slots(
+            output_slots, output_filepaths_by_slot
+        )
+        return input_slot_attrs, output_slot_attrs
+
+    def get_whether_embarrassingly_parallel(self, node: str) -> bool:
+        """Determines whether a node is to be run in an embarrassingly parallel way.
+
+        Parameters
+        ----------
+        node
+            The node name to determine whether or not it is to be run in an
+            embarrassingly parallel way.
+
+        Returns
+        -------
+            A boolean indicating whether the node is to be run in an embarrassingly
+            parallel way.
+        """
+        return self.nodes[node]["implementation"].is_embarrassingly_parallel
 
     ##################
     # Helper Methods #
@@ -191,6 +247,8 @@ class PipelineGraph(ImplementationGraph):
             ) = self._get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
 
             # Create new implementation
+            # TODO: If any of the implemented steps is an EmbarrassinglyParallelStep,
+            # raise immediately (for now - will be a new feature/task)
             new_implementation = Implementation(
                 implemented_steps,
                 combined_implementation_config,
@@ -285,6 +343,15 @@ class PipelineGraph(ImplementationGraph):
             :class:`OutputSlots<easylink.graph_components.OutputSlot>`, and
             :class:`~easylink.graph_components.EdgeParams` needed to construct the
             combined implementation.
+
+        Notes
+        -----
+        When combining implementations results in a node with multiple slots with
+        the same name and/or environment variable, the slots are made unique
+        by prepending the :class:`~easylink.step.Step` name to the slot name as well
+        as to the environment variable. This is necessary to prevent collisions
+        with a combined implementation that takes multiple environment variables that
+        have the same name.
         """
         slot_types = ["input_slot", "output_slot"]
         combined_slots_by_type = combined_input_slots, combined_output_slots = set(), set()
@@ -292,7 +359,8 @@ class PipelineGraph(ImplementationGraph):
         transform_mappings = (InputSlotMapping, OutputSlotMapping)
 
         combined_edges = set()
-
+        # FIXME [MIC-5848]: test coverage is lacking when two output slots have the same name,
+        # i.e. combing two steps that have the same name output slots
         for slot_type, combined_slots, edges_by_slot, transform_mapping in zip(
             slot_types, combined_slots_by_type, edges_by_slot_and_type, transform_mappings
         ):
@@ -402,8 +470,9 @@ class PipelineGraph(ImplementationGraph):
     def _update_slot_filepaths(self, config: Config) -> None:
         """Fills graph edges with appropriate filepath information.
 
-        The combining of nodes necessitates the need to update the graph edges
-        with correct filepaths.
+        This method updates the :class:`~easylink.step.Step` slot information with
+        actual filepaths. This can't happen earlier in the process because we
+        don't know node names until now (which are required for the filepaths).
 
         Parameters
         ----------
@@ -424,22 +493,34 @@ class PipelineGraph(ImplementationGraph):
 
         # Update implementation nodes with yaml metadata
         for node in self.implementation_nodes:
-            imp_outputs = self.nodes[node]["implementation"].outputs
+            implementation = self.nodes[node]["implementation"]
+            imp_outputs = implementation.outputs
             for src, sink, edge_attrs in self.out_edges(node, data=True):
                 for edge_idx in self[node][sink]:
                     self[src][sink][edge_idx]["filepaths"] = (
                         str(
                             Path("intermediate")
                             / node
+                            # / (
+                            #     "processed/{chunk}"
+                            #     if implementation.is_embarrassingly_parallel
+                            #     else ""
+                            # )
+                            # / "/".join(
+                            #     [
+                            #         f"{wc}_{{wildcards.{wc}}}"
+                            #         for wc in implementation.wildcards
+                            #     ]
+                            # )
                             / imp_outputs[edge_attrs["output_slot"].name]
                         ),
                     )
 
     @staticmethod
-    def _condense_input_slots(
+    def _deduplicate_input_slots(
         input_slots: list[InputSlot], filepaths_by_slot: list[str]
     ) -> dict[str, dict[str, str | list[str]]]:
-        """Condenses input slots into a dictionary with filepaths.
+        """Deduplicates input slots into a dictionary with filepaths.
 
         Parameters
         ----------
@@ -460,10 +541,11 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
-            slot_name, env_var, validator = (
+            slot_name, env_var, validator, splitter = (
                 input_slot.name,
                 input_slot.env_var,
                 input_slot.validator,
+                input_slot.splitter,
             )
             if slot_name in condensed_slot_dict:
                 if env_var != condensed_slot_dict[slot_name]["env_var"]:
@@ -476,11 +558,52 @@ class PipelineGraph(ImplementationGraph):
                         f"Duplicate input slots named '{slot_name}' have different validators: "
                         f"'{validator.__name__}' and '{condensed_slot_validator.__name__}'."
                     )
+                # Add the new filepaths to the existing slot
                 condensed_slot_dict[slot_name]["filepaths"].extend(filepaths)
             else:
                 condensed_slot_dict[slot_name] = {
                     "env_var": env_var,
                     "validator": validator,
                     "filepaths": filepaths,
+                    "splitter": splitter,
+                }
+        return condensed_slot_dict
+
+    @staticmethod
+    def _deduplicate_output_slots(
+        output_slots: list[OutputSlot], filepaths_by_slot: list[str]
+    ) -> dict[str, dict[str, str | list[str]]]:
+        """Deduplicates output slots into a dictionary with filepaths.
+
+        Parameters
+        ----------
+        output_slots
+            The :class:`OutputSlots<easylink.graph_components.OutputSlot>` condense.
+        filepaths_by_slot
+            The filepaths associated with each ``OutputSlot``.
+
+        Returns
+        -------
+            A dictionary mapping ``OutputSlot`` names to their attributes and filepaths.
+
+        Raises
+        ------
+        ValueError
+            If duplicate slot names are found with different environment variables
+            or validators.
+        """
+        condensed_slot_dict = {}
+        for output_slot, filepaths in zip(output_slots, filepaths_by_slot):
+            slot_name, aggregator = (
+                output_slot.name,
+                output_slot.aggregator,
+            )
+            if slot_name in condensed_slot_dict:
+                # Add the new filepaths to the existing slot
+                condensed_slot_dict[slot_name]["filepaths"].extend(filepaths)
+            else:
+                condensed_slot_dict[slot_name] = {
+                    "filepaths": filepaths,
+                    "aggregator": aggregator,
                 }
         return condensed_slot_dict

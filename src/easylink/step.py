@@ -14,7 +14,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from typing import Any
 
 from layered_config_tree import LayeredConfigTree
@@ -1064,6 +1064,33 @@ class ParallelStep(TemplatedStep):
         return {"input": input_mappings, "output": output_mappings}
 
 
+class EmbarrassinglyParallelStep(Step):
+    """A step that is run in parallel on the backend.
+
+    An ``EmbarrassinglyParallelStep`` is different than a :class:`ParallelStep`
+    in that it is not configured by the user to be run in parallel - it completely
+    happens on the back end for performance reasons. As such, note that it inherits
+    from :class:`Step` instead of :class:`TemplatedStep`.
+    """
+
+    def __init__(
+        self,
+        step_name: str,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+    ) -> None:
+        super().__init__(step_name, input_slots=input_slots, output_slots=output_slots)
+        self._validate()
+
+    def _validate(self) -> dict[str, list[str]]:
+        # TODO:
+        # - check that one and only one input slot includes a splitter
+        # - check that all output slots have an aggregator
+        # no returning dict here like other validations. this is NOT something that
+        # is logged to the user. It's our fault.
+        pass
+
+
 class ChoiceStep(Step):
     """A type of :class:`Step` that allows for choosing between multiple paths.
 
@@ -1373,6 +1400,7 @@ class LeafConfigurationState(ConfigurationState):
                 implementation_config=self.implementation_config,
                 input_slots=self._step.input_slots.values(),
                 output_slots=self._step.output_slots.values(),
+                is_embarrassingly_parallel=isinstance(self._step, EmbarrassinglyParallelStep),
             )
         implementation_graph.add_node_from_implementation(
             implementation_node_name,

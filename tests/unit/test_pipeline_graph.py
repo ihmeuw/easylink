@@ -9,6 +9,8 @@ from easylink.pipeline_graph import PipelineGraph
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.utilities.data_utils import load_yaml
+from easylink.utilities.aggregator_utils import concatenate_datasets
+from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -172,48 +174,91 @@ def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
         assert edge_attrs["filepaths"] == expected_filepaths[(source, sink)]
 
 
-def test_get_input_slots(default_config: Config, test_dir: str) -> None:
+def test_get_io_slots(default_config: Config, test_dir: str) -> None:
     expected = {
         "step_1_python_pandas": {
-            "step_1_main_input": {
-                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "validator": validate_input_file_dummy,
-                "files": [
-                    Path(f"{test_dir}/input_data1/file1.csv"),
-                    Path(f"{test_dir}/input_data2/file2.csv"),
-                ],
-            }
+            "input": {
+                "step_1_main_input": {
+                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    "validator": validate_input_file_dummy,
+                    "files": [
+                        Path(f"{test_dir}/input_data1/file1.csv"),
+                        Path(f"{test_dir}/input_data2/file2.csv"),
+                    ],
+                    "splitter": None,
+                },
+            },
+            "output": {
+                "step_1_main_output": {
+                    "filepaths": [Path("intermediate/step_1_python_pandas/result.parquet")],
+                    "aggregator": None,
+                },
+            },
         },
         "step_2_python_pandas": {
-            "step_2_main_input": {
-                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "validator": validate_input_file_dummy,
-                "files": [Path("intermediate/step_1_python_pandas/result.parquet")],
-            }
+            "input": {
+                "step_2_main_input": {
+                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    "validator": validate_input_file_dummy,
+                    "files": [Path("intermediate/step_1_python_pandas/result.parquet")],
+                    "splitter": None,
+                },
+            },
+            "output": {
+                "step_2_main_output": {
+                    "filepaths": [Path("intermediate/step_2_python_pandas/result.parquet")],
+                    "aggregator": None,
+                },
+            },
         },
         "step_3_python_pandas": {
-            "step_3_main_input": {
-                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "validator": validate_input_file_dummy,
-                "files": [Path("intermediate/step_2_python_pandas/result.parquet")],
-            }
+            "input": {
+                "step_3_main_input": {
+                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    "validator": validate_input_file_dummy,
+                    "files": [Path("intermediate/step_2_python_pandas/result.parquet")],
+                    "splitter": split_data_by_size,
+                },
+            },
+            "output": {
+                "step_3_main_output": {
+                    "filepaths": [Path("intermediate/step_3_python_pandas/result.parquet")],
+                    "aggregator": concatenate_datasets,
+                },
+            },
         },
         "step_4_python_pandas": {
-            "step_4_main_input": {
-                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "validator": validate_input_file_dummy,
-                "files": [Path("intermediate/step_3_python_pandas/result.parquet")],
-            }
+            "input": {
+                "step_4_main_input": {
+                    "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    "validator": validate_input_file_dummy,
+                    "files": [Path("intermediate/step_3_python_pandas/result.parquet")],
+                    "splitter": None,
+                },
+            },
+            "output": {
+                "step_4_main_output": {
+                    "filepaths": [Path("intermediate/step_4_python_pandas/result.parquet")],
+                    "aggregator": None,
+                },
+            },
         },
     }
     pipeline_graph = PipelineGraph(default_config)
     for node, expected_slots in expected.items():
-        slots = pipeline_graph.get_input_slot_attributes(node)
-        for slot_name, expected_slot in expected_slots.items():
-            slot = slots[slot_name]
+        input_slots, output_slots = pipeline_graph.get_io_slot_attributes(node)
+        for slot_name, expected_slot in expected_slots["input"].items():
+            slot = input_slots[slot_name]
+            assert len(slot) == 4
             assert slot["env_var"] == expected_slot["env_var"]
             assert slot["validator"] == expected_slot["validator"]
             assert slot["filepaths"] == [str(file) for file in expected_slot["files"]]
+            assert slot["splitter"] == expected_slot["splitter"]
+        for slot_name, expected_slot in expected_slots["output"].items():
+            slot = output_slots[slot_name]
+            assert len(slot) == 2
+            assert slot["filepaths"] == [str(file) for file in expected_slot["filepaths"]]
+            assert slot["aggregator"] == expected_slot["aggregator"]
 
 
 def test_condense_input_slots() -> None:
@@ -257,7 +302,7 @@ def test_condense_input_slots() -> None:
             "filepaths": ["file5", "file6", "file7", "file8"],
         },
     }
-    condensed_slots = PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
+    condensed_slots = PipelineGraph._deduplicate_input_slots(input_slots, filepaths_by_slot)
     for slot_name, expected_slot in expected.items():
         slot = condensed_slots[slot_name]
         assert slot["env_var"] == expected_slot["env_var"]
@@ -283,7 +328,7 @@ def test_condense_input_slots_duplicate_slots_raises() -> None:
         ["file3", "file4"],
     ]
     with pytest.raises(ValueError):
-        PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
+        PipelineGraph._deduplicate_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_condense_input_slots_duplicate_slots_raises() -> None:
@@ -302,7 +347,7 @@ def test_condense_input_slots_duplicate_slots_raises() -> None:
         ["file3", "file4"],
     ]
     with pytest.raises(ValueError):
-        PipelineGraph._condense_input_slots(input_slots, filepaths_by_slot)
+        PipelineGraph._deduplicate_input_slots(input_slots, filepaths_by_slot)
 
 
 def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
@@ -349,6 +394,21 @@ def test_spark_is_required(default_config_params, requires_spark):
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
     assert pipeline_graph.spark_is_required() == requires_spark
+
+
+def test_get_whether_embarrassingly_parallel():
+    # todo
+    pass
+
+
+@pytest.mark.parametrize("is_embarrassingly_parallel", [True, False])
+def test_any_embarrassingly_parallel(default_config_params, is_embarrassingly_parallel):
+    config_params = default_config_params
+    if is_embarrassingly_parallel:
+        # todo
+        pass
+    config = Config(default_config_params)
+    pipeline_graph = PipelineGraph(config)
 
 
 def test_merge_combined_implementations(

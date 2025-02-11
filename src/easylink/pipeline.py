@@ -16,7 +16,13 @@ from loguru import logger
 
 from easylink.configuration import Config
 from easylink.pipeline_graph import PipelineGraph
-from easylink.rule import ImplementedRule, InputValidationRule, TargetRule
+from easylink.rule import (
+    AggregationRule,
+    CheckpointRule,
+    ImplementedRule,
+    InputValidationRule,
+    TargetRule,
+)
 from easylink.utilities.general_utils import exit_with_validation_error
 from easylink.utilities.paths import SPARK_SNAKEFILE
 from easylink.utilities.validation_utils import validate_input_file_dummy
@@ -40,6 +46,9 @@ class Pipeline:
         The :class:`~easylink.pipeline_graph.PipelineGraph` object.
     spark_is_required
         A boolean indicating whether the pipeline requires Spark.
+    any_embarrassingly_parallel
+        A boolean indicating whether any implementation in the pipeline is to be
+        run in an embarrassingly parallel manner.
 
     """
 
@@ -47,6 +56,7 @@ class Pipeline:
         self.config = config
         self.pipeline_graph = PipelineGraph(config)
         self.spark_is_required = self.pipeline_graph.spark_is_required()
+        self.any_embarrassingly_parallel = self.pipeline_graph.any_embarrassingly_parallel()
 
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
@@ -79,10 +89,10 @@ class Pipeline:
             logger.warning("Snakefile already exists, overwriting.")
             self.snakefile_path.unlink()
         self._write_imports()
-        self._write_config()
+        self._write_wildcard_constraints()
+        self._write_spark_config()
         self._write_target_rules()
-        if self.spark_is_required:
-            self._write_spark_module()
+        self._write_spark_module()
         for node in self.pipeline_graph.implementation_nodes:
             self._write_implementation_rules(node)
         return self.snakefile_path
@@ -121,26 +131,36 @@ class Pipeline:
         return errors
 
     def _write_imports(self) -> None:
-        """Writes the necessary imports to the Snakefile."""
-        with open(self.snakefile_path, "a") as f:
-            f.write("from easylink.utilities import validation_utils")
+        if not self.any_embarrassingly_parallel:
+            imports = "from easylink.utilities import validation_utils\n"
+        else:
+            imports = """
+import glob
+import os
 
-    def _write_config(self) -> None:
-        """Writes configuration settings to the Snakefile.
+from snakemake.exceptions import IncompleteCheckpointException
+from snakemake.io import checkpoint_target
 
-        Notes
-        -----
-        This is currently only applicable for spark-dependent pipelines.
-        """
+from easylink.utilities import aggregator_utils, splitter_utils, validation_utils"""
         with open(self.snakefile_path, "a") as f:
-            if self.spark_is_required:
+            f.write(imports)
+
+    def _write_wildcard_constraints(self) -> None:
+        if self.any_embarrassingly_parallel:
+            with open(self.snakefile_path, "a") as f:
                 f.write(
-                    f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
+                    """
+wildcard_constraints:
+    # never include '/' since those are reserved for filepaths
+    chunk="[^/]+","""
                 )
 
     def _write_target_rules(self) -> None:
-        """Writes the rule for the final output and its validation."""
-        ## The "input" files to the result node/the target rule are the final output themselves.
+        """Writes the rule for the final output and its validation.
+
+        The input files to the the target rule (i.e. the result node) are the final
+        output themselves.
+        """
         final_output, _ = self.pipeline_graph.get_io_filepaths("results")
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
@@ -152,7 +172,7 @@ class Pipeline:
         )
         final_validation = InputValidationRule(
             name="results",
-            slot_name="main_input",
+            input_slot_name="main_input",
             input=final_output,
             output=validator_file,
             validator=validate_input_file_dummy,
@@ -160,12 +180,26 @@ class Pipeline:
         target_rule.write_to_snakefile(self.snakefile_path)
         final_validation.write_to_snakefile(self.snakefile_path)
 
+    def _write_spark_config(self) -> None:
+        """Writes configuration settings to the Snakefile.
+
+        Notes
+        -----
+        This is currently only applicable for spark-dependent pipelines.
+        """
+        if self.spark_is_required:
+            with open(self.snakefile_path, "a") as f:
+                f.write(
+                    f"\nscattergather:\n\tnum_workers={self.config.spark_resources['num_workers']},"
+                )
+
     def _write_spark_module(self) -> None:
         """Inserts the ``easylink.utilities.spark.smk`` Snakemake module into the Snakefile."""
+        if not self.spark_is_required:
+            return
         slurm_resources = self.config.slurm_resources
         spark_resources = self.config.spark_resources
-        with open(self.snakefile_path, "a") as f:
-            module = f"""
+        module = f"""
 module spark_cluster:
     snakefile: '{SPARK_SNAKEFILE}'
     config: config
@@ -173,8 +207,8 @@ module spark_cluster:
 use rule * from spark_cluster
 use rule terminate_spark from spark_cluster with:
     input: rules.all.input.final_output"""
-            if self.config.computing_environment == "slurm":
-                module += f"""
+        if self.config.computing_environment == "slurm":
+            module += f"""
 use rule start_spark_master from spark_cluster with:
     resources:
         slurm_account={slurm_resources['slurm_account']},
@@ -195,12 +229,17 @@ use rule start_spark_worker from spark_cluster with:
         terminate_file_name=rules.terminate_spark.output,
         user=os.environ["USER"],
         cores={spark_resources['cpus_per_task']},
-        memory={spark_resources['mem_mb']}
-                        """
+        memory={spark_resources['mem_mb']}"""
+
+        with open(self.snakefile_path, "a") as f:
             f.write(module)
 
     def _write_implementation_rules(self, node_name: str) -> None:
         """Writes the rules for each :class:`~easylink.implementation.Implementation`.
+
+        This method writes *all* rules required for a given ``Implementation``,
+        e.g. splitters and aggregators (if necessary), validations, and the actual
+        rule to run the container itself.
 
         Parameters
         ----------
@@ -209,7 +248,7 @@ use rule start_spark_worker from spark_cluster with:
         """
         implementation = self.pipeline_graph.nodes[node_name]["implementation"]
         _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
-        input_slots = self.pipeline_graph.get_input_slot_attributes(node_name)
+        input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
         diagnostics_dir = Path("diagnostics") / node_name
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
         resources = (
@@ -218,7 +257,29 @@ use rule start_spark_worker from spark_cluster with:
             else None
         )
         validation_files, validation_rules = self._get_validations(node_name, input_slots)
-        implementation_rule = ImplementedRule(
+        is_embarrassingly_parallel = self.pipeline_graph.get_whether_embarrassingly_parallel(
+            node_name
+        )
+
+        for validation_rule in validation_rules:
+            validation_rule.write_to_snakefile(self.snakefile_path)
+
+        if is_embarrassingly_parallel:
+            CheckpointRule(
+                name=node_name,
+                input_slots=input_slots,
+                validations=validation_files,
+                output=output_files,
+            ).write_to_snakefile(self.snakefile_path)
+            for name, attrs in output_slots.items():
+                AggregationRule(
+                    name=node_name,
+                    input_slots=input_slots,
+                    output_slot_name=name,
+                    output_slot=attrs,
+                ).write_to_snakefile(self.snakefile_path)
+
+        ImplementedRule(
             name=node_name,
             step_name=" and ".join(implementation.metadata_steps),
             implementation_name=implementation.name,
@@ -231,10 +292,8 @@ use rule start_spark_worker from spark_cluster with:
             image_path=implementation.singularity_image_path,
             script_cmd=implementation.script_cmd,
             requires_spark=implementation.requires_spark,
-        )
-        for validation_rule in validation_rules:
-            validation_rule.write_to_snakefile(self.snakefile_path)
-        implementation_rule.write_to_snakefile(self.snakefile_path)
+            is_embarrassingly_parallel=is_embarrassingly_parallel,
+        ).write_to_snakefile(self.snakefile_path)
 
     @staticmethod
     def _get_validations(
@@ -262,7 +321,7 @@ use rule start_spark_worker from spark_cluster with:
             validation_rules.append(
                 InputValidationRule(
                     name=node_name,
-                    slot_name=input_slot_name,
+                    input_slot_name=input_slot_name,
                     input=input_slot_attrs["filepaths"],
                     output=validation_file,
                     validator=input_slot_attrs["validator"],

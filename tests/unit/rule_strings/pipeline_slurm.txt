@@ -1,4 +1,5 @@
 from easylink.utilities import validation_utils
+
 rule all:
     message: 'Grabbing final output' 
     localrule: True   

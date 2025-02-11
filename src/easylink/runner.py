@@ -113,6 +113,7 @@ def main(
         ]
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")
+    logger.debug(f"Snakemake arguments: {argv}")
     snake_main(argv)
 
 

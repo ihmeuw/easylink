@@ -45,6 +45,10 @@ class Implementation:
         implementation_config: LayeredConfigTree,
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
+        is_embarrassingly_parallel: bool = False,
+        # wildcards: Sequence[
+        #     str
+        # ] = [],  # e.g. the wildcard that we are splitting by, e.g. ["chunk"]
     ):
         self.name = implementation_config.name
         """The name of this ``Implementation``."""
@@ -63,6 +67,7 @@ class Implementation:
         implemented by this particular ``Implementation``."""
         self.requires_spark = self._metadata.get("requires_spark", False)
         """Whether this ``Implementation`` requires a Spark environment."""
+        self.is_embarrassingly_parallel = is_embarrassingly_parallel
 
     def __repr__(self) -> str:
         return f"Implementation.{self.name}"

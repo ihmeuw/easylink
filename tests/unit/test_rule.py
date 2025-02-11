@@ -5,19 +5,29 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from easylink.rule import ImplementedRule, InputValidationRule, Rule, TargetRule
+from easylink.rule import (
+    AggregationRule,
+    CheckpointRule,
+    ImplementedRule,
+    InputValidationRule,
+    Rule,
+    TargetRule,
+)
 
 RULE_STRINGS = {
     "target_rule": "rule_strings/target_rule.txt",
     "implemented_rule_local": "rule_strings/implemented_rule_local.txt",
     "implemented_rule_slurm": "rule_strings/implemented_rule_slurm.txt",
     "validation_rule": "rule_strings/validation_rule.txt",
+    "embarrassingly_parallel_rule": "rule_strings/embarrassingly_parallel_rule.txt",
+    "checkpoint_rule": "rule_strings/checkpoint_rule.txt",
+    "aggregation_rule": "rule_strings/aggregation_rule.txt",
 }
 
 
 def test_rule_interface():
     class TestRule(Rule):
-        def _build_rule(self) -> str:
+        def build_rule(self) -> str:
             return "'Tis but a scratch!"
 
     rule = TestRule()
@@ -58,12 +68,12 @@ def test_implemented_rule_build_rule(computing_environment):
             "main": {
                 "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 "filepaths": ["foo"],
-                "validator": lambda x: None,
+                "validator": _dummy_validator,
             },
             "secondary": {
                 "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                 "filepaths": ["bar"],
-                "validator": lambda x: None,
+                "validator": _dummy_validator,
             },
         },
         validations=["bar"],
@@ -83,9 +93,100 @@ def test_implemented_rule_build_rule(computing_environment):
     _check_rule(rule, file_path)
 
 
+def test_embarrassingly_parallel_rule_build_rule():
+    rule = ImplementedRule(
+        name="foo_rule",
+        step_name="foo_step",
+        implementation_name="foo_imp",
+        input_slots={
+            "main": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "filepaths": ["foo"],
+                "validator": _dummy_validator,
+                "splitter": _dummy_splitter,
+            },
+            "secondary": {
+                "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                "filepaths": ["bar"],
+                "validator": _dummy_validator,
+                "splitter": None,
+            },
+        },
+        validations=["baz"],
+        output=["some/path/to/quux"],
+        resources=None,
+        envvars={"eggs": "coconut"},
+        diagnostics_dir="spam",
+        image_path="Multipolarity.sif",
+        script_cmd="echo hello world",
+        requires_spark=False,
+        is_embarrassingly_parallel=True,
+    )
+
+    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["embarrassingly_parallel_rule"]
+    _check_rule(rule, file_path)
+
+
+def test_checkpoint_build_rule():
+    rule = CheckpointRule(
+        name="foo_rule",
+        input_slots={
+            "main": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "filepaths": ["foo"],
+                "validator": _dummy_validator,
+                "splitter": _dummy_splitter,
+            },
+            "secondary": {
+                "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                "filepaths": ["bar"],
+                "validator": _dummy_validator,
+                "splitter": None,
+            },
+        },
+        validations=["baz"],
+        output=["some/path/to/quux"],
+    )
+
+    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["checkpoint_rule"]
+    _check_rule(rule, file_path)
+
+
+def test_aggregation_build_rule():
+    rule = AggregationRule(
+        name="foo_rule",
+        input_slots={
+            "main": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "filepaths": ["foo"],
+                "validator": _dummy_validator,
+                "splitter": _dummy_splitter,
+            },
+            "secondary": {
+                "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                "filepaths": ["bar"],
+                "validator": _dummy_validator,
+                "splitter": None,
+            },
+        },
+        output_slot_name="main_output",
+        output_slot={
+            "filepaths": ["some/path/to/quux"],
+            "aggregator": _dummy_aggregator,
+        },
+    )
+
+    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["aggregation_rule"]
+    _check_rule(rule, file_path)
+
+
 def test_validation_rule_build_rule():
     rule = InputValidationRule(
-        name="foo", slot_name="foo_input", input=["foo", "bar"], output="baz", validator=_bar
+        name="foo",
+        input_slot_name="foo_input",
+        input=["foo", "bar"],
+        output="baz",
+        validator=_dummy_validator,
     )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["validation_rule"]
     _check_rule(rule, file_path)
@@ -100,7 +201,7 @@ def _check_rule(rule: Rule, expected_rule_path: str):
     """Compares the ``Rule's`` built rule to the expected rule in the file."""
     with open(expected_rule_path) as expected_file:
         expected = expected_file.read()
-    rulestring = rule._build_rule()
+    rulestring = rule.build_rule()
     rulestring_lines = rulestring.split("\n")
     expected_lines = expected.split("\n")
     assert len(rulestring_lines) == len(expected_lines)
@@ -108,6 +209,16 @@ def _check_rule(rule: Rule, expected_rule_path: str):
         assert rulestring_lines[i].strip() == expected_line.strip()
 
 
-def _bar():
+def _dummy_validator():
     """Dummy validator function"""
+    pass
+
+
+def _dummy_splitter():
+    """Dummy splitter function"""
+    pass
+
+
+def _dummy_aggregator():
+    """Dummy aggregator function"""
     pass

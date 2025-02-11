@@ -7,6 +7,8 @@ from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import Step
+from easylink.utilities.aggregator_utils import concatenate_datasets
+from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -122,6 +124,7 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
                     name="step_3_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
+                    splitter=split_data_by_size,
                 ),
                 "filepaths": None,
             },
@@ -130,7 +133,9 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
             "step_3_python_pandas",
             "step_4_python_pandas",
             {
-                "output_slot": OutputSlot("step_3_main_output"),
+                "output_slot": OutputSlot(
+                    "step_3_main_output", aggregator=concatenate_datasets
+                ),
                 "input_slot": InputSlot(
                     name="step_4_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
