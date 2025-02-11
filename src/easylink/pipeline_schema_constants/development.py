@@ -13,6 +13,7 @@ from easylink.graph_components import (
 )
 from easylink.step import (
     ChoiceStep,
+    EmbarrassinglyParallelStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
@@ -20,6 +21,8 @@ from easylink.step import (
     ParallelStep,
     Step,
 )
+from easylink.utilities.aggregator_utils import concatenate_datasets
+from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
@@ -49,16 +52,22 @@ NODES = [
         output_slots=[OutputSlot("step_2_main_output")],
     ),
     LoopStep(
-        template_step=Step(
+        template_step=EmbarrassinglyParallelStep(
             step_name="step_3",
             input_slots=[
                 InputSlot(
                     name="step_3_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
+                    splitter=split_data_by_size,
                 ),
             ],
-            output_slots=[OutputSlot("step_3_main_output")],
+            output_slots=[
+                OutputSlot(
+                    name="step_3_main_output",
+                    aggregator=concatenate_datasets,
+                ),
+            ],
         ),
         self_edges=[
             EdgeParams(
