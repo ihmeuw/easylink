@@ -815,6 +815,26 @@ class TemplatedStep(Step, ABC):
             parent_config, combined_implementations, input_data_config
         )
 
+    def _duplicate_template_step(self) -> Step:
+        """Makes a duplicate of the template ``Step``.
+
+        A duplicate of the :attr:`template_step`, i.e. the ``Step`` that may have
+        multiplicity, should contain copies of every attribute of said ``Step``
+        *except* for the :attr:`parent_step`. This is because :attr:`parent_step`
+        contains an actual ``Step`` instance and we want all of the duplicates to
+        have that same parent as opposed to copies of one.
+
+        Returns
+        -------
+            A duplicate of the :attr:`templated_step`.
+        """
+        parent_step = self.template_step.parent_step
+        self.template_step.parent_step = None
+        step_copy = copy.deepcopy(self.template_step)
+        step_copy.set_parent_step(parent_step)
+        self.template_step.set_parent_step(parent_step)
+        return step_copy
+
 
 class LoopStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that allows for looping.
@@ -875,9 +895,7 @@ class LoopStep(TemplatedStep):
         edges = []
 
         for i in range(num_repeats):
-            self.template_step.parent_step = None
-            updated_step = copy.deepcopy(self.template_step)
-            updated_step.set_parent_step(self)
+            updated_step = self._duplicate_template_step()
             updated_step.name = f"{self.name}_{self.node_prefix}_{i+1}"
             nodes.append(updated_step)
             if i > 0:
@@ -973,9 +991,7 @@ class ParallelStep(TemplatedStep):
         graph = StepGraph()
 
         for i in range(num_repeats):
-            self.template_step.parent_step = None
-            updated_step = copy.deepcopy(self.template_step)
-            updated_step.set_parent_step(self)
+            updated_step = self._duplicate_template_step()
             updated_step.name = f"{self.name}_{self.node_prefix}_{i+1}"
             graph.add_node_from_step(updated_step)
         return graph

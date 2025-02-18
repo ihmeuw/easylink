@@ -372,35 +372,31 @@ def test_loop_get_implementation_graph(
         {
             "step_3": {
                 "iterate": [
-                    LayeredConfigTree(
-                        {
-                            "implementation": {
-                                "name": "step_3_python_pandas",
-                                "configuration": {},
-                            }
-                        }
-                    ),
-                    LayeredConfigTree(
-                        {
-                            "substeps": {
-                                "step_3a": {
-                                    "implementation": {
-                                        "name": "step_3a_python_pandas",
-                                        "configuration": {},
-                                    }
-                                },
-                                "step_3b": {
-                                    "implementation": {
-                                        "name": "step_3b_python_pandas",
-                                        "configuration": {},
-                                    }
+                    {
+                        "implementation": {
+                            "name": "step_3_python_pandas",
+                            "configuration": {},
+                        },
+                    },
+                    {
+                        "substeps": {
+                            "step_3a": {
+                                "implementation": {
+                                    "name": "step_3a_python_pandas",
+                                    "configuration": {},
                                 },
                             },
-                        }
-                    ),
+                            "step_3b": {
+                                "implementation": {
+                                    "name": "step_3b_python_pandas",
+                                    "configuration": {},
+                                },
+                            },
+                        },
+                    },
                 ],
-            }
-        }
+            },
+        },
     )
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
@@ -574,8 +570,8 @@ def test_parallel_step_get_implementation_graph(
                         "input_data_file": "input_file_3",
                     },
                 ],
-            }
-        }
+            },
+        },
     )
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
@@ -631,6 +627,81 @@ def test_parallel_step_get_implementation_graph(
     assert len(subgraph.edges) == len(expected_edges)
     for edge in expected_edges:
         assert edge in subgraph.edges(data=True)
+
+
+@pytest.mark.parametrize("step_type", ["parallel", "loop"])
+def test__duplicate_template_step(step_type):
+    """Test against _duplicate_template_step.
+    
+    This is not an exhaustive test due to the complicated nature of testing
+    equality of different attributes between two deep copies. For example, 
+    SomeClass.foo == SomeOtherClass.foo if foo is the same string even though
+    they are different objects in memory. This is not the case for methods as
+    well as other attribute types.
+    """
+    template_step = Step("step")
+    template_step.set_configuration_state(
+        LayeredConfigTree(
+            {
+                "step": {
+                    "implementation": {
+                        "name": "step_implementation",
+                        "configuration": {},
+                    },
+                },
+            },
+        ),
+        {},
+        {},
+    )
+    if step_type == "loop":
+        step = LoopStep(template_step)
+        config_key = "iterate"
+    else:  # parellel
+        step = ParallelStep(template_step)
+        config_key = "parallel"
+    step.set_configuration_state(
+        LayeredConfigTree(
+            {
+                "step": {
+                    config_key: [
+                        {
+                            "implementation": {
+                                "name": "step_implementation",
+                                "configuration": {},
+                            },
+                        },
+                    ],
+                },
+            },
+        ),
+        {},
+        {},
+    )
+
+    duplicate_template_step = step._duplicate_template_step()
+
+    special_handle_attrs = ["_configuration_state", "configuration_state", "step_graph"]
+    attrs = [
+        attr
+        for attr in dir(step.template_step)
+        if attr not in special_handle_attrs
+        # dunders are too complicated to check
+        and not attr.startswith("__")
+        # methods are bound to each instance
+        and not callable(getattr(step.template_step, attr))
+    ]
+    for attr in attrs:
+        assert getattr(step.template_step, attr) == getattr(duplicate_template_step, attr)
+
+    # Handle the special cases. Just check that they are of the same type and yet
+    # not equal (implying that they are bound to different instances)
+    for attr in special_handle_attrs:
+        assert isinstance(
+            getattr(step.template_step, attr),
+            type(getattr(duplicate_template_step, attr)),
+        )
+        assert getattr(step.template_step, attr) != getattr(duplicate_template_step, attr)
 
 
 @pytest.fixture
@@ -926,20 +997,16 @@ def test_complex_choice_step_get_implementation_graph(
             },
             "step_6": {
                 "iterate": [
-                    LayeredConfigTree(
-                        {
-                            "implementation": {
-                                "name": "step_6_python_pandas",
-                            }
-                        }
-                    ),
-                    LayeredConfigTree(
-                        {
-                            "implementation": {
-                                "name": "step_6_python_pandas",
-                            }
-                        }
-                    ),
+                    {
+                        "implementation": {
+                            "name": "step_6_python_pandas",
+                        },
+                    },
+                    {
+                        "implementation": {
+                            "name": "step_6_python_pandas",
+                        },
+                    },
                 ],
             },
         },
