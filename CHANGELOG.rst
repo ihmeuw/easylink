@@ -1,3 +1,7 @@
+**0.1.4 - 2/18/25**
+
+ - Implement duplicate_template_step method on TemplatedStep class
+
 **0.1.3 - 1/7/25**
 
  - Validate currently-installed python version during setup
