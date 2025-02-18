@@ -632,9 +632,9 @@ def test_parallel_step_get_implementation_graph(
 @pytest.mark.parametrize("step_type", ["parallel", "loop"])
 def test__duplicate_template_step(step_type):
     """Test against _duplicate_template_step.
-    
+
     This is not an exhaustive test due to the complicated nature of testing
-    equality of different attributes between two deep copies. For example, 
+    equality of different attributes between two deep copies. For example,
     SomeClass.foo == SomeOtherClass.foo if foo is the same string even though
     they are different objects in memory. This is not the case for methods as
     well as other attribute types.
