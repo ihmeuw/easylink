@@ -47,7 +47,7 @@ if __name__ == "__main__":
         "docker",
         "graphviz",
         "loguru",
-        "layered_config_tree",
+        "layered_config_tree>=3.0.0",
         "networkx",
         "pandas",
         "pyyaml",
