@@ -828,7 +828,8 @@ class TemplatedStep(Step, ABC):
         -------
             A duplicate of the :attr:`templated_step`.
         """
-        parent_step = self.template_step.parent_step
+        # Due to the cyclic nature, self == self.template_step.parent_step
+        parent_step = self
         self.template_step.parent_step = None
         step_copy = copy.deepcopy(self.template_step)
         step_copy.set_parent_step(parent_step)
