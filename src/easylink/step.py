@@ -818,22 +818,19 @@ class TemplatedStep(Step, ABC):
     def _duplicate_template_step(self) -> Step:
         """Makes a duplicate of the template ``Step``.
 
-        A duplicate of the :attr:`template_step`, i.e. the ``Step`` that may have
-        multiplicity, should contain copies of every attribute of said ``Step``
-        *except* for the :attr:`parent_step`. This is because :attr:`parent_step`
-        contains an actual ``Step`` instance and we want all of the duplicates to
-        have that same parent as opposed to copies of one.
-
         Returns
         -------
             A duplicate of the :attr:`templated_step`.
+        
+        Notes
+        -----
+        A naive deepcopy would also make a copy of the :attr:`parent_step`; we don't 
+        want this to be pointing to a *copy* of `self`, but rather to the original.
+        We thus re-set the :attr:`parent_step` to the original (`self`) after making
+        the copy.
         """
-        # Due to the cyclic nature, self == self.template_step.parent_step
-        parent_step = self
-        self.template_step.parent_step = None
         step_copy = copy.deepcopy(self.template_step)
-        step_copy.set_parent_step(parent_step)
-        self.template_step.set_parent_step(parent_step)
+        step_copy.set_parent_step(self)
         return step_copy
 
 
