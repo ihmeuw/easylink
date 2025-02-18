@@ -821,10 +821,10 @@ class TemplatedStep(Step, ABC):
         Returns
         -------
             A duplicate of the :attr:`templated_step`.
-        
+
         Notes
         -----
-        A naive deepcopy would also make a copy of the :attr:`parent_step`; we don't 
+        A naive deepcopy would also make a copy of the :attr:`parent_step`; we don't
         want this to be pointing to a *copy* of `self`, but rather to the original.
         We thus re-set the :attr:`parent_step` to the original (`self`) after making
         the copy.
