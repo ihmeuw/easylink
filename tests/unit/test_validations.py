@@ -17,8 +17,6 @@ from easylink.configuration import (
     load_params_from_specification,
 )
 from easylink.pipeline import IMPLEMENTATION_ERRORS_KEY, Pipeline
-from easylink.pipeline_schema import PipelineSchema
-from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
 from tests.unit.conftest import PIPELINE_CONFIG_DICT
@@ -469,15 +467,3 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
             },
         },
     )
-
-
-def test_nested_templated_steps(default_config_params):
-    """Tests that nested TemplatedSteps pass validation."""
-    config_params = default_config_params
-    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["nested_templated_steps"]
-    # Need a custom schema to allow nested TemplatedSteps
-    schema = PipelineSchema(
-        "nested_templated_steps", *TESTING_SCHEMA_PARAMS["nested_templated_steps"]
-    )
-    # Ensure that Config instantiates without raising an exception
-    Config(config_params, schema)

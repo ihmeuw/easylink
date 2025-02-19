@@ -389,8 +389,9 @@ class Step:
     ) -> dict[str, list[str]]:
         """Validates a non-leaf ``Step``."""
         errors = {}
-        for node in self.step_graph.nodes:
-            step = self.step_graph.nodes[node]["step"]
+        nodes = self.step_graph.nodes
+        for node in nodes:
+            step = nodes[node]["step"]
             if isinstance(step, IOStep):
                 continue
             if step.name not in step_config:
@@ -401,7 +402,7 @@ class Step:
                 )
             if step_errors:
                 errors.update(step_errors)
-        extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
+        extra_steps = set(step_config.keys()) - set(nodes)
         for extra_step in extra_steps:
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
