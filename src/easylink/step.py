@@ -282,9 +282,9 @@ class Step:
     ) -> None:
         """Sets the configuration state for this ``Step``.
 
-        The so-called "configuration state" for a given ``Step`` is backed up by
+        The so-called 'configuration stat' for a given ``Step`` is backed up by
         a :class:`ConfigurationState` class and is assigned to its :attr:`_configuration_state`
-        attribute. There are two possible ``ConfigurationStates`:
+        attribute. There are two possible ``ConfigurationStates``:
         :class:`LeafConfigurationState` and :class:`NonLeafConfigurationState`.
 
         This method sets the configuration state of this ``Step`` based on whether
