@@ -414,6 +414,36 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "nested_templated_steps": {
+        "step_1": {
+            "iterate": [
+                {
+                    "parallel": [
+                        {
+                            "input_data_file": "file1",
+                            "implementation": {"name": "step_1_python_pandas"},
+                        },
+                        {
+                            "input_data_file": "file2",
+                            "implementation": {"name": "step_1_python_pandas"},
+                        },
+                    ],
+                },
+                {
+                    "parallel": [
+                        {
+                            "input_data_file": "file1",
+                            "implementation": {"name": "step_1_python_pandas"},
+                        },
+                        {
+                            "input_data_file": "file2",
+                            "implementation": {"name": "step_1_python_pandas"},
+                        },
+                    ],
+                },
+            ],
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {
