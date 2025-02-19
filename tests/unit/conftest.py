@@ -420,12 +420,12 @@ PIPELINE_CONFIG_DICT = {
                 {
                     "parallel": [
                         {
-                            "input_data_file": "file1",
                             "implementation": {"name": "step_1_python_pandas"},
+                            "input_data_file": "file1",
                         },
                         {
-                            "input_data_file": "file2",
                             "implementation": {"name": "step_1_python_pandas"},
+                            "input_data_file": "file2",
                         },
                     ],
                 },
@@ -440,6 +440,34 @@ PIPELINE_CONFIG_DICT = {
                             "implementation": {"name": "step_1_python_pandas"},
                         },
                     ],
+                },
+            ],
+        },
+    },
+    "nested_templated_steps_with_hierarchical_steps": {
+        "step_1": {
+            "iterate": [
+                {
+                    "parallel": [
+                        {
+                            "implementation": {"name": "step_1_python_pandas"},
+                            "input_data_file": "file1",
+                        },
+                        {
+                            "implementation": {"name": "step_1_python_pandas"},
+                            "input_data_file": "file2",
+                        },
+                    ],
+                },
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {"name": "step_1a_python_pandas"},
+                        },
+                        "step_1b": {
+                            "implementation": {"name": "step_1b_python_pandas"},
+                        },
+                    },
                 },
             ],
         },

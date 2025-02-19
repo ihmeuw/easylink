@@ -742,6 +742,26 @@ def test_nested_templated_steps(default_config_params, test_dir):
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
+@pytest.mark.xfail(
+    reason="TODO [mic-5877]: Nested TemplatedSteps with hierarchical steps are not supported yet."
+)
+def test_nested_templated_steps_with_hierarchical_steps(default_config_params, test_dir):
+    config_params = default_config_params
+    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT[
+        "nested_templated_steps_with_hierarchical_steps"
+    ]
+    # Need a custom schema to allow nested TemplatedSteps
+    schema = PipelineSchema(
+        "nested_templated_steps_with_hierarchical_steps",
+        *TESTING_SCHEMA_PARAMS["nested_templated_steps"],
+    )
+    # Ensure that Config instantiates without raising an exception
+    pipeline_graph = PipelineGraph(Config(config_params, schema))
+    expected_nodes = ...
+    expected_edges = ...
+    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+
+
 ####################
 # Helper functions #
 ####################
