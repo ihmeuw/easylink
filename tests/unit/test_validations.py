@@ -467,3 +467,8 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
             },
         },
     )
+
+
+def test_nested_templates():
+    """Tests that nested TemplatedSteps pass validation."""
+    ...

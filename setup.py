@@ -67,7 +67,7 @@ if __name__ == "__main__":
         "pytest-mock",
     ]
     doc_requirements = [
-        "sphinx<8.2.0",
+        "sphinx",
         "sphinx-rtd-theme",
         "sphinx-autodoc-typehints",
         "sphinx-click",
