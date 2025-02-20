@@ -815,6 +815,24 @@ class TemplatedStep(Step, ABC):
             parent_config, combined_implementations, input_data_config
         )
 
+    def _duplicate_template_step(self) -> Step:
+        """Makes a duplicate of the template ``Step``.
+
+        Returns
+        -------
+            A duplicate of the :attr:`template_step`.
+
+        Notes
+        -----
+        A naive deepcopy would also make a copy of the :attr:`Step.parent_step`; we don't
+        want this to be pointing to a *copy* of `self`, but rather to the original.
+        We thus re-set the :attr:`Step.parent_step` to the original (`self`) after making
+        the copy.
+        """
+        step_copy = copy.deepcopy(self.template_step)
+        step_copy.set_parent_step(self)
+        return step_copy
+
 
 class LoopStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that allows for looping.
@@ -875,9 +893,7 @@ class LoopStep(TemplatedStep):
         edges = []
 
         for i in range(num_repeats):
-            self.template_step.parent_step = None
-            updated_step = copy.deepcopy(self.template_step)
-            updated_step.set_parent_step(self)
+            updated_step = self._duplicate_template_step()
             updated_step.name = f"{self.name}_{self.node_prefix}_{i+1}"
             nodes.append(updated_step)
             if i > 0:
@@ -973,9 +989,7 @@ class ParallelStep(TemplatedStep):
         graph = StepGraph()
 
         for i in range(num_repeats):
-            self.template_step.parent_step = None
-            updated_step = copy.deepcopy(self.template_step)
-            updated_step.set_parent_step(self)
+            updated_step = self._duplicate_template_step()
             updated_step.name = f"{self.name}_{self.node_prefix}_{i+1}"
             graph.add_node_from_step(updated_step)
         return graph

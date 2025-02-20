@@ -103,7 +103,7 @@ def test_environment_configuration_not_found(computing_environment):
 
 
 @pytest.mark.parametrize(
-    "key, input",
+    "key, value",
     [
         ("computing_environment", None),
         ("computing_environment", "local"),
@@ -114,12 +114,12 @@ def test_environment_configuration_not_found(computing_environment):
         ("container_engine", "undefined"),
     ],
 )
-def test_required_attributes(mocker, default_config_params, key, input):
+def test_required_attributes(mocker, default_config_params, key, value):
     mocker.patch("easylink.configuration.Config._validate_environment")
     config_params = default_config_params
-    if input:
-        config_params["environment"][key] = input
-    env_dict = {key: input} if input else {}
+    if value:
+        config_params["environment"][key] = value
+    env_dict = {key: value} if value else {}
     retrieved = Config(config_params).environment[key]
     expected = DEFAULT_ENVIRONMENT["environment"].copy()
     expected.update(env_dict)
@@ -127,7 +127,7 @@ def test_required_attributes(mocker, default_config_params, key, input):
 
 
 @pytest.mark.parametrize(
-    "input",
+    "resource_request",
     [
         # missing
         None,
@@ -137,22 +137,22 @@ def test_required_attributes(mocker, default_config_params, key, input):
         {"memory": 100, "cpus": 200, "time_limit": 300},
     ],
 )
-def test_implementation_resource_requests(default_config_params, input):
+def test_implementation_resource_requests(default_config_params, resource_request):
     key = "implementation_resources"
     config_params = default_config_params
-    if input:
-        config_params["environment"][key] = input
+    if resource_request:
+        config_params["environment"][key] = resource_request
     config = Config(config_params)
-    env_dict = {key: input.copy()} if input else {}
+    env_dict = {key: resource_request.copy()} if resource_request else {}
     retrieved = config.environment[key].to_dict()
     expected = DEFAULT_ENVIRONMENT["environment"][key].copy()
-    if input:
+    if resource_request:
         expected.update(env_dict[key])
     assert retrieved == expected
 
 
 @pytest.mark.parametrize(
-    "input",
+    "spark_request",
     [
         # missing
         None,
@@ -179,7 +179,7 @@ def test_implementation_resource_requests(default_config_params, input):
     ],
 )
 @pytest.mark.parametrize("requires_spark", [True, False])
-def test_spark_requests(default_config_params, input, requires_spark):
+def test_spark_requests(default_config_params, spark_request, requires_spark):
     key = "spark"
     config_params = default_config_params
     if requires_spark:
@@ -188,12 +188,12 @@ def test_spark_requests(default_config_params, input, requires_spark):
             "name"
         ] = "step_1_python_pyspark"
 
-    if input:
-        config_params["environment"][key] = input
+    if spark_request:
+        config_params["environment"][key] = spark_request
     retrieved = Config(config_params).environment[key].to_dict()
-    expected_env_dict = {key: input.copy()} if input else {}
+    expected_env_dict = {key: spark_request.copy()} if spark_request else {}
     expected = LayeredConfigTree(SPARK_DEFAULTS, layers=["initial_data", "user"])
-    if input:
+    if spark_request:
         expected.update(expected_env_dict[key], layer="user")
     expected = expected.to_dict()
     assert retrieved == expected

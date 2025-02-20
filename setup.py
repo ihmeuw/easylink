@@ -47,7 +47,7 @@ if __name__ == "__main__":
         "docker",
         "graphviz",
         "loguru",
-        "layered_config_tree",
+        "layered_config_tree>=3.0.0",
         "networkx",
         "pandas",
         "pyyaml",
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         "pytest-mock",
     ]
     doc_requirements = [
-        "sphinx",
+        "sphinx<8.2.0",
         "sphinx-rtd-theme",
         "sphinx-autodoc-typehints",
         "sphinx-click",
