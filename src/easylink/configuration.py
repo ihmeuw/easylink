@@ -97,7 +97,7 @@ class Config(LayeredConfigTree):
     def __init__(
         self,
         config_params: dict[str, Any],
-        potential_schemas: list[PipelineSchema] | PipelineSchema = PIPELINE_SCHEMAS,
+        potential_schemas: PipelineSchema | list[PipelineSchema] = PIPELINE_SCHEMAS,
     ) -> None:
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")

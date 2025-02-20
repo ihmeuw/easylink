@@ -282,6 +282,17 @@ class Step:
     ) -> None:
         """Sets the configuration state for this ``Step``.
 
+        The so-called 'configuration state' for a given ``Step`` is backed up by
+        a :class:`ConfigurationState` class and is assigned to its :attr:`_configuration_state`
+        attribute. There are two possible ``ConfigurationStates``:
+        :class:`LeafConfigurationState` and :class:`NonLeafConfigurationState`.
+
+        This method sets the configuration state of this ``Step`` based on whether
+        or not a :attr:`config_key` is set *and exists is the ``Step's`` configuration*
+        (i.e. its portion of the user-suppled pipeline specification
+        file); any required deviation from this behavior requires special
+        handling.
+
         Parameters
         ----------
         parent_config
@@ -378,8 +389,9 @@ class Step:
     ) -> dict[str, list[str]]:
         """Validates a non-leaf ``Step``."""
         errors = {}
-        for node in self.step_graph.nodes:
-            step = self.step_graph.nodes[node]["step"]
+        nodes = self.step_graph.nodes
+        for node in nodes:
+            step = nodes[node]["step"]
             if isinstance(step, IOStep):
                 continue
             if step.name not in step_config:
@@ -390,7 +402,7 @@ class Step:
                 )
             if step_errors:
                 errors.update(step_errors)
-        extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
+        extra_steps = set(step_config.keys()) - set(nodes)
         for extra_step in extra_steps:
             errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
         return errors
@@ -807,12 +819,43 @@ class TemplatedStep(Step, ABC):
             The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
+
+        Notes
+        -----
+        A ``TemplatedStep`` is always assigned a :class:`NonLeafConfigurationState`
+        even if it has no multiplicity since (despite having no copies to make) we
+        still need to traverse the sub-``Steps`` to get to the one with a single
+        :class:`~easylink.implementation.Implementation`, i.e. the one with a
+        :class:`LeafConfigurationState`.
         """
-        num_repeats = len(self._get_config(parent_config[self.name]))
-        self.step_graph = self._update_step_graph(num_repeats)
-        self.slot_mappings = self._update_slot_mappings(num_repeats)
-        super().set_configuration_state(
-            parent_config, combined_implementations, input_data_config
+        step_config = parent_config[self.name]
+        if self.config_key not in step_config:
+            # Special handle the step_graph update
+            self.step_graph = StepGraph()
+            self.template_step.name = self.name
+            self.step_graph.add_node_from_step(self.template_step)
+            # Special handle the slot_mappings update
+            input_mappings = [
+                InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
+            ]
+            output_mappings = [
+                OutputSlotMapping(slot, self.name, slot) for slot in self.output_slots
+            ]
+            self.slot_mappings = {"input": input_mappings, "output": output_mappings}
+            # Add the key back to the expanded config
+            expanded_config = LayeredConfigTree({self.name: step_config})
+        else:
+            expanded_config = self._get_config(step_config)
+            num_repeats = len(expanded_config)
+            self.step_graph = self._update_step_graph(num_repeats)
+            self.slot_mappings = self._update_slot_mappings(num_repeats)
+        # Manually set the configuration state to non-leaf instead of relying
+        # on super().get_configuration_state() because that method will erroneously
+        # set to leaf state when we have no multiplicity (because in that case the
+        # user didn't actually include the config_key in the pipeline specification
+        # file, hence num_repeats == 1)
+        self._configuration_state = NonLeafConfigurationState(
+            self, expanded_config, combined_implementations, input_data_config
         )
 
     def _duplicate_template_step(self) -> Step:
@@ -1105,9 +1148,10 @@ class ChoiceStep(Step):
         initial ones are handled.
 
         We update the :class:`easylink.graph_components.StepGraph` and ``SlotMappings``
-        here as opposed to in :meth:`set_configuration_state` (as is done in :class:`TemplatedStep`)
-        because ``ChoiceStep`` validation happens prior to setting the configuration
-        state and actually requires the ``StepGraph`` and ``SlotMappings``.
+        in :meth:`validate_step` (as opposed to in :meth:`set_configuration_state`
+        as is done in :class:`TemplatedStep`) because :meth:`validate_step` is called
+        prior to :meth:`set_configuration_state`, but the validations itself actually
+        requires the updated ``StepGraph`` and ``SlotMappings``.
 
         We do not attempt to validate the subgraph here if the 'type' key is unable
         to be validated.
@@ -1136,7 +1180,7 @@ class ChoiceStep(Step):
                 ]
             }
 
-        # Handle the actual chosen step_config
+        # HACK: Update the step graph and mappings here because we need them for validation
         self.step_graph = self._update_step_graph(subgraph)
         self.slot_mappings = self._update_slot_mappings(subgraph)
         # NOTE: A ChoiceStep is by definition non-leaf step
@@ -1163,11 +1207,11 @@ class ChoiceStep(Step):
 
         Notes
         -----
-        We update the :class:`~easylink.graph_components.StepGraph` and
-        :class:`SlotMappings<easylink.graph_components.SlotMapping>` in
-        :meth:`validate_step` as opposed to here (as is done with
-        :class:`TemplatedSteps<TemplatedStep>`) because ``ChoiceStep`` validation
-        happens prior to this but requires the ``StepGraph`` and ``SlotMappings``.
+        We update the :class:`easylink.graph_components.StepGraph` and ``SlotMappings``
+        in :meth:`validate_step` (as opposed to in :meth:`set_configuration_state`
+        as is done in :class:`TemplatedStep`) because :meth:`validate_step` is called
+        prior to :meth:`set_configuration_state`, but the validations itself actually
+        requires the updated ``StepGraph`` and ``SlotMappings``.
         """
 
         chosen_parent_config = LayeredConfigTree(
@@ -1364,7 +1408,6 @@ class LeafConfigurationState(ConfigurationState):
             for mapping in mappings:
                 imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
-
         elif edge.target_node == self._step.name:
             mappings = [
                 mapping
@@ -1520,7 +1563,6 @@ class NonLeafConfigurationState(ConfigurationState):
                 new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
                 imp_edges = new_step.get_implementation_edges(new_edge)
                 implementation_edges.extend(imp_edges)
-
         elif edge.target_node == self._step.name:
             mappings = [
                 mapping
@@ -1544,8 +1586,9 @@ class NonLeafConfigurationState(ConfigurationState):
         This method recursively traverses the ``StepGraph`` and sets the configuration
         state for each ``Step`` until reaching all leaf nodes.
         """
-        for node in self._step.step_graph.nodes:
-            step = self._step.step_graph.nodes[node]["step"]
+        nodes = self._step.step_graph.nodes
+        for node in nodes:
+            step = nodes[node]["step"]
             step.set_configuration_state(
                 self.pipeline_config, self.combined_implementations, self.input_data_config
             )

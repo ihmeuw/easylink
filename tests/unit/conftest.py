@@ -414,6 +414,42 @@ PIPELINE_CONFIG_DICT = {
             },
         },
     },
+    "nested_templated_steps": {
+        "step_1": {
+            "iterate": [
+                {  # loop 1: parallel with multiplicity
+                    "parallel": [
+                        {
+                            "implementation": {"name": "step_1_python_pandas"},
+                            "input_data_file": "file1",
+                        },
+                        {
+                            "implementation": {"name": "step_1_python_pandas"},
+                            "input_data_file": "file2",
+                        },
+                    ],
+                },
+                {  # loop 2: parallel with no multiplicity
+                    "parallel": [
+                        {
+                            "input_data_file": "file1",
+                            "implementation": {"name": "step_1_python_pandas"},
+                        },
+                    ],
+                },
+                {  # loop 3: missing 'parallel' key, uses hierarchical step
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {"name": "step_1a_python_pandas"},
+                        },
+                        "step_1b": {
+                            "implementation": {"name": "step_1b_python_pandas"},
+                        },
+                    },
+                },
+            ],
+        },
+    },
 }
 
 INPUT_DATA_FORMAT_DICT = {

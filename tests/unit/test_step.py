@@ -630,7 +630,69 @@ def test_parallel_step_get_implementation_graph(
 
 
 @pytest.mark.parametrize("step_type", ["parallel", "loop"])
-def test__duplicate_template_step(step_type):
+def test_templated_get_implementation_graph_no_multiplicity(
+    step_type, parallel_step_params: dict[str, Any], loop_step_params: dict[str, Any], mocker
+) -> None:
+    """Tests that we can handle TemplatedStep but with no multiplicity."""
+    mocker.patch("easylink.implementation.Implementation._load_metadata")
+    mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
+    if step_type == "parallel":
+        step = ParallelStep(**parallel_step_params)
+        step_name = "step_1"
+    else:  # loop
+        step = LoopStep(**loop_step_params)
+        step_name = "step_3"
+    pipeline_params = LayeredConfigTree(
+        {
+            step_name: {
+                # No multiplicity, i.e. no "parallel" or "loop" key!
+                "substeps": {
+                    f"{step_name}a": {
+                        "implementation": {
+                            "name": f"{step_name}a_python_pandas",
+                        },
+                    },
+                    f"{step_name}b": {
+                        "implementation": {
+                            "name": f"{step_name}b_python_pandas",
+                        },
+                    },
+                },
+                "input_data_file": "input_file_1",
+            },
+        },
+    )
+    step.set_configuration_state(pipeline_params, {}, {})
+    subgraph = step.get_implementation_graph()
+    assert set(subgraph.nodes) == {
+        f"{step_name}a_python_pandas",
+        f"{step_name}b_python_pandas",
+    }
+    expected_edges = [
+        (
+            f"{step_name}a_python_pandas",
+            f"{step_name}b_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    f"{step_name}b_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot(f"{step_name}a_main_output"),
+                "filepaths": None,
+            },
+        ),
+    ]
+    assert len(subgraph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in subgraph.edges(data=True)
+
+
+@pytest.mark.parametrize("step_type", ["loop", "parallel"])
+@pytest.mark.parametrize("single_repeat", [True, False])
+def test__duplicate_template_step(
+    step_type, single_repeat, loop_step_params, parallel_step_params, mocker
+):
     """Test against _duplicate_template_step.
 
     This is not an exhaustive test due to the complicated nature of testing
@@ -639,39 +701,38 @@ def test__duplicate_template_step(step_type):
     they are different objects in memory. This is not the case for methods as
     well as other attribute types.
     """
-    template_step = Step("step")
-    template_step.set_configuration_state(
-        LayeredConfigTree(
-            {
-                "step": {
-                    "implementation": {
-                        "name": "step_implementation",
-                        "configuration": {},
-                    },
-                },
-            },
-        ),
-        {},
-        {},
-    )
+    mocker.patch("easylink.implementation.Implementation._load_metadata")
+    mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     if step_type == "loop":
-        step = LoopStep(template_step)
+        step = LoopStep(**loop_step_params)
         config_key = "iterate"
-    else:  # parellel
-        step = ParallelStep(template_step)
+        step_name = loop_step_params["template_step"].name
+    else:  # parallel
+        step = ParallelStep(**parallel_step_params)
         config_key = "parallel"
-    step.set_configuration_state(
+        step_name = parallel_step_params["template_step"].name
+    implementation_config = [
+        {
+            "implementation": {
+                "name": f"{step_name}_python_pandas",
+            },
+        }
+    ] * (1 if single_repeat else 2)
+    pipeline_params = LayeredConfigTree(
+        {
+            step_name: {
+                config_key: implementation_config,
+            },
+        },
+    )
+    step.set_configuration_state(pipeline_params, {}, {})
+    step.template_step.set_configuration_state(
         LayeredConfigTree(
             {
-                "step": {
-                    config_key: [
-                        {
-                            "implementation": {
-                                "name": "step_implementation",
-                                "configuration": {},
-                            },
-                        },
-                    ],
+                step_name: {
+                    "implementation": {
+                        "name": f"{step_name}_python_pandas",
+                    },
                 },
             },
         ),
@@ -681,7 +742,12 @@ def test__duplicate_template_step(step_type):
 
     duplicate_template_step = step._duplicate_template_step()
 
-    special_handle_attrs = ["_configuration_state", "configuration_state", "step_graph"]
+    special_handle_attrs = [
+        "_configuration_state",
+        "configuration_state",
+        "step_graph",
+        "nodes",
+    ]
     attrs = [
         attr
         for attr in dir(step.template_step)
@@ -702,6 +768,10 @@ def test__duplicate_template_step(step_type):
             type(getattr(duplicate_template_step, attr)),
         )
         assert getattr(step.template_step, attr) != getattr(duplicate_template_step, attr)
+        if attr == "nodes":
+            assert [node.name for node in step.template_step.nodes] == [
+                node.name for node in duplicate_template_step.nodes
+            ]
 
 
 @pytest.fixture
