@@ -1,4 +1,8 @@
-**0.1.4 - 2/18/25**
+**0.1.5 - 2/21/25**
+
+ - Fix handling of templated steps when no looping or parallelism is requested
+
+**0.1.4 - 2/20/25**
 
  - Implement duplicate_template_step method on TemplatedStep class
 
