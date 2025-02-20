@@ -417,7 +417,7 @@ PIPELINE_CONFIG_DICT = {
     "nested_templated_steps": {
         "step_1": {
             "iterate": [
-                {
+                {  # loop 1: parallel with multiplicity
                     "parallel": [
                         {
                             "implementation": {"name": "step_1_python_pandas"},
@@ -429,39 +429,15 @@ PIPELINE_CONFIG_DICT = {
                         },
                     ],
                 },
-                {
+                {  # loop 2: parallel with no multiplicity
                     "parallel": [
                         {
                             "input_data_file": "file1",
                             "implementation": {"name": "step_1_python_pandas"},
                         },
-                        {
-                            "input_data_file": "file2",
-                            "implementation": {"name": "step_1_python_pandas"},
-                        },
                     ],
                 },
-            ],
-        },
-    },
-    "nested_templated_steps_with_hierarchical_steps": {
-        "step_1": {
-            "iterate": [
-                # loop 1
-                {
-                    "parallel": [
-                        {
-                            "implementation": {"name": "step_1_python_pandas"},
-                            "input_data_file": "file1",
-                        },
-                        {
-                            "implementation": {"name": "step_1_python_pandas"},
-                            "input_data_file": "file2",
-                        },
-                    ],
-                },
-                # loop 2
-                {
+                {  # loop 3: missing 'parallel' key, uses hierarchical step
                     "substeps": {
                         "step_1a": {
                             "implementation": {"name": "step_1a_python_pandas"},

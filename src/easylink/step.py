@@ -829,9 +829,7 @@ class TemplatedStep(Step, ABC):
         :class:`LeafConfigurationState`.
         """
         step_config = parent_config[self.name]
-        expanded_config = self._get_config(step_config)
-        num_repeats = len(expanded_config) if self.config_key in step_config else 1
-        if num_repeats == 1:
+        if self.config_key not in step_config:
             # Special handle the step_graph update
             self.step_graph = StepGraph()
             self.template_step.name = self.name
@@ -845,8 +843,10 @@ class TemplatedStep(Step, ABC):
             ]
             self.slot_mappings = {"input": input_mappings, "output": output_mappings}
             # Add the key back to the expanded config
-            expanded_config = LayeredConfigTree({self.name: expanded_config})
+            expanded_config = LayeredConfigTree({self.name: step_config})
         else:
+            expanded_config = self._get_config(step_config)
+            num_repeats = len(expanded_config)
             self.step_graph = self._update_step_graph(num_repeats)
             self.slot_mappings = self._update_slot_mappings(num_repeats)
         # Manually set the configuration state to non-leaf instead of relying
