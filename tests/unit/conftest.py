@@ -1,38 +1,11 @@
 import csv
+import shutil
 from pathlib import Path
 
 import pytest
 import yaml
 
 from easylink.configuration import Config, load_params_from_specification
-
-ENV_CONFIG_DICT = {
-    "minimum": {
-        "computing_environment": "local",
-        "container_engine": "undefined",
-    },
-    "with_spark_and_slurm": {
-        "computing_environment": "slurm",
-        "container_engine": "singularity",
-        "slurm": {
-            "account": "some-account",
-            "partition": "some-partition",
-        },
-        "implementation_resources": {
-            "memory": 42,
-            "cpus": 42,
-            "time_limit": 42,
-        },
-        "spark": {
-            "workers": {
-                "num_workers": 42,
-                "cpus_per_node": 42,
-                "mem_per_node": 42,
-                "time_limit": 42,
-            },
-        },
-    },
-}
 
 PIPELINE_CONFIG_DICT = {
     "good": {
@@ -738,16 +711,17 @@ def _write_csv(filepath: str, rows: list) -> None:
 def test_dir(tmpdir_factory) -> str:
     """Set up a persistent test directory with some of the specification files"""
     tmp_path = tmpdir_factory.getbasetemp()
+    spec_path = Path(__file__).parent.parent / "specifications" / "unit"
 
     # good pipeline.yaml
     with open(f"{str(tmp_path)}/pipeline.yaml", "w") as file:
         yaml.dump({"steps": PIPELINE_CONFIG_DICT["good"]}, file, sort_keys=False)
 
     # dummy environment.yaml
-    with open(f"{str(tmp_path)}/environment.yaml", "w") as file:
-        yaml.dump(ENV_CONFIG_DICT["minimum"], file, sort_keys=False)
-    with open(f"{str(tmp_path)}/spark_environment.yaml", "w") as file:
-        yaml.dump(ENV_CONFIG_DICT["with_spark_and_slurm"], file, sort_keys=False)
+    shutil.copy(spec_path / "environment_minimum.yaml", f"{str(tmp_path)}/environment.yaml")
+    shutil.copy(
+        spec_path / "environment_spark_slurm.yaml", f"{str(tmp_path)}/spark_environment.yaml"
+    )
 
     # input files
     input_dir1 = tmp_path.mkdir("input_data1")

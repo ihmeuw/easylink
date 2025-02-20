@@ -1,13 +1,12 @@
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
 import pytest
+import yaml
 
 from easylink.configuration import Config
 from easylink.runner import _get_environment_args, _get_singularity_args
 from easylink.utilities.paths import EASYLINK_TEMP
-from tests.unit.conftest import ENV_CONFIG_DICT
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
 
@@ -34,7 +33,9 @@ def test_get_environment_args_local(default_config_params):
 )
 def test_get_environment_args_slurm(default_config_params):
     slurm_config_params = default_config_params
-    slurm_config_params["environment"] = ENV_CONFIG_DICT["with_spark_and_slurm"]
+    spec_path = Path(__file__).parent.parent / "specifications" / "unit"
+    with open(f"{spec_path}/environment_spark_slurm.yaml", "r") as file:
+        slurm_config_params["environment"] = yaml.safe_load(file)
     slurm_config = Config(slurm_config_params)
     resources = slurm_config.slurm_resources
     assert _get_environment_args(slurm_config) == [

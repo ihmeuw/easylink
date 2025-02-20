@@ -1,0 +1,15 @@
+computing_environment: slurm
+container_engine: singularity
+slurm:
+  account: some-account
+  partition: some-partition
+implementation_resources:
+  memory: 42
+  cpus: 42
+  time_limit: 42
+spark:
+  workers:
+    num_workers: 42
+    cpus_per_node: 42
+    mem_per_node: 42
+    time_limit: 42
