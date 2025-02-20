@@ -438,61 +438,6 @@ def test_loop_get_implementation_graph(
         assert edge in subgraph.edges(data=True)
 
 
-def test_loop_get_implementation_graph_no_multiplicity_with_template_step(
-    mocker, loop_step_params: dict[str, Any]
-) -> None:
-    """Tests that we can handle looping a template step but with no multiplicity."""
-    mocker.patch("easylink.implementation.Implementation._load_metadata")
-    mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    step = LoopStep(**loop_step_params)
-
-    pipeline_params = LayeredConfigTree(
-        {
-            "step_3": {
-                "substeps": {
-                    "step_3a": {
-                        "implementation": {
-                            "name": "step_3a_python_pandas",
-                            "configuration": {},
-                        },
-                    },
-                    "step_3b": {
-                        "implementation": {
-                            "name": "step_3b_python_pandas",
-                            "configuration": {},
-                        },
-                    },
-                },
-            },
-        },
-    )
-    step.set_configuration_state(pipeline_params, {}, {})
-    subgraph = step.get_implementation_graph()
-
-    assert list(subgraph.nodes) == [
-        "step_3a_python_pandas",
-        "step_3b_python_pandas",
-    ]
-    expected_edges = [
-        (
-            "step_3a_python_pandas",
-            "step_3b_python_pandas",
-            {
-                "input_slot": InputSlot(
-                    "step_3b_main_input",
-                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validate_input_file_dummy,
-                ),
-                "output_slot": OutputSlot("step_3a_main_output"),
-                "filepaths": None,
-            },
-        ),
-    ]
-    assert len(subgraph.edges) == len(expected_edges)
-    for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
-
-
 @pytest.fixture
 def parallel_step_params() -> dict[str, Any]:
     return {
@@ -684,25 +629,32 @@ def test_parallel_step_get_implementation_graph(
         assert edge in subgraph.edges(data=True)
 
 
-def test_parallel_get_implementation_graph_no_multiplicity_with_template_step(
-    mocker, parallel_step_params: dict[str, Any]
+@pytest.mark.parametrize("step_type", ["parallel", "loop"])
+def test_templated_get_implementation_graph_no_multiplicity(
+    step_type, parallel_step_params: dict[str, Any], loop_step_params: dict[str, Any], mocker
 ) -> None:
-    """Tests that we can handle parallelizing a template step but with no multiplicity."""
+    """Tests that we can handle TemplatedStep but with no multiplicity."""
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    step = ParallelStep(**parallel_step_params)
+    if step_type == "parallel":
+        step = ParallelStep(**parallel_step_params)
+        step_name = "step_1"
+    else:  # loop
+        step = LoopStep(**loop_step_params)
+        step_name = "step_3"
     pipeline_params = LayeredConfigTree(
         {
-            "step_1": {
+            step_name: {
+                # No multiplicity, i.e. no "parallel" or "loop" key!
                 "substeps": {
-                    "step_1a": {
+                    f"{step_name}a": {
                         "implementation": {
-                            "name": "step_1a_python_pandas",
+                            "name": f"{step_name}a_python_pandas",
                         },
                     },
-                    "step_1b": {
+                    f"{step_name}b": {
                         "implementation": {
-                            "name": "step_1b_python_pandas",
+                            "name": f"{step_name}b_python_pandas",
                         },
                     },
                 },
@@ -713,20 +665,20 @@ def test_parallel_get_implementation_graph_no_multiplicity_with_template_step(
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
     assert set(subgraph.nodes) == {
-        "step_1a_python_pandas",
-        "step_1b_python_pandas",
+        f"{step_name}a_python_pandas",
+        f"{step_name}b_python_pandas",
     }
     expected_edges = [
         (
-            "step_1a_python_pandas",
-            "step_1b_python_pandas",
+            f"{step_name}a_python_pandas",
+            f"{step_name}b_python_pandas",
             {
                 "input_slot": InputSlot(
-                    "step_1b_main_input",
+                    f"{step_name}b_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
                 ),
-                "output_slot": OutputSlot("step_1a_main_output"),
+                "output_slot": OutputSlot(f"{step_name}a_main_output"),
                 "filepaths": None,
             },
         ),

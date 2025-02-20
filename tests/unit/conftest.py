@@ -447,6 +447,7 @@ PIPELINE_CONFIG_DICT = {
     "nested_templated_steps_with_hierarchical_steps": {
         "step_1": {
             "iterate": [
+                # loop 1
                 {
                     "parallel": [
                         {
@@ -459,6 +460,7 @@ PIPELINE_CONFIG_DICT = {
                         },
                     ],
                 },
+                # loop 2
                 {
                     "substeps": {
                         "step_1a": {

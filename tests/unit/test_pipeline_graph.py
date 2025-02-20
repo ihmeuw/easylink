@@ -742,9 +742,6 @@ def test_nested_templated_steps(default_config_params, test_dir):
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
-@pytest.mark.xfail(
-    reason="TODO [mic-5877]: Nested TemplatedSteps with hierarchical steps are not supported yet."
-)
 def test_nested_templated_steps_with_hierarchical_steps(default_config_params, test_dir):
     config_params = default_config_params
     config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT[
@@ -757,8 +754,89 @@ def test_nested_templated_steps_with_hierarchical_steps(default_config_params, t
     )
     # Ensure that Config instantiates without raising an exception
     pipeline_graph = PipelineGraph(Config(config_params, schema))
-    expected_nodes = ...
-    expected_edges = ...
+    expected_nodes = {
+        "input_data",
+        "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas",
+        "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas",
+        "step_1_loop_2_step_1_loop_2_step_1a_step_1a_python_pandas",
+        "step_1_loop_2_step_1_loop_2_step_1b_step_1b_python_pandas",
+        "results",
+    }
+    expected_edges = {
+        ("input_data", "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        ("input_data", "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas"): {
+            "input_slot_name": "step_1_main_input",
+            "output_slot_name": "all",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(f"{test_dir}/input_data1/file1.csv"),
+                Path(f"{test_dir}/input_data2/file2.csv"),
+            ),
+        },
+        (
+            "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_step_1a_step_1a_python_pandas",
+        ): {
+            "input_slot_name": "step_1a_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(
+                    "intermediate/step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas/result.parquet"
+                ),
+            ),
+        },
+        (
+            "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_step_1a_step_1a_python_pandas",
+        ): {
+            "input_slot_name": "step_1a_main_input",
+            "output_slot_name": "step_1_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(
+                    "intermediate/step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas/result.parquet"
+                ),
+            ),
+        },
+        (
+            "step_1_loop_2_step_1_loop_2_step_1a_step_1a_python_pandas",
+            "step_1_loop_2_step_1_loop_2_step_1b_step_1b_python_pandas",
+        ): {
+            "input_slot_name": "step_1b_main_input",
+            "output_slot_name": "step_1a_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path(
+                    "intermediate/step_1_loop_2_step_1_loop_2_step_1a_step_1a_python_pandas/result.parquet"
+                ),
+            ),
+        },
+        ("step_1_loop_2_step_1_loop_2_step_1b_step_1b_python_pandas", "results"): {
+            "input_slot_name": "result",
+            "output_slot_name": "step_1b_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": None,
+            "filepaths": (
+                Path(
+                    "intermediate/step_1_loop_2_step_1_loop_2_step_1b_step_1b_python_pandas/result.parquet"
+                ),
+            ),
+        },
+    }
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 

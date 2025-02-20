@@ -282,7 +282,7 @@ class Step:
     ) -> None:
         """Sets the configuration state for this ``Step``.
 
-        The so-called 'configuration stat' for a given ``Step`` is backed up by
+        The so-called 'configuration state' for a given ``Step`` is backed up by
         a :class:`ConfigurationState` class and is assigned to its :attr:`_configuration_state`
         attribute. There are two possible ``ConfigurationStates``:
         :class:`LeafConfigurationState` and :class:`NonLeafConfigurationState`.
@@ -829,12 +829,14 @@ class TemplatedStep(Step, ABC):
         :class:`LeafConfigurationState`.
         """
         step_config = parent_config[self.name]
-        sub_config = self._get_config(step_config)
-        num_repeats = len(sub_config) if self.config_key in step_config else 1
+        expanded_config = self._get_config(step_config)
+        num_repeats = len(expanded_config) if self.config_key in step_config else 1
         if num_repeats == 1:
-            # Bypass the usual step graph update if there is no multiplicity.
+            # Special handle the step_graph update
             self.step_graph = StepGraph()
+            self.template_step.name = self.name
             self.step_graph.add_node_from_step(self.template_step)
+            # Special handle the slot_mappings update
             input_mappings = [
                 InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
             ]
@@ -842,20 +844,18 @@ class TemplatedStep(Step, ABC):
                 OutputSlotMapping(slot, self.name, slot) for slot in self.output_slots
             ]
             self.slot_mappings = {"input": input_mappings, "output": output_mappings}
-            step_config = LayeredConfigTree(
-                {key: val for key, val in parent_config.items() if key == self.name}
-            )
-            sub_config = self._get_config(step_config)
+            # Add the key back to the expanded config
+            expanded_config = LayeredConfigTree({self.name: expanded_config})
         else:
             self.step_graph = self._update_step_graph(num_repeats)
             self.slot_mappings = self._update_slot_mappings(num_repeats)
-        # HACK: manually set the configuration state to non-leaf instead of relying
+        # Manually set the configuration state to non-leaf instead of relying
         # on super().get_configuration_state() because that method will erroneously
         # set to leaf state when we have no multiplicity (because in that case the
         # user didn't actually include the config_key in the pipeline specification
         # file, hence num_repeats == 1)
         self._configuration_state = NonLeafConfigurationState(
-            self, sub_config, combined_implementations, input_data_config
+            self, expanded_config, combined_implementations, input_data_config
         )
 
     def _duplicate_template_step(self) -> Step:
