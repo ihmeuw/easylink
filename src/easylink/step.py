@@ -822,7 +822,7 @@ class TemplatedStep(Step, ABC):
 
         Notes
         -----
-        A ``TemplatedStep`` is always assigned a :class:`NonLeafConfigurationState`
+        A ``TemplatedStep`` is *always* assigned a :class:`NonLeafConfigurationState`
         even if it has no multiplicity since (despite having no copies to make) we
         still need to traverse the sub-``Steps`` to get to the one with a single
         :class:`~easylink.implementation.Implementation`, i.e. the one with a
@@ -851,9 +851,8 @@ class TemplatedStep(Step, ABC):
             self.slot_mappings = self._update_slot_mappings(num_repeats)
         # Manually set the configuration state to non-leaf instead of relying
         # on super().get_configuration_state() because that method will erroneously
-        # set to leaf state when we have no multiplicity (because in that case the
-        # user didn't actually include the config_key in the pipeline specification
-        # file, hence num_repeats == 1)
+        # set to leaf state in the event the user didn't include the config_key
+        # in the pipeline specification.
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )

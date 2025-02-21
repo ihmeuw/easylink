@@ -1,0 +1,15 @@
+steps:
+  step_1:
+    implementation:
+      name: step_1_python_pandas
+  step_2:
+    implementation:
+      name: step_2_python_pandas
+  step_3:
+    implementation:
+      name: step_3_python_pandas
+  choice_section:
+    type: foo  # not a supported type
+    step_4:
+      implementation:
+        name: step_4_python_pandas

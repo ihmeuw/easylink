@@ -1,3 +1,7 @@
+**0.1.6 - 2/21/25**
+
+ - Move test dictionaries to yaml files
+
 **0.1.5 - 2/20/25**
 
  - Fix handling of templated steps when no looping or parallelism is requested

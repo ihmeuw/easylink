@@ -1,0 +1,14 @@
+steps:
+  step_1:
+    implementation:
+      name: step_1_python_pandas
+  step_2:
+    implementation:
+      name: step_2_python_pandas
+  step_3:
+    iterate: []
+  choice_section:
+    type: simple
+    step_4:
+      implementation:
+        name: step_4_python_pandas
