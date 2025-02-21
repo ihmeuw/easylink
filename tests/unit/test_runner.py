@@ -1,11 +1,10 @@
 import os
-from pathlib import Path
 
 import pytest
-import yaml
 
 from easylink.configuration import Config
 from easylink.runner import _get_environment_args, _get_singularity_args
+from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.paths import EASYLINK_TEMP
 
 IN_GITHUB_ACTIONS = os.getenv("GITHUB_ACTIONS") == "true"
@@ -31,11 +30,11 @@ def test_get_environment_args_local(default_config_params):
     IN_GITHUB_ACTIONS,
     reason="Github Actions does not have access to our file system and so no SLURM.",
 )
-def test_get_environment_args_slurm(default_config_params):
+def test_get_environment_args_slurm(default_config_params, unit_test_specifications_dir):
     slurm_config_params = default_config_params
-    spec_path = Path(__file__).parent.parent / "specifications" / "unit"
-    with open(f"{spec_path}/environment_spark_slurm.yaml", "r") as file:
-        slurm_config_params["environment"] = yaml.safe_load(file)
+    slurm_config_params["environment"] = load_yaml(
+        f"{unit_test_specifications_dir}/environment_spark_slurm.yaml"
+    )
     slurm_config = Config(slurm_config_params)
     resources = slurm_config.slurm_resources
     assert _get_environment_args(slurm_config) == [

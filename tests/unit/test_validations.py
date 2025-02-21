@@ -19,7 +19,6 @@ from easylink.configuration import (
 from easylink.pipeline import IMPLEMENTATION_ERRORS_KEY, Pipeline
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
-from tests.unit.conftest import PIPELINE_CONFIG_DICT
 
 
 def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
@@ -205,9 +204,13 @@ def test_batch_validation():
         ),
     ],
 )
-def test_pipeline_validation(pipeline, default_config_params, expected_msg, caplog):
+def test_pipeline_validation(
+    pipeline, expected_msg, default_config_params, unit_test_specifications_dir, caplog
+):
     config_params = default_config_params
-    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT[pipeline]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_{pipeline}.yaml"
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(config_params)
@@ -220,18 +223,24 @@ def test_pipeline_validation(pipeline, default_config_params, expected_msg, capl
     )
 
 
-def test_out_of_order_steps(default_config_params):
+def test_out_of_order_steps(default_config_params, unit_test_specifications_dir):
     # Make sure we DON'T raise an exception even if the steps are out of order
     config_params = default_config_params
-    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["out_of_order"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_out_of_order.yaml"
+    )
     Config(config_params)
 
 
-def test_unsupported_step(default_config_params, caplog, mocker):
+def test_unsupported_step(
+    default_config_params, unit_test_specifications_dir, caplog, mocker
+):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["bad_step"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_bad_step.yaml"
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(config_params)
@@ -250,11 +259,15 @@ def test_unsupported_step(default_config_params, caplog, mocker):
     )
 
 
-def test_unsupported_implementation(default_config_params, caplog, mocker):
+def test_unsupported_implementation(
+    default_config_params, unit_test_specifications_dir, caplog, mocker
+):
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     config_params = default_config_params
-    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["bad_implementation"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_bad_implementation.yaml"
+    )
 
     with pytest.raises(SystemExit) as e:
         Config(config_params)

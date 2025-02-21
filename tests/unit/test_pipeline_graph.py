@@ -8,8 +8,9 @@ from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_graph import PipelineGraph
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
+from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.validation_utils import validate_input_file_dummy
-from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS, PIPELINE_CONFIG_DICT
+from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
 
 
 def test__create_graph(default_config: Config, test_dir: str) -> None:
@@ -622,9 +623,13 @@ def test_bad_combined_configuration_raises(
             PipelineGraph(Config(config_params))
 
 
-def test_nested_templated_steps(default_config_params, test_dir):
+def test_nested_templated_steps(
+    default_config_params, test_dir, unit_test_specifications_dir
+) -> None:
     config_params = default_config_params
-    config_params["pipeline"]["steps"] = PIPELINE_CONFIG_DICT["nested_templated_steps"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_nested_templated_steps.yaml"
+    )
     # Need a custom schema to allow nested TemplatedSteps
     schema = PipelineSchema(
         "nested_templated_steps", *TESTING_SCHEMA_PARAMS["nested_templated_steps"]

@@ -1,0 +1,19 @@
+steps:
+  step_1:
+    parallel:
+      - implementation:
+          name: step_1_python_pandas
+        input_data_file: foo
+    implementation:
+      name: step_1_python_pandas
+  step_2:
+    implementation:
+      name: step_2_python_pandas
+  step_3:
+    implementation:
+      name: step_3_python_pandas
+  choice_section:
+    type: simple
+    step_4:
+      implementation:
+        name: step_4_python_pandas
