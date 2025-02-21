@@ -1,4 +1,4 @@
-**0.1.6 - TBD**
+**0.1.6 - 2/21/25**
 
  - Move test dictionaries to yaml files
 
