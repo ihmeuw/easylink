@@ -1,0 +1,18 @@
+steps:
+  step_1:
+    iterate:
+    - substeps:
+        step_1a:
+          implementation:
+            name: step_1a_python_pandas
+        step_1b:
+          combined_implementation_key: step_1a_1b
+    - substeps:
+        step_1a:
+          combined_implementation_key: step_1a_1b
+        step_1b:
+          implementation:
+            name: step_1b_python_pandas
+combined_implementations:
+  step_1a_1b:
+    name: step_1a_and_step_1b_combined_python_pandas

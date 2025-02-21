@@ -6,7 +6,7 @@ ALLOWED_SCHEMA_PARAMS = {
 
 TESTING_SCHEMA_PARAMS = {
     "integration": testing.SINGLE_STEP_SCHEMA_PARAMS,
-    "combined_bad_topology": testing.BAD_COMBINED_TOPOLOGY_SCHEMA_PARAMS,
-    "combined_bad_implementation_names": testing.BAD_COMBINED_TOPOLOGY_SCHEMA_PARAMS,
+    "combine_bad_topology": testing.BAD_COMBINED_TOPOLOGY_SCHEMA_PARAMS,
+    "combine_bad_implementation_names": testing.BAD_COMBINED_TOPOLOGY_SCHEMA_PARAMS,
     "nested_templated_steps": testing.NESTED_TEMPLATED_STEPS_SCHEMA_PARAMS,
 }

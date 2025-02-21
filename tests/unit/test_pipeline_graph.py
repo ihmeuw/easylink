@@ -10,7 +10,6 @@ from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.validation_utils import validate_input_file_dummy
-from tests.unit.conftest import COMBINED_IMPLEMENTATION_CONFIGS
 
 
 def test__create_graph(default_config: Config, test_dir: str) -> None:
@@ -352,10 +351,14 @@ def test_spark_is_required(default_config_params, requires_spark):
     assert pipeline_graph.spark_is_required() == requires_spark
 
 
-def test_merge_combined_implementations(default_config_params, test_dir) -> None:
+def test_merge_combined_implementations(
+    default_config_params, test_dir, unit_test_specifications_dir
+) -> None:
     config_params = default_config_params
     # make step 3 and step 4 a combined implementations
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["two_steps"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_combine_two_steps.yaml"
+    )
     pipeline_graph = PipelineGraph(Config(config_params))
     expected_nodes = {
         "input_data",
@@ -410,10 +413,14 @@ def test_merge_combined_implementations(default_config_params, test_dir) -> None
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
-def test_merge_combined_implementations_iteration(default_config_params, test_dir) -> None:
+def test_merge_combined_implementations_iteration(
+    default_config_params, test_dir, unit_test_specifications_dir
+) -> None:
     config_params = default_config_params
     # make step 3 and step 4 a combined implementations
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_iteration"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_combine_with_iteration.yaml"
+    )
     pipeline_graph = PipelineGraph(Config(config_params))
     expected_nodes = {
         "input_data",
@@ -478,9 +485,13 @@ def test_merge_combined_implementations_iteration(default_config_params, test_di
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
-def test_merge_combined_implementations_parallel(default_config_params, test_dir) -> None:
+def test_merge_combined_implementations_parallel(
+    default_config_params, test_dir, unit_test_specifications_dir
+) -> None:
     config_params = default_config_params
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS["with_parallel"]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_combine_with_parallel.yaml"
+    )
     pipeline_graph = PipelineGraph(Config(config_params))
     expected_nodes = {
         "input_data",
@@ -583,38 +594,44 @@ def test_merge_combined_implementations_parallel(default_config_params, test_dir
     "problem_key, error_msg, use_custom_schema",
     [
         (
-            "with_iteration_cycle",
+            "combine_with_iteration_cycle",
             "The pipeline graph contains a cycle after combining implementations: [('step_3_4', 'step_3_loop_2_step_3_python_pandas', 0), "
             "('step_3_loop_2_step_3_python_pandas', 'step_3_4', 0)]",
             False,
         ),
         (
-            "with_extra_node",
+            "combine_with_extra_node",
             "Pipeline configuration nodes ['step_2', 'step_3', 'step_4'] do not match metadata steps ['step_3', 'step_4'].",
             False,
         ),
         (
-            "with_missing_node",
+            "combine_with_missing_node",
             "Pipeline configuration nodes ['step_4'] do not match metadata steps ['step_3', 'step_4'].",
             False,
         ),
         (
-            "combined_bad_topology",
+            "combine_bad_topology",
             "Pipeline configuration nodes ['step_1b', 'step_1a'] are not topologically consistent with the intended implementations for ['step_1a', 'step_1b']:\nThere is a path from successor step_1b to predecessor step_1a.",
             True,
         ),
         (
-            "combined_bad_implementation_names",
+            "combine_bad_implementation_names",
             "Pipeline configuration nodes ['step_2', 'step_4'] do not match metadata steps ['step_3', 'step_4'].",
             False,
         ),
     ],
 )
 def test_bad_combined_configuration_raises(
-    problem_key, error_msg, use_custom_schema, default_config_params
+    problem_key,
+    error_msg,
+    use_custom_schema,
+    default_config_params,
+    unit_test_specifications_dir,
 ) -> None:
     config_params = default_config_params
-    config_params["pipeline"] = COMBINED_IMPLEMENTATION_CONFIGS[problem_key]
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_{problem_key}.yaml"
+    )
     with pytest.raises(ValueError, match=re.escape(error_msg)):
         if use_custom_schema:
             schema = PipelineSchema(problem_key, *TESTING_SCHEMA_PARAMS[problem_key])

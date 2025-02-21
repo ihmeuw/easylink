@@ -1,0 +1,24 @@
+steps:
+  step_1:
+    parallel:
+    - input_data_file: file1
+      implementation:
+        name: step_1_python_pandas
+    - input_data_file: file2
+      implementation:
+        name: step_1_python_pandas
+    - input_data_file: file2
+      combined_implementation_key: steps_1_and_2_combined
+  step_2:
+    combined_implementation_key: steps_1_and_2_combined
+  step_3:
+    implementation:
+      name: step_3_python_pandas
+  choice_section:
+    type: simple
+    step_4:
+      implementation:
+        name: step_4_python_pandas
+combined_implementations:
+  steps_1_and_2_combined:
+    name: step_1_and_step_2_combined_python_pandas
