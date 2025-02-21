@@ -12,3 +12,45 @@ source = ["easylink"]
 
 [tool.coverage.report]
 show_missing = true
+
+[tool.mypy]
+# This is the global mypy configuration.
+strict = true  # See all the enabled flags `mypy --help | grep -A 10 'Strict mode'`
+disallow_any_unimported = false
+implicit_reexport = true
+exclude = [
+    # Files below here should have their errors fixed and then be removed from this list
+    # You may need to remove a `# mypy: ignore-errors` comment from the file heading as well
+    'docs/source/conf.py',
+    'setup.py',
+    'src/easylink/configuration.py',
+    'src/easylink/graph_components.py',
+    'src/easylink/implementation.py',
+    'src/easylink/pipeline_graph.py',
+    'src/easylink/pipeline.py',
+    'src/easylink/pipeline_schema.py',
+    'src/easylink/rule.py',
+    'src/easylink/runner.py',
+    'src/easylink/step.py',
+    'src/easylink/steps/dev/python_pandas/dummy_step.py',
+    'src/easylink/steps/dev/python_pyspark/dummy_step.py',
+    'src/easylink/steps/dev/test.py',
+    'src/easylink/utilities/validation_utils.py',
+    'tests/integration/test_snakemake_slurm.py',
+    'tests/unit/test_graph_components.py',
+    'tests/unit/test_pipeline_graph.py',
+    'tests/unit/test_pipeline_schema.py',
+    'tests/unit/test_step.py',
+    'tests/unit/test_validations.py',
+]
+
+# ignore specific error codes
+disable_error_code = []
+
+# handle mypy errors when 3rd party packages are not typed.
+[[tool.mypy.overrides]]
+module = [
+    # "scipy.*",
+    # "ipywidgets.*",
+]
+ignore_missing_imports = true

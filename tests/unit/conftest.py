@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import csv
 import shutil
 from pathlib import Path
