@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import subprocess
 import sys
 import tempfile

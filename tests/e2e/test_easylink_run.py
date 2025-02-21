@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import hashlib
 import os
 import subprocess

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 import errno
 
 import pytest

@@ -1,3 +1,4 @@
+# mypy: ignore-errors
 from layered_config_tree import LayeredConfigTree
 
 from easylink.implementation import Implementation
