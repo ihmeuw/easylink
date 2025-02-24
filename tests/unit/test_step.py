@@ -1122,3 +1122,7 @@ def test_complex_choice_step_get_implementation_graph(
     assert len(subgraph.edges) == len(expected_edges)
     for edge in expected_edges:
         assert edge in subgraph.edges(data=True)
+
+
+def test_embarrassingly_parallel_step():
+    ...  # TODO

@@ -8,8 +8,8 @@ from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_graph import PipelineGraph
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
-from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.aggregator_utils import concatenate_datasets
+from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 

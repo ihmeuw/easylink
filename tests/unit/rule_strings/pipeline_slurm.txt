@@ -1,4 +1,14 @@
-from easylink.utilities import validation_utils
+import glob
+import os
+
+from snakemake.exceptions import IncompleteCheckpointException
+from snakemake.io import checkpoint_target
+
+from easylink.utilities import aggregator_utils, splitter_utils, validation_utils
+
+wildcard_constraints:
+    # never include '/' since those are reserved for filepaths
+    chunk="[^/]+",
 
 rule all:
     message: 'Grabbing final output' 
@@ -91,14 +101,54 @@ rule:
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
+checkpoint:
+    name: "split_step_3_python_pandas_step_3_main_input"
+    input: 
+        files=['intermediate/step_2_python_pandas/result.parquet'],
+        validations=['input_validations/step_3_python_pandas/step_3_main_input_validator'],
+    output: 
+        output_dir=directory("intermediate/step_3_python_pandas/input_chunks"),
+        checkpoint_file=touch("intermediate/step_3_python_pandas/input_chunks/checkpoint.txt"),
+    params:
+        input_files=lambda wildcards, input: ",".join(input.files),
+    localrule: True
+    message: "Splitting step_3_python_pandas step_3_main_input into chunks"
+    run:
+        splitter_utils.split_data_by_size(
+            input_files=list(input.files),
+            output_dir=list(output)[0],
+            desired_chunk_size_mb=0.1,
+        )
+def aggregate_step_3_python_pandas_step_3_main_output(wildcards):
+    checkpoint_file = "intermediate/step_3_python_pandas/input_chunks/checkpoint.txt"
+    if os.path.exists(checkpoint_file):
+        checkpoint_output = glob.glob(f"{checkpoints.split_step_3_python_pandas_step_3_main_input.get(**wildcards).output.output_dir}/*/")
+    else:
+        output, _ = checkpoints.split_step_3_python_pandas_step_3_main_input.rule.expand_output(wildcards)
+        raise IncompleteCheckpointException(checkpoints.split_step_3_python_pandas_step_3_main_input.rule, checkpoint_target(output[0]))
+    chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
+    return expand(
+        "intermediate/step_3_python_pandas/processed/{chunk}/result.parquet",
+        chunk=chunks
+    )
+rule:
+    name: "aggregate_step_3_python_pandas_step_3_main_output"
+    input: aggregate_step_3_python_pandas_step_3_main_output
+    output: ['intermediate/step_3_python_pandas/result.parquet']
+    localrule: True
+    message: "Aggregating step_3_python_pandas step_3_main_output"
+    run:
+        aggregator_utils.concatenate_datasets(
+            input_files=list(input),
+            output_filepath="intermediate/step_3_python_pandas/result.parquet",
+        )
 rule:
     name: "step_3_python_pandas"
     message: "Running step_3 implementation: step_3_python_pandas"
     input:
-        dummy_container_main_input_file_paths=['intermediate/step_2_python_pandas/result.parquet'],
-        validations=['input_validations/step_3_python_pandas/step_3_main_input_validator'],
-    output: ['intermediate/step_3_python_pandas/result.parquet']
-    log: "diagnostics/step_3_python_pandas/step_3_python_pandas-output.log"
+        dummy_container_main_input_file_paths=['intermediate/step_3_python_pandas/input_chunks/{chunk}/result.parquet'],        
+    output: ['intermediate/step_3_python_pandas/processed/{chunk}/result.parquet']
+    log: "diagnostics/step_3_python_pandas/step_3_python_pandas-output-{chunk}.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     resources:
         slurm_partition='some-partition',
@@ -108,9 +158,9 @@ rule:
         slurm_extra="--output 'diagnostics/step_3_python_pandas/step_3_python_pandas-slurm-%j.log'"
     shell:
         '''
-        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/step_3_python_pandas/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/step_3_python_pandas/processed/{wildcards.chunk}/result.parquet
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/step_3_python_pandas
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/step_2_python_pandas/result.parquet
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/step_3_python_pandas/input_chunks/{wildcards.chunk}/result.parquet
         python /dummy_step.py > {log} 2>&1
         '''
 rule:

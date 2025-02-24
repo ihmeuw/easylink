@@ -134,14 +134,13 @@ class Pipeline:
         if not self.any_embarrassingly_parallel:
             imports = "from easylink.utilities import validation_utils\n"
         else:
-            imports = """
-import glob
+            imports = """import glob
 import os
 
 from snakemake.exceptions import IncompleteCheckpointException
 from snakemake.io import checkpoint_target
 
-from easylink.utilities import aggregator_utils, splitter_utils, validation_utils"""
+from easylink.utilities import aggregator_utils, splitter_utils, validation_utils\n"""
         with open(self.snakefile_path, "a") as f:
             f.write(imports)
 
@@ -152,7 +151,7 @@ from easylink.utilities import aggregator_utils, splitter_utils, validation_util
                     """
 wildcard_constraints:
     # never include '/' since those are reserved for filepaths
-    chunk="[^/]+","""
+    chunk="[^/]+",\n"""
                 )
 
     def _write_target_rules(self) -> None:

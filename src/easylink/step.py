@@ -14,7 +14,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from typing import Any
 
 from layered_config_tree import LayeredConfigTree

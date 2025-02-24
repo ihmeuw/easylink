@@ -501,17 +501,6 @@ class PipelineGraph(ImplementationGraph):
                         str(
                             Path("intermediate")
                             / node
-                            # / (
-                            #     "processed/{chunk}"
-                            #     if implementation.is_embarrassingly_parallel
-                            #     else ""
-                            # )
-                            # / "/".join(
-                            #     [
-                            #         f"{wc}_{{wildcards.{wc}}}"
-                            #         for wc in implementation.wildcards
-                            #     ]
-                            # )
                             / imp_outputs[edge_attrs["output_slot"].name]
                         ),
                     )

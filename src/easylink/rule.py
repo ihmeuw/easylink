@@ -41,17 +41,15 @@ class Rule(ABC):
         """
         pass
 
-    def get_input_slot_to_split(self, is_embarrassingly_parallel) -> str:
-        if is_embarrassingly_parallel:
-            # FIXME: handle multiple splitting
-            input_slot_to_split = [
-                slot_name
-                for slot_name, slot_attrs in self.input_slots.items()
-                if slot_attrs["splitter"]
-            ][0]
-        else:
-            input_slot_to_split = None
-        return input_slot_to_split
+    @staticmethod
+    def get_input_slots_to_split(input_slots) -> list[str]:
+        # FIXME: handle multiple splitting
+        input_slots_to_split = [
+            slot_name
+            for slot_name, slot_attrs in input_slots.items()
+            if slot_attrs.get("splitter", None)
+        ]
+        return input_slots_to_split
 
 
 @dataclass
@@ -161,10 +159,11 @@ rule:
     def _build_input(self) -> str:
         input_str = f"""
     input:"""
-        input_slot_to_split = self.get_input_slot_to_split(self.is_embarrassingly_parallel)
+        input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
         for slot, attrs in self.input_slots.items():
             env_var = attrs["env_var"].lower()
-            if self.is_embarrassingly_parallel and slot == input_slot_to_split:
+            # FIXME: handle multiple input slots to split
+            if self.is_embarrassingly_parallel and slot == input_slots_to_split[0]:
                 # The input to this is the input_chunks subdir from the checkpoint
                 # rule (which is built by modifying the output of the overall implementation)
                 # FIXME: handle multiple outputs
@@ -220,9 +219,9 @@ rule:
         export DUMMY_CONTAINER_OUTPUT_PATHS={output_files}
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
         for input_slot_name, input_slot_attrs in self.input_slots.items():
-            if input_slot_name == self.get_input_slot_to_split(
-                self.is_embarrassingly_parallel
-            ):
+            input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
+            # FIXME: handle multiple input slots to split
+            if input_slot_name in input_slots_to_split:
                 # The inputs to this come from the input_chunks subdir
                 # FIXME: handle multiple output files
                 input_files = (
@@ -335,7 +334,8 @@ class CheckpointRule(Rule):
         # Replace the output filepath with an input_chunks subdir
         output_dir = os.path.dirname(self.output[0]) + "/input_chunks"
         # FIXME: handle multiple splitting
-        input_slot_to_split = self.get_input_slot_to_split(is_embarrassingly_parallel=True)
+        input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
+        input_slot_to_split = input_slots_to_split[0]
         checkpoint = f"""
 checkpoint:
     name: "split_{self.name}_{input_slot_to_split}"
@@ -409,7 +409,9 @@ class AggregationRule(Rule):
         checkpoint_file_path = (
             os.path.dirname(output_filepath) + "/input_chunks/checkpoint.txt"
         )
-        input_slot_to_split = self.get_input_slot_to_split(is_embarrassingly_parallel=True)
+        input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
+        # FIXME: handle multiple input slots to split
+        input_slot_to_split = input_slots_to_split[0]
         checkpoint_name = f"checkpoints.split_{self.name}_{input_slot_to_split}"
         output_files = (
             os.path.dirname(output_filepath)
