@@ -1089,9 +1089,9 @@ class EmbarrassinglyParallelStep(Step):
         in parallel. Since it happens on the back end, we need to do somewhat unique
         validations during construction. Specifically,
         - one and only one :class:`~easylink.graph_components.InputSlot` *must* include
-            a :attr:`~easylink.graph_components.InputSlot.splitter` method.
+        a :attr:`~easylink.graph_components.InputSlot.splitter` method.
         - all :class:`OutputSlots<easylink.graph_components.OutputSlot>` *must* include
-            an :attr:`~easylink.graph_components.OutputSlot.aggregator` method.
+        an :attr:`~easylink.graph_components.OutputSlot.aggregator` method.
         """
         errors = []
         # assert that only one input slot has a splitter assigned

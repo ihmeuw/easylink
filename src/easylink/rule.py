@@ -372,7 +372,7 @@ class AggregationRule(Rule):
     input_slots: dict[str, dict[str, str | list[str]]]
     """This ``Implementation's`` input slot attributes."""
     output_slot_name: str
-    """Name of the :class:`~easylink.graph_components.OutputSlot."""
+    """Name of the :class:`~easylink.graph_components.OutputSlot`."""
     output_slot: dict[str, str | list[str]]
     """The output slot attributes to create this rule for."""
 
