@@ -45,6 +45,8 @@ class PipelineGraph(ImplementationGraph):
     ----------
     config
         The :class:`~easylink.configuration.Config` object.
+    freeze
+        Whether to freeze the graph after construction.
 
     Notes
     -----
@@ -57,11 +59,12 @@ class PipelineGraph(ImplementationGraph):
     ``Implementations`` to run.
     """
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, freeze: bool = True) -> None:
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
         self._merge_combined_implementations(config)
         self._update_slot_filepaths(config)
-        self = nx.freeze(self)
+        if freeze:
+            self = nx.freeze(self)
 
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.

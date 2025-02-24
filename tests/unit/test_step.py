@@ -9,6 +9,7 @@ rather than try to get full coverage in the e2e tests. It also allows us to test
 future pipeline schema expansion/flexibility in a relative simple manner now.
 """
 
+import re
 from typing import Any
 
 import pytest
@@ -25,12 +26,15 @@ from easylink.graph_components import (
 from easylink.pipeline_schema_constants.development import NODES
 from easylink.step import (
     ChoiceStep,
+    EmbarrassinglyParallelStep,
     HierarchicalStep,
     IOStep,
     LoopStep,
     ParallelStep,
     Step,
 )
+from easylink.utilities.aggregator_utils import concatenate_datasets
+from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 STEP_KEYS = {step.name: step for step in NODES}
@@ -1124,5 +1128,168 @@ def test_complex_choice_step_get_implementation_graph(
         assert edge in subgraph.edges(data=True)
 
 
-def test_embarrassingly_parallel_step():
-    ...  # TODO
+@pytest.fixture
+def embarrassingly_parallel_step_params() -> dict[str, Any]:
+    return {
+        "step_name": "step_3",
+        "input_slots": [
+            InputSlot(
+                "step_3_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+                split_data_by_size,
+            )
+        ],
+        "output_slots": [OutputSlot("step_3_main_output", concatenate_datasets)],
+    }
+
+
+def test_embarrassingly_parallel_step_slots(
+    embarrassingly_parallel_step_params: dict[str, Any]
+) -> None:
+    step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
+    assert step.name == "step_3"
+    assert step.input_slots == {
+        "step_3_main_input": InputSlot(
+            "step_3_main_input",
+            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+            split_data_by_size,
+        ),
+    }
+    assert step.output_slots == {
+        "step_3_main_output": OutputSlot("step_3_main_output", concatenate_datasets)
+    }
+
+
+def test_embarrassingly_parallel_step_get_implementation_graph(
+    embarrassingly_parallel_step_params: dict[str, Any]
+) -> None:
+    step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
+    pipeline_params = LayeredConfigTree(
+        {"step_3": {"implementation": {"name": "step_3_python_pandas", "configuration": {}}}}
+    )
+    step.set_configuration_state(pipeline_params, {}, {})
+    subgraph = step.get_implementation_graph()
+    assert list(subgraph.nodes) == ["step_3_python_pandas"]
+    assert list(subgraph.edges) == []
+
+
+# no splitter, two splitters, less than full aggregators
+@pytest.mark.parametrize(
+    "input_slots, output_slots, expected_error_msg",
+    [
+        (
+            [
+                InputSlot(
+                    "main_input",
+                    "FOO",
+                    validate_input_file_dummy,
+                ),
+            ],
+            [OutputSlot("main_output", concatenate_datasets)],
+            "does not have any input slots with a splitter method assigned",
+        ),
+        (
+            [
+                InputSlot(
+                    "main_input",
+                    "FOO",
+                    validate_input_file_dummy,
+                    split_data_by_size,
+                ),
+                InputSlot(
+                    "secondary_input",
+                    "BAR",
+                    validate_input_file_dummy,
+                    split_data_by_size,
+                ),
+            ],
+            [OutputSlot("main_output", concatenate_datasets)],
+            "has multiple input slots with splitter methods assigned",
+        ),
+        (
+            [
+                InputSlot(
+                    "main_input",
+                    "FOO",
+                    validate_input_file_dummy,
+                    split_data_by_size,
+                ),
+            ],
+            [
+                OutputSlot("main_output", concatenate_datasets),
+                OutputSlot("secondary_output"),
+            ],
+            "has output slots without aggregator methods",
+        ),
+        (
+            [
+                InputSlot(
+                    "main_input",
+                    "FOO",
+                    validate_input_file_dummy,
+                ),
+            ],
+            [
+                OutputSlot("main_output", concatenate_datasets),
+                OutputSlot("secondary_output"),
+            ],
+            [
+                "does not have any input slots with a splitter method assigned",
+                "has output slots without aggregator methods",
+            ],
+        ),
+        (
+            [
+                InputSlot(
+                    "main_input",
+                    "FOO",
+                    validate_input_file_dummy,
+                    split_data_by_size,
+                ),
+                InputSlot(
+                    "secondary_input",
+                    "BAR",
+                    validate_input_file_dummy,
+                    split_data_by_size,
+                ),
+            ],
+            [
+                OutputSlot("main_output", concatenate_datasets),
+                OutputSlot("secondary_output"),
+            ],
+            [
+                "has multiple input slots with splitter methods assigned",
+                "has output slots without aggregator methods",
+            ],
+        ),
+    ],
+    ids=[
+        "no_splitter",
+        "multiple_splitters",
+        "missing_aggregators",
+        "no_splitter_missing_aggregators",
+        "multiple_splitters_missing_aggregators",
+    ],
+)
+def test_embarrassingly_parallel_step__validation(
+    input_slots: list[InputSlot],
+    output_slots: list[OutputSlot],
+    expected_error_msg: str | list[str],
+):
+    step_params = {
+        "step_name": "step",
+        "input_slots": input_slots,
+        "output_slots": output_slots,
+    }
+    with pytest.raises(ValueError) as error:
+        EmbarrassinglyParallelStep(**step_params)
+
+    error_msg = str(error.value)
+
+    expected = (
+        [expected_error_msg] if isinstance(expected_error_msg, str) else expected_error_msg
+    )
+    for msg in expected:
+        assert msg in error_msg

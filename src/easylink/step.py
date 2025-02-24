@@ -1082,13 +1082,45 @@ class EmbarrassinglyParallelStep(Step):
         super().__init__(step_name, input_slots=input_slots, output_slots=output_slots)
         self._validate()
 
-    def _validate(self) -> dict[str, list[str]]:
-        # TODO:
-        # - check that one and only one input slot includes a splitter
-        # - check that all output slots have an aggregator
-        # no returning dict here like other validations. this is NOT something that
-        # is logged to the user. It's our fault.
-        pass
+    def _validate(self) -> None:
+        """Validates the ``EmbarrassinglyParallelStep``.
+
+        ``EmbarrassinglyParallelSteps`` are not configured by the user to be run
+        in parallel. Since it happens on the back end, we need to do somewhat unique
+        validations during construction. Specifically,
+        - one and only one :class:`~easylink.graph_components.InputSlot` *must* include
+            a :attr:`~easylink.graph_components.InputSlot.splitter` method.
+        - all :class:`OutputSlots<easylink.graph_components.OutputSlot>` *must* include
+            an :attr:`~easylink.graph_components.OutputSlot.aggregator` method.
+        """
+        errors = []
+        # assert that only one input slot has a splitter assigned
+        splitters = {
+            slot.name: slot.splitter.__name__
+            for slot in self.input_slots.values()
+            if slot.splitter
+        }
+        if len(splitters) == 0:
+            errors.append(
+                f"EmbarrassinglyParallelStep '{self.step_name}' does not have any input slots with a "
+                "splitter method assigned; one and only one input slot must have a splitter."
+            )
+        if len(splitters) > 1:
+            errors.append(
+                f"EmbarrassinglyParallelStep '{self.step_name}' has multiple input slots with "
+                "splitter methods assigned; one and only one input slot must have a splitter.\n"
+                f"Input slots with splitters: {splitters}"
+            )
+        missing_aggregators = [
+            slot.name for slot in self.output_slots.values() if not slot.aggregator
+        ]
+        if len(missing_aggregators) != 0:
+            errors.append(
+                f"EmbarrassinglyParallelStep '{self.step_name}' has output slots without "
+                f"aggregator methods assigned: {missing_aggregators}"
+            )
+        if errors:
+            raise ValueError("\n".join(errors))
 
 
 class ChoiceStep(Step):
