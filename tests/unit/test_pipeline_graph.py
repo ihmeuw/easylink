@@ -393,7 +393,7 @@ def test_spark_is_required(default_config_params, requires_spark):
         ] = "step_1_python_pyspark"
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
-    assert pipeline_graph.spark_is_required() == requires_spark
+    assert pipeline_graph.spark_is_required == requires_spark
 
 
 def test_get_whether_embarrassingly_parallel(default_config_params):
@@ -414,7 +414,7 @@ def test_any_embarrassingly_parallel(default_config_params, any_embarrassingly_p
     pipeline_graph = PipelineGraph(config, freeze=False)
     if not any_embarrassingly_parallel:
         pipeline_graph.remove_node("step_3_python_pandas")
-    assert pipeline_graph.any_embarrassingly_parallel() == any_embarrassingly_parallel
+    assert pipeline_graph.any_embarrassingly_parallel == any_embarrassingly_parallel
 
 
 def test_merge_combined_implementations(

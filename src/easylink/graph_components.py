@@ -48,11 +48,10 @@ class InputSlot:
     **Note that the function *must* be defined in the** :mod:`easylink.utilities.validation_utils` 
     **module!**"""
     splitter: Callable[[list[str], str, Any], None] | None = None
-    """A function that aggregates and then splits the incoming data to this ``InputSlot``
-    into smaller pieces. The primary purpose of this functionality is to run sections
-    of the pipeline in an embarrassingly parallel manner.
-    **Note that the function *must* be defined in the** :mod:`easylink.utilities.splitter_utils` 
-    **module!**"""
+    """A function that splits the incoming data to this ``InputSlot`` into smaller
+    pieces. The primary purpose of this functionality is to run sections of the 
+    pipeline in an embarrassingly parallel manner. **Note that the function *must* 
+    be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
 
 
 @dataclass(frozen=True)
@@ -77,11 +76,10 @@ class OutputSlot:
     name: str
     """The name of the ``OutputSlot``."""
     aggregator: Callable[[list[str], str], None] = None
-    """A function that aggregates all of the generated to be passed out via this
+    """A function that aggregates all of the generated data to be passed out via this
     ``OutputSlot``. The primary purpose of this functionality is to run sections
-    of the pipeline in an embarrassingly parallel manner.
-    **Note that the function *must* be defined in the** :py:mod:`easylink.utilities.aggregator_utils`
-    **module!**"""
+    of the pipeline in an embarrassingly parallel manner. **Note that the function 
+    *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
 
 
 @dataclass(frozen=True)

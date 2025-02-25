@@ -46,9 +46,6 @@ class Implementation:
         input_slots: Iterable["InputSlot"] = (),
         output_slots: Iterable["OutputSlot"] = (),
         is_embarrassingly_parallel: bool = False,
-        # wildcards: Sequence[
-        #     str
-        # ] = [],  # e.g. the wildcard that we are splitting by, e.g. ["chunk"]
     ):
         self.name = implementation_config.name
         """The name of this ``Implementation``."""

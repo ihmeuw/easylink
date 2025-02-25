@@ -55,8 +55,8 @@ class Pipeline:
     def __init__(self, config: Config):
         self.config = config
         self.pipeline_graph = PipelineGraph(config)
-        self.spark_is_required = self.pipeline_graph.spark_is_required()
-        self.any_embarrassingly_parallel = self.pipeline_graph.any_embarrassingly_parallel()
+        self.spark_is_required = self.pipeline_graph.spark_is_required
+        self.any_embarrassingly_parallel = self.pipeline_graph.any_embarrassingly_parallel
 
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
@@ -245,24 +245,16 @@ use rule start_spark_worker from spark_cluster with:
         node_name
             The name of the ``Implementation`` to write the rule(s) for.
         """
-        implementation = self.pipeline_graph.nodes[node_name]["implementation"]
-        _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
-        input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
-        diagnostics_dir = Path("diagnostics") / node_name
-        diagnostics_dir.mkdir(parents=True, exist_ok=True)
-        resources = (
-            self.config.slurm_resources
-            if self.config.computing_environment == "slurm"
-            else None
-        )
-        validation_files, validation_rules = self._get_validations(node_name, input_slots)
-        is_embarrassingly_parallel = self.pipeline_graph.get_whether_embarrassingly_parallel(
-            node_name
-        )
 
+        input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
+        validation_files, validation_rules = self._get_validations(node_name, input_slots)
         for validation_rule in validation_rules:
             validation_rule.write_to_snakefile(self.snakefile_path)
 
+        _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
+        is_embarrassingly_parallel = self.pipeline_graph.get_whether_embarrassingly_parallel(
+            node_name
+        )
         if is_embarrassingly_parallel:
             CheckpointRule(
                 name=node_name,
@@ -278,6 +270,14 @@ use rule start_spark_worker from spark_cluster with:
                     output_slot=attrs,
                 ).write_to_snakefile(self.snakefile_path)
 
+        implementation = self.pipeline_graph.nodes[node_name]["implementation"]
+        diagnostics_dir = Path("diagnostics") / node_name
+        diagnostics_dir.mkdir(parents=True, exist_ok=True)
+        resources = (
+            self.config.slurm_resources
+            if self.config.computing_environment == "slurm"
+            else None
+        )
         ImplementedRule(
             name=node_name,
             step_name=" and ".join(implementation.metadata_steps),

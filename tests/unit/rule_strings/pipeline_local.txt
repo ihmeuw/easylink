@@ -104,16 +104,15 @@ checkpoint:
     run:
         splitter_utils.split_data_by_size(
             input_files=list(input.files),
-            output_dir=list(output)[0],
+            output_dir=output.output_dir,
             desired_chunk_size_mb=0.1,
         )
-def aggregate_step_3_python_pandas_step_3_main_output(wildcards):
+def get_aggregation_inputs_step_3_python_pandas_step_3_main_output(wildcards):
     checkpoint_file = "intermediate/step_3_python_pandas/input_chunks/checkpoint.txt"
-    if os.path.exists(checkpoint_file):
-        checkpoint_output = glob.glob(f"{checkpoints.split_step_3_python_pandas_step_3_main_input.get(**wildcards).output.output_dir}/*/")
-    else:
+    if not os.path.exists(checkpoint_file):
         output, _ = checkpoints.split_step_3_python_pandas_step_3_main_input.rule.expand_output(wildcards)
         raise IncompleteCheckpointException(checkpoints.split_step_3_python_pandas_step_3_main_input.rule, checkpoint_target(output[0]))
+    checkpoint_output = glob.glob(f"{checkpoints.split_step_3_python_pandas_step_3_main_input.get(**wildcards).output.output_dir}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
     return expand(
         "intermediate/step_3_python_pandas/processed/{chunk}/result.parquet",
@@ -121,7 +120,7 @@ def aggregate_step_3_python_pandas_step_3_main_output(wildcards):
     )
 rule:
     name: "aggregate_step_3_python_pandas_step_3_main_output"
-    input: aggregate_step_3_python_pandas_step_3_main_output
+    input: get_aggregation_inputs_step_3_python_pandas_step_3_main_output
     output: ['intermediate/step_3_python_pandas/result.parquet']
     localrule: True
     message: "Aggregating step_3_python_pandas step_3_main_output"

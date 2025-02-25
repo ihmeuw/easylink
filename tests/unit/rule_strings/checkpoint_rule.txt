@@ -14,6 +14,6 @@ checkpoint:
     run:
         splitter_utils._dummy_splitter(
             input_files=list(input.files),
-            output_dir=list(output)[0],
+            output_dir=output.output_dir,
             desired_chunk_size_mb=0.1,
         )

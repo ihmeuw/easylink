@@ -43,7 +43,6 @@ class Rule(ABC):
 
     @staticmethod
     def get_input_slots_to_split(input_slots) -> list[str]:
-        # FIXME: handle multiple splitting
         input_slots_to_split = [
             slot_name
             for slot_name, slot_attrs in input_slots.items()
@@ -162,11 +161,17 @@ rule:
         input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
         for slot, attrs in self.input_slots.items():
             env_var = attrs["env_var"].lower()
-            # FIXME: handle multiple input slots to split
+            if len(input_slots_to_split) > 1:
+                raise NotImplementedError(
+                    "FIXME [MIC-5883] Multiple input slots to split not yet supported"
+                )
             if self.is_embarrassingly_parallel and slot == input_slots_to_split[0]:
                 # The input to this is the input_chunks subdir from the checkpoint
                 # rule (which is built by modifying the output of the overall implementation)
-                # FIXME: handle multiple outputs
+                if len(self.output) > 1:
+                    raise NotImplementedError(
+                        "FIXME [MIC-5883] Multiple output files not yet supported"
+                    )
                 input_files = [
                     os.path.dirname(self.output[0])
                     + "/input_chunks/{chunk}/"
@@ -201,12 +206,16 @@ rule:
 
     def _build_shell_cmd(self) -> str:
         """Builds the shell command portion of the rule."""
-        # TODO: handle multiple wildcards
-        # output_paths = ",".join(self.output)
-        # wildcards_subdir = "/".join([f"{{wildcards.{wc}}}" for wc in self.wildcards])
-        # and then in shell cmd: export DUMMY_CONTAINER_OUTPUT_PATHS={output_paths}/{wildcards_subdir}
+        # TODO [MIC-5877]: handle multiple wildcards, e.g.
+        #   output_paths = ",".join(self.output)
+        #   wildcards_subdir = "/".join([f"{{wildcards.{wc}}}" for wc in self.wildcards])
+        #   and then in shell cmd: export DUMMY_CONTAINER_OUTPUT_PATHS={output_paths}/{wildcards_subdir}
+        if len(self.output) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output files not yet supported"
+            )
         if self.is_embarrassingly_parallel:
-            output_files = output_files = (
+            output_files = (
                 os.path.dirname(self.output[0])
                 + "/processed/{wildcards.chunk}/"
                 + os.path.basename(self.output[0])
@@ -220,10 +229,12 @@ rule:
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
         for input_slot_name, input_slot_attrs in self.input_slots.items():
             input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
-            # FIXME: handle multiple input slots to split
+            if len(input_slots_to_split) > 1:
+                raise NotImplementedError(
+                    "FIXME [MIC-5883] Multiple input slots to split not yet supported"
+                )
             if input_slot_name in input_slots_to_split:
                 # The inputs to this come from the input_chunks subdir
-                # FIXME: handle multiple output files
                 input_files = (
                     os.path.dirname(self.output[0])
                     + "/input_chunks/{wildcards.chunk}/"
@@ -296,7 +307,7 @@ class CheckpointRule(Rule):
 
     When running an :class:`~easylink.implementation.Implementation` in an embarrassingly
     parallel way, we do not know until runtime how many parallel jobs there will
-    be (e.g. we don't know a priori how many chunks a large incoming dataset will
+    be (e.g. we don't know beforehand how many chunks a large incoming dataset will
     be split into since the incoming dataset isn't created until runtime). The
     snakemake mechanism to handle this dynamic nature is a
     `checkpoint <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution/>`_
@@ -312,6 +323,8 @@ class CheckpointRule(Rule):
     particular wildcard value(s). In this case, we manually raise a Snakemake
     ``IncompleteCheckpointException`` which Snakemake automatically handles
     and leads to a re-evaluation after the checkpoint has successfully passed.
+
+    TODO [MIC-5658]: Thoroughly test this workaround when implementing cacheing.
     """
 
     name: str
@@ -333,8 +346,11 @@ class CheckpointRule(Rule):
         """
         # Replace the output filepath with an input_chunks subdir
         output_dir = os.path.dirname(self.output[0]) + "/input_chunks"
-        # FIXME: handle multiple splitting
         input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
+        if len(input_slots_to_split) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple input slots to split not yet supported"
+            )
         input_slot_to_split = input_slots_to_split[0]
         checkpoint = f"""
 checkpoint:
@@ -352,7 +368,7 @@ checkpoint:
     run:
         splitter_utils.{self.input_slots[input_slot_to_split]["splitter"].__name__}(
             input_files=list(input.files),
-            output_dir=list(output)[0],
+            output_dir=output.output_dir,
             desired_chunk_size_mb=0.1,
         )"""
         return checkpoint
@@ -394,23 +410,29 @@ class AggregationRule(Rule):
         :class:`~CheckpointRule`. If this file does not yet exist when trying to
         aggregate, it means that the checkpoint has not yet been executed for the
         particular wildcard value(s). In this case, we manually raise a Snakemake
-        ``IncompleteCheckpointException`` which Snakemake automatically handles
+        ``IncompleteCheckpointException`` which `Snakemake automatically handles
+        <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution>`_
         and leads to a re-evaluation after the checkpoint has successfully passed.
-
         """
-        aggregator = self._define_aggregator_function()
+        aggregator = self._define_input_function()
         rule = self._define_aggregator_rule()
         return aggregator + rule
 
-    def _define_aggregator_function(self):
-        """Builds the input data aggregator function."""
-        # FIXME: handle multiple filepaths
+    def _define_input_function(self):
+        """Builds the `input function <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#input-functions>`_."""
+        if len(self.output_slot["filepaths"]) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output files not yet supported"
+            )
         output_filepath = self.output_slot["filepaths"][0]
         checkpoint_file_path = (
             os.path.dirname(output_filepath) + "/input_chunks/checkpoint.txt"
         )
         input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
-        # FIXME: handle multiple input slots to split
+        if len(input_slots_to_split) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple input slots to split not yet supported"
+            )
         input_slot_to_split = input_slots_to_split[0]
         checkpoint_name = f"checkpoints.split_{self.name}_{input_slot_to_split}"
         output_files = (
@@ -418,15 +440,13 @@ class AggregationRule(Rule):
             + "/processed/{chunk}/"
             + os.path.basename(output_filepath)
         )
-        # FIXME: handle multiple output slots
         func = f"""
-def aggregate_{self.name}_{self.output_slot_name}(wildcards):
+def get_aggregation_inputs_{self.name}_{self.output_slot_name}(wildcards):
     checkpoint_file = "{checkpoint_file_path}"
-    if os.path.exists(checkpoint_file):
-        checkpoint_output = glob.glob(f"{{{checkpoint_name}.get(**wildcards).output.output_dir}}/*/")
-    else:
+    if not os.path.exists(checkpoint_file):
         output, _ = {checkpoint_name}.rule.expand_output(wildcards)
         raise IncompleteCheckpointException({checkpoint_name}.rule, checkpoint_target(output[0]))
+    checkpoint_output = glob.glob(f"{{{checkpoint_name}.get(**wildcards).output.output_dir}}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
     return expand(
         "{output_files}",
@@ -439,7 +459,7 @@ def aggregate_{self.name}_{self.output_slot_name}(wildcards):
         rule = f"""
 rule:
     name: "aggregate_{self.name}_{self.output_slot_name}"
-    input: aggregate_{self.name}_{self.output_slot_name}
+    input: get_aggregation_inputs_{self.name}_{self.output_slot_name}
     output: {self.output_slot["filepaths"]}
     localrule: True
     message: "Aggregating {self.name} {self.output_slot_name}"

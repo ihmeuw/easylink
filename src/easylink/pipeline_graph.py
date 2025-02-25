@@ -66,6 +66,38 @@ class PipelineGraph(ImplementationGraph):
         if freeze:
             self = nx.freeze(self)
 
+    @property
+    def spark_is_required(self) -> bool:
+        """Whether or not any :class:`~easylink.implementation.Implementation` requires spark."""
+        return any([implementation.requires_spark for implementation in self.implementations])
+
+    @property
+    def any_embarrassingly_parallel(self) -> bool:
+        """Whether or not any :class:`~easylink.implementation.Implementation` is
+        to be run in an embarrassingly parallel way."""
+        return any(
+            [
+                self.get_whether_embarrassingly_parallel(node)
+                for node in self.implementation_nodes
+            ]
+        )
+
+    def get_whether_embarrassingly_parallel(self, node: str) -> bool:
+        """Determines whether a node is to be run in an embarrassingly parallel way.
+
+        Parameters
+        ----------
+        node
+            The node name to determine whether or not it is to be run in an
+            embarrassingly parallel way.
+
+        Returns
+        -------
+            A boolean indicating whether the node is to be run in an embarrassingly
+            parallel way.
+        """
+        return self.nodes[node]["implementation"].is_embarrassingly_parallel
+
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.
 
@@ -95,44 +127,6 @@ class PipelineGraph(ImplementationGraph):
             )
         )
         return input_files, output_files
-
-    def spark_is_required(self) -> bool:
-        """Checks if the pipeline requires spark resources.
-
-        This method returns True if *any* of the nodes in the  ``PipelineGraph``
-        require spark resources.
-
-        Returns
-        -------
-            A boolean indicating whether the pipeline requires Spark.
-        """
-        return any([implementation.requires_spark for implementation in self.implementations])
-
-    def get_whether_embarrassingly_parallel(self, node: str) -> bool:
-        """Determines whether a node is to be run in an embarrassingly parallel way.
-
-        Parameters
-        ----------
-        node
-            The node name to determine whether or not it is to be run in an
-            embarrassingly parallel way.
-
-        Returns
-        -------
-            A boolean indicating whether the node is to be run in an embarrassingly
-            parallel way.
-        """
-        return self.nodes[node]["implementation"].is_embarrassingly_parallel
-
-    def any_embarrassingly_parallel(self) -> bool:
-        """Checks if any node is to be run in an embarrassingly parallel way."""
-        are_any = any(
-            [
-                self.get_whether_embarrassingly_parallel(node)
-                for node in self.implementation_nodes
-            ]
-        )
-        return are_any
 
     def get_io_slot_attributes(
         self, node: str
@@ -168,22 +162,6 @@ class PipelineGraph(ImplementationGraph):
             output_slots, output_filepaths_by_slot
         )
         return input_slot_attrs, output_slot_attrs
-
-    def get_whether_embarrassingly_parallel(self, node: str) -> bool:
-        """Determines whether a node is to be run in an embarrassingly parallel way.
-
-        Parameters
-        ----------
-        node
-            The node name to determine whether or not it is to be run in an
-            embarrassingly parallel way.
-
-        Returns
-        -------
-            A boolean indicating whether the node is to be run in an embarrassingly
-            parallel way.
-        """
-        return self.nodes[node]["implementation"].is_embarrassingly_parallel
 
     ##################
     # Helper Methods #
@@ -570,19 +548,13 @@ class PipelineGraph(ImplementationGraph):
         Parameters
         ----------
         output_slots
-            The :class:`OutputSlots<easylink.graph_components.OutputSlot>` condense.
+            The :class:`OutputSlots<easylink.graph_components.OutputSlot>` to deduplicate.
         filepaths_by_slot
             The filepaths associated with each ``OutputSlot``.
 
         Returns
         -------
             A dictionary mapping ``OutputSlot`` names to their attributes and filepaths.
-
-        Raises
-        ------
-        ValueError
-            If duplicate slot names are found with different environment variables
-            or validators.
         """
         condensed_slot_dict = {}
         for output_slot, filepaths in zip(output_slots, filepaths_by_slot):
