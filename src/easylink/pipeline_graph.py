@@ -228,8 +228,6 @@ class PipelineGraph(ImplementationGraph):
             ) = self._get_combined_slots_and_edges(combined_implementation, nodes_to_merge)
 
             # Create new implementation
-            # TODO: If any of the implemented steps is an EmbarrassinglyParallelStep,
-            # raise immediately (for now - will be a new feature/task)
             new_implementation = Implementation(
                 implemented_steps,
                 combined_implementation_config,

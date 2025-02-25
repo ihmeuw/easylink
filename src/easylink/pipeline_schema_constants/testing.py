@@ -57,6 +57,76 @@ SINGLE_STEP_EDGES = [
 
 SINGLE_STEP_SCHEMA_PARAMS = (SINGLE_STEP_NODES, SINGLE_STEP_EDGES)
 
+TRIPLE_STEP_NODES = [
+    InputStep(),
+    Step(
+        step_name="step_1",
+        input_slots=[
+            InputSlot(
+                name="step_1_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_1_main_output")],
+    ),
+    Step(
+        step_name="step_2",
+        input_slots=[
+            InputSlot(
+                name="step_2_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_2_main_output")],
+    ),
+    Step(
+        step_name="step_3",
+        input_slots=[
+            InputSlot(
+                name="step_3_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_3_main_output")],
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ],
+    ),
+]
+TRIPLE_STEP_EDGES = [
+    EdgeParams(
+        source_node="input_data",
+        target_node="step_1",
+        output_slot="all",
+        input_slot="step_1_main_input",
+    ),
+    EdgeParams(
+        source_node="step_1",
+        target_node="step_2",
+        output_slot="step_1_main_output",
+        input_slot="step_2_main_input",
+    ),
+    EdgeParams(
+        source_node="step_2",
+        target_node="step_3",
+        output_slot="step_2_main_output",
+        input_slot="step_3_main_input",
+    ),
+    EdgeParams(
+        source_node="step_3",
+        target_node="results",
+        output_slot="step_3_main_output",
+        input_slot="result",
+    ),
+]
+
+TRIPLE_STEP_SCHEMA_PARAMS = (TRIPLE_STEP_NODES, TRIPLE_STEP_EDGES)
+
 
 BAD_COMBINED_TOPOLOGY_NODES = [
     InputStep(),
@@ -217,3 +287,68 @@ NESTED_TEMPLATED_STEPS_NODES = [
 
 
 NESTED_TEMPLATED_STEPS_SCHEMA_PARAMS = (NESTED_TEMPLATED_STEPS_NODES, SINGLE_STEP_EDGES)
+
+
+COMBINE_WITH_ITERATION_NODES = [
+    InputStep(),
+    LoopStep(
+        template_step=Step(
+            step_name="step_1",
+            input_slots=[
+                InputSlot(
+                    name="step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                )
+            ],
+            output_slots=[OutputSlot("step_1_main_output")],
+        ),
+        self_edges=[
+            EdgeParams(
+                source_node="step_1",
+                target_node="step_1",
+                output_slot="step_1_main_output",
+                input_slot="step_1_main_input",
+            ),
+        ],
+    ),
+    Step(
+        step_name="step_2",
+        input_slots=[
+            InputSlot(
+                name="step_2_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_2_main_output")],
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ],
+    ),
+]
+DOUBLE_STEP_EDGES = [
+    EdgeParams(
+        source_node="input_data",
+        target_node="step_1",
+        output_slot="all",
+        input_slot="step_1_main_input",
+    ),
+    EdgeParams(
+        source_node="step_1",
+        target_node="step_2",
+        output_slot="step_1_main_output",
+        input_slot="step_2_main_input",
+    ),
+    EdgeParams(
+        source_node="step_2",
+        target_node="results",
+        output_slot="step_2_main_output",
+        input_slot="result",
+    ),
+]
+
+
+COMBINE_WITH_ITERATION_SCHEMA_PARAMS = (COMBINE_WITH_ITERATION_NODES, DOUBLE_STEP_EDGES)

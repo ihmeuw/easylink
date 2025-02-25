@@ -1,19 +1,12 @@
 steps:
   step_1:
-    implementation:
-      name: step_1_python_pandas
-  step_2:
-    implementation:
-      name: step_2_python_pandas
-  step_3:
     iterate:
-    - combined_implementation_key: step_3_4
+    - combined_implementation_key: step_1_2
     - implementation:
-        name: step_3_python_pandas
-  choice_section:
-    type: simple
-    step_4:
-      combined_implementation_key: step_3_4
+        name: step_1_python_pandas
+  step_2:
+    combined_implementation_key: step_1_2
 combined_implementations:
-  step_3_4:
-    name: step_3_and_step_4_combined_python_pandas
+  step_1_2:
+    name: step_1_and_step_2_combined_python_pandas
+

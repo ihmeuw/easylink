@@ -1420,6 +1420,11 @@ class LeafConfigurationState(ConfigurationState):
         implementation_graph = ImplementationGraph()
         implementation_node_name = self._step.implementation_node_name
         if self.is_combined:
+            if isinstance(self._step, EmbarrassinglyParallelStep):
+                raise NotImplementedError(
+                    "Combining implementations with embarrassingly parallel steps "
+                    "is not yet supported."
+                )
             implementation = PartialImplementation(
                 combined_name=self.pipeline_config[COMBINED_IMPLEMENTATION_KEY],
                 schema_step=self._step.step_name,

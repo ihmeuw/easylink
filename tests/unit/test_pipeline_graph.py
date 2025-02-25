@@ -421,20 +421,20 @@ def test_merge_combined_implementations(
     default_config_params, test_dir, unit_test_specifications_dir
 ) -> None:
     config_params = default_config_params
-    # make step 3 and step 4 a combined implementations
+    # combine steps 1 and 2
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_combine_two_steps.yaml"
     )
     pipeline_graph = PipelineGraph(Config(config_params))
     expected_nodes = {
         "input_data",
-        "step_1_python_pandas",
-        "step_2_python_pandas",
-        "step_3_4",
+        "step_1_2",
+        "step_3_python_pandas",
+        "step_4_python_pandas",
         "results",
     }
     expected_edges = {
-        ("input_data", "step_1_python_pandas"): {
+        ("input_data", "step_1_2"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -444,7 +444,7 @@ def test_merge_combined_implementations(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("input_data", "step_3_4"): {
+        ("input_data", "step_4_python_pandas"): {
             "input_slot_name": "step_4_secondary_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -454,26 +454,26 @@ def test_merge_combined_implementations(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("step_1_python_pandas", "step_2_python_pandas"): {
-            "input_slot_name": "step_2_main_input",
-            "output_slot_name": "step_1_main_output",
-            "validator": validate_input_file_dummy,
-            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
-        },
-        ("step_2_python_pandas", "step_3_4"): {
+        ("step_1_2", "step_3_python_pandas"): {
             "input_slot_name": "step_3_main_input",
             "output_slot_name": "step_2_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
+            "filepaths": (Path("intermediate/step_1_2/result.parquet"),),
         },
-        ("step_3_4", "results"): {
+        ("step_3_python_pandas", "step_4_python_pandas"): {
+            "input_slot_name": "step_4_main_input",
+            "output_slot_name": "step_3_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (Path("intermediate/step_3_python_pandas/result.parquet"),),
+        },
+        ("step_4_python_pandas", "results"): {
             "input_slot_name": "result",
             "output_slot_name": "step_4_main_output",
             "validator": validate_input_file_dummy,
             "env_var": None,
-            "filepaths": (Path("intermediate/step_3_4/result.parquet"),),
+            "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
         },
     }
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
@@ -483,21 +483,23 @@ def test_merge_combined_implementations_iteration(
     default_config_params, test_dir, unit_test_specifications_dir
 ) -> None:
     config_params = default_config_params
-    # make step 3 and step 4 a combined implementations
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_combine_with_iteration.yaml"
     )
-    pipeline_graph = PipelineGraph(Config(config_params))
+    schema = PipelineSchema(
+        "combine_with_iteration", *TESTING_SCHEMA_PARAMS["combine_with_iteration"]
+    )
+    config = Config(config_params, schema)
+    pipeline_graph = PipelineGraph(config)
+
     expected_nodes = {
         "input_data",
-        "step_1_python_pandas",
-        "step_2_python_pandas",
-        "step_3_loop_1_step_3_python_pandas",
-        "step_3_4",
+        "step_1_loop_1_step_1_python_pandas",
+        "step_1_2",
         "results",
     }
     expected_edges = {
-        ("input_data", "step_1_python_pandas"): {
+        ("input_data", "step_1_loop_1_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -507,45 +509,21 @@ def test_merge_combined_implementations_iteration(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("input_data", "step_3_4"): {
-            "input_slot_name": "step_4_secondary_input",
-            "output_slot_name": "all",
-            "validator": validate_input_file_dummy,
-            "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-            "filepaths": (
-                Path(f"{test_dir}/input_data1/file1.csv"),
-                Path(f"{test_dir}/input_data2/file2.csv"),
-            ),
-        },
-        ("step_1_python_pandas", "step_2_python_pandas"): {
-            "input_slot_name": "step_2_main_input",
+        ("step_1_loop_1_step_1_python_pandas", "step_1_2"): {
+            "input_slot_name": "step_1_main_input",
             "output_slot_name": "step_1_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
-        },
-        ("step_2_python_pandas", "step_3_loop_1_step_3_python_pandas"): {
-            "input_slot_name": "step_3_main_input",
-            "output_slot_name": "step_2_main_output",
-            "validator": validate_input_file_dummy,
-            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
-        },
-        ("step_3_loop_1_step_3_python_pandas", "step_3_4"): {
-            "input_slot_name": "step_3_main_input",
-            "output_slot_name": "step_3_main_output",
-            "validator": validate_input_file_dummy,
-            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
-                Path("intermediate/step_3_loop_1_step_3_python_pandas/result.parquet"),
+                Path("intermediate/step_1_loop_1_step_1_python_pandas/result.parquet"),
             ),
         },
-        ("step_3_4", "results"): {
+        ("step_1_2", "results"): {
             "input_slot_name": "result",
-            "output_slot_name": "step_4_main_output",
+            "output_slot_name": "step_2_main_output",
             "validator": validate_input_file_dummy,
             "env_var": None,
-            "filepaths": (Path("intermediate/step_3_4/result.parquet"),),
+            "filepaths": (Path("intermediate/step_1_2/result.parquet"),),
         },
     }
     check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
@@ -661,14 +639,14 @@ def test_merge_combined_implementations_parallel(
     [
         (
             "combine_with_iteration_cycle",
-            "The pipeline graph contains a cycle after combining implementations: [('step_3_4', 'step_3_loop_2_step_3_python_pandas', 0), "
-            "('step_3_loop_2_step_3_python_pandas', 'step_3_4', 0)]",
-            False,
+            "The pipeline graph contains a cycle after combining implementations: [('step_1_2', 'step_1_loop_2_step_1_python_pandas', 0), "
+            "('step_1_loop_2_step_1_python_pandas', 'step_1_2', 0)]",
+            True,
         ),
         (
             "combine_with_extra_node",
-            "Pipeline configuration nodes ['step_2', 'step_3', 'step_4'] do not match metadata steps ['step_3', 'step_4'].",
-            False,
+            "Pipeline configuration nodes ['step_1', 'step_2', 'step_3'] do not match metadata steps ['step_1', 'step_2'].",
+            True,
         ),
         (
             "combine_with_missing_node",
