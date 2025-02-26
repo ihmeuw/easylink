@@ -87,6 +87,16 @@ SHARED_OPTIONS = [
         default=False,
         help="Do not save the results in a timestamped sub-directory of ``--output-dir``.",
     ),
+    click.option(
+        "-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True
+    ),
+    click.option(
+        "--pdb",
+        "with_debugger",
+        is_flag=True,
+        help="Drop into python debugger if an error occurs.",
+        hidden=True,
+    ),
 ]
 
 
@@ -129,14 +139,6 @@ def easylink():
         "the pipeline will be run locally."
     ),
 )
-@click.option("-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True)
-@click.option(
-    "--pdb",
-    "with_debugger",
-    is_flag=True,
-    help="Drop into python debugger if an error occurs.",
-    hidden=True,
-)
 def run(
     pipeline_specification: str,
     input_data: str,
@@ -178,17 +180,23 @@ def generate_dag(
     input_data: str,
     output_dir: str | None,
     no_timestamp: bool,
+    verbose: int,
+    with_debugger: bool,
 ) -> None:
     """Generates an image of the proposed pipeline directed acyclic graph (DAG).
 
     This command only generates the DAG image of the pipeline; it does not actually
     run it. To run the pipeline, use the ``easylink run`` command.
     """
+    configure_logging_to_terminal(verbose)
     logger.info("Generating DAG")
     results_dir = get_results_directory(output_dir, no_timestamp).as_posix()
     logger.info(f"Results directory: {results_dir}")
     # TODO [MIC-4493]: Add configuration validation
-    runner.main(
+    main = handle_exceptions(
+        func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
+    )
+    main(
         command="generate_dag",
         pipeline_specification=pipeline_specification,
         input_data=input_data,

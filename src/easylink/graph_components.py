@@ -13,7 +13,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 
@@ -45,8 +45,13 @@ class InputSlot:
     """A function that validates the input data being passed into the pipeline via 
     this ``InputSlot``. If the data is invalid, the function should raise an exception 
     with a descriptive error message which will then be reported to the user.
-    **Note that the function must be defined in the** :mod:`easylink.utilities.validation_utils` 
+    **Note that the function *must* be defined in the** :mod:`easylink.utilities.validation_utils` 
     **module!**"""
+    splitter: Callable[[list[str], str, Any], None] | None = None
+    """A function that splits the incoming data to this ``InputSlot`` into smaller
+    pieces. The primary purpose of this functionality is to run sections of the 
+    pipeline in an embarrassingly parallel manner. **Note that the function *must* 
+    be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
 
 
 @dataclass(frozen=True)
@@ -70,6 +75,11 @@ class OutputSlot:
 
     name: str
     """The name of the ``OutputSlot``."""
+    aggregator: Callable[[list[str], str], None] = None
+    """A function that aggregates all of the generated data to be passed out via this
+    ``OutputSlot``. The primary purpose of this functionality is to run sections
+    of the pipeline in an embarrassingly parallel manner. **Note that the function 
+    *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
 
 
 @dataclass(frozen=True)

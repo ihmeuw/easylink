@@ -1,0 +1,19 @@
+
+rule:
+    name: "foo_rule"
+    message: "Running foo_step implementation: foo_imp"
+    input:
+        dummy_container_main_input_file_paths=['some/path/to/input_chunks/{chunk}/quux'],
+        dummy_container_secondary_input_file_paths=['bar'],
+    output: ['some/path/to/processed/{chunk}/quux']
+    log: "spam/foo_rule-output-{chunk}.log"
+    container: "Multipolarity.sif"
+    shell:
+        '''
+        export DUMMY_CONTAINER_OUTPUT_PATHS=some/path/to/processed/{wildcards.chunk}/quux
+        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=some/path/to/input_chunks/{wildcards.chunk}/quux
+        export DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS=bar
+        export eggs=coconut
+        echo hello world > {log} 2>&1
+        '''

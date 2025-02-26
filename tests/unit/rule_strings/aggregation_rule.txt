@@ -1,0 +1,23 @@
+
+def get_aggregation_inputs_foo_rule_main_output(wildcards):
+    checkpoint_file = "some/path/to/input_chunks/checkpoint.txt"
+    if not os.path.exists(checkpoint_file):
+        output, _ = checkpoints.split_foo_rule_main.rule.expand_output(wildcards)
+        raise IncompleteCheckpointException(checkpoints.split_foo_rule_main.rule, checkpoint_target(output[0]))
+    checkpoint_output = glob.glob(f"{checkpoints.split_foo_rule_main.get(**wildcards).output.output_dir}/*/")
+    chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
+    return expand(
+        "some/path/to/processed/{chunk}/quux",
+        chunk=chunks
+    )
+rule:
+    name: "aggregate_foo_rule_main_output"
+    input: get_aggregation_inputs_foo_rule_main_output
+    output: ['some/path/to/quux']
+    localrule: True
+    message: "Aggregating foo_rule main_output"
+    run:
+        aggregator_utils._dummy_aggregator(
+            input_files=list(input),
+            output_filepath="some/path/to/quux",
+        )

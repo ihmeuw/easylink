@@ -1,0 +1,19 @@
+
+checkpoint:
+    name: "split_foo_rule_main"
+    input: 
+        files=['foo'],
+        validations=['baz'],
+    output: 
+        output_dir=directory("some/path/to/input_chunks"),
+        checkpoint_file=touch("some/path/to/input_chunks/checkpoint.txt"),
+    params:
+        input_files=lambda wildcards, input: ",".join(input.files),
+    localrule: True
+    message: "Splitting foo_rule main into chunks"
+    run:
+        splitter_utils._dummy_splitter(
+            input_files=list(input.files),
+            output_dir=output.output_dir,
+            desired_chunk_size_mb=0.1,
+        )
