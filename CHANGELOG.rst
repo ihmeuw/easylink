@@ -1,3 +1,7 @@
+**0.1.7 - 2/26/25**
+
+ - Implement initial embarrassingly/auto-parallel step support
+
 **0.1.6 - 2/21/25**
 
  - Move test dictionaries to yaml files
