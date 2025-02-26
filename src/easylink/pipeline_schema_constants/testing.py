@@ -1,7 +1,11 @@
 """
-=====================
-Test Pipeline Schemas
-=====================
+=================================
+Testing Pipeline Schema Constants
+=================================
+
+This module contains the parameters required to instantiate various 
+:class:`~easylink.pipeline_schema.PipelineSchema` used strictly for testing purposes.
+
 """
 
 from easylink.graph_components import (

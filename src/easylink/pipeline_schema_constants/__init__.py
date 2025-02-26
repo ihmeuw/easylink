@@ -1,3 +1,14 @@
+"""
+=========================
+Pipeline Schema Constants
+=========================
+
+An EasyLink :class:`~easylink.pipeline_schema.PipelineSchema` is a collection of
+:class:`Steps<easylink.step.Step>` that define a fully supported pipeline. This 
+module defines the nodes and edges required to instantiate such ``PipelineSchemas``.
+
+"""
+
 from easylink.pipeline_schema_constants import development, testing
 
 ALLOWED_SCHEMA_PARAMS = {
