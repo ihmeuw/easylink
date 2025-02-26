@@ -170,7 +170,7 @@ rule:
                 # rule (which is built by modifying the output of the overall implementation)
                 if len(self.output) > 1:
                     raise NotImplementedError(
-                        "FIXME [MIC-5883] Multiple output files not yet supported"
+                        "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
                     )
                 input_files = [
                     os.path.dirname(self.output[0])
@@ -206,15 +206,15 @@ rule:
 
     def _build_shell_cmd(self) -> str:
         """Builds the shell command portion of the rule."""
-        # TODO [MIC-5877]: handle multiple wildcards, e.g.
+        # TODO [MIC-5787]: handle multiple wildcards, e.g.
         #   output_paths = ",".join(self.output)
         #   wildcards_subdir = "/".join([f"{{wildcards.{wc}}}" for wc in self.wildcards])
         #   and then in shell cmd: export DUMMY_CONTAINER_OUTPUT_PATHS={output_paths}/{wildcards_subdir}
-        if len(self.output) > 1:
-            raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple output files not yet supported"
-            )
         if self.is_embarrassingly_parallel:
+            if len(self.output) > 1:
+                raise NotImplementedError(
+                    "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+                )
             output_files = (
                 os.path.dirname(self.output[0])
                 + "/processed/{wildcards.chunk}/"
@@ -412,17 +412,22 @@ class AggregationRule(Rule):
         particular wildcard value(s). In this case, we manually raise a Snakemake
         ``IncompleteCheckpointException`` which `Snakemake automatically handles
         <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution>`_
-        and leads to a re-evaluation after the checkpoint has successfully passed.
+        and leads to a re-evaluation after the checkpoint has successfully passed,
+        i.e. we replicate `Snakemake's behavior <https://github.com/snakemake/snakemake/blob/04f89d330dd94baa51f41bc796392f85bccbd231/snakemake/checkpoints.py#L42>`_.
         """
-        aggregator = self._define_input_function()
+        input_function = self._define_input_function()
         rule = self._define_aggregator_rule()
-        return aggregator + rule
+        return input_function + rule
 
     def _define_input_function(self):
         """Builds the `input function <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#input-functions>`_."""
         if len(self.output_slot["filepaths"]) > 1:
             raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple output files not yet supported"
+                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
+        if len(self.output_slot["filepaths"]) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple slots/files of EmbarrassinglyParallelSteps not yet supported"
             )
         output_filepath = self.output_slot["filepaths"][0]
         checkpoint_file_path = (

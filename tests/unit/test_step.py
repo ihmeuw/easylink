@@ -1175,7 +1175,6 @@ def test_embarrassingly_parallel_step_get_implementation_graph(
     assert list(subgraph.edges) == []
 
 
-# no splitter, two splitters, less than full aggregators
 @pytest.mark.parametrize(
     "input_slots, output_slots, expected_error_msg",
     [

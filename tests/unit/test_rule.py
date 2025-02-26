@@ -127,6 +127,38 @@ def test_embarrassingly_parallel_rule_build_rule():
     _check_rule(rule, file_path)
 
 
+def test_embarrassingly_parallel_rule_build_rule_multiple_outputs_raises():
+    """Temporary test against raising if an embarrassingly parallel step has multiple outputs."""
+    rule = ImplementedRule(
+        name="foo_rule",
+        step_name="foo_step",
+        implementation_name="foo_imp",
+        input_slots={
+            "main": {
+                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                "filepaths": ["foo"],
+                "validator": _dummy_validator,
+                "splitter": _dummy_splitter,
+            },
+        },
+        validations=["baz"],
+        output=["some/path/to/quux", "some/other/path/to/something"],
+        resources=None,
+        envvars={"eggs": "coconut"},
+        diagnostics_dir="spam",
+        image_path="Multipolarity.sif",
+        script_cmd="echo hello world",
+        requires_spark=False,
+        is_embarrassingly_parallel=True,
+    )
+
+    with pytest.raises(
+        NotImplementedError,
+        match="Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported",
+    ):
+        rule.build_rule()
+
+
 def test_checkpoint_build_rule():
     rule = CheckpointRule(
         name="foo_rule",
