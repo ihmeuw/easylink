@@ -1,7 +1,13 @@
 """
-============================
-Development Pipeline Schemas
-============================
+=====================================
+Development Pipeline Schema Constants
+=====================================
+
+This module contains the parameters required to instantiate the 
+:class:`~easylink.pipeline_schema.PipelineSchema` for the so-called "development" 
+pipeline, i.e. the pipeline used strictly for development purposes as opposed to
+real entity resolution since it relies on dummy steps, data, and containers.
+
 """
 
 from easylink.graph_components import (

@@ -22,8 +22,8 @@ class PipelineSchema(HierarchicalStep):
     """All possible pipelines that are fully supported.
 
     A ``PipelineSchema`` is a :class:`~easylink.step.HierarchicalStep` whose
-    :class:`~easylink.graph_components.StepGraph` determines all possible allowable pipelines.
-    The fundamental purpose of this class is to validate that the user-requested
+    :class:`~easylink.graph_components.StepGraph` determines all possible allowable
+    pipelines. The fundamental purpose of this class is to validate that the user-requested
     pipeline to run conforms to a fully supported pipeline.
 
     See :class:`~easylink.step.HierarchicalStep` for inherited attributes.
