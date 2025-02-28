@@ -58,8 +58,8 @@ NODES = [
         output_slots=[OutputSlot("step_2_main_output")],
     ),
     LoopStep(
+        step_name="step_3",
         template_step=EmbarrassinglyParallelStep(
-            step_name="step_3",
             input_slots=[
                 InputSlot(
                     name="step_3_main_input",
@@ -256,6 +256,8 @@ NODES = [
             },
         },
     ),
+    EmbarassinglyParallelStep(HierarchicalStep([step_7, step_8]))
+    EmbrarassinglyParallelStep(nodes=[step_7,step_8], edges= 7->8))
     OutputStep(
         input_slots=[
             InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
