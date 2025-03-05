@@ -596,8 +596,8 @@ class HierarchicalStep(Step):
                 return super().validate_step(
                     step_config, combined_implementations, input_data_config
                 )
-        return self._validate_nonleaf(
-            step_config, combined_implementations, input_data_config
+        return _validate_step_graph(
+            self.step_graph, step_config, combined_implementations, input_data_config
         )
 
     def set_configuration_state(
@@ -648,30 +648,6 @@ class HierarchicalStep(Step):
         for edge in edges:
             step_graph.add_edge_from_params(edge)
         return step_graph
-
-    def _validate_nonleaf(
-        self,
-        parent_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> dict[str, list[str]]:
-        """Validates a non-leaf ``HierarchicalStep``."""
-        errors = {}
-        nodes = self.step_graph.nodes
-        for node in nodes:
-            step = nodes[node]["step"]
-            if isinstance(step, IOStep):
-                continue
-            else:
-                step_errors = step.validate_step(
-                    parent_config, combined_implementations, input_data_config
-                )
-            if step_errors:
-                errors.update(step_errors)
-        extra_steps = set(parent_config.keys()) - set(nodes)
-        for extra_step in extra_steps:
-            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
-        return errors
 
 
 class TemplatedStep(Step, ABC):
@@ -1195,7 +1171,7 @@ class EmbarrassinglyParallelStep(Step):
             raise ValueError("\n".join(errors))
 
 
-class ChoiceStep(HierarchicalStep):
+class ChoiceStep(Step):
     """A type of :class:`Step` that allows for choosing between multiple paths.
 
     A ``ChoiceStep`` allows a user to select a single path from a set of possible
@@ -1317,8 +1293,8 @@ class ChoiceStep(HierarchicalStep):
         self.step_graph = self._update_step_graph(subgraph)
         self.slot_mappings = self._update_slot_mappings(subgraph)
         # NOTE: A ChoiceStep is by definition non-leaf step
-        return self._validate_nonleaf(
-            chosen_step_config, combined_implementations, input_data_config
+        return _validate_step_graph(
+            self.step_graph, chosen_step_config, combined_implementations, input_data_config
         )
 
     def set_configuration_state(
@@ -1737,3 +1713,32 @@ class NonLeafConfigurationState(ConfigurationState):
             step.set_configuration_state(
                 self.parent_config, self.combined_implementations, self.input_data_config
             )
+
+
+####################
+# Helper functions #
+####################
+
+
+def _validate_step_graph(
+    step_graph: StepGraph,
+    parent_config: LayeredConfigTree,
+    combined_implementations: LayeredConfigTree,
+    input_data_config: LayeredConfigTree,
+) -> dict[str, list[str]]:
+    """Validates the nodes of a :class:`~easylink.graph_components.StepGraph`."""
+    errors = {}
+    for node in step_graph.nodes:
+        step = step_graph.nodes[node]["step"]
+        if isinstance(step, IOStep):
+            continue
+        else:
+            step_errors = step.validate_step(
+                parent_config, combined_implementations, input_data_config
+            )
+        if step_errors:
+            errors.update(step_errors)
+    extra_steps = set(parent_config.keys()) - set(step_graph.nodes)
+    for extra_step in extra_steps:
+        errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
+    return errors
