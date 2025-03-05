@@ -90,7 +90,6 @@ def test_io_get_implementation_graph(
     io_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = IOStep(**io_step_params)
-    step._get_config(default_config["pipeline"]["steps"])
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["io"]
     assert list(subgraph.edges) == []
@@ -991,45 +990,47 @@ def test_simple_choice_step_get_implementation_graph(
     step = ChoiceStep(**choice_step_params)
 
     # Test get_implementation_graph for single step (no substeps)
-    pipeline_dict = {
-        "choice_section": {
-            "type": "simple",
-            "step_4": {
-                "implementation": {
-                    "name": "step_4_python_pandas",
+    pipeline_params = LayeredConfigTree(
+        {
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "implementation": {
+                        "name": "step_4_python_pandas",
+                    },
                 },
             },
-        },
-    }
-    pipeline_params = LayeredConfigTree(pipeline_dict)
+        }
+    )
     # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
-    step.validate_step(pipeline_dict["choice_section"], {}, {})
+    step.validate_step(pipeline_params, {}, {})
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
     # Test get_implementation_graph for a step with substeps
-    pipeline_dict = {
-        "choice_section": {
-            "type": "simple",
-            "step_4": {
-                "substeps": {
-                    "step_4a": {
-                        "implementation": {
-                            "name": "step_4a_python_pandas",
+    pipeline_params = LayeredConfigTree(
+        {
+            "choice_section": {
+                "type": "simple",
+                "step_4": {
+                    "substeps": {
+                        "step_4a": {
+                            "implementation": {
+                                "name": "step_4a_python_pandas",
+                            },
                         },
-                    },
-                    "step_4b": {
-                        "implementation": {
-                            "name": "step_4b_r",
+                        "step_4b": {
+                            "implementation": {
+                                "name": "step_4b_r",
+                            },
                         },
                     },
                 },
             },
-        },
-    }
-    pipeline_params = LayeredConfigTree(pipeline_dict)
+        }
+    )
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
@@ -1061,33 +1062,34 @@ def test_complex_choice_step_get_implementation_graph(
 ) -> None:
     step = ChoiceStep(**choice_step_params)
 
-    pipeline_dict = {
-        "choice_section": {
-            "type": "complex",
-            "step_5": {
-                "implementation": {
-                    "name": "step_5_python_pandas",
+    pipeline_params = LayeredConfigTree(
+        {
+            "choice_section": {
+                "type": "complex",
+                "step_5": {
+                    "implementation": {
+                        "name": "step_5_python_pandas",
+                    },
+                },
+                "step_6": {
+                    "iterate": [
+                        {
+                            "implementation": {
+                                "name": "step_6_python_pandas",
+                            },
+                        },
+                        {
+                            "implementation": {
+                                "name": "step_6_python_pandas",
+                            },
+                        },
+                    ],
                 },
             },
-            "step_6": {
-                "iterate": [
-                    {
-                        "implementation": {
-                            "name": "step_6_python_pandas",
-                        },
-                    },
-                    {
-                        "implementation": {
-                            "name": "step_6_python_pandas",
-                        },
-                    },
-                ],
-            },
-        },
-    }
-    pipeline_params = LayeredConfigTree(pipeline_dict)
+        }
+    )
     # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
-    step.validate_step(pipeline_dict["choice_section"], {}, {})
+    step.validate_step(pipeline_params, {}, {})
     step.set_configuration_state(pipeline_params, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [

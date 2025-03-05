@@ -80,9 +80,9 @@ class PipelineSchema(HierarchicalStep):
         the user-provided pipeline specification file.
         """
         return super().validate_step(
-            step_config={"substeps": pipeline_config["steps"]},
-            combined_implementations=pipeline_config["combined_implementations"],
-            input_data_config=input_data_config,
+            LayeredConfigTree({self.name: {"substeps": pipeline_config.steps.to_dict()}}),
+            pipeline_config.combined_implementations,
+            input_data_config,
         )
 
     def validate_inputs(self, input_data: dict[str, Path]) -> dict[str, list[str]]:
@@ -133,8 +133,8 @@ class PipelineSchema(HierarchicalStep):
         """
         self._configuration_state = NonLeafConfigurationState(
             self,
-            pipeline_config["steps"],
-            combined_implementations=pipeline_config["combined_implementations"],
+            pipeline_config.steps,
+            combined_implementations=pipeline_config.combined_implementations,
             input_data_config=input_data_config,
         )
 
