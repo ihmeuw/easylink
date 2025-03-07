@@ -631,7 +631,7 @@ class HierarchicalStep(Step):
             else:
                 configuration_state_type = LeafConfigurationState
         else:
-            # We handle this on the backend and require non-leaf here
+            # Substeps must be used, so we require non-leaf here
             configuration_state_type = NonLeafConfigurationState
         self._configuration_state = configuration_state_type(
             self, step_config, combined_implementations, input_data_config
@@ -1458,6 +1458,7 @@ class LeafConfigurationState(ConfigurationState):
             if self.is_combined
             else self.parent_config.implementation
             if not self._step.name in self.parent_config
+            # TODO: add comment about this line unless it gets taken care of by config refactor
             else self.parent_config[self._step.name]["implementation"]
         )
 
@@ -1721,6 +1722,8 @@ class NonLeafConfigurationState(ConfigurationState):
 ####################
 
 
+# TODO: move this back to HierarchicalStep once we refactor ChoiceSteps so that
+# each choice is a single Step instead of nodes/edges.
 def _validate_step_graph(
     step_graph: StepGraph,
     parent_config: LayeredConfigTree,
