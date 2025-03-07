@@ -586,15 +586,16 @@ class HierarchicalStep(Step):
         all issues in one pass. In these cases, new errors may be found after the
         initial ones are handled.
         """
-        step_config = parent_config
         if self.user_configurable:
-            if not self.name in step_config:
+            if not self.name in parent_config:
                 return {f"step {self.name}": ["The step is not configured."]}
-            if self.config_key in step_config[self.name]:
-                step_config = step_config[self.name][self.config_key]
+            step_config = parent_config[self.name]
+            if self.config_key in step_config:
+                step_config = step_config[self.config_key]
             else:
+                # This is a leaf step; validate the parent config as-is.
                 return super().validate_step(
-                    step_config, combined_implementations, input_data_config
+                    parent_config, combined_implementations, input_data_config
                 )
         return _validate_step_graph(
             self.step_graph, step_config, combined_implementations, input_data_config
