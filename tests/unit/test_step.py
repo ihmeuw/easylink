@@ -59,7 +59,7 @@ def test_implementation_node_name(
     basic_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = Step(**basic_step_params)
-    step.set_configuration_state(default_config["pipeline"]["steps"], {}, {})
+    step.set_configuration_state(default_config["pipeline"]["steps"][step.name], {}, {})
     node_name = step.implementation_node_name
     assert node_name == "step_1_python_pandas"
 
@@ -112,7 +112,7 @@ def test_basic_step_get_implementation_graph(
     basic_step_params: dict[str, Any], default_config: Config
 ) -> None:
     step = Step(**basic_step_params)
-    step.set_configuration_state(default_config["pipeline"]["steps"], {}, {})
+    step.set_configuration_state(default_config["pipeline"]["steps"][step.name], {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_1_python_pandas"]
     assert list(subgraph.edges) == []
@@ -183,36 +183,34 @@ def test_hierarchical_step_get_implementation_graph(
     hierarchical_step_params: dict[str, Any]
 ) -> None:
     step = HierarchicalStep(**hierarchical_step_params)
-    pipeline_params = LayeredConfigTree(
-        {"step_4": {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}}
+    step_config = LayeredConfigTree(
+        {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
     # Test get_implementation_graph for substeps
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            "step_4": {
-                "substeps": {
-                    "step_4a": {
-                        "implementation": {
-                            "name": "step_4a_python_pandas",
-                            "configuration": {},
-                        }
-                    },
-                    "step_4b": {
-                        "implementation": {
-                            "name": "step_4b_python_pandas",
-                            "configuration": {},
-                        }
-                    },
+            "substeps": {
+                "step_4a": {
+                    "implementation": {
+                        "name": "step_4a_python_pandas",
+                        "configuration": {},
+                    }
+                },
+                "step_4b": {
+                    "implementation": {
+                        "name": "step_4b_python_pandas",
+                        "configuration": {},
+                    }
                 },
             },
         }
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_4a_python_pandas",
@@ -366,42 +364,40 @@ def test_loop_get_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
-    step.set_configuration_state(default_config["pipeline"]["steps"], {}, {})
+    step.set_configuration_state(default_config["pipeline"]["steps"][step.name], {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
 
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            "step_3": {
-                "iterate": [
-                    {
-                        "implementation": {
-                            "name": "step_3_python_pandas",
-                            "configuration": {},
-                        },
+            "iterate": [
+                {
+                    "implementation": {
+                        "name": "step_3_python_pandas",
+                        "configuration": {},
                     },
-                    {
-                        "substeps": {
-                            "step_3a": {
-                                "implementation": {
-                                    "name": "step_3a_python_pandas",
-                                    "configuration": {},
-                                },
+                },
+                {
+                    "substeps": {
+                        "step_3a": {
+                            "implementation": {
+                                "name": "step_3a_python_pandas",
+                                "configuration": {},
                             },
-                            "step_3b": {
-                                "implementation": {
-                                    "name": "step_3b_python_pandas",
-                                    "configuration": {},
-                                },
+                        },
+                        "step_3b": {
+                            "implementation": {
+                                "name": "step_3b_python_pandas",
+                                "configuration": {},
                             },
                         },
                     },
-                ],
-            },
+                },
+            ],
         },
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_3_loop_1_step_3_python_pandas",
@@ -523,60 +519,58 @@ def test_parallel_step_get_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = ParallelStep(**parallel_step_params)
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            "step_1": {
-                "parallel": [
-                    {
-                        "substeps": {
-                            "step_1a": {
-                                "implementation": {
-                                    "name": "step_1a_python_pandas",
-                                },
-                            },
-                            "step_1b": {
-                                "implementation": {
-                                    "name": "step_1b_python_pandas",
-                                },
+            "parallel": [
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {
+                                "name": "step_1a_python_pandas",
                             },
                         },
-                        "input_data_file": "input_file_1",
-                    },
-                    {
-                        "substeps": {
-                            "step_1a": {
-                                "implementation": {
-                                    "name": "step_1a_python_pandas",
-                                },
-                            },
-                            "step_1b": {
-                                "implementation": {
-                                    "name": "step_1b_python_pandas",
-                                },
+                        "step_1b": {
+                            "implementation": {
+                                "name": "step_1b_python_pandas",
                             },
                         },
-                        "input_data_file": "input_file_2",
                     },
-                    {
-                        "substeps": {
-                            "step_1a": {
-                                "implementation": {
-                                    "name": "step_1a_python_pandas",
-                                },
-                            },
-                            "step_1b": {
-                                "implementation": {
-                                    "name": "step_1b_python_pandas",
-                                },
+                    "input_data_file": "input_file_1",
+                },
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {
+                                "name": "step_1a_python_pandas",
                             },
                         },
-                        "input_data_file": "input_file_3",
+                        "step_1b": {
+                            "implementation": {
+                                "name": "step_1b_python_pandas",
+                            },
+                        },
                     },
-                ],
-            },
+                    "input_data_file": "input_file_2",
+                },
+                {
+                    "substeps": {
+                        "step_1a": {
+                            "implementation": {
+                                "name": "step_1a_python_pandas",
+                            },
+                        },
+                        "step_1b": {
+                            "implementation": {
+                                "name": "step_1b_python_pandas",
+                            },
+                        },
+                    },
+                    "input_data_file": "input_file_3",
+                },
+            ],
         },
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert set(subgraph.nodes) == {
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
@@ -641,47 +635,43 @@ def test_templated_get_implementation_graph_no_multiplicity(
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     if step_type == "parallel":
         step = ParallelStep(**parallel_step_params)
-        step_name = "step_1"
     else:  # loop
         step = LoopStep(**loop_step_params)
-        step_name = "step_3"
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            step_name: {
-                # No multiplicity, i.e. no "parallel" or "loop" key!
-                "substeps": {
-                    f"{step_name}a": {
-                        "implementation": {
-                            "name": f"{step_name}a_python_pandas",
-                        },
-                    },
-                    f"{step_name}b": {
-                        "implementation": {
-                            "name": f"{step_name}b_python_pandas",
-                        },
+            # No multiplicity, i.e. no "parallel" or "loop" key!
+            "substeps": {
+                f"{step.name}a": {
+                    "implementation": {
+                        "name": f"{step.name}a_python_pandas",
                     },
                 },
-                "input_data_file": "input_file_1",
+                f"{step.name}b": {
+                    "implementation": {
+                        "name": f"{step.name}b_python_pandas",
+                    },
+                },
             },
+            "input_data_file": "input_file_1",
         },
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert set(subgraph.nodes) == {
-        f"{step_name}a_python_pandas",
-        f"{step_name}b_python_pandas",
+        f"{step.name}a_python_pandas",
+        f"{step.name}b_python_pandas",
     }
     expected_edges = [
         (
-            f"{step_name}a_python_pandas",
-            f"{step_name}b_python_pandas",
+            f"{step.name}a_python_pandas",
+            f"{step.name}b_python_pandas",
             {
                 "input_slot": InputSlot(
-                    f"{step_name}b_main_input",
+                    f"{step.name}b_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
                 ),
-                "output_slot": OutputSlot(f"{step_name}a_main_output"),
+                "output_slot": OutputSlot(f"{step.name}a_main_output"),
                 "filepaths": None,
             },
         ),
@@ -709,33 +699,27 @@ def test__duplicate_template_step(
     if step_type == "loop":
         step = LoopStep(**loop_step_params)
         config_key = "iterate"
-        step_name = loop_step_params["template_step"].name
     else:  # parallel
         step = ParallelStep(**parallel_step_params)
         config_key = "parallel"
-        step_name = parallel_step_params["template_step"].name
     implementation_config = [
         {
             "implementation": {
-                "name": f"{step_name}_python_pandas",
+                "name": f"{step.name}_python_pandas",
             },
         }
     ] * (1 if single_repeat else 2)
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            step_name: {
-                config_key: implementation_config,
-            },
+            config_key: implementation_config,
         },
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     step.template_step.set_configuration_state(
         LayeredConfigTree(
             {
-                step_name: {
-                    "implementation": {
-                        "name": f"{step_name}_python_pandas",
-                    },
+                "implementation": {
+                    "name": f"{step.name}_python_pandas",
                 },
             },
         ),
@@ -990,48 +974,44 @@ def test_simple_choice_step_get_implementation_graph(
     step = ChoiceStep(**choice_step_params)
 
     # Test get_implementation_graph for single step (no substeps)
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            "choice_section": {
-                "type": "simple",
-                "step_4": {
-                    "implementation": {
-                        "name": "step_4_python_pandas",
-                    },
+            "type": "simple",
+            "step_4": {
+                "implementation": {
+                    "name": "step_4_python_pandas",
                 },
             },
         }
     )
     # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
-    step.validate_step(pipeline_params, {}, {})
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.validate_step(step_config, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_4_python_pandas"]
     assert list(subgraph.edges) == []
 
     # Test get_implementation_graph for a step with substeps
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            "choice_section": {
-                "type": "simple",
-                "step_4": {
-                    "substeps": {
-                        "step_4a": {
-                            "implementation": {
-                                "name": "step_4a_python_pandas",
-                            },
+            "type": "simple",
+            "step_4": {
+                "substeps": {
+                    "step_4a": {
+                        "implementation": {
+                            "name": "step_4a_python_pandas",
                         },
-                        "step_4b": {
-                            "implementation": {
-                                "name": "step_4b_r",
-                            },
+                    },
+                    "step_4b": {
+                        "implementation": {
+                            "name": "step_4b_r",
                         },
                     },
                 },
             },
         }
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_4a_python_pandas",
@@ -1062,35 +1042,33 @@ def test_complex_choice_step_get_implementation_graph(
 ) -> None:
     step = ChoiceStep(**choice_step_params)
 
-    pipeline_params = LayeredConfigTree(
+    step_config = LayeredConfigTree(
         {
-            "choice_section": {
-                "type": "complex",
-                "step_5": {
-                    "implementation": {
-                        "name": "step_5_python_pandas",
+            "type": "complex",
+            "step_5": {
+                "implementation": {
+                    "name": "step_5_python_pandas",
+                },
+            },
+            "step_6": {
+                "iterate": [
+                    {
+                        "implementation": {
+                            "name": "step_6_python_pandas",
+                        },
                     },
-                },
-                "step_6": {
-                    "iterate": [
-                        {
-                            "implementation": {
-                                "name": "step_6_python_pandas",
-                            },
+                    {
+                        "implementation": {
+                            "name": "step_6_python_pandas",
                         },
-                        {
-                            "implementation": {
-                                "name": "step_6_python_pandas",
-                            },
-                        },
-                    ],
-                },
+                    },
+                ],
             },
         }
     )
-    # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
-    step.validate_step(pipeline_params, {}, {})
-    step.set_configuration_state(pipeline_params, {}, {})
+    # Need to validate in order to set the step graph and mappings prior to calling `set_configuration_state`
+    step.validate_step(step_config, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == [
         "step_5_python_pandas",
@@ -1168,10 +1146,10 @@ def test_embarrassingly_parallel_step_get_implementation_graph(
     embarrassingly_parallel_step_params: dict[str, Any]
 ) -> None:
     step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
-    pipeline_params = LayeredConfigTree(
-        {"step_3": {"implementation": {"name": "step_3_python_pandas", "configuration": {}}}}
+    step_config = LayeredConfigTree(
+        {"implementation": {"name": "step_3_python_pandas", "configuration": {}}}
     )
-    step.set_configuration_state(pipeline_params, {}, {})
+    step.set_configuration_state(step_config, {}, {})
     subgraph = step.get_implementation_graph()
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []

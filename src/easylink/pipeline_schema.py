@@ -80,7 +80,7 @@ class PipelineSchema(HierarchicalStep):
         the user-provided pipeline specification file.
         """
         return super().validate_step(
-            LayeredConfigTree({self.name: {"substeps": pipeline_config.steps.to_dict()}}),
+            LayeredConfigTree({"substeps": pipeline_config.steps.to_dict()}),
             pipeline_config.combined_implementations,
             input_data_config,
         )
