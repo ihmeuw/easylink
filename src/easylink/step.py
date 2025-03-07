@@ -152,7 +152,7 @@ class Step:
         """
         step = self
         implementation_name = (
-            self.configuration_state.parent_config[step.name][COMBINED_IMPLEMENTATION_KEY]
+            self.configuration_state.step_config[COMBINED_IMPLEMENTATION_KEY]
             if self.configuration_state.is_combined
             else self.configuration_state.implementation_config.name
         )
@@ -182,7 +182,7 @@ class Step:
 
     def validate_step(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
@@ -190,9 +190,9 @@ class Step:
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``Step``, i.e. includes the step name
-            in the outer keys.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
@@ -216,9 +216,6 @@ class Step:
         errors = {}
         metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
         error_key = f"step {self.name}"
-        if not self.name in parent_config:
-            return {f"step {self.name}": ["The step is not configured."]}
-        step_config = parent_config[self.name]
         if (
             "implementation" not in step_config
             and COMBINED_IMPLEMENTATION_KEY not in step_config
@@ -293,7 +290,7 @@ class Step:
 
     def set_configuration_state(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> None:
@@ -301,16 +298,16 @@ class Step:
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``Step``, i.e. includes the step name
-            in the outer keys.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
         self._configuration_state = LeafConfigurationState(
-            self, parent_config, combined_implementations, input_data_config
+            self, step_config, combined_implementations, input_data_config
         )
 
     def get_implementation_slot_mappings(self) -> dict[str, list[SlotMapping]]:
@@ -358,7 +355,7 @@ class IOStep(Step):
 
     def validate_step(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
@@ -378,7 +375,7 @@ class IOStep(Step):
 
     def set_configuration_state(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> None:
@@ -386,17 +383,16 @@ class IOStep(Step):
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``Step``, i.e. includes the step name
-            in the outer keys. For ``IOSteps``, this will always be the entire
-            pipeline configuration.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
         self._configuration_state = LeafConfigurationState(
-            self, parent_config, combined_implementations, input_data_config
+            self, step_config, combined_implementations, input_data_config
         )
 
     def get_implementation_graph(self) -> ImplementationGraph:
@@ -439,7 +435,7 @@ class InputStep(IOStep):
 
     def set_configuration_state(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> None:
@@ -452,17 +448,16 @@ class InputStep(IOStep):
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``Step``, i.e. includes the step name
-            in the outer keys. For ``IOSteps``, this will always be the entire
-            pipeline configuration.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
         super().set_configuration_state(
-            parent_config, combined_implementations, input_data_config
+            step_config, combined_implementations, input_data_config
         )
         for input_data_key in input_data_config:
             self.output_slots[input_data_key] = OutputSlot(name=input_data_key)
@@ -550,7 +545,7 @@ class HierarchicalStep(Step):
 
     def validate_step(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
@@ -558,9 +553,9 @@ class HierarchicalStep(Step):
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``HierarchicalStep``, i.e. includes
-            the step name in the outer keys.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
@@ -587,15 +582,12 @@ class HierarchicalStep(Step):
         initial ones are handled.
         """
         if self.user_configurable:
-            if not self.name in parent_config:
-                return {f"step {self.name}": ["The step is not configured."]}
-            step_config = parent_config[self.name]
             if self.config_key in step_config:
                 step_config = step_config[self.config_key]
             else:
-                # This is a leaf step; validate the parent config as-is.
+                # This is a leaf step
                 return super().validate_step(
-                    parent_config, combined_implementations, input_data_config
+                    step_config, combined_implementations, input_data_config
                 )
         return _validate_step_graph(
             self.step_graph, step_config, combined_implementations, input_data_config
@@ -603,7 +595,7 @@ class HierarchicalStep(Step):
 
     def set_configuration_state(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> None:
@@ -615,18 +607,17 @@ class HierarchicalStep(Step):
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``HierarchicalStep``, i.e. includes
-            the step name in the outer keys.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        step_config = parent_config
         if self.user_configurable:
-            if self.config_key in step_config[self.name]:
-                step_config = step_config[self.name][self.config_key]
+            if self.config_key in step_config:
+                step_config = step_config[self.config_key]
                 configuration_state_type = NonLeafConfigurationState
             else:
                 configuration_state_type = LeafConfigurationState
@@ -742,7 +733,7 @@ class TemplatedStep(Step, ABC):
 
     def validate_step(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
@@ -755,9 +746,9 @@ class TemplatedStep(Step, ABC):
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``HierarchicalStep``, i.e. includes
-            the step name in the outer keys.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
@@ -779,15 +770,13 @@ class TemplatedStep(Step, ABC):
         all issues in one pass. In these cases, new errors may be found after the
         initial ones are handled.
         """
-        if not self.name in parent_config:
-            return {f"step {self.name}": ["The step is not configured."]}
-        if not self.config_key in parent_config[self.name]:
-            # This is a leaf step; validate the parent config as-is.
+        if not self.config_key in step_config:
+            # This is a leaf step
             return self.template_step.validate_step(
-                parent_config, combined_implementations, input_data_config
+                step_config, combined_implementations, input_data_config
             )
 
-        step_config = parent_config[self.name][self.config_key]
+        step_config = step_config[self.config_key]
 
         if not isinstance(step_config, list):
             return {
@@ -812,10 +801,9 @@ class TemplatedStep(Step, ABC):
                 parallel_errors["Input Data Key"] = [
                     f"Input data file '{input_data_file}' not found in input data configuration."
                 ]
-            # need to put the outer name keys back on for compatibility when validating.
             parallel_errors.update(
                 self.template_step.validate_step(
-                    LayeredConfigTree({self.name: parallel_config}),
+                    LayeredConfigTree(parallel_config),
                     combined_implementations,
                     input_data_config,
                 )
@@ -852,7 +840,7 @@ class TemplatedStep(Step, ABC):
 
     def set_configuration_state(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
@@ -860,8 +848,9 @@ class TemplatedStep(Step, ABC):
 
         Parameters
         ----------
-        parent_config
-            The configuration of the parent ``Step``.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
@@ -875,7 +864,6 @@ class TemplatedStep(Step, ABC):
         :class:`~easylink.implementation.Implementation`, i.e. the one with a
         :class:`LeafConfigurationState`.
         """
-        step_config = parent_config[self.name]
         if self.config_key not in step_config:
             # Special handle the step_graph update
             self.step_graph = StepGraph()
@@ -1222,7 +1210,7 @@ class ChoiceStep(Step):
 
     def validate_step(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
@@ -1230,9 +1218,9 @@ class ChoiceStep(Step):
 
         Parameters
         ----------
-        parent_config
-            The parent configuration of this ``ChoiceStep``, i.e. includes
-            the step name in the outer keys.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
@@ -1264,9 +1252,6 @@ class ChoiceStep(Step):
         We do not attempt to validate the subgraph here if the 'type' key is unable
         to be validated.
         """
-        if not self.name in parent_config:
-            return {f"step {self.name}": ["The step is not configured."]}
-        step_config = parent_config[self.name]
         chosen_type = step_config.get("type")
         # Handle problems with the 'type' key
         if not chosen_type:
@@ -1290,7 +1275,7 @@ class ChoiceStep(Step):
                 ]
             }
 
-        # HACK: Update the step graph and mappings here because we need them for validation
+        # HACK: Create the step graph and mappings here because we need them for validation
         self.step_graph = self._update_step_graph(subgraph)
         self.slot_mappings = self._update_slot_mappings(subgraph)
         # NOTE: A ChoiceStep is by definition non-leaf step
@@ -1300,7 +1285,7 @@ class ChoiceStep(Step):
 
     def set_configuration_state(
         self,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
@@ -1308,8 +1293,9 @@ class ChoiceStep(Step):
 
         Parameters
         ----------
-        parent_config
-            The configuration of the parent ``Step``.
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
         combined_implementations
             The configuration for any implementations to be combined.
         input_data_config
@@ -1323,13 +1309,12 @@ class ChoiceStep(Step):
         prior to :meth:`set_configuration_state`, but the validations itself actually
         requires the updated ``StepGraph`` and ``SlotMappings``.
         """
-
-        chosen_parent_config = LayeredConfigTree(
-            {key: value for key, value in parent_config[self.name].items() if key != "type"}
+        chosen_step_config = LayeredConfigTree(
+            {key: value for key, value in step_config.items() if key != "type"}
         )
         # ChoiceSteps by definition cannot be in a LeafConfigurationState.
         self._configuration_state = NonLeafConfigurationState(
-            self, chosen_parent_config, combined_implementations, input_data_config
+            self, chosen_step_config, combined_implementations, input_data_config
         )
 
     @staticmethod
@@ -1386,9 +1371,9 @@ class ConfigurationState(ABC):
     ----------
     step
         The ``Step`` this ``ConfigurationState`` is tied to.
-    parent_config
-        The parent configuration of the ``Step`` we are setting the state for; must
-        include the step name in the outer keys.
+    step_config
+        The internal configuration of this ``Step`` we are setting the state
+        for; it should not include the ``Step's`` name.
     combined_implementations
         The configuration for any implementations to be combined.
     input_data_config
@@ -1399,15 +1384,15 @@ class ConfigurationState(ABC):
     def __init__(
         self,
         step: Step,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
         self._step = step
         """The ``Step`` this ``ConfigurationState`` is tied to."""
-        self.parent_config = parent_config
-        """The parent configuration of the ``Step`` we are setting the state for; must
-        include the step name in the outer keys."""
+        self.step_config = step_config
+        """The internal configuration of this ``Step`` we are setting the state 
+        for; it should not include the ``Step's`` name."""
         self.combined_implementations = combined_implementations
         """The relevant configuration if the ``Step's`` ``Implementation``
         has been requested to be combined with that of a different ``Step``."""
@@ -1448,18 +1433,15 @@ class LeafConfigurationState(ConfigurationState):
     @property
     def is_combined(self) -> bool:
         """Whether or not this ``Step`` is combined with another ``Step``."""
-        return COMBINED_IMPLEMENTATION_KEY in self.parent_config[self._step.name]
+        return COMBINED_IMPLEMENTATION_KEY in self.step_config
 
     @property
     def implementation_config(self) -> LayeredConfigTree:
         """The ``Step's`` specific ``Implementation`` configuration."""
         return (
-            self.combined_implementations[self.parent_config[COMBINED_IMPLEMENTATION_KEY]]
+            self.combined_implementations[self.step_config[COMBINED_IMPLEMENTATION_KEY]]
             if self.is_combined
-            else self.parent_config.implementation
-            if not self._step.name in self.parent_config
-            # TODO: add comment about this line unless it gets taken care of by config refactor
-            else self.parent_config[self._step.name]["implementation"]
+            else self.step_config.implementation
         )
 
     def get_implementation_graph(self) -> ImplementationGraph:
@@ -1473,10 +1455,8 @@ class LeafConfigurationState(ConfigurationState):
         -------
             The ``ImplementationGraph`` related to this ``Step``.
         """
-
         step = self._step
         implementation_graph = ImplementationGraph()
-        implementation_node_name = step.implementation_node_name
         if self.is_combined:
             if isinstance(step, EmbarrassinglyParallelStep):
                 raise NotImplementedError(
@@ -1484,7 +1464,7 @@ class LeafConfigurationState(ConfigurationState):
                     "is not yet supported."
                 )
             implementation = PartialImplementation(
-                combined_name=self.parent_config[step.name][COMBINED_IMPLEMENTATION_KEY],
+                combined_name=self.step_config[COMBINED_IMPLEMENTATION_KEY],
                 schema_step=step.step_name,
                 input_slots=step.input_slots.values(),
                 output_slots=step.output_slots.values(),
@@ -1498,7 +1478,7 @@ class LeafConfigurationState(ConfigurationState):
                 is_embarrassingly_parallel=isinstance(step, EmbarrassinglyParallelStep),
             )
         implementation_graph.add_node_from_implementation(
-            implementation_node_name,
+            step.implementation_node_name,
             implementation=implementation,
         )
         return implementation_graph
@@ -1539,10 +1519,10 @@ class LeafConfigurationState(ConfigurationState):
             for mapping in mappings:
                 # FIXME [MIC-5771]: Fix ParallelSteps
                 if (
-                    "input_data_file" in self.parent_config
+                    "input_data_file" in self.step_config
                     and edge.source_node == "pipeline_graph_input_data"
                 ):
-                    edge.output_slot = self.parent_config["input_data_file"]
+                    edge.output_slot = self.step_config["input_data_file"]
                 imp_edge = mapping.remap_edge(edge)
                 implementation_edges.append(imp_edge)
         else:
@@ -1564,9 +1544,10 @@ class NonLeafConfigurationState(ConfigurationState):
     ----------
     step
         The ``Step`` this ``ConfigurationState`` is tied to.
-    parent_config
-        The parent configuration of the ``Step`` we are setting the state for; must
-        include the step name in the outer keys.
+    step_config
+        The internal configuration of this ``Step`` we are setting the state
+        for; it should not include the ``Step's`` name (though it must include
+        the sub-step names).
     combined_implementations
         The configuration for any implementations to be combined.
     input_data_config
@@ -1597,11 +1578,11 @@ class NonLeafConfigurationState(ConfigurationState):
     def __init__(
         self,
         step: Step,
-        parent_config: LayeredConfigTree,
+        step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        super().__init__(step, parent_config, combined_implementations, input_data_config)
+        super().__init__(step, step_config, combined_implementations, input_data_config)
         if not step.step_graph:
             raise ValueError(
                 "NonLeafConfigurationState requires a subgraph upon which to operate, "
@@ -1712,8 +1693,11 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for node in self._nodes:
             step = self._nodes[node]["step"]
+            # NOTE: The subgraph may or may not have the step name as an outer key at
+            # this point (e.g. I/O nodes, the chosen step from a ChoiceStep, etc.)
+            step_config = self.step_config.get(step.name, self.step_config)
             step.set_configuration_state(
-                self.parent_config, self.combined_implementations, self.input_data_config
+                step_config, self.combined_implementations, self.input_data_config
             )
 
 
@@ -1726,7 +1710,7 @@ class NonLeafConfigurationState(ConfigurationState):
 # each choice is a single Step instead of nodes/edges.
 def _validate_step_graph(
     step_graph: StepGraph,
-    parent_config: LayeredConfigTree,
+    step_config: LayeredConfigTree,
     combined_implementations: LayeredConfigTree,
     input_data_config: LayeredConfigTree,
 ) -> dict[str, list[str]]:
@@ -1737,12 +1721,15 @@ def _validate_step_graph(
         if isinstance(step, IOStep):
             continue
         else:
-            step_errors = step.validate_step(
-                parent_config, combined_implementations, input_data_config
-            )
+            if step.name not in step_config:
+                step_errors = {f"step {step.name}": ["The step is not configured."]}
+            else:
+                step_errors = step.validate_step(
+                    step_config[step.name], combined_implementations, input_data_config
+                )
         if step_errors:
             errors.update(step_errors)
-    extra_steps = set(parent_config.keys()) - set(step_graph.nodes)
+    extra_steps = set(step_config.keys()) - set(step_graph.nodes)
     for extra_step in extra_steps:
         errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
     return errors
