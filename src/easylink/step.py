@@ -776,9 +776,9 @@ class TemplatedStep(Step, ABC):
                 step_config, combined_implementations, input_data_config
             )
 
-        step_config = step_config[self.config_key]
+        sub_config = step_config[self.config_key]
 
-        if not isinstance(step_config, list):
+        if not isinstance(sub_config, list):
             return {
                 f"step {self.name}": [
                     f"{self.node_prefix.capitalize()} instances must be formatted "
@@ -786,7 +786,7 @@ class TemplatedStep(Step, ABC):
                 ]
             }
 
-        if len(step_config) == 0:
+        if len(sub_config) == 0:
             return {
                 f"step {self.name}": [
                     f"No {self.node_prefix} instances configured under '{self.config_key}' key."
@@ -794,7 +794,7 @@ class TemplatedStep(Step, ABC):
             }
 
         errors = defaultdict(dict)
-        for i, parallel_config in enumerate(step_config):
+        for i, parallel_config in enumerate(sub_config):
             parallel_errors = {}
             input_data_file = parallel_config.get("input_data_file")
             if input_data_file and not input_data_file in input_data_config:
@@ -1693,9 +1693,10 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for node in self._nodes:
             step = self._nodes[node]["step"]
-            # NOTE: The subgraph may or may not have the step name as an outer key at
-            # this point (e.g. I/O nodes, the chosen step from a ChoiceStep, etc.)
-            step_config = self.step_config.get(step.name, self.step_config)
+            # IOStep names never appear in configuration
+            step_config = (
+                self.step_config if isinstance(step, IOStep) else self.step_config[step.name]
+            )
             step.set_configuration_state(
                 step_config, self.combined_implementations, self.input_data_config
             )
