@@ -589,8 +589,8 @@ class HierarchicalStep(Step):
                 return super().validate_step(
                     step_config, combined_implementations, input_data_config
                 )
-        return _validate_step_graph(
-            self.step_graph, step_config, combined_implementations, input_data_config
+        return self._validate_step_graph(
+            step_config, combined_implementations, input_data_config
         )
 
     def set_configuration_state(
@@ -640,6 +640,32 @@ class HierarchicalStep(Step):
         for edge in edges:
             step_graph.add_edge_from_params(edge)
         return step_graph
+
+    def _validate_step_graph(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
+        """Validates the nodes of a :class:`~easylink.graph_components.StepGraph`."""
+        errors = {}
+        for node in self.step_graph.nodes:
+            step = self.step_graph.nodes[node]["step"]
+            if isinstance(step, IOStep):
+                continue
+            else:
+                if step.name not in step_config:
+                    step_errors = {f"step {step.name}": ["The step is not configured."]}
+                else:
+                    step_errors = step.validate_step(
+                        step_config[step.name], combined_implementations, input_data_config
+                    )
+            if step_errors:
+                errors.update(step_errors)
+        extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
+        for extra_step in extra_steps:
+            errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
+        return errors
 
 
 class TemplatedStep(Step, ABC):
@@ -1160,7 +1186,7 @@ class EmbarrassinglyParallelStep(Step):
             raise ValueError("\n".join(errors))
 
 
-class ChoiceStep(Step):
+class ChoiceStep(HierarchicalStep):
     """A type of :class:`Step` that allows for choosing between multiple paths.
 
     A ``ChoiceStep`` allows a user to select a single path from a set of possible
@@ -1279,8 +1305,8 @@ class ChoiceStep(Step):
         self.step_graph = self._update_step_graph(subgraph)
         self.slot_mappings = self._update_slot_mappings(subgraph)
         # NOTE: A ChoiceStep is by definition non-leaf step
-        return _validate_step_graph(
-            self.step_graph, chosen_step_config, combined_implementations, input_data_config
+        return self._validate_step_graph(
+            chosen_step_config, combined_implementations, input_data_config
         )
 
     def set_configuration_state(
@@ -1700,37 +1726,3 @@ class NonLeafConfigurationState(ConfigurationState):
             step.set_configuration_state(
                 step_config, self.combined_implementations, self.input_data_config
             )
-
-
-####################
-# Helper functions #
-####################
-
-
-# TODO: move this back to HierarchicalStep once we refactor ChoiceSteps so that
-# each choice is a single Step instead of nodes/edges.
-def _validate_step_graph(
-    step_graph: StepGraph,
-    step_config: LayeredConfigTree,
-    combined_implementations: LayeredConfigTree,
-    input_data_config: LayeredConfigTree,
-) -> dict[str, list[str]]:
-    """Validates the nodes of a :class:`~easylink.graph_components.StepGraph`."""
-    errors = {}
-    for node in step_graph.nodes:
-        step = step_graph.nodes[node]["step"]
-        if isinstance(step, IOStep):
-            continue
-        else:
-            if step.name not in step_config:
-                step_errors = {f"step {step.name}": ["The step is not configured."]}
-            else:
-                step_errors = step.validate_step(
-                    step_config[step.name], combined_implementations, input_data_config
-                )
-        if step_errors:
-            errors.update(step_errors)
-    extra_steps = set(step_config.keys()) - set(step_graph.nodes)
-    for extra_step in extra_steps:
-        errors[f"step {extra_step}"] = [f"{extra_step} is not a valid step."]
-    return errors
