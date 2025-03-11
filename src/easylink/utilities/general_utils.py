@@ -1,4 +1,11 @@
 # mypy: ignore-errors
+"""
+=================
+General Utilities
+=================
+
+This module contains various utility functions.
+"""
 import errno
 import functools
 import shutil
@@ -14,7 +21,26 @@ from loguru import logger
 def handle_exceptions(
     func: Callable, exceptions_logger: Any, with_debugger: bool
 ) -> Callable:
-    """Drops a user into an interactive debugger if func raises an error."""
+    """Wraps a function to handle exceptions by logging and optionally dropping into a debugger.
+
+    Parameters
+    ----------
+    func
+        The wrapped function that is executed and monitored for exceptions.
+    exceptions_logger
+        The logging object used to log exceptions that occur during function execution.
+    with_debugger
+        Whether or not to drop into an interactive debugger upon encountering an exception.
+
+    Returns
+    -------
+        A wrapped version of `func` that includes the exception handling logic.
+
+    Notes
+    -----
+    Exceptions `BdbQuit` and `KeyboardInterrupt` are re-raised _without_ logging
+    to allow for normal debugger and program exit behaviors.
+    """
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
@@ -35,13 +61,18 @@ def handle_exceptions(
     return wrapped
 
 
-def configure_logging_to_terminal(verbose: int):
-    """Sets up logging to ``sys.stdout``.
+def configure_logging_to_terminal(verbose: int) -> None:
+    """Configures logging output to the terminal with optional verbosity levels.
 
     Parameters
     ----------
     verbose
-        Verbosity of the logger.
+        An integer indicating the verbosity level of the logging output. Higher
+        values produce more detailed logging information.
+
+    Notes
+    -----
+    This function clears any default logging configuration before applying the new settings.
     """
     logger.remove(0)  # Clear default configuration
     _add_logging_sink(sys.stdout, verbose, colorize=True)
@@ -49,21 +80,20 @@ def configure_logging_to_terminal(verbose: int):
 
 def _add_logging_sink(
     sink: TextIO, verbose: int, colorize: bool = False, serialize: bool = False
-):
+) -> None:
     """Adds a logging sink to the global process logger.
 
     Parameters
     ----------
     sink
-        Either a file or system file descriptor like ``sys.stdout``.
+        The output stream to which log messages will be directed, e.g. ``sys.stdout``.
     verbose
-        Verbosity of the logger.
+        Verbosity of the logger. The log level is set to INFO if 0 and DEBUG otherwise.
     colorize
         Whether to use the colorization options from :mod:`loguru`.
     serialize
         Whether the logs should be converted to JSON before they're dumped
         to the logging sink.
-
     """
     message_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <green>{elapsed}</green> | "
@@ -104,7 +134,6 @@ def exit_with_validation_error(error_msg: dict) -> None:
     SystemExit
         Exits the program with an EINVAL (invalid argument) code due to
         previously-determined validation errors.
-
     """
 
     logger.error(
@@ -118,5 +147,12 @@ def exit_with_validation_error(error_msg: dict) -> None:
 
 
 def is_on_slurm() -> bool:
-    """Returns True if the current environment is a SLURM cluster."""
+    """Returns True if the current environment is a SLURM cluster.
+
+    Notes
+    -----
+    This function simply checks for the presence of the `sbatch` command to _infer_
+    if SLURM is installed. It does _not_ check if SLURM is currently active or
+    managing jobs.
+    """
     return shutil.which("sbatch") is not None
