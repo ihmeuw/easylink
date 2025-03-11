@@ -1218,10 +1218,13 @@ class ChoiceStep(Step):
     :attr:`Step.config_key` in the pipeline specification file. Instead, the pipeline
     configuration must contain a 'type' key that specifies which option to choose.
 
-    A ``ChoiceSteps'`` :attr:`choices` dictionary must contain only a *single*
-    ``Step`` and its associated ``SlotMappings``. If one of the choice paths is
-    to contain multiple sub-steps, a :class:`HierarchicalStep` should be used.
+    The :attr:`choices` dictionary must contain the choice type names as the outer
+    keys. The values of each of these types is then another dictionary containing
+    'step', 'input_slot_mappings', and 'output_slot_mappings' keys with their
+    corresponding values.
 
+    Each choice type must specify a *single* ``Step`` and its associated ``SlotMappings``.
+    Any choice paths that require multiple sub-steps should specify a :class:`HierarchicalStep`.
     """
 
     def __init__(
@@ -1326,12 +1329,12 @@ class ChoiceStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        chosen_config = self.choices[step_config["type"]]
+        choice = self.choices[step_config["type"]]
         self.step_graph = StepGraph()
-        self.step_graph.add_node_from_step(chosen_config["step"])
+        self.step_graph.add_node_from_step(choice["step"])
         self.slot_mappings = {
-            "input": chosen_config["input_slot_mappings"],
-            "output": chosen_config["output_slot_mappings"],
+            "input": choice["input_slot_mappings"],
+            "output": choice["output_slot_mappings"],
         }
 
         chosen_step_config = LayeredConfigTree(
