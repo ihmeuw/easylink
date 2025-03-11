@@ -126,9 +126,12 @@ def get_results_directory(output_dir: str | None, no_timestamp: bool) -> Path:
     """
     results_dir = Path("results" if output_dir is None else output_dir).resolve()
     if not no_timestamp:
-        launch_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-        results_dir = results_dir / launch_time
+        results_dir = results_dir / _get_timestamp()
     return results_dir
+
+
+def _get_timestamp() -> str:
+    return datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 
 
 def load_yaml(filepath: str | Path) -> dict:
