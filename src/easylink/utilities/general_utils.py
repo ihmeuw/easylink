@@ -5,7 +5,9 @@ General Utilities
 =================
 
 This module contains various utility functions.
+
 """
+
 import errno
 import functools
 import shutil
