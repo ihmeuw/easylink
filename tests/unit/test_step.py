@@ -9,7 +9,6 @@ rather than try to get full coverage in the e2e tests. It also allows us to test
 future pipeline schema expansion/flexibility in a relative simple manner now.
 """
 
-import re
 from typing import Any
 
 import pytest
@@ -780,91 +779,88 @@ def choice_step_params() -> dict[str, Any]:
         "output_slots": [OutputSlot("choice_section_main_output")],
         "choices": {
             "simple": {
-                "nodes": [
-                    HierarchicalStep(
-                        step_name="step_4",
-                        input_slots=[
-                            InputSlot(
-                                name="step_4_main_input",
-                                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                                validator=validate_input_file_dummy,
-                            ),
-                            InputSlot(
-                                name="step_4_secondary_input",
-                                env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                                validator=validate_input_file_dummy,
-                            ),
-                        ],
-                        output_slots=[OutputSlot("step_4_main_output")],
-                        nodes=[
-                            Step(
-                                step_name="step_4a",
-                                input_slots=[
-                                    InputSlot(
-                                        name="step_4a_main_input",
-                                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                                        validator=validate_input_file_dummy,
-                                    ),
-                                    InputSlot(
-                                        name="step_4a_secondary_input",
-                                        env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                                        validator=validate_input_file_dummy,
-                                    ),
-                                ],
-                                output_slots=[OutputSlot("step_4a_main_output")],
-                            ),
-                            Step(
-                                step_name="step_4b",
-                                input_slots=[
-                                    InputSlot(
-                                        name="step_4b_main_input",
-                                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                                        validator=validate_input_file_dummy,
-                                    ),
-                                    InputSlot(
-                                        name="step_4b_secondary_input",
-                                        env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                                        validator=validate_input_file_dummy,
-                                    ),
-                                ],
-                                output_slots=[OutputSlot("step_4b_main_output")],
-                            ),
-                        ],
-                        edges=[
-                            EdgeParams(
-                                source_node="step_4a",
-                                target_node="step_4b",
-                                output_slot="step_4a_main_output",
-                                input_slot="step_4b_main_input",
-                            ),
-                        ],
-                        input_slot_mappings=[
-                            InputSlotMapping(
-                                parent_slot="step_4_main_input",
-                                child_node="step_4a",
-                                child_slot="step_4a_main_input",
-                            ),
-                            InputSlotMapping(
-                                parent_slot="step_4_secondary_input",
-                                child_node="step_4a",
-                                child_slot="step_4a_secondary_input",
-                            ),
-                            InputSlotMapping(
-                                parent_slot="step_4_secondary_input",
-                                child_node="step_4b",
-                                child_slot="step_4b_secondary_input",
-                            ),
-                        ],
-                        output_slot_mappings=[
-                            OutputSlotMapping(
-                                parent_slot="step_4_main_output",
-                                child_node="step_4b",
-                                child_slot="step_4b_main_output",
-                            ),
-                        ],
-                    ),
-                ],
-                "edges": [],
+                "step": HierarchicalStep(
+                    step_name="step_4",
+                    input_slots=[
+                        InputSlot(
+                            name="step_4_main_input",
+                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            name="step_4_secondary_input",
+                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[OutputSlot("step_4_main_output")],
+                    nodes=[
+                        Step(
+                            step_name="step_4a",
+                            input_slots=[
+                                InputSlot(
+                                    name="step_4a_main_input",
+                                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                    validator=validate_input_file_dummy,
+                                ),
+                                InputSlot(
+                                    name="step_4a_secondary_input",
+                                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                                    validator=validate_input_file_dummy,
+                                ),
+                            ],
+                            output_slots=[OutputSlot("step_4a_main_output")],
+                        ),
+                        Step(
+                            step_name="step_4b",
+                            input_slots=[
+                                InputSlot(
+                                    name="step_4b_main_input",
+                                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                    validator=validate_input_file_dummy,
+                                ),
+                                InputSlot(
+                                    name="step_4b_secondary_input",
+                                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                                    validator=validate_input_file_dummy,
+                                ),
+                            ],
+                            output_slots=[OutputSlot("step_4b_main_output")],
+                        ),
+                    ],
+                    edges=[
+                        EdgeParams(
+                            source_node="step_4a",
+                            target_node="step_4b",
+                            output_slot="step_4a_main_output",
+                            input_slot="step_4b_main_input",
+                        ),
+                    ],
+                    input_slot_mappings=[
+                        InputSlotMapping(
+                            parent_slot="step_4_main_input",
+                            child_node="step_4a",
+                            child_slot="step_4a_main_input",
+                        ),
+                        InputSlotMapping(
+                            parent_slot="step_4_secondary_input",
+                            child_node="step_4a",
+                            child_slot="step_4a_secondary_input",
+                        ),
+                        InputSlotMapping(
+                            parent_slot="step_4_secondary_input",
+                            child_node="step_4b",
+                            child_slot="step_4b_secondary_input",
+                        ),
+                    ],
+                    output_slot_mappings=[
+                        OutputSlotMapping(
+                            parent_slot="step_4_main_output",
+                            child_node="step_4b",
+                            child_slot="step_4b_main_output",
+                        ),
+                    ],
+                ),
                 "input_slot_mappings": [
                     InputSlotMapping(
                         parent_slot="choice_section_main_input",
@@ -886,49 +882,52 @@ def choice_step_params() -> dict[str, Any]:
                 ],
             },
             "complex": {
-                "nodes": [
-                    Step(
-                        step_name="step_5",
-                        input_slots=[
-                            InputSlot(
-                                name="step_5_main_input",
-                                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                                validator=validate_input_file_dummy,
-                            ),
-                        ],
-                        output_slots=[OutputSlot("step_5_main_output")],
-                    ),
-                    # Add a more complicated (unsupported) loop step to ensure flexibility
-                    LoopStep(
-                        template_step=Step(
-                            step_name="step_6",
+                "step": HierarchicalStep(
+                    step_name="step_5_and_6",
+                    nodes=[
+                        Step(
+                            step_name="step_5",
                             input_slots=[
                                 InputSlot(
-                                    name="step_6_main_input",
+                                    name="step_5_main_input",
                                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                                     validator=validate_input_file_dummy,
                                 ),
                             ],
-                            output_slots=[OutputSlot("step_6_main_output")],
+                            output_slots=[OutputSlot("step_5_main_output")],
                         ),
-                        self_edges=[
-                            EdgeParams(
-                                source_node="step_6",
-                                target_node="step_6",
-                                output_slot="step_6_main_output",
-                                input_slot="step_6_main_input",
-                            )
-                        ],
-                    ),
-                ],
-                "edges": [
-                    EdgeParams(
-                        source_node="step_5",
-                        target_node="step_6",
-                        output_slot="step_5_main_output",
-                        input_slot="step_6_main_input",
-                    )
-                ],
+                        # Add a more complicated (unsupported) loop step to ensure flexibility
+                        LoopStep(
+                            template_step=Step(
+                                step_name="step_6",
+                                input_slots=[
+                                    InputSlot(
+                                        name="step_6_main_input",
+                                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                                        validator=validate_input_file_dummy,
+                                    ),
+                                ],
+                                output_slots=[OutputSlot("step_6_main_output")],
+                            ),
+                            self_edges=[
+                                EdgeParams(
+                                    source_node="step_6",
+                                    target_node="step_6",
+                                    output_slot="step_6_main_output",
+                                    input_slot="step_6_main_input",
+                                )
+                            ],
+                        ),
+                    ],
+                    edges=[
+                        EdgeParams(
+                            source_node="step_5",
+                            target_node="step_6",
+                            output_slot="step_5_main_output",
+                            input_slot="step_6_main_input",
+                        ),
+                    ],
+                ),
                 "input_slot_mappings": [
                     InputSlotMapping(
                         parent_slot="choice_section_main_input",
@@ -1045,26 +1044,30 @@ def test_complex_choice_step_get_implementation_graph(
     step_config = LayeredConfigTree(
         {
             "type": "complex",
-            "step_5": {
-                "implementation": {
-                    "name": "step_5_python_pandas",
+            "step_5_and_6": {
+                "substeps": {
+                    "step_5": {
+                        "implementation": {
+                            "name": "step_5_python_pandas",
+                        },
+                    },
+                    "step_6": {
+                        "iterate": [
+                            {
+                                "implementation": {
+                                    "name": "step_6_python_pandas",
+                                },
+                            },
+                            {
+                                "implementation": {
+                                    "name": "step_6_python_pandas",
+                                },
+                            },
+                        ],
+                    },
                 },
             },
-            "step_6": {
-                "iterate": [
-                    {
-                        "implementation": {
-                            "name": "step_6_python_pandas",
-                        },
-                    },
-                    {
-                        "implementation": {
-                            "name": "step_6_python_pandas",
-                        },
-                    },
-                ],
-            },
-        }
+        },
     )
     # Need to validate in order to set the step graph and mappings prior to calling `set_configuration_state`
     step.validate_step(step_config, {}, {})

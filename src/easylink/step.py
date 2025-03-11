@@ -838,39 +838,17 @@ class TemplatedStep(Step, ABC):
                 errors[f"step {self.name}"][f"{self.node_prefix}_{i+1}"] = parallel_errors
         return errors
 
-    def _get_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
-        """Convenience method to get the ``TemplatedStep's`` configuration.
-
-        ``TemplatedSteps`` may include multiplicity. In such cases, their configurations
-        must be modified to include the expanded ``Steps``.
-
-        Parameters
-        ----------
-        step_config
-            The high-level configuration of this ``TemplatedStep``.
-
-        Returns
-        -------
-            The expanded sub-configuration of this ``TemplatedStep`` based on the
-            :attr:`Step.config_key` and expanded to include all looped or parallelized
-            sub-``Steps``).
-        """
-        if self.config_key in step_config:
-            expanded_step_config = LayeredConfigTree()
-            for i, sub_config in enumerate(step_config[self.config_key]):
-                expanded_step_config.update(
-                    {f"{self.name}_{self.node_prefix}_{i+1}": sub_config}
-                )
-            return expanded_step_config
-        return step_config
-
     def set_configuration_state(
         self,
         step_config: LayeredConfigTree,
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        """Sets the configuration state and updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+        """Sets the configuration state to 'non-leaf'.
+
+        In addition to setting the configuration state, this also updates the
+        :class:`~easylink.graph_components.StepGraph` and
+        :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
 
         Parameters
         ----------
@@ -917,6 +895,36 @@ class TemplatedStep(Step, ABC):
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
+
+    ##################
+    # Helper Methods #
+    ##################
+
+    def _get_config(self, step_config: LayeredConfigTree) -> LayeredConfigTree:
+        """Convenience method to get the ``TemplatedStep's`` configuration.
+
+        ``TemplatedSteps`` may include multiplicity. In such cases, their configurations
+        must be modified to include the expanded ``Steps``.
+
+        Parameters
+        ----------
+        step_config
+            The high-level configuration of this ``TemplatedStep``.
+
+        Returns
+        -------
+            The expanded sub-configuration of this ``TemplatedStep`` based on the
+            :attr:`Step.config_key` and expanded to include all looped or parallelized
+            sub-``Steps``).
+        """
+        if self.config_key in step_config:
+            expanded_step_config = LayeredConfigTree()
+            for i, sub_config in enumerate(step_config[self.config_key]):
+                expanded_step_config.update(
+                    {f"{self.name}_{self.node_prefix}_{i+1}": sub_config}
+                )
+            return expanded_step_config
+        return step_config
 
     def _duplicate_template_step(self) -> Step:
         """Makes a duplicate of the template ``Step``.
@@ -1186,11 +1194,8 @@ class EmbarrassinglyParallelStep(Step):
             raise ValueError("\n".join(errors))
 
 
-class ChoiceStep(HierarchicalStep):
-    """A type of :class:`Step` that allows for choosing between multiple paths.
-
-    A ``ChoiceStep`` allows a user to select a single path from a set of possible
-    paths.
+class ChoiceStep(Step):
+    """A type of :class:`Step` that allows for choosing from a set of options.
 
     See :class:`Step` for inherited attributes.
 
@@ -1204,7 +1209,7 @@ class ChoiceStep(HierarchicalStep):
         All required :class:`OutputSlots<easylink.graph_components.OutputSlot>`.
     choices
         A dictionary of choices, where the keys are the names/types of choices and
-        the values are dictionaries containing that type's nodes, edges, and
+        the values are dictionaries containing that type's ``Step`` and related
         :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
 
     Notes
@@ -1213,6 +1218,10 @@ class ChoiceStep(HierarchicalStep):
     :attr:`Step.config_key` in the pipeline specification file. Instead, the pipeline
     configuration must contain a 'type' key that specifies which option to choose.
 
+    A ``ChoiceSteps'`` :attr:`choices` dictionary must contain only a *single*
+    ``Step`` and its associated ``SlotMappings``. If one of the choice paths is
+    to contain multiple sub-steps, a :class:`HierarchicalStep` should be used.
+
     """
 
     def __init__(
@@ -1220,9 +1229,7 @@ class ChoiceStep(HierarchicalStep):
         step_name: str,
         input_slots: Iterable[InputSlot],
         output_slots: Iterable[OutputSlot],
-        choices: dict[
-            str, dict[str, list[Step | EdgeParams | InputSlotMapping | OutputSlotMapping]]
-        ],
+        choices: dict[str, dict[str, Step | SlotMapping]],
     ) -> None:
         super().__init__(
             step_name,
@@ -1259,8 +1266,6 @@ class ChoiceStep(HierarchicalStep):
 
         Notes
         -----
-        A ``ChoiceStep`` by definition must be set with a :class:`NonLeafConfigurationState`.
-
         If the ``Step`` does not validate (i.e. errors are found and the returned
         dictionary is non-empty), the tool will exit and the pipeline will not run.
 
@@ -1268,12 +1273,6 @@ class ChoiceStep(HierarchicalStep):
         times where the configuration is so ill-formed that we are unable to handle
         all issues in one pass. In these cases, new errors may be found after the
         initial ones are handled.
-
-        We update the :class:`easylink.graph_components.StepGraph` and ``SlotMappings``
-        in :meth:`validate_step` (as opposed to in :meth:`set_configuration_state`
-        as is done in :class:`TemplatedStep`) because :meth:`validate_step` is called
-        prior to :meth:`set_configuration_state`, but the validations itself actually
-        requires the updated ``StepGraph`` and ``SlotMappings``.
 
         We do not attempt to validate the subgraph here if the 'type' key is unable
         to be validated.
@@ -1288,25 +1287,21 @@ class ChoiceStep(HierarchicalStep):
                     f"'{step_config.type}' is not a supported 'type'. Valid choices are: {list(self.choices)}."
                 ]
             }
-        # Handle type-subgraph inconsistencies
-        subgraph = self.choices[chosen_type]
+
+        chosen_step = self.choices[chosen_type]["step"]
         chosen_step_config = LayeredConfigTree(
             {key: value for key, value in step_config.items() if key != "type"}
         )
-        allowable_steps = [node.name for node in subgraph["nodes"]]
-        if set(allowable_steps) != set(chosen_step_config):
+        if chosen_step.name not in chosen_step_config:
             return {
                 f"step {self.name}": [
-                    f"Invalid configuration for '{chosen_type}' type. Valid steps are {allowable_steps}."
+                    f"'{chosen_step.name}' is not configured. Confirm you have specified "
+                    f"the correct steps for the '{chosen_type}' type."
                 ]
             }
-
-        # HACK: Create the step graph and mappings here because we need them for validation
-        self.step_graph = self._update_step_graph(subgraph)
-        self.slot_mappings = self._update_slot_mappings(subgraph)
         # NOTE: A ChoiceStep is by definition non-leaf step
-        return self._validate_step_graph(
-            chosen_step_config, combined_implementations, input_data_config
+        return chosen_step.validate_step(
+            chosen_step_config[chosen_step.name], combined_implementations, input_data_config
         )
 
     def set_configuration_state(
@@ -1315,7 +1310,11 @@ class ChoiceStep(HierarchicalStep):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ):
-        """Sets the configuration state for a ``ChoiceStep``.
+        """Sets the configuration state to 'non-leaf'.
+
+        In addition to setting the configuration state, this also updates the
+        :class:`~easylink.graph_components.StepGraph` and
+        :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
 
         Parameters
         ----------
@@ -1326,62 +1325,22 @@ class ChoiceStep(HierarchicalStep):
             The configuration for any implementations to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
-
-        Notes
-        -----
-        We update the :class:`easylink.graph_components.StepGraph` and ``SlotMappings``
-        in :meth:`validate_step` (as opposed to in :meth:`set_configuration_state`
-        as is done in :class:`TemplatedStep`) because :meth:`validate_step` is called
-        prior to :meth:`set_configuration_state`, but the validations itself actually
-        requires the updated ``StepGraph`` and ``SlotMappings``.
         """
+        chosen_config = self.choices[step_config["type"]]
+        self.step_graph = StepGraph()
+        self.step_graph.add_node_from_step(chosen_config["step"])
+        self.slot_mappings = {
+            "input": chosen_config["input_slot_mappings"],
+            "output": chosen_config["output_slot_mappings"],
+        }
+
         chosen_step_config = LayeredConfigTree(
             {key: value for key, value in step_config.items() if key != "type"}
         )
-        # ChoiceSteps by definition cannot be in a LeafConfigurationState.
+        # ChoiceSteps by definition are in a NonLeafConfigurationState
         self._configuration_state = NonLeafConfigurationState(
             self, chosen_step_config, combined_implementations, input_data_config
         )
-
-    @staticmethod
-    def _update_step_graph(subgraph: dict[str, Any]) -> StepGraph:
-        """Updates the :class:`~easylink.graph_components.StepGraph` with the choice.
-
-        Parameters
-        ----------
-        subgraph
-            Subgraph parameters (nodes, edges, and slot mappings) for the chosen type.
-
-        Returns
-        -------
-            The updated ``StepGraph`` for the chosen type.
-        """
-        nodes = subgraph["nodes"]
-        edges = subgraph["edges"]
-
-        graph = StepGraph()
-        for node in nodes:
-            graph.add_node_from_step(node)
-        for edge in edges:
-            graph.add_edge_from_params(edge)
-        return graph
-
-    @staticmethod
-    def _update_slot_mappings(subgraph: dict[str, Any]) -> dict[str, list[SlotMapping]]:
-        """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>` to the choice type.
-
-        Parameters
-        ----------
-        sub_graph
-            Subgraph parameters (nodes, edges, and slot mappings) for the chosen type.
-
-        Returns
-        -------
-            Updated ``SlotMappings`` that match the choice type.
-        """
-        input_mappings = subgraph["input_slot_mappings"]
-        output_mappings = subgraph["output_slot_mappings"]
-        return {"input": input_mappings, "output": output_mappings}
 
 
 class ConfigurationState(ABC):

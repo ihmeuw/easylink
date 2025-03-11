@@ -10,9 +10,11 @@ steps:
       name: step_3_python_pandas
   choice_section:
     type: simple
-    step_5:
-      implementation:
-        name: step_5_python_pandas
-    step_6:
-      implementation:
-        name: step_6_python_pandas
+    step_5_and_6:
+      substeps:
+        step_5:
+          implementation:
+            name: step_5_python_pandas
+        step_6:
+          implementation:
+            name: step_6_python_pandas
