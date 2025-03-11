@@ -35,6 +35,8 @@ exclude = [
     'src/easylink/steps/dev/python_pandas/dummy_step.py',
     'src/easylink/steps/dev/python_pyspark/dummy_step.py',
     'src/easylink/steps/dev/test.py',
+    'src/easylink/utilities/aggregator_utils.py',
+    'src/easylink/utilities/splitter_utils.py',
     'src/easylink/utilities/validation_utils.py',
     'tests/integration/test_snakemake_slurm.py',
     'tests/unit/test_graph_components.py',
