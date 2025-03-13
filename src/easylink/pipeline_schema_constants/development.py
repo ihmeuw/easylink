@@ -59,21 +59,23 @@ NODES = [
     ),
     LoopStep(
         template_step=EmbarrassinglyParallelStep(
-            step_name="step_3",
-            input_slots=[
-                InputSlot(
-                    name="step_3_main_input",
-                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=validate_input_file_dummy,
-                    splitter=split_data_by_size,
-                ),
-            ],
-            output_slots=[
-                OutputSlot(
-                    name="step_3_main_output",
-                    aggregator=concatenate_datasets,
-                ),
-            ],
+            step=Step(
+                step_name="step_3",
+                input_slots=[
+                    InputSlot(
+                        name="step_3_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                        splitter=split_data_by_size,
+                    ),
+                ],
+                output_slots=[
+                    OutputSlot(
+                        name="step_3_main_output",
+                        aggregator=concatenate_datasets,
+                    ),
+                ],
+            ),
         ),
         self_edges=[
             EdgeParams(
