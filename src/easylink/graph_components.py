@@ -259,11 +259,11 @@ class SlotMapping(ABC):
     """A mapping between a slot on a parent node and a slot on one of its child nodes.
 
     ``SlotMapping`` is an interface intended to be used by concrete :class:`InputSlotMapping`
-    and :class:`OutputSlotMapping` classes to represent a mapping between parent 
+    and :class:`OutputSlotMapping` classes to represent a mapping between parent
     and child nodes at different levels of a potentially-nested graph. Specifically,
-    they are used to (1) remap edges between parent and child nodes in a 
+    they are used to (1) remap edges between parent and child nodes in a
     :class:`~easylink.pipeline_schema.PipelineSchema` and (2) map a leaf
-    :class:`Step's<easylink.step.Step>` slots to the corresponding 
+    :class:`Step's<easylink.step.Step>` slots to the corresponding
     :class:`~easylink.implementation.Implementation` slots when building the
     :class:`~easylink.graph_components.ImplementationGraph`.
 
