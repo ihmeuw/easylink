@@ -1,3 +1,7 @@
+**0.1.9 - 3/14/25**
+
+ - Refactor EmbarrassinglyParallelStep to require a Step during construction
+
 **0.1.8 - 3/13/25**
 
  - Refactor subgraph logic from Step to HierarchicalStep

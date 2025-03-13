@@ -1114,16 +1114,18 @@ def test_complex_choice_step_get_implementation_graph(
 @pytest.fixture
 def embarrassingly_parallel_step_params() -> dict[str, Any]:
     return {
-        "step_name": "step_3",
-        "input_slots": [
-            InputSlot(
-                "step_3_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-                split_data_by_size,
-            )
-        ],
-        "output_slots": [OutputSlot("step_3_main_output", concatenate_datasets)],
+        "step": Step(
+            step_name="step_3",
+            input_slots=[
+                InputSlot(
+                    "step_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                    split_data_by_size,
+                )
+            ],
+            output_slots=[OutputSlot("step_3_main_output", concatenate_datasets)],
+        ),
     }
 
 
@@ -1261,9 +1263,11 @@ def test_embarrassingly_parallel_step__validation(
     expected_error_msg: str | list[str],
 ):
     step_params = {
-        "step_name": "step",
-        "input_slots": input_slots,
-        "output_slots": output_slots,
+        "step": Step(
+            step_name="step",
+            input_slots=input_slots,
+            output_slots=output_slots,
+        ),
     }
     with pytest.raises(ValueError) as error:
         EmbarrassinglyParallelStep(**step_params)
