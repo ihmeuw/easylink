@@ -196,7 +196,7 @@ def test_batch_validation():
                 PIPELINE_ERRORS_KEY: {
                     "development": {
                         "step choice_section": [
-                            "Invalid configuration for 'simple' type. Valid steps are \['step_4'\]."
+                            "'step_4' is not configured. Confirm you have specified the correct steps for the 'simple' type."
                         ]
                     }
                 }
