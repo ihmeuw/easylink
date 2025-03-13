@@ -1,3 +1,9 @@
+**0.1.8 - 3/13/25**
+
+ - Refactor subgraph logic from Step to HierarchicalStep
+ - Refactor ChoiceStep so that each choice requires a single Step instead of nodes/edges
+ - Standardize the passing around of configurations to be step config instead of parent config
+
 **0.1.7 - 2/26/25**
 
  - Implement initial embarrassingly/auto-parallel step support
