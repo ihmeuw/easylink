@@ -29,6 +29,8 @@ exclude = [
     'src/easylink/pipeline_graph.py',
     'src/easylink/pipeline.py',
     'src/easylink/pipeline_schema.py',
+    'src/easylink/pipeline_schema_constants/testing.py',
+    'src/easylink/pipeline_schema_constants/development.py',
     'src/easylink/rule.py',
     'src/easylink/runner.py',
     'src/easylink/step.py',

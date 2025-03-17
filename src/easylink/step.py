@@ -1138,19 +1138,25 @@ class EmbarrassinglyParallelStep(Step):
 
     An ``EmbarrassinglyParallelStep`` is different than a :class:`ParallelStep`
     in that it is not configured by the user to be run in parallel - it completely
-    happens on the back end for performance reasons. As such, note that it inherits
-    from :class:`Step` instead of :class:`TemplatedStep`.
+    happens on the back end for performance reasons.
 
     See :class:`Step` for inherited attributes.
+
+    Parameters
+    ----------
+    step
+        The ``Step`` to be run in an embarrassingly parallel manner. To run multiple
+        steps in parallel, use a :class:`HierarchicalStep`.
+
     """
 
     def __init__(
         self,
-        step_name: str,
-        input_slots: Iterable[InputSlot],
-        output_slots: Iterable[OutputSlot],
+        step: Step,
     ) -> None:
-        super().__init__(step_name, input_slots=input_slots, output_slots=output_slots)
+        super().__init__(
+            step.step_name, step.name, step.input_slots.values(), step.output_slots.values()
+        )
         self._validate()
 
     def _validate(self) -> None:
