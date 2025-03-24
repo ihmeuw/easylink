@@ -1116,11 +1116,25 @@ def embarrassingly_parallel_step_params() -> dict[str, Any]:
                     "step_3_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
-                    split_data_by_size,
                 )
             ],
-            output_slots=[OutputSlot("step_3_main_output", concatenate_datasets)],
+            output_slots=[OutputSlot("step_3_main_output")],
         ),
+        "input_slots": [
+            InputSlot(
+                "step_3ep_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+                split_data_by_size,
+            )
+        ],
+        "output_slots": [OutputSlot("step_3ep_main_output", concatenate_datasets)],
+        "input_slot_mappings": [
+            InputSlotMapping("step_3ep_main_input", "step_3", "step_3_main_input")
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping("step_3ep_main_output", "step_3", "step_3_main_output")
+        ],
     }
 
 
@@ -1130,29 +1144,33 @@ def test_embarrassingly_parallel_step_slots(
     step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
     assert step.name == "step_3"
     assert step.input_slots == {
-        "step_3_main_input": InputSlot(
-            "step_3_main_input",
+        "step_3ep_main_input": InputSlot(
+            "step_3ep_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
             split_data_by_size,
         ),
     }
     assert step.output_slots == {
-        "step_3_main_output": OutputSlot("step_3_main_output", concatenate_datasets)
+        "step_3ep_main_output": OutputSlot("step_3ep_main_output", concatenate_datasets),
     }
 
 
 def test_embarrassingly_parallel_step_implementation_graph(
     embarrassingly_parallel_step_params: dict[str, Any]
 ) -> None:
-    step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
+    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
     step_config = LayeredConfigTree(
         {"implementation": {"name": "step_3_python_pandas", "configuration": {}}}
     )
-    step.set_configuration_state(step_config, {}, {})
+    ep_step.set_configuration_state(step_config, {}, {})
     subgraph = _create_implementation_graph(step)
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
+
+    # Check that leaf nodes have splitter and aggregators
+    assert ep_step.step.input_slots["step_3_main_input"].splitter == split_data_by_size
+    assert ep_step.step.output_slots["step_3_main_output"].aggregator == concatenate_datasets
 
 
 @pytest.mark.parametrize(
@@ -1260,9 +1278,11 @@ def test_embarrassingly_parallel_step__validation(
     step_params = {
         "step": Step(
             step_name="step",
-            input_slots=input_slots,
-            output_slots=output_slots,
         ),
+        "input_slots": input_slots,
+        "output_slots": output_slots,
+        "input_slot_mappings": [],
+        "output_slot_mappings": [],
     }
     with pytest.raises(ValueError) as error:
         EmbarrassinglyParallelStep(**step_params)
