@@ -7,7 +7,6 @@ from easylink.graph_components import (
     InputSlotMapping,
     OutputSlot,
     OutputSlotMapping,
-    SlotMapping,
     StepGraph,
 )
 from easylink.implementation import Implementation
@@ -27,6 +26,86 @@ def test_input_slot() -> None:
 def test_output_slot() -> None:
     output_slot = OutputSlot("file1")
     assert output_slot.name == "file1"
+
+
+def test_input_slot_hashing() -> None:
+    slot = InputSlot("slot", "foo", validate_input_file_dummy)
+    slot_dupe = InputSlot("slot", "foo", validate_input_file_dummy)
+    assert slot == slot_dupe
+    assert {slot, slot_dupe} == {slot}
+
+    slot_with_splitter = InputSlot("slot", "foo", validate_input_file_dummy, dummy_splitter)
+
+    assert slot != slot_with_splitter
+    assert {slot, slot_with_splitter, slot, slot_with_splitter} == {
+        slot,
+        slot_with_splitter,
+    }
+
+    slot_with_different_splitter = InputSlot(
+        "slot", "foo", validate_input_file_dummy, dummy_splitter_2
+    )
+    assert slot_with_splitter != slot_with_different_splitter
+    assert {
+        slot,
+        slot_dupe,
+        slot_with_splitter,
+        slot_with_different_splitter,
+        slot_with_splitter,
+        slot_with_different_splitter,
+    } == {
+        slot,
+        slot_with_splitter,
+        slot_with_different_splitter,
+    }
+
+
+def test_output_slot_hashing() -> None:
+    slot = OutputSlot("slot")
+    slot_dupe = OutputSlot("slot")
+    assert slot == slot_dupe
+    assert {slot, slot_dupe} == {slot}
+
+    slot_with_aggregator = OutputSlot("slot", dummy_aggregator)
+
+    assert slot != slot_with_aggregator
+    assert {slot, slot_with_aggregator, slot, slot_with_aggregator} == {
+        slot,
+        slot_with_aggregator,
+    }
+
+    slot_with_different_aggregator = OutputSlot("slot", dummy_aggregator_2)
+    assert slot_with_aggregator != slot_with_different_aggregator
+    assert {
+        slot,
+        slot_dupe,
+        slot_with_aggregator,
+        slot_with_different_aggregator,
+        slot_with_aggregator,
+        slot_with_different_aggregator,
+    } == {
+        slot,
+        slot_with_aggregator,
+        slot_with_different_aggregator,
+    }
+
+    input_slot = InputSlot("slot", "foo", validate_input_file_dummy)
+
+
+def test_slot_mutability() -> None:
+    slot = InputSlot("slot", "foo", validate_input_file_dummy)
+    assert slot.splitter is None
+    slot.splitter = dummy_splitter
+    assert slot.splitter == dummy_splitter
+    slot.splitter = dummy_splitter_2
+    assert slot.splitter == dummy_splitter_2
+
+    slot = OutputSlot("slot")
+    assert slot.aggregator is None
+    slot.aggregator = dummy_aggregator
+    assert slot.aggregator == dummy_aggregator
+    slot.aggregator = dummy_aggregator_2
+    assert slot.aggregator == dummy_aggregator_2
 
 
 def test_edge() -> None:
@@ -136,3 +215,24 @@ def test_output_slot_mapping() -> None:
     assert new_edge.target_node == "output_data"
     assert new_edge.output_slot == "step_1a_main_input"
     assert new_edge.input_slot == "file1"
+
+
+####################
+# Helper functions #
+####################
+
+
+def dummy_splitter():
+    pass
+
+
+def dummy_splitter_2():
+    pass
+
+
+def dummy_aggregator():
+    pass
+
+
+def dummy_aggregator_2():
+    pass
