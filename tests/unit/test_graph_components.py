@@ -59,6 +59,13 @@ def test_input_slot_hashing() -> None:
         slot_with_different_splitter,
     }
 
+    slot_with_different_validator = InputSlot("slot", "foo", dummy_validator)
+    assert slot != slot_with_different_validator
+    assert {slot, slot_dupe, slot_with_different_validator} == {
+        slot,
+        slot_with_different_validator,
+    }
+
 
 def test_output_slot_hashing() -> None:
     slot = OutputSlot("slot")
@@ -235,4 +242,8 @@ def dummy_aggregator():
 
 
 def dummy_aggregator_2():
+    pass
+
+
+def dummy_validator():
     pass
