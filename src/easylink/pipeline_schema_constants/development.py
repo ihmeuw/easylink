@@ -297,14 +297,12 @@ EDGES = [
         target_node="step_2",
         output_slot="step_1_main_output",
         input_slot="step_2_main_input",
-        # splitter=(splitting_function, "step_3"),  # is this somehow better?
     ),
     EdgeParams(
         source_node="step_2",
         target_node="step_3",
         output_slot="step_2_main_output",
         input_slot="step_3_main_input",
-        # aggregator=...,  # is this somehow better?
     ),
     EdgeParams(
         source_node="step_3",
