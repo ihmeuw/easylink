@@ -1305,27 +1305,7 @@ class EmbarrassinglyParallelStep(Step):
         expanded_config = LayeredConfigTree({self.name: step_config})
 
         # Traverse the step_graph to add the splitter/aggregators to the appropriate i/o slots
-        parent_node = self
-        child_node = self.step
-        for parent_input_slot_name, parent_input_slot in parent_node.input_slots.items():
-            if parent_input_slot.splitter:
-                parent_slot_mapping = [
-                    mapping
-                    for mapping in parent_node.slot_mappings["input"]
-                    if mapping.parent_slot == parent_input_slot_name
-                ][0]
-                child_node.input_slots[
-                    parent_slot_mapping.child_slot
-                ].splitter = parent_input_slot.splitter
-        for parent_output_slot_name, parent_output_slot in parent_node.output_slots.items():
-            parent_slot_mapping = [
-                mapping
-                for mapping in parent_node.slot_mappings["output"]
-                if mapping.parent_slot == parent_output_slot_name
-            ][0]
-            child_node.output_slots[
-                parent_slot_mapping.child_slot
-            ].aggregator = parent_output_slot.aggregator
+        self._propagate_splitter_aggregators(self)
 
         # Manually set the configuration state to non-leaf instead of relying
         # on super().get_configuration_state() because that method will erroneously
@@ -1334,6 +1314,47 @@ class EmbarrassinglyParallelStep(Step):
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
+
+    @staticmethod
+    def _propagate_splitter_aggregators(parent: Step) -> None:
+        """Propagates the splitter and aggregators to the relevant leaf steps."""
+        if isinstance(parent, EmbarrassinglyParallelStep):
+            children = [parent.step]
+        elif hasattr(parent, "step_graph") and parent.step_graph:
+            children = [
+                parent.step_graph.nodes[node]["step"] for node in parent.step_graph.nodes
+            ]
+        else:
+            return
+        for child in children:
+            for parent_input_slot_name, parent_input_slot in parent.input_slots.items():
+                if parent_input_slot.splitter:
+                    # Extract the appropriate mapping
+                    parent_slot_mapping = [
+                        mapping
+                        for mapping in parent.slot_mappings["input"]
+                        if mapping.parent_slot == parent_input_slot_name
+                    ][0]
+                    # Assign the splitter to the appropriate child slot
+                    if parent_slot_mapping.child_slot in child.input_slots:
+                        child.input_slots[
+                            parent_slot_mapping.child_slot
+                        ].splitter = parent_input_slot.splitter
+            for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
+                # Extract the appropriate mapping
+                parent_slot_mapping = [
+                    mapping
+                    for mapping in parent.slot_mappings["output"]
+                    if mapping.parent_slot == parent_output_slot_name
+                ][0]
+                # Assign the aggregator to the appropriate child slot
+                if parent_slot_mapping.child_slot in child.output_slots:
+                    child.output_slots[
+                        parent_slot_mapping.child_slot
+                    ].aggregator = parent_output_slot.aggregator
+            if hasattr(child, "step_graph") and child.step_graph:
+                # Recursively propagate splitter/aggregator to children of the child step
+                EmbarrassinglyParallelStep._propagate_splitter_aggregators(child)
 
 
 class ChoiceStep(Step):

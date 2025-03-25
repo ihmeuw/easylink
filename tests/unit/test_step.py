@@ -1122,18 +1122,18 @@ def embarrassingly_parallel_step_params() -> dict[str, Any]:
         ),
         "input_slots": [
             InputSlot(
-                "step_3ep_main_input",
+                "ep_step_3_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
                 split_data_by_size,
             )
         ],
-        "output_slots": [OutputSlot("step_3ep_main_output", concatenate_datasets)],
+        "output_slots": [OutputSlot("ep_step_3_main_output", concatenate_datasets)],
         "input_slot_mappings": [
-            InputSlotMapping("step_3ep_main_input", "step_3", "step_3_main_input")
+            InputSlotMapping("ep_step_3_main_input", "step_3", "step_3_main_input")
         ],
         "output_slot_mappings": [
-            OutputSlotMapping("step_3ep_main_output", "step_3", "step_3_main_output")
+            OutputSlotMapping("ep_step_3_main_output", "step_3", "step_3_main_output")
         ],
     }
 
@@ -1144,15 +1144,15 @@ def test_embarrassingly_parallel_step_slots(
     step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
     assert step.name == "step_3"
     assert step.input_slots == {
-        "step_3ep_main_input": InputSlot(
-            "step_3ep_main_input",
+        "ep_step_3_main_input": InputSlot(
+            "ep_step_3_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
             split_data_by_size,
         ),
     }
     assert step.output_slots == {
-        "step_3ep_main_output": OutputSlot("step_3ep_main_output", concatenate_datasets),
+        "ep_step_3_main_output": OutputSlot("ep_step_3_main_output", concatenate_datasets),
     }
 
 
@@ -1296,10 +1296,175 @@ def test_embarrassingly_parallel_step__validation(
         assert msg in error_msg
 
 
+@pytest.fixture
+def embarrassingly_parallel_hierarchical_step_params() -> dict[str, Any]:
+    return {
+        "step": HierarchicalStep(
+            step_name="steps_1_2_3",
+            input_slots=[
+                InputSlot(
+                    "steps_1_2_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                InputSlot(
+                    "steps_1_2_3_secondary_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+            ],
+            output_slots=[
+                OutputSlot("steps_1_2_3_main_output"),
+                OutputSlot("steps_1_2_3_secondary_output"),
+            ],
+            nodes=[
+                Step(
+                    "step_1",
+                    input_slots=[
+                        InputSlot(
+                            "step_1_main_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            "step_1_secondary_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[
+                        OutputSlot("step_1_main_output"),
+                        OutputSlot("step_1_secondary_output"),
+                    ],
+                ),
+                Step(
+                    "step_2",
+                    input_slots=[
+                        InputSlot(
+                            "step_2_main_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            "step_2_secondary_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[
+                        OutputSlot("step_2_main_output"),
+                        OutputSlot("step_2_secondary_output"),
+                    ],
+                ),
+                Step(
+                    "step_3",
+                    input_slots=[
+                        InputSlot(
+                            "step_3_main_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            "step_3_secondary_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[
+                        OutputSlot("step_3_main_output"),
+                        OutputSlot("step_3_secondary_output"),
+                    ],
+                ),
+            ],
+            edges=[
+                EdgeParams("step_1", "step_2", "step_1_main_output", "step_2_main_input"),
+                EdgeParams(
+                    "step_1", "step_2", "step_1_secondary_output", "step_2_secondary_input"
+                ),
+                EdgeParams("step_2", "step_3", "step_2_main_output", "step_3_main_input"),
+                EdgeParams(
+                    "step_2", "step_3", "step_2_secondary_output", "step_3_secondary_input"
+                ),
+            ],
+            input_slot_mappings=[
+                InputSlotMapping("steps_1_2_3_main_input", "step_1", "step_1_main_input"),
+                InputSlotMapping(
+                    "steps_1_2_3_secondary_input", "step_1", "step_1_secondary_input"
+                ),
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping("steps_1_2_3_main_output", "step_3", "step_3_main_output"),
+                OutputSlotMapping(
+                    "steps_1_2_3_secondary_output", "step_3", "step_3_secondary_output"
+                ),
+            ],
+        ),
+        "input_slots": [
+            InputSlot(
+                "ep_steps_1_2_3_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+                split_data_by_size,
+            ),
+            InputSlot(
+                "ep_steps_1_2_3_secondary_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            ),
+        ],
+        "output_slots": [
+            OutputSlot("ep_steps_1_2_3_main_output", concatenate_datasets),
+            OutputSlot("ep_steps_1_2_3_secondary_output", concatenate_datasets),
+        ],
+        "input_slot_mappings": [
+            InputSlotMapping(
+                "ep_steps_1_2_3_main_input", "steps_1_2_3", "steps_1_2_3_main_input"
+            ),
+            InputSlotMapping(
+                "ep_steps_1_2_3_secondary_input", "steps_1_2_3", "steps_1_2_3_secondary_input"
+            ),
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping(
+                "ep_steps_1_2_3_main_output", "steps_1_2_3", "steps_1_2_3_main_output"
+            ),
+            OutputSlotMapping(
+                "ep_steps_1_2_3_secondary_output",
+                "steps_1_2_3",
+                "steps_1_2_3_secondary_output",
+            ),
+        ],
+    }
+
+
+def test_embarrassingly_parallel_step__propagate_splitter_aggregators(
+    embarrassingly_parallel_hierarchical_step_params,
+) -> None:
+    step = EmbarrassinglyParallelStep(**embarrassingly_parallel_hierarchical_step_params)
+    EmbarrassinglyParallelStep._propagate_splitter_aggregators(step)
+
+    step1 = step.step.step_graph.nodes["step_1"]["step"]
+    assert step1.input_slots["step_1_main_input"].splitter == split_data_by_size
+    assert step1.input_slots["step_1_secondary_input"].splitter == None
+    assert step1.output_slots["step_1_main_output"].aggregator == None
+    assert step1.output_slots["step_1_secondary_output"].aggregator == None
+
+    step2 = step.step.step_graph.nodes["step_2"]["step"]
+    assert step2.input_slots["step_2_main_input"].splitter == None
+    assert step2.input_slots["step_2_secondary_input"].splitter == None
+    assert step2.output_slots["step_2_main_output"].aggregator == None
+    assert step2.output_slots["step_2_secondary_output"].aggregator == None
+
+    step3 = step.step.step_graph.nodes["step_3"]["step"]
+    assert step3.input_slots["step_3_main_input"].splitter == None
+    assert step3.input_slots["step_3_secondary_input"].splitter == None
+    assert step3.output_slots["step_3_main_output"].aggregator == concatenate_datasets
+    assert step3.output_slots["step_3_secondary_output"].aggregator == concatenate_datasets
+
+
 ####################
 # Helper functions #
 ####################
-
 
 def _create_implementation_graph(step: Step) -> ImplementationGraph:
     implementation_graph = ImplementationGraph()
