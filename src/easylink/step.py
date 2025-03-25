@@ -1317,40 +1317,53 @@ class EmbarrassinglyParallelStep(Step):
 
     @staticmethod
     def _propagate_splitter_aggregators(parent: Step) -> None:
-        """Propagates the splitter and aggregators to the relevant leaf steps."""
+        """Propagates the splitter and aggregators to the relevant leaf ``Steps``.
+
+        This method recursively propagates :meth:`~easylink.graph_components.InputSlot.splitter`
+        and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
+        parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
+        :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
+        child steps' slots.
+
+        Parameters
+        ----------
+        parent
+            The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
+            to be propagated to its child steps.
+        """
         if isinstance(parent, EmbarrassinglyParallelStep):
             children = [parent.step]
         elif hasattr(parent, "step_graph") and parent.step_graph:
             children = [
                 parent.step_graph.nodes[node]["step"] for node in parent.step_graph.nodes
             ]
-        else:
+        else:  # No children
             return
         for child in children:
             for parent_input_slot_name, parent_input_slot in parent.input_slots.items():
                 if parent_input_slot.splitter:
-                    # Extract the appropriate mapping
-                    parent_slot_mapping = [
+                    # Extract the appropriate child slot name from the mapping
+                    child_slot_name = [
                         mapping
                         for mapping in parent.slot_mappings["input"]
                         if mapping.parent_slot == parent_input_slot_name
-                    ][0]
+                    ][0].child_slot
                     # Assign the splitter to the appropriate child slot
-                    if parent_slot_mapping.child_slot in child.input_slots:
+                    if child_slot_name in child.input_slots:
                         child.input_slots[
-                            parent_slot_mapping.child_slot
+                            child_slot_name
                         ].splitter = parent_input_slot.splitter
             for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
-                # Extract the appropriate mapping
-                parent_slot_mapping = [
+                # Extract the appropriate child slot name from the mapping
+                child_slot_name = [
                     mapping
                     for mapping in parent.slot_mappings["output"]
                     if mapping.parent_slot == parent_output_slot_name
-                ][0]
+                ][0].child_slot
                 # Assign the aggregator to the appropriate child slot
-                if parent_slot_mapping.child_slot in child.output_slots:
+                if child_slot_name in child.output_slots:
                     child.output_slots[
-                        parent_slot_mapping.child_slot
+                        child_slot_name
                     ].aggregator = parent_output_slot.aggregator
             if hasattr(child, "step_graph") and child.step_graph:
                 # Recursively propagate splitter/aggregator to children of the child step
