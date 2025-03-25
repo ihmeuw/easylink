@@ -1,3 +1,7 @@
+**0.1.10 - 3/25/25**
+
+ - Make InputSlots and OutputSlots mutable
+
 **0.1.9 - 3/14/25**
 
  - Refactor EmbarrassinglyParallelStep to require a Step during construction

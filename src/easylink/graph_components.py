@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import NotImplementedType
 from typing import TYPE_CHECKING, Any
 
 import networkx as nx
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from easylink.step import Step
 
 
-@dataclass(frozen=True)
+@dataclass()
 class InputSlot:
     """A single input slot to a specific node.
 
@@ -41,20 +42,48 @@ class InputSlot:
     env_var: str | None
     """The environment variable that is used to pass a list  of data filepaths to 
     an ``Implementation``."""
-    validator: Callable[[str], None]
+    validator: Callable[[str], None] = field(compare=False)
     """A function that validates the input data being passed into the pipeline via 
     this ``InputSlot``. If the data is invalid, the function should raise an exception 
     with a descriptive error message which will then be reported to the user.
     **Note that the function *must* be defined in the** :mod:`easylink.utilities.validation_utils` 
     **module!**"""
-    splitter: Callable[[list[str], str, Any], None] | None = None
+    splitter: Callable[[list[str], str, Any], None] | None = field(
+        default=None, compare=False
+    )
     """A function that splits the incoming data to this ``InputSlot`` into smaller
     pieces. The primary purpose of this functionality is to run sections of the 
     pipeline in an embarrassingly parallel manner. **Note that the function *must* 
     be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
 
+    def __eq__(self, other: Any) -> bool | NotImplementedType:
+        """Checks if two ``InputSlots`` are equal.
 
-@dataclass(frozen=True)
+        Two ``InputSlots`` are considered equal if their names, ``env_vars``, and
+        names of their ``validators`` and ``splitters`` are all the same.
+        """
+        if not isinstance(other, InputSlot):
+            return NotImplemented
+        splitter_name = self.splitter.__name__ if self.splitter else None
+        other_splitter_name = other.splitter.__name__ if other.splitter else None
+        return (
+            self.name == other.name
+            and self.env_var == other.env_var
+            and self.validator.__name__ == other.validator.__name__
+            and splitter_name == other_splitter_name
+        )
+
+    def __hash__(self) -> int:
+        """Hashes an ``InputSlot``.
+
+        The hash is based on the name of the ``InputSlot``, its ``env_var``, and
+        the names of its ``validator`` and ``splitter``.
+        """
+        splitter_name = self.splitter.__name__ if self.splitter else None
+        return hash((self.name, self.env_var, self.validator.__name__, splitter_name))
+
+
+@dataclass()
 class OutputSlot:
     """A single output slot from a specific node.
 
@@ -75,11 +104,31 @@ class OutputSlot:
 
     name: str
     """The name of the ``OutputSlot``."""
-    aggregator: Callable[[list[str], str], None] = None
+    aggregator: Callable[[list[str], str], None] = field(default=None, compare=False)
     """A function that aggregates all of the generated data to be passed out via this
     ``OutputSlot``. The primary purpose of this functionality is to run sections
     of the pipeline in an embarrassingly parallel manner. **Note that the function 
     *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
+
+    def __eq__(self, other: Any) -> bool | NotImplementedType:
+        """Checks if two ``OutputSlots`` are equal.
+
+        Two ``OutputSlots`` are considered equal if their names and the names of their
+        ``aggregators`` are the same.
+        """
+        if not isinstance(other, OutputSlot):
+            return NotImplemented
+        aggregator_name = self.aggregator.__name__ if self.aggregator else None
+        other_aggregator_name = other.aggregator.__name__ if other.aggregator else None
+        return self.name == other.name and aggregator_name == other_aggregator_name
+
+    def __hash__(self) -> int:
+        """Hashes an ``OutputSlot``.
+
+        The hash is based on the name of the ``OutputSlot`` and the name of its ``aggregator``.
+        """
+        aggregator_name = self.aggregator.__name__ if self.aggregator else None
+        return hash((self.name, aggregator_name))
 
 
 @dataclass(frozen=True)

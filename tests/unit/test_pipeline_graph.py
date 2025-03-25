@@ -99,24 +99,42 @@ def test_implementations(default_config: Config) -> None:
             "input_slot",
             False,
             {
-                ("step_a", InputSlot("foo", env_var="bar", validator=None)),
-                ("step_b", InputSlot("baz", env_var="spam", validator=None)),
+                (
+                    "step_a",
+                    InputSlot("foo", env_var="bar", validator=validate_input_file_dummy),
+                ),
+                (
+                    "step_b",
+                    InputSlot("baz", env_var="spam", validator=validate_input_file_dummy),
+                ),
             },
         ),
         (
             "input_slot",
             True,
             {
-                ("step_a", InputSlot("foo", env_var="bar", validator=None)),
-                ("step_b", InputSlot("foo", env_var="spam", validator=None)),
+                (
+                    "step_a",
+                    InputSlot("foo", env_var="bar", validator=validate_input_file_dummy),
+                ),
+                (
+                    "step_b",
+                    InputSlot("foo", env_var="spam", validator=validate_input_file_dummy),
+                ),
             },
         ),
         (
             "input_slot",
             True,
             {
-                ("step_a", InputSlot("foo", env_var="bar", validator=None)),
-                ("step_b", InputSlot("baz", env_var="bar", validator=None)),
+                (
+                    "step_a",
+                    InputSlot("foo", env_var="bar", validator=validate_input_file_dummy),
+                ),
+                (
+                    "step_b",
+                    InputSlot("baz", env_var="bar", validator=validate_input_file_dummy),
+                ),
             },
         ),
         (
