@@ -1,3 +1,7 @@
+**0.1.11 - 3/27/25**
+
+ - Refactor the ImplementationGraph recursion logic for clarity
+
 **0.1.10 - 3/25/25**
 
  - Make InputSlots and OutputSlots mutable
