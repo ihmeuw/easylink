@@ -61,8 +61,8 @@ class PipelineSchema(HierarchicalStep):
         which has a :class:`~easylink.graph_components.StepGraph` containing
         sub-:class:`Steps<easylink.step.Step>` that need to be unrolled. This method
         recursively traverses that ``StepGraph`` and its childrens' ``StepGraphs``
-        until all sub-``Steps`` are in a :class:`~easylink.step.LeafConfigurationState`, 
-        i.e. all ``Steps`` are implemented by a single ``Implementation`` and we 
+        until all sub-``Steps`` are in a :class:`~easylink.step.LeafConfigurationState`,
+        i.e. all ``Steps`` are implemented by a single ``Implementation`` and we
         have the desired ``ImplementationGraph``.
 
         Returns
