@@ -109,7 +109,7 @@ class Step:
         """A combined dictionary containing both the ``InputSlotMappings`` and
         ``OutputSlotMappings`` of this ``Step``."""
         self.is_embarrassingly_parallel = is_embarrassingly_parallel
-        """TODO"""
+        """Whether or not this ``Step`` is to be run in an embarrassingly parallel manner."""
         self.parent_step = None
         """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
