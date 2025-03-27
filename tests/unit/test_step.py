@@ -1168,9 +1168,10 @@ def test_embarrassingly_parallel_step_implementation_graph(
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
 
-    # Check that leaf nodes have splitter and aggregators
-    assert ep_step.step.input_slots["step_3_main_input"].splitter == split_data_by_size
-    assert ep_step.step.output_slots["step_3_main_output"].aggregator == concatenate_datasets
+    # Check that the implementation has the splitter and aggregator
+    implementation = subgraph.nodes["step_3_python_pandas"]["implementation"]
+    assert implementation.input_slots["step_3_main_input"].splitter == split_data_by_size
+    assert implementation.output_slots["step_3_main_output"].aggregator == concatenate_datasets
 
 
 @pytest.mark.parametrize(
