@@ -1183,7 +1183,7 @@ class EmbarrassinglyParallelStep(Step):
         )
         self.step_graph = None
         self.step = step
-        self.step.is_embarrassingly_parallel = True
+        # self.step.is_embarrassingly_parallel = True
         self._validate()
 
     def _validate(self) -> None:
@@ -1723,6 +1723,10 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for node in self._step.step_graph.nodes:
             substep = self._step.step_graph.nodes[node]["step"]
+            if self._step.is_embarrassingly_parallel:
+                # If the parent step is embarrassingly parallel, we need to set the substep's
+                # is_embarrassingly_parallel attribute to True as well
+                substep.is_embarrassingly_parallel = True
             self._propagate_splitter_aggregators(self._step, substep)
             substep.add_nodes_to_implementation_graph(implementation_graph)
 

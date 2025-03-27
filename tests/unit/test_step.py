@@ -1172,6 +1172,7 @@ def test_embarrassingly_parallel_step_implementation_graph(
     assert (
         implementation.output_slots["step_3_main_output"].aggregator == concatenate_datasets
     )
+    assert implementation.is_embarrassingly_parallel
 
 
 @pytest.mark.parametrize(
@@ -1471,18 +1472,21 @@ def test_embarrassingly_parallel_hierarchical_step_implementation_graph(
     assert imp1.input_slots["step_1_secondary_input"].splitter == None
     assert imp1.output_slots["step_1_main_output"].aggregator == None
     assert imp1.output_slots["step_1_secondary_output"].aggregator == None
+    assert imp1.is_embarrassingly_parallel
 
     imp2 = implementation_graph.nodes["step_2_python_pandas"]["implementation"]
     assert imp2.input_slots["step_2_main_input"].splitter == None
     assert imp2.input_slots["step_2_secondary_input"].splitter == None
     assert imp2.output_slots["step_2_main_output"].aggregator == None
     assert imp2.output_slots["step_2_secondary_output"].aggregator == None
+    assert imp2.is_embarrassingly_parallel
 
     imp3 = implementation_graph.nodes["step_3_python_pandas"]["implementation"]
     assert imp3.input_slots["step_3_main_input"].splitter == None
     assert imp3.input_slots["step_3_secondary_input"].splitter == None
     assert imp3.output_slots["step_3_main_output"].aggregator == concatenate_datasets
     assert imp3.output_slots["step_3_secondary_output"].aggregator == concatenate_datasets
+    assert imp3.is_embarrassingly_parallel
 
 
 ####################
