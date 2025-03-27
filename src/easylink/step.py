@@ -1304,9 +1304,6 @@ class EmbarrassinglyParallelStep(Step):
         # Add the key back to the expanded config
         expanded_config = LayeredConfigTree({self.name: step_config})
 
-        # Traverse the step_graph to add the splitter/aggregators to the appropriate i/o slots
-        self._propagate_splitter_aggregators(self)
-
         # Manually set the configuration state to non-leaf instead of relying
         # on super().get_configuration_state() because that method will erroneously
         # set to leaf state in the event the user didn't include the config_key
@@ -1314,60 +1311,6 @@ class EmbarrassinglyParallelStep(Step):
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
-
-    @staticmethod
-    def _propagate_splitter_aggregators(parent: Step) -> None:
-        """Propagates the splitter and aggregators to the relevant leaf ``Steps``.
-
-        This method recursively propagates :meth:`~easylink.graph_components.InputSlot.splitter`
-        and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
-        parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
-        :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
-        child steps' slots.
-
-        Parameters
-        ----------
-        parent
-            The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
-            to be propagated to its child steps.
-        """
-        if isinstance(parent, EmbarrassinglyParallelStep):
-            children = [parent.step]
-        elif hasattr(parent, "step_graph") and parent.step_graph:
-            children = [
-                parent.step_graph.nodes[node]["step"] for node in parent.step_graph.nodes
-            ]
-        else:  # No children
-            return
-        for child in children:
-            for parent_input_slot_name, parent_input_slot in parent.input_slots.items():
-                if parent_input_slot.splitter:
-                    # Extract the appropriate child slot name from the mapping
-                    child_slot_name = [
-                        mapping
-                        for mapping in parent.slot_mappings["input"]
-                        if mapping.parent_slot == parent_input_slot_name
-                    ][0].child_slot
-                    # Assign the splitter to the appropriate child slot
-                    if child_slot_name in child.input_slots:
-                        child.input_slots[
-                            child_slot_name
-                        ].splitter = parent_input_slot.splitter
-            for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
-                # Extract the appropriate child slot name from the mapping
-                child_slot_name = [
-                    mapping
-                    for mapping in parent.slot_mappings["output"]
-                    if mapping.parent_slot == parent_output_slot_name
-                ][0].child_slot
-                # Assign the aggregator to the appropriate child slot
-                if child_slot_name in child.output_slots:
-                    child.output_slots[
-                        child_slot_name
-                    ].aggregator = parent_output_slot.aggregator
-            if hasattr(child, "step_graph") and child.step_graph:
-                # Recursively propagate splitter/aggregator to children of the child step
-                EmbarrassinglyParallelStep._propagate_splitter_aggregators(child)
 
 
 class ChoiceStep(Step):
@@ -1780,7 +1723,50 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for node in self._step.step_graph.nodes:
             substep = self._step.step_graph.nodes[node]["step"]
+            self._propagate_splitter_aggregators(self._step, substep)
             substep.add_nodes_to_implementation_graph(implementation_graph)
+
+    @staticmethod
+    def _propagate_splitter_aggregators(parent: Step, child: Step):
+        """Propagates splitters and aggregators to child ``Steps``.
+
+        This method adds the :meth:`~easylink.graph_components.InputSlot.splitter`
+        and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
+        parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
+        :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
+        child steps' slots.
+
+        Parameters
+        ----------
+        parent
+            The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
+            to be propagated to the appropriate child ``Step``.
+        child
+            A child ``Step`` to potentially have its parent's ``splitter`` and
+            ``aggregators`` assigned to its ``InputSlot`` and ``OutputSlots``,
+            respectively.
+        """
+        for parent_input_slot_name, parent_input_slot in parent.input_slots.items():
+            if parent_input_slot.splitter:
+                # Extract the appropriate child slot name from the mapping
+                child_slot_name = [
+                    mapping
+                    for mapping in parent.slot_mappings["input"]
+                    if mapping.parent_slot == parent_input_slot_name
+                ][0].child_slot
+                # Assign the splitter to the appropriate child slot
+                if child_slot_name in child.input_slots:
+                    child.input_slots[child_slot_name].splitter = parent_input_slot.splitter
+        for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
+            # Extract the appropriate child slot name from the mapping
+            child_slot_name = [
+                mapping
+                for mapping in parent.slot_mappings["output"]
+                if mapping.parent_slot == parent_output_slot_name
+            ][0].child_slot
+            # Assign the aggregator to the appropriate child slot
+            if child_slot_name in child.output_slots:
+                child.output_slots[child_slot_name].aggregator = parent_output_slot.aggregator
 
     def add_edges_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
