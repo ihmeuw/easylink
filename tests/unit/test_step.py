@@ -1164,7 +1164,7 @@ def test_embarrassingly_parallel_step_implementation_graph(
         {"implementation": {"name": "step_3_python_pandas", "configuration": {}}}
     )
     ep_step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
+    subgraph = _create_implementation_graph(ep_step)
     assert list(subgraph.nodes) == ["step_3_python_pandas"]
     assert list(subgraph.edges) == []
 
