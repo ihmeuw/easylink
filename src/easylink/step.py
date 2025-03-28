@@ -1634,6 +1634,11 @@ class NonLeafConfigurationState(ConfigurationState):
         ``NonLeafConfigurationState``) to the ``ImplementationGraph``.
         2. Recursively traverses all sub-steps and adds their edges to the
         ``ImplementationGraph``.
+        
+        Note that to achieve (1), edges must be mapped from being between steps at
+        this level of the hierarchy, all the way down to being between concrete implementations.
+        Mapping each edge down to the implementation level is *itself* a recursive
+        operation (see ``get_implementation_edges``).
         """
         # Add the edges at this level (i.e. the edges at this `self._step`)
         for source, target, edge_attrs in self._step.step_graph.edges(data=True):
