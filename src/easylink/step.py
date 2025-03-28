@@ -1634,7 +1634,7 @@ class NonLeafConfigurationState(ConfigurationState):
         ``NonLeafConfigurationState``) to the ``ImplementationGraph``.
         2. Recursively traverses all sub-steps and adds their edges to the
         ``ImplementationGraph``.
-        
+
         Note that to achieve (1), edges must be mapped from being between steps at
         this level of the hierarchy, all the way down to being between concrete implementations.
         Mapping each edge down to the implementation level is *itself* a recursive
@@ -1657,12 +1657,16 @@ class NonLeafConfigurationState(ConfigurationState):
             substep.add_edges_to_implementation_graph(implementation_graph)
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        """Gets the edge information for the ``Implementation`` related to this ``Step``.
+        """Gets the edges for the ``Implementation`` related to this ``Step``.
+
+        This method maps an edge between ``Steps`` in this ``Step's`` ``StepGraph``
+        to one or more edges between ``Implementations`` by applying ``SlotMappings``.
 
         Parameters
         ----------
         edge
-            The ``Step's`` edge information to be propagated to the ``ImplementationGraph``.
+            The edge information of the edge in the ``StepGraph`` to be mapped to
+            the ``Implementation`` level.
 
         Raises
         ------
@@ -1671,7 +1675,28 @@ class NonLeafConfigurationState(ConfigurationState):
 
         Returns
         -------
-            The ``Implementation's`` edge information.
+            A list of edges between ``Implementations`` which are ready to add to
+            the ``ImplementationGraph``.
+
+        Notes
+        -----
+        In EasyLink, an edge (in either a ``StepGraph`` or ``ImplementationGraph``)
+        sconnects two ``Slot``.
+
+        The core of this method is to map the ``Slots`` on the ``StepGraph`` edge
+        to the corresponding ``Slots`` on ``Implementations``.
+
+        At each level in the step hierarchy, ``SlotMappings`` indicate how to map
+        a ``Slot`` to the level below in the hierarchy.
+
+        This method recurses through the step hierarchy until it reaches the leaf
+        ``Steps`` relevant to this edge in order to compose all the ``SlotMappings``
+        that should apply to it.
+
+        Because a single ``Step`` can become multiple nodes in the ``ImplementationGraph``
+        (e.g. a :class:`TemplatedStep`), a single edge between ``Steps`` may actually
+        become multiple edges between ``Implementations``, which is why this method
+        can return a list.
         """
         implementation_edges = []
         if edge.source_node == self._step.name:
