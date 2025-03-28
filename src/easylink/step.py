@@ -15,7 +15,6 @@ import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any
 
 from layered_config_tree import LayeredConfigTree
 
@@ -250,18 +249,25 @@ class Step:
                 ]
         return errors
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds the ``Implementations`` related to this ``Step`` as nodes to the :class:`~easylink.graph_components.ImplementationGraph`.
 
-        The ``ImplementationGraph`` and how it is determined depends on whether
-        this ``Step`` is a leaf or a non-leaf, i.e. what its :attr:`configuration_state`
-        is.
-
-        Returns
-        -------
-            The ``ImplementationGraph`` of this ``Step`` based on its ``configuration_state``.
+        How the nodes get added depends on whether this ``Step`` is a leaf or a non-leaf,
+        i.e. what its :attr:`configuration_state` is.
         """
-        return self.configuration_state.get_implementation_graph()
+        self.configuration_state.add_nodes_to_implementation_graph(implementation_graph)
+
+    def add_edges_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds the edges of this ``Step's`` ``Implementation(s)`` to the :class:`~easylink.graph_components.ImplementationGraph`.
+
+        How the edges get added depends on whether this ``Step`` is a leaf or a non-leaf,
+        i.e. what its :attr:`configuration_state` is.
+        """
+        self.configuration_state.add_edges_to_implementation_graph(implementation_graph)
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
         """Gets the edge information for the ``Implementation`` related to this ``Step``.
@@ -387,7 +393,7 @@ class IOStep(Step):
             The internal configuration of this ``Step``, i.e. it should not include
             the ``Step's`` name.
         combined_implementations
-            The configuration for any implementations to be combined.
+            The configuration for any ``Implementations`` to be combined.
         input_data_config
             The input data configuration for the entire pipeline.
         """
@@ -395,8 +401,10 @@ class IOStep(Step):
             self, step_config, combined_implementations, input_data_config
         )
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds this ``IOStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
 
         Notes
         -----
@@ -404,19 +412,22 @@ class IOStep(Step):
         via an :class:`~easylink.implementation.Implementation`. As such, we
         leverage the :class:`~easylink.implementation.NullImplementation` class
         to generate the graph node.
-
-        Returns
-        -------
-            The ``ImplementationGraph`` of this ``Step``.
         """
-        implementation_graph = ImplementationGraph()
         implementation_graph.add_node_from_implementation(
             self.name,
             implementation=NullImplementation(
                 self.name, self.input_slots.values(), self.output_slots.values()
             ),
         )
-        return implementation_graph
+
+    def add_edges_to_implementation_graph(self, implementation_graph):
+        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
+
+        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
+        since they are represented by a single ``NullImplementation`` node, and so we
+        simply pass.
+        """
+        pass
 
 
 class InputStep(IOStep):
@@ -1394,8 +1405,17 @@ class ConfigurationState(ABC):
         """The input data configuration for the entire pipeline."""
 
     @abstractmethod
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Resolves the graph composed of ``Steps`` into one composed of ``Implementations``."""
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds this ``Step's`` ``Implementation(s)`` as nodes to the :class:`~easylink.graph_components.ImplementationGraph`."""
+        pass
+
+    @abstractmethod
+    def add_edges_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds the edges of this ``Step's`` ``Implementation(s)`` to the :class:`~easylink.graph_components.ImplementationGraph`."""
         pass
 
     @abstractmethod
@@ -1438,19 +1458,16 @@ class LeafConfigurationState(ConfigurationState):
             else self.step_config.implementation
         )
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds this ``Step's`` :class:`~easylink.implementation.Implementation` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
 
         A ``Step`` in a leaf configuration state by definition has no sub-``Steps``
         to unravel; we are able to directly instantiate an :class:`~easylink.implementation.Implementation`
-        and generate an ``ImplementationGraph`` from it.
-
-        Returns
-        -------
-            The ``ImplementationGraph`` related to this ``Step``.
+        and add it to the ``ImplementationGraph``.
         """
         step = self._step
-        implementation_graph = ImplementationGraph()
         if self.is_combined:
             if isinstance(step, EmbarrassinglyParallelStep):
                 raise NotImplementedError(
@@ -1475,7 +1492,15 @@ class LeafConfigurationState(ConfigurationState):
             step.implementation_node_name,
             implementation=implementation,
         )
-        return implementation_graph
+
+    def add_edges_to_implementation_graph(self, implementation_graph) -> None:
+        """Adds the edges for this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
+
+        ``Steps`` in a ``LeafConfigurationState`` do not actually have edges within them
+        (they are represented by a single node in the ``ImplementationGraph``) and so
+        we simply pass.
+        """
+        pass
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
         """Gets the edge information for the ``Implementation`` related to this ``Step``.
@@ -1543,7 +1568,8 @@ class NonLeafConfigurationState(ConfigurationState):
         for; it should not include the ``Step's`` name (though it must include
         the sub-step names).
     combined_implementations
-        The configuration for any implementations to be combined.
+        The configuration for any :class:`Implementations<easylink.implementation.Implementation>`
+        to be combined.
     input_data_config
         The input data configuration for the entire pipeline.
 
@@ -1585,61 +1611,62 @@ class NonLeafConfigurationState(ConfigurationState):
         self._nodes = step.step_graph.nodes
         self._configure_subgraph_steps()
 
-    def get_implementation_graph(self) -> ImplementationGraph:
-        """Gets this ``Step's`` :class:`~easylink.graph_components.ImplementationGraph`.
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds this ``Step's`` ``Implementations`` as nodes to the ``ImplementationGraph``.
 
-        A ``Step`` in a non-leaf configuration state by definition has a ``StepGraph``
-        containing sub-``Steps`` that  need to be unrolled. This method recursively
-        traverses that ``StepGraph`` and its childrens' ``StepGraphs`` until all
-        sub-``Steps`` are in a :class:`LeafConfigurationState`, i.e. all ``Steps``
-        are implemented by a single ``Implementation`` and we have our desired
+        This is a recursive function; it calls itself until all sub-``Steps``
+        are of a ``LeafConfigurationState`` and have had their corresponding
+        ``Implementations`` added as nodes to the ``ImplementationGraph``.
+        """
+        for node in self._step.step_graph.nodes:
+            substep = self._step.step_graph.nodes[node]["step"]
+            substep.add_nodes_to_implementation_graph(implementation_graph)
+
+    def add_edges_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds the edges of this ``Step's`` ``Implementations`` to the ``ImplementationGraph``.
+
+        This method does two things:
+        1. Adds the edges *at this level* (i.e. at the ``Step`` tied to this
+        ``NonLeafConfigurationState``) to the ``ImplementationGraph``.
+        2. Recursively traverses all sub-steps and adds their edges to the
         ``ImplementationGraph``.
 
-        Returns
-        -------
-            The ``ImplementationGraph`` of this ``Step``.
-
-        Notes
-        -----
-        This method is first called on the entire :class:`~easylink.pipeline_schema.PipelineSchema`
-        when constructing the :class:`~easylink.pipeline_graph.PipelineGraph`
-        to run.
-
+        Note that to achieve (1), edges must be mapped from being between steps at
+        this level of the hierarchy, all the way down to being between concrete implementations.
+        Mapping each edge down to the implementation level is *itself* a recursive
+        operation (see ``get_implementation_edges``).
         """
-        implementation_graph = ImplementationGraph()
-        self.add_nodes(implementation_graph)
-        self.add_edges(implementation_graph)
-        return implementation_graph
-
-    def add_nodes(self, implementation_graph: ImplementationGraph) -> None:
-        """Adds nodes for each ``Step`` to the ``ImplementationGraph``."""
-        for node in self._nodes:
-            step = self._nodes[node]["step"]
-            implementation_graph.update(step.get_implementation_graph())
-
-    def add_edges(self, implementation_graph: ImplementationGraph) -> None:
-        """Adds the edges to the ``ImplementationGraph``."""
+        # Add the edges at this level (i.e. the edges at this `self._step`)
         for source, target, edge_attrs in self._step.step_graph.edges(data=True):
-            all_edges = []
             edge = EdgeParams.from_graph_edge(source, target, edge_attrs)
-            parent_source_step = self._nodes[source]["step"]
-            parent_target_step = self._nodes[target]["step"]
+            source_step = self._nodes[source]["step"]
+            target_step = self._nodes[target]["step"]
 
-            source_edges = parent_source_step.get_implementation_edges(edge)
+            source_edges = source_step.get_implementation_edges(edge)
             for source_edge in source_edges:
-                for target_edge in parent_target_step.get_implementation_edges(source_edge):
-                    all_edges.append(target_edge)
+                for target_edge in target_step.get_implementation_edges(source_edge):
+                    implementation_graph.add_edge_from_params(target_edge)
 
-            for edge in all_edges:
-                implementation_graph.add_edge_from_params(edge)
+        # Recurse through all sub-steps and add the edges between them
+        for node in self._step.step_graph.nodes:
+            substep = self._step.step_graph.nodes[node]["step"]
+            substep.add_edges_to_implementation_graph(implementation_graph)
 
     def get_implementation_edges(self, edge: EdgeParams) -> list[EdgeParams]:
-        """Gets the edge information for the ``Implementation`` related to this ``Step``.
+        """Gets the edges for the ``Implementation`` related to this ``Step``.
+
+        This method maps an edge between ``Steps`` in this ``Step's`` ``StepGraph``
+        to one or more edges between ``Implementations`` by applying ``SlotMappings``.
 
         Parameters
         ----------
         edge
-            The ``Step's`` edge information to be propagated to the ``ImplementationGraph``.
+            The edge information of the edge in the ``StepGraph`` to be mapped to
+            the ``Implementation`` level.
 
         Raises
         ------
@@ -1648,7 +1675,28 @@ class NonLeafConfigurationState(ConfigurationState):
 
         Returns
         -------
-            The ``Implementation's`` edge information.
+            A list of edges between ``Implementations`` which are ready to add to
+            the ``ImplementationGraph``.
+
+        Notes
+        -----
+        In EasyLink, an edge (in either a ``StepGraph`` or ``ImplementationGraph``)
+        sconnects two ``Slot``.
+
+        The core of this method is to map the ``Slots`` on the ``StepGraph`` edge
+        to the corresponding ``Slots`` on ``Implementations``.
+
+        At each level in the step hierarchy, ``SlotMappings`` indicate how to map
+        a ``Slot`` to the level below in the hierarchy.
+
+        This method recurses through the step hierarchy until it reaches the leaf
+        ``Steps`` relevant to this edge in order to compose all the ``SlotMappings``
+        that should apply to it.
+
+        Because a single ``Step`` can become multiple nodes in the ``ImplementationGraph``
+        (e.g. a :class:`TemplatedStep`), a single edge between ``Steps`` may actually
+        become multiple edges between ``Implementations``, which is why this method
+        can return a list.
         """
         implementation_edges = []
         if edge.source_node == self._step.name:
