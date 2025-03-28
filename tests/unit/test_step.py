@@ -88,9 +88,9 @@ def test_io_step_slots(io_step_params: dict[str, Any]) -> None:
 
 def test_io_implementation_graph(io_step_params: dict[str, Any]) -> None:
     step = IOStep(**io_step_params)
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == ["io"]
-    assert list(subgraph.edges) == []
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == ["io"]
+    assert list(implementation_graph.edges) == []
 
 
 def test_basic_step_slots(basic_step_params: dict[str, Any]) -> None:
@@ -111,9 +111,9 @@ def test_basic_step_implementation_graph(
 ) -> None:
     step = Step(**basic_step_params)
     step.set_configuration_state(default_config["pipeline"]["steps"][step.name], {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == ["step_1_python_pandas"]
-    assert list(subgraph.edges) == []
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == ["step_1_python_pandas"]
+    assert list(implementation_graph.edges) == []
 
 
 @pytest.fixture
@@ -185,9 +185,9 @@ def test_hierarchical_step_implementation_graph(
         {"implementation": {"name": "step_4_python_pandas", "configuration": {}}}
     )
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == ["step_4_python_pandas"]
-    assert list(subgraph.edges) == []
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == ["step_4_python_pandas"]
+    assert list(implementation_graph.edges) == []
 
     # Test implementation_graph for substeps
     step_config = LayeredConfigTree(
@@ -209,8 +209,8 @@ def test_hierarchical_step_implementation_graph(
         }
     )
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == [
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == [
         "step_4a_python_pandas",
         "step_4b_python_pandas",
     ]
@@ -229,9 +229,9 @@ def test_hierarchical_step_implementation_graph(
             },
         ),
     ]
-    assert len(subgraph.edges) == len(expected_edges)
+    assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
+        assert edge in implementation_graph.edges(data=True)
 
 
 @pytest.fixture
@@ -363,9 +363,9 @@ def test_loop_implementation_graph(
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     step = LoopStep(**loop_step_params)
     step.set_configuration_state(default_config["pipeline"]["steps"][step.name], {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == ["step_3_python_pandas"]
-    assert list(subgraph.edges) == []
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == ["step_3_python_pandas"]
+    assert list(implementation_graph.edges) == []
 
     step_config = LayeredConfigTree(
         {
@@ -396,8 +396,8 @@ def test_loop_implementation_graph(
         },
     )
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == [
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == [
         "step_3_loop_1_step_3_python_pandas",
         "step_3_loop_2_step_3a_step_3a_python_pandas",
         "step_3_loop_2_step_3b_step_3b_python_pandas",
@@ -430,9 +430,9 @@ def test_loop_implementation_graph(
             },
         ),
     ]
-    assert len(subgraph.edges) == len(expected_edges)
+    assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
+        assert edge in implementation_graph.edges(data=True)
 
 
 @pytest.fixture
@@ -569,8 +569,8 @@ def test_parallel_step_implementation_graph(
         },
     )
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert set(subgraph.nodes) == {
+    implementation_graph = _create_implementation_graph(step)
+    assert set(implementation_graph.nodes) == {
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
         "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
         "step_1_parallel_split_2_step_1a_step_1a_python_pandas",
@@ -619,9 +619,9 @@ def test_parallel_step_implementation_graph(
             },
         ),
     ]
-    assert len(subgraph.edges) == len(expected_edges)
+    assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
+        assert edge in implementation_graph.edges(data=True)
 
 
 @pytest.mark.parametrize("step_type", ["parallel", "loop"])
@@ -654,8 +654,8 @@ def test_templated_implementation_graph_no_multiplicity(
         },
     )
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert set(subgraph.nodes) == {
+    implementation_graph = _create_implementation_graph(step)
+    assert set(implementation_graph.nodes) == {
         f"{step.name}a_python_pandas",
         f"{step.name}b_python_pandas",
     }
@@ -674,9 +674,9 @@ def test_templated_implementation_graph_no_multiplicity(
             },
         ),
     ]
-    assert len(subgraph.edges) == len(expected_edges)
+    assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
+        assert edge in implementation_graph.edges(data=True)
 
 
 @pytest.mark.parametrize("step_type", ["loop", "parallel"])
@@ -983,9 +983,9 @@ def test_simple_choice_step_implementation_graph(choice_step_params: dict[str, A
     # Need to validate in order to set the step graph an mappings prior to calling `set_configuration_state`
     step.validate_step(step_config, {}, {})
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == ["step_4_python_pandas"]
-    assert list(subgraph.edges) == []
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == ["step_4_python_pandas"]
+    assert list(implementation_graph.edges) == []
 
     # Test implementation_graph for a step with substeps
     step_config = LayeredConfigTree(
@@ -1008,8 +1008,8 @@ def test_simple_choice_step_implementation_graph(choice_step_params: dict[str, A
         }
     )
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == [
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == [
         "step_4a_python_pandas",
         "step_4b_r",
     ]
@@ -1028,9 +1028,9 @@ def test_simple_choice_step_implementation_graph(choice_step_params: dict[str, A
             },
         ),
     ]
-    assert len(subgraph.edges) == len(expected_edges)
+    assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
+        assert edge in implementation_graph.edges(data=True)
 
 
 def test_complex_choice_step_implementation_graph(choice_step_params: dict[str, Any]) -> None:
@@ -1067,8 +1067,8 @@ def test_complex_choice_step_implementation_graph(choice_step_params: dict[str, 
     # Need to validate in order to set the step graph and mappings prior to calling `set_configuration_state`
     step.validate_step(step_config, {}, {})
     step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == [
+    implementation_graph = _create_implementation_graph(step)
+    assert list(implementation_graph.nodes) == [
         "step_5_python_pandas",
         "step_6_loop_1_step_6_python_pandas",
         "step_6_loop_2_step_6_python_pandas",
@@ -1101,9 +1101,9 @@ def test_complex_choice_step_implementation_graph(choice_step_params: dict[str, 
             },
         ),
     ]
-    assert len(subgraph.edges) == len(expected_edges)
+    assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
-        assert edge in subgraph.edges(data=True)
+        assert edge in implementation_graph.edges(data=True)
 
 
 @pytest.fixture
@@ -1116,11 +1116,25 @@ def embarrassingly_parallel_step_params() -> dict[str, Any]:
                     "step_3_main_input",
                     "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validate_input_file_dummy,
-                    split_data_by_size,
                 )
             ],
-            output_slots=[OutputSlot("step_3_main_output", concatenate_datasets)],
+            output_slots=[OutputSlot("step_3_main_output")],
         ),
+        "input_slots": [
+            InputSlot(
+                "ep_step_3_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+                split_data_by_size,
+            )
+        ],
+        "output_slots": [OutputSlot("ep_step_3_main_output", concatenate_datasets)],
+        "input_slot_mappings": [
+            InputSlotMapping("ep_step_3_main_input", "step_3", "step_3_main_input")
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping("ep_step_3_main_output", "step_3", "step_3_main_output")
+        ],
     }
 
 
@@ -1130,29 +1144,35 @@ def test_embarrassingly_parallel_step_slots(
     step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
     assert step.name == "step_3"
     assert step.input_slots == {
-        "step_3_main_input": InputSlot(
-            "step_3_main_input",
+        "ep_step_3_main_input": InputSlot(
+            "ep_step_3_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
             split_data_by_size,
         ),
     }
     assert step.output_slots == {
-        "step_3_main_output": OutputSlot("step_3_main_output", concatenate_datasets)
+        "ep_step_3_main_output": OutputSlot("ep_step_3_main_output", concatenate_datasets),
     }
 
 
 def test_embarrassingly_parallel_step_implementation_graph(
     embarrassingly_parallel_step_params: dict[str, Any]
 ) -> None:
-    step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
-    step_config = LayeredConfigTree(
-        {"implementation": {"name": "step_3_python_pandas", "configuration": {}}}
+    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
+    step_config = LayeredConfigTree({"implementation": {"name": "step_3_python_pandas"}})
+    ep_step.set_configuration_state(step_config, {}, {})
+    implementation_graph = _create_implementation_graph(ep_step)
+    assert list(implementation_graph.nodes) == ["step_3_python_pandas"]
+    assert list(implementation_graph.edges) == []
+
+    # Check that the implementation has the splitter and aggregator
+    implementation = implementation_graph.nodes["step_3_python_pandas"]["implementation"]
+    assert implementation.input_slots["step_3_main_input"].splitter == split_data_by_size
+    assert (
+        implementation.output_slots["step_3_main_output"].aggregator == concatenate_datasets
     )
-    step.set_configuration_state(step_config, {}, {})
-    subgraph = _create_implementation_graph(step)
-    assert list(subgraph.nodes) == ["step_3_python_pandas"]
-    assert list(subgraph.edges) == []
+    assert implementation.is_embarrassingly_parallel
 
 
 @pytest.mark.parametrize(
@@ -1260,9 +1280,11 @@ def test_embarrassingly_parallel_step__validation(
     step_params = {
         "step": Step(
             step_name="step",
-            input_slots=input_slots,
-            output_slots=output_slots,
         ),
+        "input_slots": input_slots,
+        "output_slots": output_slots,
+        "input_slot_mappings": [],
+        "output_slot_mappings": [],
     }
     with pytest.raises(ValueError) as error:
         EmbarrassinglyParallelStep(**step_params)
@@ -1274,6 +1296,197 @@ def test_embarrassingly_parallel_step__validation(
     )
     for msg in expected:
         assert msg in error_msg
+
+
+@pytest.fixture
+def embarrassingly_parallel_hierarchical_step_params() -> dict[str, Any]:
+    return {
+        "step": HierarchicalStep(
+            step_name="steps_1_2_3",
+            input_slots=[
+                InputSlot(
+                    "steps_1_2_3_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                InputSlot(
+                    "steps_1_2_3_secondary_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+            ],
+            output_slots=[
+                OutputSlot("steps_1_2_3_main_output"),
+                OutputSlot("steps_1_2_3_secondary_output"),
+            ],
+            nodes=[
+                Step(
+                    "step_1",
+                    input_slots=[
+                        InputSlot(
+                            "step_1_main_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            "step_1_secondary_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[
+                        OutputSlot("step_1_main_output"),
+                        OutputSlot("step_1_secondary_output"),
+                    ],
+                ),
+                Step(
+                    "step_2",
+                    input_slots=[
+                        InputSlot(
+                            "step_2_main_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            "step_2_secondary_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[
+                        OutputSlot("step_2_main_output"),
+                        OutputSlot("step_2_secondary_output"),
+                    ],
+                ),
+                Step(
+                    "step_3",
+                    input_slots=[
+                        InputSlot(
+                            "step_3_main_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            "step_3_secondary_input",
+                            "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[
+                        OutputSlot("step_3_main_output"),
+                        OutputSlot("step_3_secondary_output"),
+                    ],
+                ),
+            ],
+            edges=[
+                EdgeParams("step_1", "step_2", "step_1_main_output", "step_2_main_input"),
+                EdgeParams(
+                    "step_1", "step_2", "step_1_secondary_output", "step_2_secondary_input"
+                ),
+                EdgeParams("step_2", "step_3", "step_2_main_output", "step_3_main_input"),
+                EdgeParams(
+                    "step_2", "step_3", "step_2_secondary_output", "step_3_secondary_input"
+                ),
+            ],
+            input_slot_mappings=[
+                InputSlotMapping("steps_1_2_3_main_input", "step_1", "step_1_main_input"),
+                InputSlotMapping(
+                    "steps_1_2_3_secondary_input", "step_1", "step_1_secondary_input"
+                ),
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping("steps_1_2_3_main_output", "step_3", "step_3_main_output"),
+                OutputSlotMapping(
+                    "steps_1_2_3_secondary_output", "step_3", "step_3_secondary_output"
+                ),
+            ],
+        ),
+        "input_slots": [
+            InputSlot(
+                "ep_steps_1_2_3_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+                split_data_by_size,
+            ),
+            InputSlot(
+                "ep_steps_1_2_3_secondary_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            ),
+        ],
+        "output_slots": [
+            OutputSlot("ep_steps_1_2_3_main_output", concatenate_datasets),
+            OutputSlot("ep_steps_1_2_3_secondary_output", concatenate_datasets),
+        ],
+        "input_slot_mappings": [
+            InputSlotMapping(
+                "ep_steps_1_2_3_main_input", "steps_1_2_3", "steps_1_2_3_main_input"
+            ),
+            InputSlotMapping(
+                "ep_steps_1_2_3_secondary_input", "steps_1_2_3", "steps_1_2_3_secondary_input"
+            ),
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping(
+                "ep_steps_1_2_3_main_output", "steps_1_2_3", "steps_1_2_3_main_output"
+            ),
+            OutputSlotMapping(
+                "ep_steps_1_2_3_secondary_output",
+                "steps_1_2_3",
+                "steps_1_2_3_secondary_output",
+            ),
+        ],
+    }
+
+
+def test_embarrassingly_parallel_hierarchical_step_implementation_graph(
+    embarrassingly_parallel_hierarchical_step_params,
+) -> None:
+    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_hierarchical_step_params)
+    step_config = LayeredConfigTree(
+        {
+            "substeps": {
+                "step_1": {"implementation": {"name": "step_1_python_pandas"}},
+                "step_2": {"implementation": {"name": "step_2_python_pandas"}},
+                "step_3": {"implementation": {"name": "step_3_python_pandas"}},
+            },
+        }
+    )
+    ep_step.set_configuration_state(step_config, {}, {})
+    implementation_graph = _create_implementation_graph(ep_step)
+    assert list(implementation_graph.nodes) == [
+        "step_1_python_pandas",
+        "step_2_python_pandas",
+        "step_3_python_pandas",
+    ]
+    assert list(implementation_graph.edges) == [
+        ("step_1_python_pandas", "step_2_python_pandas", 0),
+        ("step_1_python_pandas", "step_2_python_pandas", 1),
+        ("step_2_python_pandas", "step_3_python_pandas", 0),
+        ("step_2_python_pandas", "step_3_python_pandas", 1),
+    ]
+
+    # Check that the implementation has the splitter and aggregator
+    imp1 = implementation_graph.nodes["step_1_python_pandas"]["implementation"]
+    assert imp1.input_slots["step_1_main_input"].splitter == split_data_by_size
+    assert imp1.input_slots["step_1_secondary_input"].splitter == None
+    assert imp1.output_slots["step_1_main_output"].aggregator == None
+    assert imp1.output_slots["step_1_secondary_output"].aggregator == None
+    assert imp1.is_embarrassingly_parallel
+
+    imp2 = implementation_graph.nodes["step_2_python_pandas"]["implementation"]
+    assert imp2.input_slots["step_2_main_input"].splitter == None
+    assert imp2.input_slots["step_2_secondary_input"].splitter == None
+    assert imp2.output_slots["step_2_main_output"].aggregator == None
+    assert imp2.output_slots["step_2_secondary_output"].aggregator == None
+    assert imp2.is_embarrassingly_parallel
+
+    imp3 = implementation_graph.nodes["step_3_python_pandas"]["implementation"]
+    assert imp3.input_slots["step_3_main_input"].splitter == None
+    assert imp3.input_slots["step_3_secondary_input"].splitter == None
+    assert imp3.output_slots["step_3_main_output"].aggregator == concatenate_datasets
+    assert imp3.output_slots["step_3_secondary_output"].aggregator == concatenate_datasets
+    assert imp3.is_embarrassingly_parallel
 
 
 ####################
