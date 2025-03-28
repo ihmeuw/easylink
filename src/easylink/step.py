@@ -1496,7 +1496,8 @@ class LeafConfigurationState(ConfigurationState):
     def add_edges_to_implementation_graph(self, implementation_graph) -> None:
         """Adds the edges for this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
 
-        ``Steps`` in a ``LeafConfigurationState`` do not actually have edges and so
+        ``Steps`` in a ``LeafConfigurationState`` do not actually have edges within them
+        (they are represented by a single node in the ``ImplementationGraph``) and so
         we simply pass.
         """
         pass
