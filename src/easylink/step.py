@@ -423,7 +423,8 @@ class IOStep(Step):
     def add_edges_to_implementation_graph(self, implementation_graph):
         """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
 
-        ``IOSteps`` do not have edges in the ``ImplementationGraph`` and so we
+        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
+        since they are represented by a single ``NullImplementation`` node, and so we
         simply pass.
         """
         pass
