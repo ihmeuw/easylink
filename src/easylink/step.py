@@ -1289,7 +1289,7 @@ class EmbarrassinglyParallelStep(Step):
             The input data configuration for the entire pipeline.
         """
         if self.step.name != self.name:
-            # Update the step name if the parent got renamed, e.g. a parent LoopStep 
+            # Update the step name if the parent got renamed, e.g. a parent LoopStep
             # 'step_1' that got expanded to 'step_1_loop_1', etc.
             self.step.name = self.name
             input_mappings = [
