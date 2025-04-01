@@ -1,4 +1,4 @@
-**0.1.12 - TBD/TBD/TBD**
+**0.1.12 - 4/1/25**
 
  - Propagate embarrassingly parallel splitters and aggregators to leaf steps
 
