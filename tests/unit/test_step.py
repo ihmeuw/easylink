@@ -447,6 +447,11 @@ def parallel_step_params() -> dict[str, Any]:
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
                 ),
+                InputSlot(
+                    name="step_1_secondary_input",
+                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
             ],
             output_slots=[OutputSlot("step_1_main_output")],
             nodes=[
@@ -458,6 +463,11 @@ def parallel_step_params() -> dict[str, Any]:
                             env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                             validator=validate_input_file_dummy,
                         ),
+                        InputSlot(
+                            name="step_1a_secondary_input",
+                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
                     ],
                     output_slots=[OutputSlot("step_1a_main_output")],
                 ),
@@ -467,6 +477,11 @@ def parallel_step_params() -> dict[str, Any]:
                         InputSlot(
                             name="step_1b_main_input",
                             env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            name="step_1b_secondary_input",
+                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                             validator=validate_input_file_dummy,
                         ),
                     ],
@@ -486,14 +501,24 @@ def parallel_step_params() -> dict[str, Any]:
                     parent_slot="step_1_main_input",
                     child_node="step_1a",
                     child_slot="step_1a_main_input",
-                )
+                ),
+                InputSlotMapping(
+                    parent_slot="step_1_secondary_input",
+                    child_node="step_1a",
+                    child_slot="step_1a_secondary_input",
+                ),
+                InputSlotMapping(
+                    parent_slot="step_1_secondary_input",
+                    child_node="step_1b",
+                    child_slot="step_1b_secondary_input",
+                ),
             ],
             output_slot_mappings=[
                 OutputSlotMapping(
                     parent_slot="step_1_main_output",
                     child_node="step_1b",
                     child_slot="step_1b_main_output",
-                )
+                ),
             ],
         ),
     }
@@ -507,7 +532,12 @@ def test_parallel_step_slots(parallel_step_params: dict[str, Any]) -> None:
             "step_1_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
-        )
+        ),
+        "step_1_secondary_input": InputSlot(
+            "step_1_secondary_input",
+            "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+            validate_input_file_dummy,
+        ),
     }
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
@@ -1571,7 +1601,6 @@ def embarrassingly_parallel_loop_step_params(
         ],
         "output_slots": [
             OutputSlot("ep_step_3_main_output", concatenate_datasets),
-            OutputSlot("ep_step_3_secondary_output", concatenate_datasets),
         ],
         "input_slot_mappings": [
             InputSlotMapping("ep_step_3_main_input", "step_3", "step_3_main_input"),
@@ -1579,11 +1608,6 @@ def embarrassingly_parallel_loop_step_params(
         ],
         "output_slot_mappings": [
             OutputSlotMapping("ep_step_3_main_output", "step_3", "step_3_main_output"),
-            OutputSlotMapping(
-                "ep_step_3_secondary_output",
-                "step_3",
-                "step_3_secondary_output",
-            ),
         ],
     }
 
@@ -1706,6 +1730,136 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
     assert len(imp4.output_slots) == 1
     assert imp4.output_slots["step_3_main_output"].aggregator == concatenate_datasets
     assert imp4.is_embarrassingly_parallel
+
+
+@pytest.fixture
+def embarrassingly_parallel_parallel_step_params(
+    parallel_step_params: dict[str, Any]
+) -> dict[str, Any]:
+    return {
+        "step": ParallelStep(**parallel_step_params),
+        "input_slots": [
+            InputSlot(
+                "ep_step_1_main_input",
+                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+                split_data_by_size,
+            ),
+            InputSlot(
+                "ep_step_1_secondary_input",
+                "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                validate_input_file_dummy,
+            ),
+        ],
+        "output_slots": [
+            OutputSlot("ep_step_1_main_output", concatenate_datasets),
+        ],
+        "input_slot_mappings": [
+            InputSlotMapping("ep_step_1_main_input", "step_1", "step_1_main_input"),
+            InputSlotMapping("ep_step_1_secondary_input", "step_1", "step_1_secondary_input"),
+        ],
+        "output_slot_mappings": [
+            OutputSlotMapping("ep_step_1_main_output", "step_1", "step_1_main_output"),
+        ],
+    }
+
+
+def test_embarrassingly_parallel_parallel_step_implementation_graph(
+    embarrassingly_parallel_parallel_step_params,
+    mocker: MockerFixture,
+) -> None:
+    """Tests an embarrassingly parallel ParallelStep.
+
+    The ParallelStep consists of three copies, each of which are a HierarchicalStep
+    consisting of step_1a and step_1b. We thus expect the splitter to be applied
+    to each copy's input slot for 1a and the aggregator to be applied to the output
+    slots of each copy.
+    """
+    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_parallel_step_params)
+    step_config = LayeredConfigTree(
+        {
+            "parallel": [
+                {
+                    "substeps": {
+                        "step_1a": {"implementation": {"name": "step_1a_python_pandas"}},
+                        "step_1b": {"implementation": {"name": "step_1b_python_pandas"}},
+                    },
+                },
+                {"implementation": {"name": "step_1_python_pandas"}},
+                {"implementation": {"name": "step_1_python_pandas"}},
+            ],
+        },
+    )
+    ep_step.set_configuration_state(step_config, {}, {})
+    mocker.patch("easylink.implementation.Implementation._load_metadata")
+    implementation_graph = _create_implementation_graph(ep_step)
+    assert list(implementation_graph.nodes) == [
+        "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
+        "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+        "step_1_parallel_split_2_step_1_python_pandas",
+        "step_1_parallel_split_3_step_1_python_pandas",
+    ]
+    # NOTE: There are no internal edges to the secondary slot (they are all
+    # mapped from the outer HierarchicalStep defined in the `loop_step_params`)
+    expected_edges = [
+        (
+            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
+            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1b_main_input",
+                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1a_main_output"),
+                "filepaths": None,
+            },
+        ),
+    ]
+    assert len(implementation_graph.edges) == len(expected_edges)
+    for edge in expected_edges:
+        assert edge in implementation_graph.edges(data=True)
+
+    # Check that the correct implementations have the splitter and aggregator
+    imp1_1a = implementation_graph.nodes[
+        "step_1_parallel_split_1_step_1a_step_1a_python_pandas"
+    ]["implementation"]
+    assert len(imp1_1a.input_slots) == 2
+    assert imp1_1a.input_slots["step_1a_main_input"].splitter == split_data_by_size
+    assert imp1_1a.input_slots["step_1a_secondary_input"].splitter == None
+    assert len(imp1_1a.output_slots) == 1
+    assert imp1_1a.output_slots["step_1a_main_output"].aggregator == None
+    assert imp1_1a.is_embarrassingly_parallel
+
+    imp1_1b = implementation_graph.nodes[
+        "step_1_parallel_split_1_step_1b_step_1b_python_pandas"
+    ]["implementation"]
+    assert len(imp1_1b.input_slots) == 2
+    assert imp1_1b.input_slots["step_1b_main_input"].splitter == None
+    assert imp1_1b.input_slots["step_1b_secondary_input"].splitter == None
+    assert len(imp1_1b.output_slots) == 1
+    assert imp1_1b.output_slots["step_1b_main_output"].aggregator == concatenate_datasets
+    assert imp1_1b.is_embarrassingly_parallel
+
+    imp2 = implementation_graph.nodes["step_1_parallel_split_2_step_1_python_pandas"][
+        "implementation"
+    ]
+    assert len(imp2.input_slots) == 2
+    assert imp2.input_slots["step_1_main_input"].splitter == split_data_by_size
+    assert imp2.input_slots["step_1_secondary_input"].splitter == None
+    assert len(imp2.output_slots) == 1
+    assert imp2.output_slots["step_1_main_output"].aggregator == concatenate_datasets
+    assert imp2.is_embarrassingly_parallel
+
+    imp3 = implementation_graph.nodes["step_1_parallel_split_3_step_1_python_pandas"][
+        "implementation"
+    ]
+    assert len(imp3.input_slots) == 2
+    assert imp3.input_slots["step_1_main_input"].splitter == split_data_by_size
+    assert imp3.input_slots["step_1_secondary_input"].splitter == None
+    assert len(imp3.output_slots) == 1
+    assert imp3.output_slots["step_1_main_output"].aggregator == concatenate_datasets
+    assert imp3.is_embarrassingly_parallel
 
 
 ####################

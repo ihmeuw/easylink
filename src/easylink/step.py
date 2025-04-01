@@ -1756,16 +1756,12 @@ class NonLeafConfigurationState(ConfigurationState):
                     for mapping in parent.slot_mappings["input"]
                     if mapping.parent_slot == parent_input_slot_name
                 ]
-                if len(mappings_with_splitter) > 1:
-                    raise NotImplementedError(
-                        "Multiple mappings from a single parent slot is not supported."
-                    )
-                child_node = mappings_with_splitter[0].child_node
-                child_slot = mappings_with_splitter[0].child_slot
-
-                # Assign the splitter to the appropriate child slot
-                if child_slot in child.input_slots and child_node == child.name:
-                    child.input_slots[child_slot].splitter = parent_input_slot.splitter
+                for mapping in mappings_with_splitter:
+                    child_node = mapping.child_node
+                    child_slot = mapping.child_slot
+                    # Assign the splitter to the appropriate child slot
+                    if child_slot in child.input_slots and child_node == child.name:
+                        child.input_slots[child_slot].splitter = parent_input_slot.splitter
         for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
             # Extract the appropriate child slot name from the mapping
             mappings_from_parent = [
@@ -1773,15 +1769,12 @@ class NonLeafConfigurationState(ConfigurationState):
                 for mapping in parent.slot_mappings["output"]
                 if mapping.parent_slot == parent_output_slot_name
             ]
-            if len(mappings_from_parent) > 1:
-                raise NotImplementedError(
-                    "Multiple mappings from a single parent slot is not supported."
-                )
-            child_node = mappings_from_parent[0].child_node
-            child_slot = mappings_from_parent[0].child_slot
-            # Assign the aggregator to the appropriate child slot
-            if child_slot in child.output_slots and child_node == child.name:
-                child.output_slots[child_slot].aggregator = parent_output_slot.aggregator
+            for mapping in mappings_from_parent:
+                child_node = mapping.child_node
+                child_slot = mapping.child_slot
+                # Assign the aggregator to the appropriate child slot
+                if child_slot in child.output_slots and child_node == child.name:
+                    child.output_slots[child_slot].aggregator = parent_output_slot.aggregator
 
     def add_edges_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
