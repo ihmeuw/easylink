@@ -146,7 +146,7 @@ Here are some example specifications:
 
 - A single file in a tabular format with columns A, B, and C.
 - A directory containing three files,
-   where each is in a tabular format and has three columns.
+  where each is in a tabular format and has three columns.
 - A directory containing any number of subdirectories.
   Each subdirectory must contain two files, where each is
   in a tabular format.
