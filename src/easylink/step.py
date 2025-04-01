@@ -1288,8 +1288,9 @@ class EmbarrassinglyParallelStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        if self.name != self.step.name:
-            # Update the slot mappings if the children have been renamed
+        if self.step.name != self.name:
+            # Update the step name if the parent got renamed, e.g. a parent LoopStep 
+            # 'step_1' that got expanded to 'step_1_loop_1', etc.
             self.step.name = self.name
             input_mappings = [
                 InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
