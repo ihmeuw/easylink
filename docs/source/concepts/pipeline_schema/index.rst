@@ -3,6 +3,10 @@
 Pipeline Schema
 ===============
 
+.. contents::
+   :depth: 2
+   :local:
+
 Motivation
 ----------
 
@@ -155,7 +159,7 @@ Data specifications are enforced by EasyLink;
 a pipeline will fail if any data do not follow their specification.
 
 Data Dependencies
------------------
+^^^^^^^^^^^^^^^^^
 
 We connect an output slot to an input slot with an arrow, as shown below,
 when the output of one step becomes the input to another.
@@ -173,7 +177,7 @@ when the output of one step becomes the input to another.
    a classic chicken and egg problem.
 
 Pipeline Schema
----------------
+^^^^^^^^^^^^^^^
 
 A basic **pipeline schema** is a set of steps interconnected by data dependencies
 that additionally has input data nodes (large circles)
