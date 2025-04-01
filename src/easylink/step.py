@@ -902,10 +902,8 @@ class TemplatedStep(Step, ABC):
             num_repeats = len(expanded_config)
             self.step_graph = self._update_step_graph(num_repeats)
             self.slot_mappings = self._update_slot_mappings(num_repeats)
-        # Manually set the configuration state to non-leaf instead of relying
-        # on super().get_configuration_state() because that method will erroneously
-        # set to leaf state in the event the user didn't include the config_key
-        # in the pipeline specification.
+
+        # TemplatedSteps are by definition non-leaf steps.
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
@@ -1183,7 +1181,6 @@ class EmbarrassinglyParallelStep(Step):
         )
         self.step_graph = None
         self.step = step
-        # self.step.is_embarrassingly_parallel = True
         self._validate()
 
     def _validate(self) -> None:
@@ -1226,46 +1223,6 @@ class EmbarrassinglyParallelStep(Step):
         if errors:
             raise ValueError("\n".join(errors))
 
-    def validate_step(
-        self,
-        step_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> dict[str, list[str]]:
-        """Validates the ``Step`` assigned to this ``EmbarrassinglyParallelStep``.
-
-        Parameters
-        ----------
-        step_config
-            The internal configuration of this ``Step``, i.e. it should not include
-            the ``Step's`` name.
-        combined_implementations
-            The configuration for any implementations to be combined.
-        input_data_config
-            The input data configuration for the entire pipeline.
-
-        Returns
-        -------
-            A dictionary of errors, where the keys are the ``Step`` name and the
-            values are lists of associated error messages.
-
-        Notes
-        -----
-        If the ``EmbarrassinglyParallelStep`` does not validate (i.e. errors are
-        found and the returned dictionary is non-empty), the tool will exit and
-        the pipeline will not run.
-
-        We attempt to batch error messages as much as possible, but there may be
-        times where the configuration is so ill-formed that we are unable to handle
-        all issue in one pass. In these cases, new errors may be found after the
-        initial ones are handled.
-        """
-        return self.step.validate_step(
-            LayeredConfigTree(step_config),
-            combined_implementations,
-            input_data_config,
-        )
-
     def set_configuration_state(
         self,
         step_config: LayeredConfigTree,
@@ -1305,10 +1262,7 @@ class EmbarrassinglyParallelStep(Step):
         # Add the key back to the expanded config
         expanded_config = LayeredConfigTree({self.name: step_config})
 
-        # Manually set the configuration state to non-leaf instead of relying
-        # on super().get_configuration_state() because that method will erroneously
-        # set to leaf state in the event the user didn't include the config_key
-        # in the pipeline specification.
+        # EmbarrassinglyParallelSteps are by definition non-leaf steps
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
