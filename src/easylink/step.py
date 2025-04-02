@@ -511,10 +511,11 @@ class HierarchicalStep(Step):
     step_graph
         The :class:`~easylink.graph_components.StepGraph` i.e. the directed acyclic
         graph (DAG) of sub-nodes and their edges that make up this ``HierarchicalStep``.
-    user_configurable
-        Whether or not the ``HierarchicalStep`` is user-configurable. It is a convenience
-        attribute to allow for back-end ``HierarchicalStep`` creation that are not
-        user-facing (i.e. they do not need to provide a 'substeps' configuration key).
+    directly_implemented
+        Whether or not the ``HierarchicalStep`` is implemented directly from the user. 
+        It is a convenience attribute to allow for back-end ``HierarchicalStep`` 
+        construction (i.e. ones that do not have a corresponding user-provided 
+        'substeps' configuration key).
 
     """
 
@@ -528,7 +529,7 @@ class HierarchicalStep(Step):
         edges=(),
         input_slot_mappings=(),
         output_slot_mappings=(),
-        user_configurable=True,
+        directly_implemented=True,
     ):
         super().__init__(
             step_name,
@@ -547,7 +548,7 @@ class HierarchicalStep(Step):
         self.step_graph = self._get_step_graph(nodes, edges)
         """The :class:`~easylink.graph_components.StepGraph` i.e. the directed acyclic 
         graph (DAG) of sub-nodes and their edges that make up this ``HierarchicalStep``."""
-        self.user_configurable = user_configurable
+        self.directly_implemented = directly_implemented
         """Whether or not the ``HierarchicalStep`` is user-configurable. It is a convenience
         attribute to allow for back-end ``HierarchicalStep`` creation that are not
         user-facing (i.e. they do not need to provide a 'substeps' configuration key)."""
@@ -595,7 +596,7 @@ class HierarchicalStep(Step):
         all issues in one pass. In these cases, new errors may be found after the
         initial ones are handled.
         """
-        if self.user_configurable:
+        if self.directly_implemented:
             if self.config_key in step_config:
                 step_config = step_config[self.config_key]
             else:
@@ -616,7 +617,7 @@ class HierarchicalStep(Step):
         """Sets the configuration state.
 
         The configuration state of a ``HierarchicalStep`` depends on (1) whether
-        or not it is :attr:`user_configurable` and (2) whether or not the
+        or not it is :attr:`directly_implemented` and (2) whether or not the
         :attr:`config_key` exists in the pipeline specification file.
 
         Parameters
@@ -629,7 +630,7 @@ class HierarchicalStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        if self.user_configurable:
+        if self.directly_implemented:
             if self.config_key in step_config:
                 step_config = step_config[self.config_key]
                 configuration_state_type = NonLeafConfigurationState
