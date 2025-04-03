@@ -146,14 +146,15 @@ that will be listed in text below it.
 Though we may expand this in the future,
 we currently think of data in terms of *files or directories*.
 Directories may be nested.
-Here are some example specifications:
+Here are some random examples of how data specifications could look,
+to show the breadth of possible specifications:
 
-- A single file in a tabular format with columns A, B, and C.
-- A directory containing three files,
-  where each is in a tabular format and has three columns.
-- A directory containing any number of subdirectories.
+- "A single file in a tabular format with columns A, B, and C."
+- "A directory containing three files,
+  where each is in a tabular format and has three columns."
+- "A directory containing any number of subdirectories.
   Each subdirectory must contain two files, where each is
-  in a tabular format.
+  in a tabular format."
 
 Data specifications are enforced by EasyLink;
 a pipeline will fail if any data do not follow their specification.
