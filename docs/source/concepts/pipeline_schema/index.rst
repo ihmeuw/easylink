@@ -138,7 +138,7 @@ For example, "clusters of record IDs to canonicalize" might entail
 having two columns, :code:`record_id` and :code:`cluster_id`,
 and :code:`record_id` must be unique.
 
-The label on the arrow indicates the data specification
+The label on the arrow (e.g., "raw datasets" or "clusters") indicates the data specification
 that the data must follow (this label is implicitly applied to any slots it is connected to).
 The actual description of the data specification is not included in the diagram;
 that will be listed in text below it.
@@ -170,11 +170,9 @@ when the output of one step becomes the input to another.
 .. note::
 
    There cannot be loops/cycles of data dependency (e.g., A -> B -> A),
-   as then there would be no possible order to run the steps in!
-
-   You couldn't run A until you had B's output,
-   but couldn't run B until you had A's output:
-   a classic chicken and egg problem.
+   as then there would be no possible order to run the steps in --
+   you couldn't run A until you had B's output,
+   but couldn't run B until you had A's output!
 
 Pipeline Schema
 ^^^^^^^^^^^^^^^
