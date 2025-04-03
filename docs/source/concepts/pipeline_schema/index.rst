@@ -389,10 +389,6 @@ the more interoperability and standardization the user gets.
 Draws
 ^^^^^
 
-.. todo::
-
-   Add diagrams to this section.
-
 To facilitate the representation and propagation of uncertainty, EasyLink supports **draws**.
 This is a bit of jargon that means "samples randomly **draw**\ n from a probability distribution."
 Complicated probability distributions are often impossible to represent exactly,
@@ -438,3 +434,10 @@ they are only run once and receive *all* draws of their inputs at once.
 
 Steps that are permitted to produce draws are marked in the diagrams by coloring the box purple,
 and gather steps are marked by coloring the box green.
+
+.. image:: images/17_draws.drawio.png
+   :alt: Diagram of a draws-producing and a draws-gathering step in a pipeline schema
+
+.. todo::
+
+   Add a diagram showing how the various cases described above expand.
