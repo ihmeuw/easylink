@@ -87,6 +87,7 @@ class Step:
         output_slots: Iterable[OutputSlot] = (),
         input_slot_mappings: Iterable[InputSlotMapping] = (),
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
+        is_embarrassingly_parallel: bool = False,
     ) -> None:
         self.step_name = step_name
         """The name of the pipeline step in the ``PipelineSchema``. It must also match
@@ -107,6 +108,8 @@ class Step:
         }
         """A combined dictionary containing both the ``InputSlotMappings`` and
         ``OutputSlotMappings`` of this ``Step``."""
+        self.is_embarrassingly_parallel = is_embarrassingly_parallel
+        """Whether or not this ``Step`` is to be run in an embarrassingly parallel manner."""
         self.parent_step = None
         """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
@@ -884,7 +887,7 @@ class TemplatedStep(Step, ABC):
             self.step_graph = StepGraph()
             self.template_step.name = self.name
             self.step_graph.add_node_from_step(self.template_step)
-            # Special handle the slot_mappings update
+            # Update the slot mappings with renamed children
             input_mappings = [
                 InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
             ]
@@ -899,10 +902,8 @@ class TemplatedStep(Step, ABC):
             num_repeats = len(expanded_config)
             self.step_graph = self._update_step_graph(num_repeats)
             self.slot_mappings = self._update_slot_mappings(num_repeats)
-        # Manually set the configuration state to non-leaf instead of relying
-        # on super().get_configuration_state() because that method will erroneously
-        # set to leaf state in the event the user didn't include the config_key
-        # in the pipeline specification.
+
+        # TemplatedSteps are by definition non-leaf steps.
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
@@ -1164,10 +1165,22 @@ class EmbarrassinglyParallelStep(Step):
     def __init__(
         self,
         step: Step,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+        input_slot_mappings: Iterable[InputSlotMapping],
+        output_slot_mappings: Iterable[OutputSlotMapping],
     ) -> None:
         super().__init__(
-            step.step_name, step.name, step.input_slots.values(), step.output_slots.values()
+            step.step_name,
+            step.name,
+            input_slots,
+            output_slots,
+            input_slot_mappings,
+            output_slot_mappings,
+            is_embarrassingly_parallel=True,
         )
+        self.step_graph = None
+        self.step = step
         self._validate()
 
     def _validate(self) -> None:
@@ -1209,6 +1222,50 @@ class EmbarrassinglyParallelStep(Step):
             )
         if errors:
             raise ValueError("\n".join(errors))
+
+    def set_configuration_state(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ):
+        """Sets the configuration state to 'non-leaf'.
+
+        In addition to setting the configuration state, this also updates the
+        :class:`~easylink.graph_components.StepGraph` and
+        :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+        Parameters
+        ----------
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
+        combined_implementations
+            The configuration for any implementations to be combined.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
+        if self.step.name != self.name:
+            # Update the step name if the parent got renamed, e.g. a parent LoopStep
+            # 'step_1' that got expanded to 'step_1_loop_1', etc.
+            self.step.name = self.name
+            input_mappings = [
+                InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
+            ]
+            output_mappings = [
+                OutputSlotMapping(slot, self.name, slot) for slot in self.output_slots
+            ]
+            self.slot_mappings = {"input": input_mappings, "output": output_mappings}
+        # Generate step graph from the single ``step`` attr
+        self.step_graph = StepGraph()
+        self.step_graph.add_node_from_step(self.step)
+        # Add the key back to the expanded config
+        expanded_config = LayeredConfigTree({self.name: step_config})
+
+        # EmbarrassinglyParallelSteps are by definition non-leaf steps
+        self._configuration_state = NonLeafConfigurationState(
+            self, expanded_config, combined_implementations, input_data_config
+        )
 
 
 class ChoiceStep(Step):
@@ -1469,10 +1526,10 @@ class LeafConfigurationState(ConfigurationState):
         """
         step = self._step
         if self.is_combined:
-            if isinstance(step, EmbarrassinglyParallelStep):
+            if step.is_embarrassingly_parallel:
                 raise NotImplementedError(
                     "Combining implementations with embarrassingly parallel steps "
-                    "is not yet supported."
+                    "is not supported."
                 )
             implementation = PartialImplementation(
                 combined_name=self.step_config[COMBINED_IMPLEMENTATION_KEY],
@@ -1486,7 +1543,7 @@ class LeafConfigurationState(ConfigurationState):
                 implementation_config=self.implementation_config,
                 input_slots=step.input_slots.values(),
                 output_slots=step.output_slots.values(),
-                is_embarrassingly_parallel=isinstance(step, EmbarrassinglyParallelStep),
+                is_embarrassingly_parallel=step.is_embarrassingly_parallel,
             )
         implementation_graph.add_node_from_implementation(
             step.implementation_node_name,
@@ -1608,7 +1665,6 @@ class NonLeafConfigurationState(ConfigurationState):
                 "NonLeafConfigurationState requires a subgraph upon which to operate, "
                 f"but Step {step.name} has no step graph."
             )
-        self._nodes = step.step_graph.nodes
         self._configure_subgraph_steps()
 
     def add_nodes_to_implementation_graph(
@@ -1622,7 +1678,58 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for node in self._step.step_graph.nodes:
             substep = self._step.step_graph.nodes[node]["step"]
+            if self._step.is_embarrassingly_parallel:
+                substep.is_embarrassingly_parallel = True
+                self._propagate_splitter_aggregators(self._step, substep)
             substep.add_nodes_to_implementation_graph(implementation_graph)
+
+    @staticmethod
+    def _propagate_splitter_aggregators(parent: Step, child: Step):
+        """Propagates splitters and aggregators to child ``Steps``.
+
+        This method adds the :meth:`~easylink.graph_components.InputSlot.splitter`
+        and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
+        parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
+        :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
+        child steps' slots.
+
+        Parameters
+        ----------
+        parent
+            The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
+            to be propagated to the appropriate child ``Step``.
+        child
+            A child ``Step`` to potentially have its parent's ``splitter`` and
+            ``aggregators`` assigned to its ``InputSlot`` and ``OutputSlots``,
+            respectively.
+        """
+        for parent_input_slot_name, parent_input_slot in parent.input_slots.items():
+            if parent_input_slot.splitter:
+                # Extract the appropriate child slot name from the mapping
+                mappings_with_splitter = [
+                    mapping
+                    for mapping in parent.slot_mappings["input"]
+                    if mapping.parent_slot == parent_input_slot_name
+                ]
+                for mapping in mappings_with_splitter:
+                    child_node = mapping.child_node
+                    child_slot = mapping.child_slot
+                    # Assign the splitter to the appropriate child slot
+                    if child_slot in child.input_slots and child_node == child.name:
+                        child.input_slots[child_slot].splitter = parent_input_slot.splitter
+        for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
+            # Extract the appropriate child slot name from the mapping
+            mappings_from_parent = [
+                mapping
+                for mapping in parent.slot_mappings["output"]
+                if mapping.parent_slot == parent_output_slot_name
+            ]
+            for mapping in mappings_from_parent:
+                child_node = mapping.child_node
+                child_slot = mapping.child_slot
+                # Assign the aggregator to the appropriate child slot
+                if child_slot in child.output_slots and child_node == child.name:
+                    child.output_slots[child_slot].aggregator = parent_output_slot.aggregator
 
     def add_edges_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
@@ -1643,8 +1750,8 @@ class NonLeafConfigurationState(ConfigurationState):
         # Add the edges at this level (i.e. the edges at this `self._step`)
         for source, target, edge_attrs in self._step.step_graph.edges(data=True):
             edge = EdgeParams.from_graph_edge(source, target, edge_attrs)
-            source_step = self._nodes[source]["step"]
-            target_step = self._nodes[target]["step"]
+            source_step = self._step.step_graph.nodes[source]["step"]
+            target_step = self._step.step_graph.nodes[target]["step"]
 
             source_edges = source_step.get_implementation_edges(edge)
             for source_edge in source_edges:
@@ -1707,7 +1814,7 @@ class NonLeafConfigurationState(ConfigurationState):
             ]
             for mapping in mappings:
                 new_edge = mapping.remap_edge(edge)
-                new_step = self._nodes[mapping.child_node]["step"]
+                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
                 imp_edges = new_step.get_implementation_edges(new_edge)
                 implementation_edges.extend(imp_edges)
         elif edge.target_node == self._step.name:
@@ -1718,7 +1825,7 @@ class NonLeafConfigurationState(ConfigurationState):
             ]
             for mapping in mappings:
                 new_edge = mapping.remap_edge(edge)
-                new_step = self._nodes[mapping.child_node]["step"]
+                new_step = self._step.step_graph.nodes[mapping.child_node]["step"]
                 imp_edges = new_step.get_implementation_edges(new_edge)
                 implementation_edges.extend(imp_edges)
         else:
@@ -1733,12 +1840,14 @@ class NonLeafConfigurationState(ConfigurationState):
         This method recursively traverses the ``StepGraph`` and sets the configuration
         state for each ``Step`` until reaching all leaf nodes.
         """
-        for node in self._nodes:
-            step = self._nodes[node]["step"]
+        for sub_node in self._step.step_graph.nodes:
+            sub_step = self._step.step_graph.nodes[sub_node]["step"]
             # IOStep names never appear in configuration
             step_config = (
-                self.step_config if isinstance(step, IOStep) else self.step_config[step.name]
+                self.step_config
+                if isinstance(sub_step, IOStep)
+                else self.step_config[sub_step.name]
             )
-            step.set_configuration_state(
+            sub_step.set_configuration_state(
                 step_config, self.combined_implementations, self.input_data_config
             )
