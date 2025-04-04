@@ -80,7 +80,7 @@ therefore, a step can be performed by many different implementations.
 
 We draw a step as a box and label it with its name:
 
-.. image:: images/01_step.png
+.. image:: images/01_step.drawio.png
    :alt: Diagram showing a step in the pipeline
 
 Default Implementations
@@ -90,7 +90,7 @@ A step with a check mark on its top right corner has a default implementation.
 Therefore, the user doesn't *have* to specify anything.
 If the user wants to, they can override the default implementation.
 
-.. image:: images/02_default_implementation.png
+.. image:: images/02_default_implementation.drawio.png
    :alt: Diagram showing a step with a default implementation
 
 This is useful because some steps in the record linkage process
@@ -124,7 +124,7 @@ We draw **output slots** (slots for producing data) as small squares
 on the border of a step.
 A step may have multiple of either or both.
 
-.. image:: images/03_slots.png
+.. image:: images/03_slots.drawio.png
    :alt: Diagram showing slots on a step
 
 A **data specification** is a set of rules that data can be validated against.
@@ -165,7 +165,7 @@ Data Dependencies
 We connect an output slot to an input slot with an arrow, as shown below,
 when the output of one step becomes the input to another.
 
-.. image:: images/04_data_dependency.png
+.. image:: images/04_data_dependency.drawio.png
    :alt: Diagram of data dependencies
 
 .. note::
@@ -182,7 +182,7 @@ A basic **pipeline schema** is a set of steps interconnected by data dependencie
 that additionally has input data nodes (large circles)
 and output data nodes (large squares with bold text).
 
-.. image:: images/05_pipeline_schema.png
+.. image:: images/05_pipeline_schema.drawio.png
    :alt: Diagram of a pipeline schema
 
 This is a **graph** `in the computer science/mathematical sense <https://en.wikipedia.org/wiki/Graph_(abstract_data_type)>`_.
@@ -198,7 +198,7 @@ indicate data specifications the input/output data must follow
 Data for the input nodes of the pipeline schema are provided directly by the user.
 An input node can have a check mark on it to indicate that it has a default:
 
-.. image:: images/06_default_input.png
+.. image:: images/06_default_input.drawio.png
    :alt: Diagram of a default input in a pipeline schema
 
 Such an input can be omitted by the user,
