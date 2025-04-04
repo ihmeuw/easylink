@@ -317,15 +317,17 @@ Auto-parallel sections
 **Auto-parallel** sections are nearly identical to cloneable sections;
 they also indicate that a section can be copied multiple times without data dependencies between the copies.
 
-The key difference is that auto-parallel sections are *automatically* expanded by EasyLink itself;
-the user doesn't configure anything.
-Exactly one input data dependency must have a splitter,
-and EasyLink will decide how many ways to split the data at runtime to optimize performance
-(using heuristics that have yet to be designed, involving file size, etc.).
-The number of parallel copies of the section will match the number of data splits,
-and each parallel copy will use the same implementations.
-This is intended for embarrassingly parallel computations,
+The key differences are that auto-parallel sections are *automatically* expanded by EasyLink itself
+(the user doesn't configure anything)
+and the same implementations are used in each copy.
+
+Auto-parallel sections are intended for embarrassingly parallel computations,
 where the result does not meaningfully change regardless of the number of splits.
+Exactly one input data dependency must have a splitter,
+and EasyLink will decide at runtime how to optimize performance by splitting the data into chunks
+(using heuristics that have yet to be designed, involving file size, etc.).
+The number of parallel copies of the section will match the number of data chunks,
+and each parallel copy will use the same implementations.
 
 Auto-parallel sections are denoted by green boxes with fast-forward icons:
 
