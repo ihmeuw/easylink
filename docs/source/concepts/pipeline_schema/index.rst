@@ -339,7 +339,10 @@ Choice sections
 
 A **choice section** allows the EasyLink user to choose one of several options,
 where each option is a section of the diagram.
-Everything in the other options, and any arrows from/to it, disappears.
+Everything in the other options, and any arrows from/to it, "disappears"
+for the purposes of the user's pipeline.
+In other words, it is as if the pipeline schema *only* included the
+diagram section of the *chosen* option, and none of the other options.
 
 A choice section is represented by an outer yellow dashed box, and a separate inner yellow dashed box within it for each option:
 
