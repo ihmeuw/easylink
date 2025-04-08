@@ -221,4 +221,228 @@ Operators
 
 .. todo::
 
-   This section.
+   Consider replacing the examples in this section with extracts from the record linkage
+   pipeline schema, as in the previous section.
+
+Cloneable sections
+^^^^^^^^^^^^^^^^^^
+
+A section of a pipeline schema can be marked as **cloneable.**
+This means that some number of copies of that section will be created,
+with no data dependencies between the copies (so they look like "parallel tracks").
+The EasyLink user *chooses* how many parallel copies of the section they want,
+and they can specify different implementations for each copy.
+
+A cloneable section is marked by a dashed blue rectangle with a "clone" icon at the top left:
+
+.. image:: images/07_cloneable_section.drawio.png
+   :alt: Diagram of a cloneable section in a pipeline schema
+
+Every data dependency that passes from inside a cloneable section to outside it
+must have a specified method for aggregating the multiple outputs (one from each copy)
+back into a single output for the downstream (dependent) steps.
+This is indicated by the funnel in the diagram,
+which is labeled with the aggregation method.
+
+This diagram indicates that *any* of the following pipelines are permitted:
+
+.. image:: images/08_cloneable_section_expanded.drawio.png
+   :alt: Diagram of a cloneable section in a pipeline schema, expanded
+
+And on and on, with any number of copies of Step 2.
+The "by file" aggregator here takes multiple outputs (which may each be directories containing multiple files)
+and combines them into a single flat directory of files
+(the labels on the arrows in gray show the number of files in each directory in our example, to illustrate this).
+Other combination methods are permitted; this is just an example.
+
+Loop-able sections
+^^^^^^^^^^^^^^^^^^
+
+A **loop-able** section is a part of a diagram that can repeat as many times as the user configures,
+with some data dependency *between* iterations.
+
+A loop-able section is denoted by a red dashed box:
+
+.. image:: images/09_loopable_section.drawio.png
+   :alt: Diagram of a loop-able section in a pipeline schema
+
+This diagram indicates that Step 1 may repeat an arbitrary number of times.
+The red arrow from the output slot of Step 1 to its "Input 2" input slot indicates that
+the output of Step 1 replaces "Input 2" *in the next iteration*.
+The black arrow from the output slot to Step 2 indicates that
+the output of the *last* iteration of Step 1 goes there.
+
+In diagram form, that means the loop can expand in any of these ways:
+
+.. image:: images/10_loopable_section_expanded.drawio.png
+   :alt: Diagram of a loop-able section in a pipeline schema, expanded
+
+And on and on, with any number of copies of Step 1, chained in sequence.
+
+The EasyLink user (the pipeline creator) chooses how many iterations of a loop-able section there are
+and may select different implementations for each iteration.
+
+Splitters
+^^^^^^^^^
+
+There may *optionally* also be a method to *split* a single data dependency as it enters any kind of section.
+In the example from the cloneable section above, there was no splitter, so a copy of Step 1's entire output would be given to each implementation of Step 2.
+
+Splitters are represented by triangles on the border of the section,
+shown here with a cloneable section:
+
+.. image:: images/11_cloneable_section_splitter.drawio.png
+   :alt: Diagram of a cloneable section in a pipeline schema with a splitter
+
+Which is expanded like so:
+
+.. image:: images/12_cloneable_section_splitter_expanded.drawio.png
+   :alt: Diagram of a cloneable section in a pipeline schema with a splitter, expanded
+
+The "by file" splitter takes an input directory of N files and transforms it into N separate paths to each file.
+Other split methods are permitted; this is just an example.
+
+Note that when there is a splitter, the number of splits created from the input data dependency must be equal to the number of copies of the section.
+For example, in the rightmost example above, there *must* be 3 files in the directory, in order to be split 3 ways for the 3 copies of Step 2.
+
+Because this requires the number of copies/iterations of the section to be specified up front,
+a splitter can only be used if the number of splits is known before executing any implementations
+(i.e. the pipeline's original input data are being split,
+or the data dependency that is being split has a data specification
+that guarantees the number of splits that will be made).
+
+Auto-parallel sections
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Auto-parallel** sections are nearly identical to cloneable sections;
+they also indicate that a section can be copied multiple times without data dependencies between the copies.
+
+The key differences are that auto-parallel sections are *automatically* expanded by EasyLink itself
+(the user doesn't configure anything)
+and the same implementations are used in each copy.
+
+Auto-parallel sections are intended for embarrassingly parallel computations,
+where the result does not meaningfully change regardless of the number of splits.
+Exactly one input data dependency must have a splitter,
+and EasyLink will decide at runtime how to optimize performance by splitting the data into chunks
+(using heuristics that have yet to be designed, involving file size, etc.).
+The number of parallel copies of the section will match the number of data chunks,
+and each parallel copy will use the same implementations.
+
+Auto-parallel sections are denoted by green boxes with fast-forward icons:
+
+.. image:: images/13_autoparallel_section.drawio.png
+   :alt: Diagram of an auto-parallel section in a pipeline schema
+
+Choice sections
+^^^^^^^^^^^^^^^
+
+A **choice section** allows the EasyLink user to choose one of several options,
+where each option is a section of the diagram.
+Everything in the other options, and any arrows from/to it, "disappears"
+for the purposes of the user's pipeline.
+In other words, it is as if the pipeline schema *only* included the
+diagram section of the *chosen* option, and none of the other options.
+
+A choice section is represented by an outer yellow dashed box, and a separate inner yellow dashed box within it for each option:
+
+.. image:: images/14_choice_section.drawio.png
+   :alt: Diagram of a choice section in a pipeline schema
+
+Here, the labels "simple" and "complex" on the inner dashed boxes are the names of the options.
+
+With the above pipeline schema, the user could either choose "simple" or "complex":
+
+.. image:: images/15_choice_section_expanded.drawio.png
+   :alt: Diagram of a choice section in a pipeline schema, expanded
+
+Step hierarchy
+^^^^^^^^^^^^^^
+
+Pipeline schemas are self-similar: they have input and output *nodes*,
+just like each step within them has input and output *slots*.
+
+**Each step can also contain a graph of steps.**
+If it does, this means that the user can *either* assign that step a single implementation,
+*or* the user can "zoom in," resolve operators in the sub-graph,
+and then assign an implementation to each sub-step.
+Each input slot on a step becomes an input node,
+and each output slot on a step becomes an output node,
+in the graph of its sub-steps.
+
+.. image:: images/16_step_hierarchy.drawio.png
+   :alt: Diagram of a step hierarchy in a pipeline schema
+
+.. note::
+
+   There are no other operators in this example for simplicity,
+   but remember that all operators are permitted to appear in sub-step diagrams!
+
+The hierarchy can be nested arbitrarily deep:
+for example, Step 2a on the right might also have sub-steps.
+Because this can get so complicated, we don't show all the hierarchical levels in one diagram
+as we've done above with the dotted line "insert."
+Instead, we make a separate diagram with the title "Step 2"
+that represents the step graph contained within Step 2.
+
+At the top level of the step hierarchy,
+the pipeline schema splits the entity resolution task into very coarse steps,
+but lower levels in the hierarchy subdivide those and so on.
+The more detail in the pipeline schema that is used,
+the more interoperability and standardization the user gets.
+
+Draws
+^^^^^
+
+To facilitate the representation and propagation of uncertainty, EasyLink supports **draws**.
+This is a bit of jargon that means "samples randomly **draw**\ n from a probability distribution."
+Complicated probability distributions are often impossible to represent exactly,
+like how :math:`\pi` is impossible to represent exactly as a decimal.
+Just like we can approximate :math:`\pi` to some number of digits (e.g. 3.1415),
+we can approximate a distribution with some number of random samples/draws.
+Then, any operation we want to do to our random variable can be done on each draw,
+and any statistic about the distribution (possibly after many operations)
+can be approximated by calculating that statistic on the draws.
+
+Entity resolution involves some *very* complicated probability distributions.
+Instead of a distribution over real numbers, we might have a distribution over all the possible ways to link two files!
+Such a distribution can't feasibly be analyzed exactly, but we can still take draws from it.
+You can think of this as generating multiple plausible linkages,
+and doing the rest of our analysis with each of them to see how much our result varies.
+If you're familiar with multiple imputation methods for missing data, it's exactly the same idea!
+
+In the pipeline schema, certain steps can be marked as permitted to produce draws.
+Any implementation of such a step must indicate whether or not it is able to produce draws.
+For any step in the pipeline where the step is permitted and the implementation is able,
+the EasyLink user indicates whether or not they want this to occur.
+(This can all be resolved upfront,
+so EasyLink knows before even starting the pipeline which of its implementations *will* produce draws.)
+
+The EasyLink user also specifies how many draws they would like to produce
+(this number is global across the entire pipeline, not per-step).
+
+Implementations that will produce draws,
+but are not downstream of any *other* implementations that will produce draws,
+run normally except that they are passed a special flag so that they know to produce draws.
+Instead of saving one output (for each output slot),
+they will save :math:`N`, where :math:`N` is the user-configured number of draws.
+
+Implementations that are downstream of at least one other implementation that will produce draws are run N times.
+For run :math:`X` (:math:`X \le N`), draw :math:`X` of each input (that has draws) is used, which assumes independence between the uncertainty on each input.
+When such an implementation will also *produce* draws,
+run :math:`X` of that implementation is passed a special flag indicating to produce draw :math:`X`.
+
+The last steps in the pipeline schema (those that produce its final outputs)
+are marked as "gather" steps.
+This means that even if they are downstream of steps that produce draws,
+they are only run once and receive *all* draws of their inputs at once.
+
+Steps that are permitted to produce draws are marked in the diagrams by coloring the box purple,
+and gather steps are marked by coloring the box green.
+
+.. image:: images/17_draws.drawio.png
+   :alt: Diagram of a draws-producing and a draws-gathering step in a pipeline schema
+
+.. todo::
+
+   Add a diagram showing how the various cases described above expand.
