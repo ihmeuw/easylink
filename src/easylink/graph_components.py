@@ -55,6 +55,10 @@ class InputSlot:
     pieces. The primary purpose of this functionality is to run sections of the 
     pipeline in an embarrassingly parallel manner. **Note that the function *must* 
     be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
+    splitter_origin_node: str = None
+    """The name of the node where a splitter is originally defined."""
+    splitter_origin_slot: str = None
+    """The name of the ``InputSlot`` where a splitter is originally defined."""
 
     def __eq__(self, other: Any) -> bool | NotImplementedType:
         """Checks if two ``InputSlots`` are equal.
@@ -71,6 +75,8 @@ class InputSlot:
             and self.env_var == other.env_var
             and self.validator.__name__ == other.validator.__name__
             and splitter_name == other_splitter_name
+            and self.splitter_origin_node == other.splitter_origin_node
+            and self.splitter_origin_slot == other.splitter_origin_slot
         )
 
     def __hash__(self) -> int:
@@ -80,7 +86,16 @@ class InputSlot:
         the names of its ``validator`` and ``splitter``.
         """
         splitter_name = self.splitter.__name__ if self.splitter else None
-        return hash((self.name, self.env_var, self.validator.__name__, splitter_name))
+        return hash(
+            (
+                self.name,
+                self.env_var,
+                self.validator.__name__,
+                splitter_name,
+                self.splitter_origin_node,
+                self.splitter_origin_slot,
+            )
+        )
 
 
 @dataclass()
@@ -109,6 +124,10 @@ class OutputSlot:
     ``OutputSlot``. The primary purpose of this functionality is to run sections
     of the pipeline in an embarrassingly parallel manner. **Note that the function 
     *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
+    splitter_origin_node: str = None
+    """The name of the node where the aggregator's corresponding splitter is originally defined."""
+    splitter_origin_slot: str = None
+    """The name of the ``InputSlot`` where the aggregator's corresponding splitter is originally defined."""
 
     def __eq__(self, other: Any) -> bool | NotImplementedType:
         """Checks if two ``OutputSlots`` are equal.
@@ -120,7 +139,12 @@ class OutputSlot:
             return NotImplemented
         aggregator_name = self.aggregator.__name__ if self.aggregator else None
         other_aggregator_name = other.aggregator.__name__ if other.aggregator else None
-        return self.name == other.name and aggregator_name == other_aggregator_name
+        return (
+            self.name == other.name
+            and aggregator_name == other_aggregator_name
+            and self.splitter_origin_node == other.splitter_origin_node
+            and self.splitter_origin_slot == other.splitter_origin_slot
+        )
 
     def __hash__(self) -> int:
         """Hashes an ``OutputSlot``.
@@ -128,7 +152,14 @@ class OutputSlot:
         The hash is based on the name of the ``OutputSlot`` and the name of its ``aggregator``.
         """
         aggregator_name = self.aggregator.__name__ if self.aggregator else None
-        return hash((self.name, aggregator_name))
+        return hash(
+            (
+                self.name,
+                aggregator_name,
+                self.splitter_origin_node,
+                self.splitter_origin_slot,
+            )
+        )
 
 
 @dataclass(frozen=True)
