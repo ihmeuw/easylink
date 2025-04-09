@@ -41,15 +41,6 @@ class Rule(ABC):
         """
         pass
 
-    @staticmethod
-    def get_input_slots_to_split(input_slots) -> list[str]:
-        input_slots_to_split = [
-            slot_name
-            for slot_name, slot_attrs in input_slots.items()
-            if slot_attrs.get("splitter", None)
-        ]
-        return input_slots_to_split
-
 
 @dataclass
 class TargetRule(Rule):
@@ -125,23 +116,15 @@ class ImplementedRule(Rule):
 
     def build_rule(self) -> str:
         """Builds the Snakemake rule for this ``Implementation``."""
+        if self.is_embarrassingly_parallel and len(self.output) > 1:
+            raise NotImplementedError(
+                "Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
         return self._build_io() + self._build_resources() + self._build_shell_cmd()
 
     def _build_io(self) -> str:
         """Builds the input/output portion of the rule."""
-        if self.is_embarrassingly_parallel:
-            # Processed chunks are sent to a 'processed' subdir
-            output_files = [
-                os.path.dirname(file_path)
-                + "/processed/{chunk}/"
-                + os.path.basename(file_path)
-                for file_path in self.output
-            ]
-            log_path_chunk_adder = "-{chunk}"
-        else:
-            output_files = self.output
-            log_path_chunk_adder = ""
-
+        log_path_chunk_adder = "-{chunk}" if self.is_embarrassingly_parallel else ""
         io_str = (
             f"""
 rule:
@@ -149,7 +132,7 @@ rule:
     message: "Running {self.step_name} implementation: {self.implementation_name}" """
             + self._build_input()
             + f"""        
-    output: {output_files}
+    output: {self.output}
     log: "{self.diagnostics_dir}/{self.name}-output{log_path_chunk_adder}.log"
     container: "{self.image_path}" """
         )
@@ -158,29 +141,10 @@ rule:
     def _build_input(self) -> str:
         input_str = f"""
     input:"""
-        input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
         for slot, attrs in self.input_slots.items():
             env_var = attrs["env_var"].lower()
-            if len(input_slots_to_split) > 1:
-                raise NotImplementedError(
-                    "FIXME [MIC-5883] Multiple input slots to split not yet supported"
-                )
-            if self.is_embarrassingly_parallel and slot == input_slots_to_split[0]:
-                # The input to this is the input_chunks subdir from the checkpoint
-                # rule (which is built by modifying the output of the overall implementation)
-                if len(self.output) > 1:
-                    raise NotImplementedError(
-                        "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-                    )
-                input_files = [
-                    os.path.dirname(self.output[0])
-                    + "/input_chunks/{chunk}/"
-                    + os.path.basename(self.output[0])
-                ]
-            else:
-                input_files = attrs["filepaths"]
             input_str += f"""
-        {env_var}={input_files},"""
+        {env_var}={attrs["filepaths"]},"""
         if not self.is_embarrassingly_parallel:
             # validations were already handled in the checkpoint rule - no need
             # to validate the individual chunks
@@ -210,38 +174,19 @@ rule:
         #   output_paths = ",".join(self.output)
         #   wildcards_subdir = "/".join([f"{{wildcards.{wc}}}" for wc in self.wildcards])
         #   and then in shell cmd: export DUMMY_CONTAINER_OUTPUT_PATHS={output_paths}/{wildcards_subdir}
-        if self.is_embarrassingly_parallel:
-            if len(self.output) > 1:
-                raise NotImplementedError(
-                    "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-                )
-            output_files = (
-                os.path.dirname(self.output[0])
-                + "/processed/{wildcards.chunk}/"
-                + os.path.basename(self.output[0])
-            )
-        else:
-            output_files = ",".join(self.output)
+
+        # snakemake shell commands require wildcards to be prefaced with 'wildcards.'
+        output_files = ",".join(self.output).replace("{chunk}", "{wildcards.chunk}")
         shell_cmd = f"""
     shell:
         '''
         export DUMMY_CONTAINER_OUTPUT_PATHS={output_files}
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
-        for input_slot_name, input_slot_attrs in self.input_slots.items():
-            input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
-            if len(input_slots_to_split) > 1:
-                raise NotImplementedError(
-                    "FIXME [MIC-5883] Multiple input slots to split not yet supported"
-                )
-            if input_slot_name in input_slots_to_split:
-                # The inputs to this come from the input_chunks subdir
-                input_files = (
-                    os.path.dirname(self.output[0])
-                    + "/input_chunks/{wildcards.chunk}/"
-                    + os.path.basename(self.output[0])
-                )
-            else:
-                input_files = ",".join(input_slot_attrs["filepaths"])
+        for input_slot_attrs in self.input_slots.values():
+            # snakemake shell commands require wildcards to be prefaced with 'wildcards.'
+            input_files = ",".join(input_slot_attrs["filepaths"]).replace(
+                "{chunk}", "{wildcards.chunk}"
+            )
             shell_cmd += f"""
         export {input_slot_attrs["env_var"]}={input_files}"""
         if self.requires_spark:
@@ -329,11 +274,15 @@ class CheckpointRule(Rule):
 
     name: str
     """Name of the rule."""
-    input_slots: dict[str, dict[str, str | list[str]]]
-    """This ``Implementation's`` input slot attributes."""
+    input_files: list[str]
+    """The input filepaths."""
+    input_slot_to_split: str
+    """The input slot being split."""
+    splitter_name: str
+    """The splitter function's name."""
     validations: list[str]
     """Validation files from previous rule."""
-    output: list[str]
+    output_dir: str
     """Output directory path. It must be used as an input for next rule."""
 
     def build_rule(self) -> str:
@@ -344,29 +293,21 @@ class CheckpointRule(Rule):
         files into chunks. Note that the output of this rule is a Snakemake ``directory``
         object as opposed to a specific file like typical rules have.
         """
-        # Replace the output filepath with an input_chunks subdir
-        output_dir = os.path.dirname(self.output[0]) + "/input_chunks"
-        input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
-        if len(input_slots_to_split) > 1:
-            raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple input slots to split not yet supported"
-            )
-        input_slot_to_split = input_slots_to_split[0]
         checkpoint = f"""
 checkpoint:
-    name: "split_{self.name}_{input_slot_to_split}"
+    name: "split_{self.name}_{self.input_slot_to_split}"
     input: 
-        files={self.input_slots[input_slot_to_split]['filepaths']},
+        files={self.input_files},
         validations={self.validations},
     output: 
-        output_dir=directory("{output_dir}"),
-        checkpoint_file=touch("{output_dir}/checkpoint.txt"),
+        output_dir=directory("{self.output_dir}"),
+        checkpoint_file=touch("{self.output_dir}/checkpoint.txt"),
     params:
         input_files=lambda wildcards, input: ",".join(input.files),
     localrule: True
-    message: "Splitting {self.name} {input_slot_to_split} into chunks"
+    message: "Splitting {self.name} {self.input_slot_to_split} into chunks"
     run:
-        splitter_utils.{self.input_slots[input_slot_to_split]["splitter"].__name__}(
+        splitter_utils.{self.splitter_name}(
             input_files=list(input.files),
             output_dir=output.output_dir,
             desired_chunk_size_mb=0.1,
@@ -385,12 +326,18 @@ class AggregationRule(Rule):
 
     name: str
     """Name of the rule."""
-    input_slots: dict[str, dict[str, str | list[str]]]
-    """This ``Implementation's`` input slot attributes."""
+    input_files: str
+    """The input processed chunk files to aggregate."""
     output_slot_name: str
     """Name of the :class:`~easylink.graph_components.OutputSlot`."""
-    output_slot: dict[str, str | list[str]]
-    """The output slot attributes to create this rule for."""
+    aggregated_output_file: str
+    """The final aggregated results file."""
+    aggregator_name: str
+    """The name of the aggregation function to run."""
+    checkpoint_filepath: str
+    """Path to the checkpoint file. This is only needed for the bugfix workaround."""
+    checkpoint_rule_name: str
+    """Name of the checkpoint rule."""
 
     def build_rule(self) -> str:
         """Builds the Snakemake rule for this aggregator.
@@ -421,40 +368,16 @@ class AggregationRule(Rule):
 
     def _define_input_function(self):
         """Builds the `input function <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#input-functions>`_."""
-        if len(self.output_slot["filepaths"]) > 1:
-            raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-            )
-        if len(self.output_slot["filepaths"]) > 1:
-            raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple slots/files of EmbarrassinglyParallelSteps not yet supported"
-            )
-        output_filepath = self.output_slot["filepaths"][0]
-        checkpoint_file_path = (
-            os.path.dirname(output_filepath) + "/input_chunks/checkpoint.txt"
-        )
-        input_slots_to_split = self.get_input_slots_to_split(self.input_slots)
-        if len(input_slots_to_split) > 1:
-            raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple input slots to split not yet supported"
-            )
-        input_slot_to_split = input_slots_to_split[0]
-        checkpoint_name = f"checkpoints.split_{self.name}_{input_slot_to_split}"
-        output_files = (
-            os.path.dirname(output_filepath)
-            + "/processed/{chunk}/"
-            + os.path.basename(output_filepath)
-        )
         func = f"""
 def get_aggregation_inputs_{self.name}_{self.output_slot_name}(wildcards):
-    checkpoint_file = "{checkpoint_file_path}"
+    checkpoint_file = "{self.checkpoint_filepath}"
     if not os.path.exists(checkpoint_file):
-        output, _ = {checkpoint_name}.rule.expand_output(wildcards)
-        raise IncompleteCheckpointException({checkpoint_name}.rule, checkpoint_target(output[0]))
-    checkpoint_output = glob.glob(f"{{{checkpoint_name}.get(**wildcards).output.output_dir}}/*/")
+        output, _ = {self.checkpoint_rule_name}.rule.expand_output(wildcards)
+        raise IncompleteCheckpointException({self.checkpoint_rule_name}.rule, checkpoint_target(output[0]))
+    checkpoint_output = glob.glob(f"{{{self.checkpoint_rule_name}.get(**wildcards).output.output_dir}}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
     return expand(
-        "{output_files}",
+        "{self.input_files}",
         chunk=chunks
     )"""
         return func
@@ -465,12 +388,12 @@ def get_aggregation_inputs_{self.name}_{self.output_slot_name}(wildcards):
 rule:
     name: "aggregate_{self.name}_{self.output_slot_name}"
     input: get_aggregation_inputs_{self.name}_{self.output_slot_name}
-    output: {self.output_slot["filepaths"]}
+    output: {[self.aggregated_output_file]}
     localrule: True
     message: "Aggregating {self.name} {self.output_slot_name}"
     run:
-        aggregator_utils.{self.output_slot["aggregator"].__name__}(
+        aggregator_utils.{self.aggregator_name}(
             input_files=list(input),
-            output_filepath="{self.output_slot["filepaths"][0]}",
+            output_filepath="{self.aggregated_output_file}",
         )"""
         return rule
