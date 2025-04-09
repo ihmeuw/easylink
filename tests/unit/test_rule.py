@@ -101,7 +101,7 @@ def test_embarrassingly_parallel_rule_build_rule():
         input_slots={
             "main": {
                 "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "filepaths": ["foo"],
+                "filepaths": ["some/path/to/input_chunks/{chunk}/result.parquet"],
                 "validator": _dummy_validator,
                 "splitter": _dummy_splitter,
             },
@@ -113,7 +113,7 @@ def test_embarrassingly_parallel_rule_build_rule():
             },
         },
         validations=["baz"],
-        output=["some/path/to/quux"],
+        output=["some/path/to/processed/{chunk}/result.parquet"],
         resources=None,
         envvars={"eggs": "coconut"},
         diagnostics_dir="spam",
@@ -162,22 +162,11 @@ def test_embarrassingly_parallel_rule_build_rule_multiple_outputs_raises():
 def test_checkpoint_build_rule():
     rule = CheckpointRule(
         name="foo_rule",
-        input_slots={
-            "main": {
-                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "filepaths": ["foo"],
-                "validator": _dummy_validator,
-                "splitter": _dummy_splitter,
-            },
-            "secondary": {
-                "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                "filepaths": ["bar"],
-                "validator": _dummy_validator,
-                "splitter": None,
-            },
-        },
+        input_files=["some/input/file1", "some/input/file2"],
+        input_slot_to_split="main",
+        splitter_name="this_is_a_splitter",
         validations=["baz"],
-        output=["some/path/to/quux"],
+        output_dir="some/path/to/quux",
     )
 
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["checkpoint_rule"]
@@ -187,25 +176,12 @@ def test_checkpoint_build_rule():
 def test_aggregation_build_rule():
     rule = AggregationRule(
         name="foo_rule",
-        input_slots={
-            "main": {
-                "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                "filepaths": ["foo"],
-                "validator": _dummy_validator,
-                "splitter": _dummy_splitter,
-            },
-            "secondary": {
-                "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                "filepaths": ["bar"],
-                "validator": _dummy_validator,
-                "splitter": None,
-            },
-        },
+        input_files="these/are/processed/{chunk}",
         output_slot_name="main_output",
-        output_slot={
-            "filepaths": ["some/path/to/quux"],
-            "aggregator": _dummy_aggregator,
-        },
+        aggregated_output_file="some/path/to/results/result.parquet",
+        aggregator_name=_dummy_aggregator.__name__,
+        checkpoint_filepath="this/is/the/checkpoint.txt",
+        checkpoint_rule_name="checkpoints.split_some_split_node_some_split_slot",
     )
 
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["aggregation_rule"]

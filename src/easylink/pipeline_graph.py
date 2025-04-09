@@ -77,26 +77,42 @@ class PipelineGraph(ImplementationGraph):
         to be run in an embarrassingly parallel way."""
         return any(
             [
-                self.get_whether_embarrassingly_parallel(node)
+                self.get_embarrassingly_parallel_details(node)[0]
                 for node in self.implementation_nodes
             ]
         )
 
-    def get_whether_embarrassingly_parallel(self, node: str) -> bool:
+    def get_embarrassingly_parallel_details(self, node: str) -> tuple[bool, bool, bool]:
         """Determines whether a node is to be run in an embarrassingly parallel way.
 
         Parameters
         ----------
         node
-            The node name to determine whether or not it is to be run in an
+            The node name to determine details about whether it is to be run in an
             embarrassingly parallel way.
 
         Returns
         -------
-            A boolean indicating whether the node is to be run in an embarrassingly
-            parallel way.
+            A tuple of three booleans indicating whether or not the node is to be
+            run in an embarrassingly parallel way, has a splitter defined, or has
+            an aggregator defined, respectively.
+
+        Notes
+        -----
+        A node should never have a splitter or aggregator defined if it is *not*
+        embarrassingly parallel. However, nodes can be embarrassingly parallel
+        but not require splitting or aggregating (e.g. if you are running a series
+        of three substeps 'step_1a', 'step_1b', and 'step_1c' via a
+        :class:`~easylink.step.HierarchicalStep` in an embarrassingly parallel
+        manner, all three are embarrassingly parallel, but only 'step_1a' is to
+        split the input data and only 'step_1c' is the aggregate the results).
         """
-        return self.nodes[node]["implementation"].is_embarrassingly_parallel
+        implementation = self.nodes[node]["implementation"]
+        return (
+            implementation.is_embarrassingly_parallel,
+            any(slot.splitter for slot in implementation.input_slots.values()),
+            any(slot.aggregator for slot in implementation.output_slots.values()),
+        )
 
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.
@@ -509,11 +525,20 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
-            slot_name, env_var, validator, splitter = (
+            (
+                slot_name,
+                env_var,
+                validator,
+                splitter,
+                splitter_origin_node,
+                splitter_origin_slot,
+            ) = (
                 input_slot.name,
                 input_slot.env_var,
                 input_slot.validator,
                 input_slot.splitter,
+                input_slot.splitter_origin_node,
+                input_slot.splitter_origin_slot,
             )
             if slot_name in condensed_slot_dict:
                 if env_var != condensed_slot_dict[slot_name]["env_var"]:
@@ -534,6 +559,8 @@ class PipelineGraph(ImplementationGraph):
                     "validator": validator,
                     "filepaths": filepaths,
                     "splitter": splitter,
+                    "splitter_origin_node": splitter_origin_node,
+                    "splitter_origin_slot": splitter_origin_slot,
                 }
         return condensed_slot_dict
 
@@ -556,9 +583,11 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for output_slot, filepaths in zip(output_slots, filepaths_by_slot):
-            slot_name, aggregator = (
+            slot_name, aggregator, splitter_origin_node, splitter_origin_slot = (
                 output_slot.name,
                 output_slot.aggregator,
+                output_slot.splitter_origin_node,
+                output_slot.splitter_origin_slot,
             )
             if slot_name in condensed_slot_dict:
                 # Add the new filepaths to the existing slot
@@ -567,5 +596,7 @@ class PipelineGraph(ImplementationGraph):
                 condensed_slot_dict[slot_name] = {
                     "filepaths": filepaths,
                     "aggregator": aggregator,
+                    "splitter_origin_node": splitter_origin_node,
+                    "splitter_origin_slot": splitter_origin_slot,
                 }
         return condensed_slot_dict

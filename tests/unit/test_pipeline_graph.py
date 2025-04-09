@@ -204,12 +204,16 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                         Path(f"{test_dir}/input_data2/file2.csv"),
                     ],
                     "splitter": None,
+                    "splitter_origin_node": None,
+                    "splitter_origin_slot": None,
                 },
             },
             "output": {
                 "step_1_main_output": {
                     "filepaths": [Path("intermediate/step_1_python_pandas/result.parquet")],
                     "aggregator": None,
+                    "splitter_origin_node": None,
+                    "splitter_origin_slot": None,
                 },
             },
         },
@@ -220,12 +224,16 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                     "validator": validate_input_file_dummy,
                     "files": [Path("intermediate/step_1_python_pandas/result.parquet")],
                     "splitter": None,
+                    "splitter_origin_node": None,
+                    "splitter_origin_slot": None,
                 },
             },
             "output": {
                 "step_2_main_output": {
                     "filepaths": [Path("intermediate/step_2_python_pandas/result.parquet")],
                     "aggregator": None,
+                    "splitter_origin_node": None,
+                    "splitter_origin_slot": None,
                 },
             },
         },
@@ -236,12 +244,16 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                     "validator": validate_input_file_dummy,
                     "files": [Path("intermediate/step_2_python_pandas/result.parquet")],
                     "splitter": split_data_by_size,
+                    "splitter_origin_node": "step_3",
+                    "splitter_origin_slot": "step_3_main_input",
                 },
             },
             "output": {
                 "step_3_main_output": {
                     "filepaths": [Path("intermediate/step_3_python_pandas/result.parquet")],
                     "aggregator": concatenate_datasets,
+                    "splitter_origin_node": "step_3",
+                    "splitter_origin_slot": "step_3_main_input",
                 },
             },
         },
@@ -252,12 +264,16 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                     "validator": validate_input_file_dummy,
                     "files": [Path("intermediate/step_3_python_pandas/result.parquet")],
                     "splitter": None,
+                    "splitter_origin_node": None,
+                    "splitter_origin_slot": None,
                 },
             },
             "output": {
                 "step_4_main_output": {
                     "filepaths": [Path("intermediate/step_4_python_pandas/result.parquet")],
                     "aggregator": None,
+                    "splitter_origin_node": None,
+                    "splitter_origin_slot": None,
                 },
             },
         },
@@ -267,16 +283,20 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
         input_slots, output_slots = pipeline_graph.get_io_slot_attributes(node)
         for slot_name, expected_slot in expected_slots["input"].items():
             slot = input_slots[slot_name]
-            assert len(slot) == 4
+            assert len(slot) == 6
             assert slot["env_var"] == expected_slot["env_var"]
             assert slot["validator"] == expected_slot["validator"]
             assert slot["filepaths"] == [str(file) for file in expected_slot["files"]]
             assert slot["splitter"] == expected_slot["splitter"]
+            assert slot["splitter_origin_node"] == expected_slot["splitter_origin_node"]
+            assert slot["splitter_origin_slot"] == expected_slot["splitter_origin_slot"]
         for slot_name, expected_slot in expected_slots["output"].items():
             slot = output_slots[slot_name]
-            assert len(slot) == 2
+            assert len(slot) == 4
             assert slot["filepaths"] == [str(file) for file in expected_slot["filepaths"]]
             assert slot["aggregator"] == expected_slot["aggregator"]
+            assert slot["splitter_origin_node"] == expected_slot["splitter_origin_node"]
+            assert slot["splitter_origin_slot"] == expected_slot["splitter_origin_slot"]
 
 
 def test_condense_input_slots() -> None:
@@ -414,16 +434,21 @@ def test_spark_is_required(default_config_params, requires_spark):
     assert pipeline_graph.spark_is_required == requires_spark
 
 
-def test_get_whether_embarrassingly_parallel(default_config_params):
+def test_get_embarrassingly_parallel_details(default_config_params):
     config_params = default_config_params
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
     nodes = [node for node in pipeline_graph.nodes if node not in ["input_data", "results"]]
     for node in nodes:
+        (
+            is_embarrassingly_parallel,
+            is_splitter,
+            is_aggregator,
+        ) = pipeline_graph.get_embarrassingly_parallel_details(node)
         if node == "step_3_python_pandas":
-            assert pipeline_graph.get_whether_embarrassingly_parallel(node)
+            assert is_embarrassingly_parallel == is_splitter == is_aggregator == True
         else:
-            assert not pipeline_graph.get_whether_embarrassingly_parallel(node)
+            assert is_embarrassingly_parallel == is_splitter == is_aggregator == False
 
 
 @pytest.mark.parametrize("any_embarrassingly_parallel", [True, False])

@@ -1656,8 +1656,8 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
             {
                 "input_slot": InputSlot(
                     "step_3b_main_input",
-                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validate_input_file_dummy,
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
                 ),
                 "output_slot": OutputSlot("step_3a_main_output"),
                 "filepaths": None,
@@ -1669,8 +1669,8 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
             {
                 "input_slot": InputSlot(
                     "step_3_main_input",
-                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validate_input_file_dummy,
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
                 ),
                 "output_slot": OutputSlot("step_3b_main_output"),
                 "filepaths": None,
@@ -1682,8 +1682,8 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
             {
                 "input_slot": InputSlot(
                     "step_3_main_input",
-                    "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validate_input_file_dummy,
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
                 ),
                 "output_slot": OutputSlot("step_3_main_output"),
                 "filepaths": None,
@@ -1695,41 +1695,56 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
         assert edge in implementation_graph.edges(data=True)
 
     # Check that the implementation has the splitter and aggregator
-    imp1 = implementation_graph.nodes["step_3_loop_1_step_3a_step_3a_python_pandas"][
-        "implementation"
-    ]
-    assert len(imp1.input_slots) == 2
-    assert imp1.input_slots["step_3a_main_input"].splitter == split_data_by_size
-    assert imp1.input_slots["step_3a_secondary_input"].splitter == None
-    assert len(imp1.output_slots) == 1
-    assert imp1.output_slots["step_3a_main_output"].aggregator == None
-    assert imp1.is_embarrassingly_parallel
-
-    imp2 = implementation_graph.nodes["step_3_loop_1_step_3b_step_3b_python_pandas"][
-        "implementation"
-    ]
-    assert len(imp2.input_slots) == 2
-    assert imp2.input_slots["step_3b_main_input"].splitter == None
-    assert imp2.input_slots["step_3b_secondary_input"].splitter == None
-    assert len(imp2.output_slots) == 1
-    assert imp2.output_slots["step_3b_main_output"].aggregator == None
-    assert imp2.is_embarrassingly_parallel
-
-    imp3 = implementation_graph.nodes["step_3_loop_2_step_3_python_pandas"]["implementation"]
-    assert len(imp3.input_slots) == 2
-    assert imp3.input_slots["step_3_main_input"].splitter == None
-    assert imp3.input_slots["step_3_secondary_input"].splitter == None
-    assert len(imp3.output_slots) == 1
-    assert imp3.output_slots["step_3_main_output"].aggregator == None
-    assert imp3.is_embarrassingly_parallel
-
-    imp4 = implementation_graph.nodes["step_3_loop_3_step_3_python_pandas"]["implementation"]
-    assert len(imp4.input_slots) == 2
-    assert imp4.input_slots["step_3_main_input"].splitter == None
-    assert imp4.input_slots["step_3_secondary_input"].splitter == None
-    assert len(imp4.output_slots) == 1
-    assert imp4.output_slots["step_3_main_output"].aggregator == concatenate_datasets
-    assert imp4.is_embarrassingly_parallel
+    expected_defined = {
+        "is_embarrassingly_parallel": True,
+        "num_input_slots": 2,
+        "num_output_slots": 1,
+        "step_3_loop_1_step_3a_step_3a_python_pandas": {
+            "step_3a_main_input": {
+                "splitter": split_data_by_size,
+                "splitter_origin_node": "step_3",
+                "splitter_origin_slot": "ep_step_3_main_input",
+            },
+            # nothing defined on secondary input slots or the output slot
+        },
+        # nothing defined in step_3_loop_1_step_3b_step_3b_python_pandas
+        # nothing defined in step_3_loop_2_step_3_python_pandas
+        "step_3_loop_3_step_3_python_pandas": {
+            "step_3_main_output": {
+                "aggregator": concatenate_datasets,
+                "splitter_origin_node": "step_3",
+                "splitter_origin_slot": "ep_step_3_main_input",
+            },
+            # nothing defined on the secondary input slot or the output slot
+        },
+    }
+    for node in implementation_graph.nodes:
+        implementation = implementation_graph.nodes[node]["implementation"]
+        assert (
+            implementation.is_embarrassingly_parallel
+            == expected_defined["is_embarrassingly_parallel"]
+        )
+        assert len(implementation.input_slots) == expected_defined["num_input_slots"]
+        assert len(implementation.output_slots) == expected_defined["num_output_slots"]
+        node_expected = expected_defined.get(node, {})
+        for input_slot in implementation.input_slots.values():
+            input_slot_expected = node_expected.get(input_slot.name, {})
+            assert input_slot.splitter == input_slot_expected.get("splitter")
+            assert input_slot.splitter_origin_node == input_slot_expected.get(
+                "splitter_origin_node"
+            )
+            assert input_slot.splitter_origin_slot == input_slot_expected.get(
+                "splitter_origin_slot"
+            )
+        for output_slot in implementation.output_slots.values():
+            output_slot_expected = node_expected.get(output_slot.name, {})
+            assert output_slot.aggregator == output_slot_expected.get("aggregator")
+            assert output_slot.splitter_origin_node == output_slot_expected.get(
+                "splitter_origin_node"
+            )
+            assert output_slot.splitter_origin_slot == output_slot_expected.get(
+                "splitter_origin_slot"
+            )
 
 
 @pytest.fixture
