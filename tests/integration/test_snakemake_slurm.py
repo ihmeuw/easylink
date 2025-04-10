@@ -1,7 +1,6 @@
-import os
 import re
 import subprocess
-import tempfile
+from pathlib import Path
 
 import pytest
 from pytest_mock import MockerFixture
@@ -10,7 +9,7 @@ from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.runner import main
 from easylink.utilities.general_utils import is_on_slurm
-from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
+from tests.conftest import SPECIFICATIONS_DIR
 
 
 @pytest.mark.slow
@@ -18,7 +17,9 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
     not is_on_slurm(),
     reason="Must be on slurm to run this test.",
 )
-def test_slurm(mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
+def test_slurm(
+    test_specific_results_dir: Path, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
+) -> None:
     """Test that the pipeline runs on SLURM with appropriate resources."""
     nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
     mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
@@ -26,10 +27,6 @@ def test_slurm(mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("integration", nodes=nodes, edges=edges),
     )
-    results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
-    # give the tmpdir the same permissions as the parent directory so that
-    # cluster jobs can write to it
-    os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
     with pytest.raises(SystemExit) as exit:
         main(
             command="run",
@@ -37,7 +34,7 @@ def test_slurm(mocker: MockerFixture, caplog: pytest.LogCaptureFixture) -> None:
             input_data=SPECIFICATIONS_DIR / "common/input_data.yaml",
             computing_environment=SPECIFICATIONS_DIR
             / "integration/environment_spark_slurm.yaml",
-            results_dir=results_dir,
+            results_dir=test_specific_results_dir,
             debug=True,
         )
     assert exit.value.code == 0
