@@ -446,3 +446,42 @@ and gather steps are marked by coloring the box green.
 .. todo::
 
    Add a diagram showing how the various cases described above expand.
+
+Pipelines
+---------
+
+The pipeline schema defines the universe of **pipelines** that can be constructed using EasyLink.
+To construct a pipeline, the user specifies how to resolve all the operators in the pipeline schema
+(except for auto-parallel sections, since these are resolved by EasyLink automatically).
+The result is a graph consisting only of inputs and outputs, steps, data dependencies, and
+auto-parallel sections; all loop-able sections have been unrolled, cloneable sections have been expanded, etc.
+In such a graph, each step requires an implementation, and the user specifies these
+(unless there is a default implementation, in which case that is used if the user doesn't override it).
+Once this is complete, the result is the **pipeline graph**, which is ready to be executed.
+
+.. image:: images/18_schema_to_pipeline.drawio.png
+   :alt: Diagram of the two conceptual steps transforming a pipeline schema into a particular pipeline graph
+
+Combined implementations
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+There is one additional trick that can be present in the pipeline graph, which allows both users and
+implementation authors more flexibility, in accordance with EasyLink's "bend, don't break" design principle.
+
+Typically, an implementation implements a single step, at some level of detail in the pipeline schema.
+However, in some cases this may not be flexible enough.
+To accommodate this, we allow implementations to implement any subgraph in the pipeline --
+any set of nodes in the pipeline graph --
+provided that subgraph can be merged into a single node without introducing dependency cycles.
+This allows an implementation to perform multiple steps at once, sharing information between tasks.
+This harms interoperability, since it is no longer possible to substitute the individual steps,
+so combined implementations are discouraged except when absolutely necessary.
+
+Let's look a little more concretely at how this works.
+Instead of each step (after resolving operators) being assigned a different implementation,
+some steps are configured to be implemented with a combined implementation.
+Data dependencies *between* these steps are removed, and then the step nodes are merged.
+
+.. image:: images/19_schema_to_pipeline_combined.drawio.png
+   :alt: Diagram of the two conceptual steps transforming a pipeline schema into a particular
+      pipeline graph which includes a combined implementation
