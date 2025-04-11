@@ -287,7 +287,7 @@ use rule start_spark_worker from spark_cluster with:
 
             # Create a splitter origin mapper to reduce bottlenecks later.
             # Loop through all implementations and their input slots and generate
-            # a mapping of any splitter origin nodes and slots to the the names of the
+            # a mapping of any splitter origin nodes and slots to the names of the
             # implementation and input slot that they are defined at.
             # i.e. {(splitter_origin_node, splitter_origin_slot): (implementation_name, implementation_input_slot)}
             splitter_origin_mapper = {}
