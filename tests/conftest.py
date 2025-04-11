@@ -64,7 +64,7 @@ def test_specific_results_dir():
     results_dir = Path(results_dir)
     yield results_dir
 
-    # Try 10 to delete the dir.
+    # Try 10 times to delete the dir.
     # NOTE: There seems to be times where the directory is not removed (even after
     # the several attempts with a rest between them). Typically the dir is empty.
     for _ in range(10):
