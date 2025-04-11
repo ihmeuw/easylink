@@ -96,6 +96,12 @@ class PipelineGraph(ImplementationGraph):
             The details describing whether or not the node is to be run in an embarrassingly
             parallel way, has a splitter defined, or has an aggregator defined, respectively.
 
+        Raises
+        ------
+        ValueError
+            If the node is marked as being a splitter or aggregator but is not
+            embarrassingly parallel.
+
         Notes
         -----
         A node should never have a splitter or aggregator defined if it is *not*
@@ -107,13 +113,26 @@ class PipelineGraph(ImplementationGraph):
         split the input data and only 'step_1c' is the aggregate the results).
         """
         implementation = self.nodes[node]["implementation"]
-        return {
+        details = {
             "is_embarrassingly_parallel": implementation.is_embarrassingly_parallel,
             "is_splitter": any(slot.splitter for slot in implementation.input_slots.values()),
             "is_aggregator": any(
                 slot.aggregator for slot in implementation.output_slots.values()
             ),
         }
+
+        unexpected = []
+        if details["is_splitter"] and not details["is_embarrassingly_parallel"]:
+            unexpected.append("splitter")
+        if details["is_aggregator"] and not details["is_embarrassingly_parallel"]:
+            unexpected.append("aggregator")
+        if unexpected:
+            raise ValueError(
+                f"Node '{node}' is marked as being a {' and '.join(unexpected)} "
+                "but not embarrassingly parallel."
+            )
+
+        return details
 
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.

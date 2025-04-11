@@ -454,6 +454,41 @@ def test_get_embarrassingly_parallel_details(default_config_params):
             assert is_embarrassingly_parallel == is_splitter == is_aggregator == False
 
 
+@pytest.mark.parametrize("is_splitter", [True, False])
+@pytest.mark.parametrize("is_aggregator", [True, False])
+def test_get_embarrassingly_parallel_details_raises(
+    is_splitter: bool, is_aggregator: bool, default_config_params
+):
+    config_params = default_config_params
+    config = Config(config_params)
+    pipeline_graph = PipelineGraph(config, freeze=False)
+    # Let's arbitrarily use step 1 for the test
+    node = "step_1_python_pandas"
+    imp = pipeline_graph.nodes[node]["implementation"]
+
+    # Set everything
+    imp.is_embarrassingly_parallel = False
+    imp.input_slots["step_1_main_input"].splitter = None
+    imp.output_slots["step_1_main_output"].aggregator = None
+
+    unexpected = []
+    if is_splitter:
+        imp.input_slots["step_1_main_input"].splitter = split_data_by_size
+        unexpected.append("splitter")
+    if is_aggregator:
+        imp.output_slots["step_1_main_output"].aggregator = concatenate_datasets
+        unexpected.append("aggregator")
+
+    if not is_splitter and not is_aggregator:
+        pipeline_graph.get_embarrassingly_parallel_details(node)
+    else:
+        with pytest.raises(
+            ValueError,
+            match=f"Node '{node}' is marked as being a {' and '.join(unexpected)} but not embarrassingly parallel.",
+        ):
+            pipeline_graph.get_embarrassingly_parallel_details(node)
+
+
 @pytest.mark.parametrize("any_embarrassingly_parallel", [True, False])
 def test_any_embarrassingly_parallel(default_config_params, any_embarrassingly_parallel):
     config = Config(default_config_params)
