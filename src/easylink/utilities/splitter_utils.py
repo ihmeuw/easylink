@@ -70,3 +70,38 @@ def split_data_by_size(
             f"{chunk.index[-1]})"
         )
         chunk.to_parquet(os.path.join(chunk_dir, "result.parquet"))
+
+
+def split_data_in_two(input_files: list[str], output_dir: str, *args, **kwargs) -> None:
+    """Splits the data (from a single input slot) into two chunks of equal.
+
+    This function takes all datasets from a single input slot, concatenates them,
+    and then splits the resulting dataset into two chunks of similar size.
+
+    Parameters
+    ----------
+    input_files
+        A list of input file paths to be concatenated and split.
+    output_dir
+        The directory where the resulting chunks will be saved.
+    desired_chunk_size_mb
+        The desired size of each chunk, in megabytes.
+    """
+
+    # concatenate all input files
+    df = pd.DataFrame()
+    for file in input_files:
+        tmp = pd.read_parquet(file)
+        df = pd.concat([df, tmp], ignore_index=True)
+
+    # divide df into two and save each chunk out
+    num_chunks = 2
+    chunk_size = math.ceil(len(df) / num_chunks)
+    for i in range(num_chunks):
+        start = i * chunk_size
+        end = (i + 1) * chunk_size
+        chunk = df.iloc[start:end]
+        chunk_dir = os.path.join(output_dir, f"chunk_{i}")
+        if not os.path.exists(chunk_dir):
+            os.makedirs(chunk_dir)
+        chunk.to_parquet(os.path.join(chunk_dir, "result.parquet"))

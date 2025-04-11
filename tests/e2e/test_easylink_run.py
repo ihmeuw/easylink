@@ -1,9 +1,7 @@
 # mypy: ignore-errors
 import hashlib
-import os
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from pprint import pprint
 
@@ -11,7 +9,7 @@ import pytest
 
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
-from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
+from tests.conftest import SPECIFICATIONS_DIR
 
 RESULT_CHECKSUM = "d56f3d12c0c9ca89b6ce0f42810bb79cd16772535f73807722e5430819b6bc08"
 
@@ -38,7 +36,13 @@ RESULT_CHECKSUM = "d56f3d12c0c9ca89b6ce0f42810bb79cd16772535f73807722e5430819b6b
         ),
     ],
 )
-def test_easylink_run(pipeline_specification, input_data, computing_environment, capsys):
+def test_easylink_run(
+    pipeline_specification,
+    input_data,
+    computing_environment,
+    test_specific_results_dir,
+    capsys,
+):
     """Tests the 'easylink run' command
 
     Notes
@@ -46,15 +50,7 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
     We use various print statements in this test because they show up in the
     Jenkins logs.
     """
-    # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
-    # because other nodes do not have access to it. Also, do not use a context manager
-    # (i.e. tempfile.TemporaryDirectory) because it's too difficult to debug when the test
-    # fails b/c the dir gets deleted.
-    results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
-    # give the tmpdir the same permissions as the parent directory so that
-    # cluster jobs can write to it
-    os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
-    results_dir = Path(results_dir)
+
     with capsys.disabled():  # disabled so we can monitor job submissions
         print(
             "\n\n*** RUNNING TEST ***\n"
@@ -66,7 +62,7 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
             f"-i {SPECIFICATIONS_DIR / input_data} "
             f"-e {SPECIFICATIONS_DIR / computing_environment} "
-            f"-o {str(results_dir)} "
+            f"-o {str(test_specific_results_dir)} "
             "--no-timestamp"
         )
         subprocess.run(
@@ -76,19 +72,19 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
             stderr=sys.stderr,
             check=True,
         )
-        final_output = results_dir / "result.parquet"
+        final_output = test_specific_results_dir / "result.parquet"
         assert final_output.exists()
         # Check that the results file checksum matches the expected value
         with open(final_output, "rb") as f:
             actual_checksum = hashlib.sha256(f.read()).hexdigest()
         assert actual_checksum == RESULT_CHECKSUM
 
-        assert (results_dir / Path(pipeline_specification).name).exists()
-        assert (results_dir / Path(input_data).name).exists()
-        assert (results_dir / Path(computing_environment).name).exists()
+        assert (test_specific_results_dir / Path(pipeline_specification).name).exists()
+        assert (test_specific_results_dir / Path(input_data).name).exists()
+        assert (test_specific_results_dir / Path(computing_environment).name).exists()
 
         # Check that implementation configuration worked
-        diagnostics_dir = results_dir / "diagnostics"
+        diagnostics_dir = test_specific_results_dir / "diagnostics"
         assert (
             load_yaml(diagnostics_dir / "step_1_python_pandas" / "diagnostics.yaml")[
                 "increment"
@@ -117,8 +113,6 @@ def test_easylink_run(pipeline_specification, input_data, computing_environment,
         )
         print("\nFinal diagnostics:\n")
         pprint(final_diagnostics)
-        # sleep briefly before removing tmpdir b/c sometimes one lingers
-        os.system(f"sleep 1 && rm -rf {results_dir}")
         print(
             "\n\n*** END OF TEST ***\n"
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"

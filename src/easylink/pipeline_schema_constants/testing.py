@@ -16,6 +16,7 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
+    EmbarrassinglyParallelStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
@@ -23,6 +24,8 @@ from easylink.step import (
     ParallelStep,
     Step,
 )
+from easylink.utilities.aggregator_utils import concatenate_datasets
+from easylink.utilities.splitter_utils import split_data_in_two
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 SINGLE_STEP_NODES = [
@@ -356,3 +359,66 @@ DOUBLE_STEP_EDGES = [
 
 
 COMBINE_WITH_ITERATION_SCHEMA_PARAMS = (COMBINE_WITH_ITERATION_NODES, DOUBLE_STEP_EDGES)
+
+
+LOOPING_EP_STEP_NODES = [
+    InputStep(),
+    LoopStep(
+        template_step=EmbarrassinglyParallelStep(
+            step=Step(
+                step_name="step_1",
+                input_slots=[
+                    InputSlot(
+                        name="step_1_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                ],
+                output_slots=[
+                    OutputSlot(
+                        name="step_1_main_output",
+                    ),
+                ],
+            ),
+            input_slots=[
+                InputSlot(
+                    name="step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                    splitter=split_data_in_two,
+                ),
+            ],
+            output_slots=[OutputSlot("step_1_main_output", aggregator=concatenate_datasets)],
+            input_slot_mappings=[
+                InputSlotMapping(
+                    parent_slot="step_1_main_input",
+                    child_node="step_1",
+                    child_slot="step_1_main_input",
+                ),
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping(
+                    parent_slot="step_1_main_output",
+                    child_node="step_1",
+                    child_slot="step_1_main_output",
+                ),
+            ],
+        ),
+        self_edges=[
+            EdgeParams(
+                source_node="step_1",
+                target_node="step_1",
+                output_slot="step_1_main_output",
+                input_slot="step_1_main_input",
+            )
+        ],
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ]
+    ),
+]
+
+
+LOOPING_EP_STEP_SCHEMA_PARAMS = (LOOPING_EP_STEP_NODES, SINGLE_STEP_EDGES)

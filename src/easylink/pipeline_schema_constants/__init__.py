@@ -23,4 +23,5 @@ TESTING_SCHEMA_PARAMS = {
     "combine_with_iteration": testing.COMBINE_WITH_ITERATION_SCHEMA_PARAMS,
     "combine_with_iteration_cycle": testing.COMBINE_WITH_ITERATION_SCHEMA_PARAMS,
     "combine_with_extra_node": testing.TRIPLE_STEP_SCHEMA_PARAMS,
+    "looping_ep_step": testing.LOOPING_EP_STEP_SCHEMA_PARAMS,
 }

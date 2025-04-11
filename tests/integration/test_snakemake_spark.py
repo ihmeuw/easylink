@@ -1,8 +1,6 @@
 # mypy: ignore-errors
-import os
 import re
 import subprocess
-import tempfile
 
 import pytest
 import yaml
@@ -11,7 +9,7 @@ from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.runner import main
 from easylink.utilities.general_utils import is_on_slurm
-from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
+from tests.conftest import SPECIFICATIONS_DIR
 
 
 @pytest.mark.slow
@@ -19,7 +17,7 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
     not is_on_slurm(),
     reason="Must be on slurm to run this test.",
 )
-def test_spark_slurm(mocker, caplog):
+def test_spark_slurm(test_specific_results_dir, mocker, caplog):
     """Test that the pipeline runs spark on SLURM with appropriate resources."""
     nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
     mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
@@ -27,10 +25,6 @@ def test_spark_slurm(mocker, caplog):
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("integration", nodes=nodes, edges=edges),
     )
-    results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
-    # give the tmpdir the same permissions as the parent directory so that
-    # cluster jobs can write to it
-    os.chmod(results_dir, os.stat(RESULTS_DIR).st_mode)
     pipeline_specification = SPECIFICATIONS_DIR / "integration/pipeline_spark.yaml"
     input_data = SPECIFICATIONS_DIR / "common/input_data.yaml"
     computing_environment = SPECIFICATIONS_DIR / "integration/environment_spark_slurm.yaml"
@@ -42,7 +36,7 @@ def test_spark_slurm(mocker, caplog):
             pipeline_specification=pipeline_specification,
             input_data=input_data,
             computing_environment=computing_environment,
-            results_dir=str(results_dir),
+            results_dir=test_specific_results_dir,
             debug=True,
         )
     assert exit.value.code == 0
