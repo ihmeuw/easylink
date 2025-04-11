@@ -125,9 +125,9 @@ class OutputSlot:
     of the pipeline in an embarrassingly parallel manner. **Note that the function 
     *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
     splitter_origin_node: str = None
-    """The name of the node where a splitter is originally defined."""
+    """The name of the node where the aggregator's corresponding splitter is originally defined."""
     splitter_origin_slot: str = None
-    """The name of the ``InputSlot`` where a splitter is originally defined."""
+    """The name of the ``InputSlot`` where the aggregator's corresponding splitter is originally defined."""
 
     def __eq__(self, other: Any) -> bool | NotImplementedType:
         """Checks if two ``OutputSlots`` are equal.
