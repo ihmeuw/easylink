@@ -267,13 +267,11 @@ use rule start_spark_worker from spark_cluster with:
             validation_rule.write_to_snakefile(self.snakefile_path)
 
         _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
-        (
-            is_embarrassingly_parallel,
-            is_splitter,
-            is_aggregator,
-        ) = self.pipeline_graph.get_embarrassingly_parallel_details(node_name)
+        embarrassingly_parallel_details = (
+            self.pipeline_graph.get_embarrassingly_parallel_details(node_name)
+        )
 
-        if is_embarrassingly_parallel:
+        if embarrassingly_parallel_details["is_embarrassingly_parallel"]:
             # Update the outputs to be the processed chunks
             if len(output_files) > 1:
                 raise NotImplementedError(
@@ -314,7 +312,7 @@ use rule start_spark_worker from spark_cluster with:
             # for a non-splitting node is definitely not where the checkpoint
             # directory is located
             checkpoint_output_dir = output_files[0].split("/processed/")[0] + "/input_chunks"
-            if is_splitter:
+            if embarrassingly_parallel_details["is_splitter"]:
                 input_slots_to_split = self._get_input_slots_to_split(input_slots)
                 if len(input_slots_to_split) > 1:
                     raise NotImplementedError(
@@ -334,7 +332,7 @@ use rule start_spark_worker from spark_cluster with:
                     checkpoint_output_dir + "/{chunk}/result.parquet"
                 ]
 
-            if is_aggregator:
+            if embarrassingly_parallel_details["is_aggregator"]:
                 self._write_aggregation_rule(
                     node_name, output_slots, splitter_origin_mapper, checkpoint_output_dir
                 )
@@ -360,7 +358,9 @@ use rule start_spark_worker from spark_cluster with:
             image_path=implementation.singularity_image_path,
             script_cmd=implementation.script_cmd,
             requires_spark=implementation.requires_spark,
-            is_embarrassingly_parallel=is_embarrassingly_parallel,
+            is_embarrassingly_parallel=embarrassingly_parallel_details[
+                "is_embarrassingly_parallel"
+            ],
         ).write_to_snakefile(self.snakefile_path)
 
     def _write_checkpoint_rule(

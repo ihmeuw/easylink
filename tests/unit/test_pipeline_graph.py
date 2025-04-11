@@ -440,11 +440,14 @@ def test_get_embarrassingly_parallel_details(default_config_params):
     pipeline_graph = PipelineGraph(config)
     nodes = [node for node in pipeline_graph.nodes if node not in ["input_data", "results"]]
     for node in nodes:
-        (
-            is_embarrassingly_parallel,
-            is_splitter,
-            is_aggregator,
-        ) = pipeline_graph.get_embarrassingly_parallel_details(node)
+        embarrassingly_parallel_details = pipeline_graph.get_embarrassingly_parallel_details(
+            node
+        )
+        is_embarrassingly_parallel = embarrassingly_parallel_details[
+            "is_embarrassingly_parallel"
+        ]
+        is_splitter = embarrassingly_parallel_details["is_splitter"]
+        is_aggregator = embarrassingly_parallel_details["is_aggregator"]
         if node == "step_3_python_pandas":
             assert is_embarrassingly_parallel == is_splitter == is_aggregator == True
         else:

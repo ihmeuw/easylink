@@ -77,12 +77,12 @@ class PipelineGraph(ImplementationGraph):
         to be run in an embarrassingly parallel way."""
         return any(
             [
-                self.get_embarrassingly_parallel_details(node)[0]
+                self.get_embarrassingly_parallel_details(node)["is_embarrassingly_parallel"]
                 for node in self.implementation_nodes
             ]
         )
 
-    def get_embarrassingly_parallel_details(self, node: str) -> tuple[bool, bool, bool]:
+    def get_embarrassingly_parallel_details(self, node: str) -> dict[str, bool]:
         """Determines whether a node is to be run in an embarrassingly parallel way.
 
         Parameters
@@ -93,9 +93,8 @@ class PipelineGraph(ImplementationGraph):
 
         Returns
         -------
-            A tuple of three booleans indicating whether or not the node is to be
-            run in an embarrassingly parallel way, has a splitter defined, or has
-            an aggregator defined, respectively.
+            The details describing whether or not the node is to be run in an embarrassingly
+            parallel way, has a splitter defined, or has an aggregator defined, respectively.
 
         Notes
         -----
@@ -108,11 +107,13 @@ class PipelineGraph(ImplementationGraph):
         split the input data and only 'step_1c' is the aggregate the results).
         """
         implementation = self.nodes[node]["implementation"]
-        return (
-            implementation.is_embarrassingly_parallel,
-            any(slot.splitter for slot in implementation.input_slots.values()),
-            any(slot.aggregator for slot in implementation.output_slots.values()),
-        )
+        return {
+            "is_embarrassingly_parallel": implementation.is_embarrassingly_parallel,
+            "is_splitter": any(slot.splitter for slot in implementation.input_slots.values()),
+            "is_aggregator": any(
+                slot.aggregator for slot in implementation.output_slots.values()
+            ),
+        }
 
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.
