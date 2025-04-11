@@ -452,7 +452,7 @@ Pipelines
 
 The pipeline schema defines the universe of **pipelines** that can be constructed using EasyLink.
 To construct a pipeline, the user specifies how to resolve all the operators in the pipeline schema
-except for auto-parallel sections (since these are resolved by EasyLink automatically).
+(except for auto-parallel sections, since these are resolved by EasyLink automatically).
 The result is a graph consisting only of inputs and outputs, steps, data dependencies, and
 auto-parallel sections.
 In such a graph, each step requires an implementation, and the user specifies these
