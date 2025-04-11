@@ -511,10 +511,11 @@ class HierarchicalStep(Step):
     step_graph
         The :class:`~easylink.graph_components.StepGraph` i.e. the directed acyclic
         graph (DAG) of sub-nodes and their edges that make up this ``HierarchicalStep``.
-    user_configurable
-        Whether or not the ``HierarchicalStep`` is user-configurable. It is a convenience
-        attribute to allow for back-end ``HierarchicalStep`` creation that are not
-        user-facing (i.e. they do not need to provide a 'substeps' configuration key).
+    directly_implemented
+        Whether or not the ``HierarchicalStep`` is implemented directly from the user.
+        It is a convenience attribute to allow for back-end ``HierarchicalStep``
+        construction (i.e. ones that do not have a corresponding user-provided
+        'substeps' configuration key).
 
     """
 
@@ -528,7 +529,7 @@ class HierarchicalStep(Step):
         edges=(),
         input_slot_mappings=(),
         output_slot_mappings=(),
-        user_configurable=True,
+        directly_implemented=True,
     ):
         super().__init__(
             step_name,
@@ -547,7 +548,7 @@ class HierarchicalStep(Step):
         self.step_graph = self._get_step_graph(nodes, edges)
         """The :class:`~easylink.graph_components.StepGraph` i.e. the directed acyclic 
         graph (DAG) of sub-nodes and their edges that make up this ``HierarchicalStep``."""
-        self.user_configurable = user_configurable
+        self.directly_implemented = directly_implemented
         """Whether or not the ``HierarchicalStep`` is user-configurable. It is a convenience
         attribute to allow for back-end ``HierarchicalStep`` creation that are not
         user-facing (i.e. they do not need to provide a 'substeps' configuration key)."""
@@ -595,7 +596,7 @@ class HierarchicalStep(Step):
         all issues in one pass. In these cases, new errors may be found after the
         initial ones are handled.
         """
-        if self.user_configurable:
+        if self.directly_implemented:
             if self.config_key in step_config:
                 step_config = step_config[self.config_key]
             else:
@@ -616,7 +617,7 @@ class HierarchicalStep(Step):
         """Sets the configuration state.
 
         The configuration state of a ``HierarchicalStep`` depends on (1) whether
-        or not it is :attr:`user_configurable` and (2) whether or not the
+        or not it is :attr:`directly_implemented` and (2) whether or not the
         :attr:`config_key` exists in the pipeline specification file.
 
         Parameters
@@ -629,7 +630,7 @@ class HierarchicalStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        if self.user_configurable:
+        if self.directly_implemented:
             if self.config_key in step_config:
                 step_config = step_config[self.config_key]
                 configuration_state_type = NonLeafConfigurationState
@@ -1703,33 +1704,55 @@ class NonLeafConfigurationState(ConfigurationState):
             ``aggregators`` assigned to its ``InputSlot`` and ``OutputSlots``,
             respectively.
         """
-        for parent_input_slot_name, parent_input_slot in parent.input_slots.items():
-            if parent_input_slot.splitter:
-                # Extract the appropriate child slot name from the mapping
-                mappings_with_splitter = [
+        parent_split_slots = [
+            slot_name for slot_name, slot in parent.input_slots.items() if slot.splitter
+        ]
+        if len(parent_split_slots) > 1:
+            raise ValueError(
+                f"More than one input slot with splitter assigned in parent step {parent.name}: {parent_split_slots}"
+            )
+        parent_split_slot = parent_split_slots[0] if parent_split_slots else None
+
+        for slot_type in ["input", "output"]:
+            parent_slots = parent.input_slots if slot_type == "input" else parent.output_slots
+            child_slots = child.input_slots if slot_type == "input" else child.output_slots
+            callable_attr = "splitter" if slot_type == "input" else "aggregator"
+            for parent_slot_name, parent_slot in parent_slots.items():
+                if not getattr(parent_slot, callable_attr):
+                    # If the parent slot doesn't have the splitter/aggretagor,
+                    # there is nothing to propagate
+                    continue
+                mappings_with_callable = [
                     mapping
-                    for mapping in parent.slot_mappings["input"]
-                    if mapping.parent_slot == parent_input_slot_name
+                    for mapping in parent.slot_mappings[slot_type]
+                    if mapping.parent_slot == parent_slot_name
                 ]
-                for mapping in mappings_with_splitter:
+                for mapping in mappings_with_callable:
                     child_node = mapping.child_node
                     child_slot = mapping.child_slot
-                    # Assign the splitter to the appropriate child slot
-                    if child_slot in child.input_slots and child_node == child.name:
-                        child.input_slots[child_slot].splitter = parent_input_slot.splitter
-        for parent_output_slot_name, parent_output_slot in parent.output_slots.items():
-            # Extract the appropriate child slot name from the mapping
-            mappings_from_parent = [
-                mapping
-                for mapping in parent.slot_mappings["output"]
-                if mapping.parent_slot == parent_output_slot_name
-            ]
-            for mapping in mappings_from_parent:
-                child_node = mapping.child_node
-                child_slot = mapping.child_slot
-                # Assign the aggregator to the appropriate child slot
-                if child_slot in child.output_slots and child_node == child.name:
-                    child.output_slots[child_slot].aggregator = parent_output_slot.aggregator
+                    if not (child_node == child.name and child_slot in child_slots):
+                        # If this is not the relevant child or slot, skip
+                        continue
+                    # Assign the callable (splitter or aggregator) to the appropriate child slot
+                    setattr(
+                        child_slots[child_slot],
+                        callable_attr,
+                        getattr(parent_slot, callable_attr),
+                    )
+                    # If the parent slot already has defined splitter origin details,
+                    # assign them to the child. If it doesn't, then it (the parent),
+                    # must itself be the origin; assign the parent's name
+                    # and split slot to the child
+                    child_slots[child_slot].splitter_origin_node = (
+                        parent_slot.splitter_origin_node
+                        if parent_slot.splitter_origin_node
+                        else parent.name
+                    )
+                    child_slots[child_slot].splitter_origin_slot = (
+                        parent_slot.splitter_origin_slot
+                        if parent_slot.splitter_origin_slot
+                        else parent_split_slot
+                    )
 
     def add_edges_to_implementation_graph(
         self, implementation_graph: ImplementationGraph

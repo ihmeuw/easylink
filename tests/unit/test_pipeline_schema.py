@@ -125,6 +125,8 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
                     splitter=split_data_by_size,
+                    splitter_origin_node="step_3",
+                    splitter_origin_slot="step_3_main_input",
                 ),
                 "filepaths": None,
             },
@@ -134,7 +136,10 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
             "step_4_python_pandas",
             {
                 "output_slot": OutputSlot(
-                    "step_3_main_output", aggregator=concatenate_datasets
+                    "step_3_main_output",
+                    aggregator=concatenate_datasets,
+                    splitter_origin_node="step_3",
+                    splitter_origin_slot="step_3_main_input",
                 ),
                 "input_slot": InputSlot(
                     name="step_4_main_input",
