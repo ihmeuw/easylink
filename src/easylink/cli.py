@@ -154,6 +154,7 @@ def run(
     acyclic graph (DAG) image. If you only want to generate the image without actually
     running the pipeline, use the ``easylink generate-dag`` command.
     """
+    raise NotImplementedError()
     configure_logging_to_terminal(verbose)
     logger.info("Running pipeline")
     results_dir = get_results_directory(output_dir, no_timestamp).as_posix()
