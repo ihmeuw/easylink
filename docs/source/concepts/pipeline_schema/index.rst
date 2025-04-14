@@ -561,7 +561,7 @@ each of which is the combination of a dataset name and a Record ID value found i
    * - reference_file_2
      - 3
 
-In this example, record ID 1 from the dataset "input_file" has been put in its own cluster,
+In this example, record ID 1 from the dataset "input_file" (i.e. Input Record ID "input_file_1") has been put in its own cluster,
 meaning that it does not match any of the other records listed.
 input_file_2 has been put in a cluster with reference_file_1,
 indicating that they refer to the same person.
@@ -593,7 +593,7 @@ This step :ref:`has sub-steps <clustering_pass_sub_steps>`, which may be expande
 **Examples:**
 
 - The US Census Bureau's Person Identification and Validation System (PVS)
-  *modules* would be clustering passes, since clusters
+  *modules* are considered clustering passes, since clusters
   -- called "protected identification keys" (PIKs) in that system --
   are resolved in between modules.
   As described below, each module only considers records not already clustered.
