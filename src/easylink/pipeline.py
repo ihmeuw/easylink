@@ -172,7 +172,7 @@ wildcard_constraints:
     def _write_target_rules(self) -> None:
         """Writes the rule for the final output and its validation.
 
-        The input files to the the target rule (i.e. the result node) are the final
+        The input files to the target rule (i.e. the result node) are the final
         output themselves.
         """
         final_output, _ = self.pipeline_graph.get_io_filepaths("results")
