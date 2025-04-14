@@ -389,20 +389,6 @@ LOOPING_EP_STEP_NODES = [
                 ),
             ],
             output_slots=[OutputSlot("step_1_main_output", aggregator=concatenate_datasets)],
-            input_slot_mappings=[
-                InputSlotMapping(
-                    parent_slot="step_1_main_input",
-                    child_node="step_1",
-                    child_slot="step_1_main_input",
-                ),
-            ],
-            output_slot_mappings=[
-                OutputSlotMapping(
-                    parent_slot="step_1_main_output",
-                    child_node="step_1",
-                    child_slot="step_1_main_output",
-                ),
-            ],
         ),
         self_edges=[
             EdgeParams(

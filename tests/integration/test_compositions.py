@@ -12,7 +12,7 @@ EP_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "integration" / "embarrassingly_par
 
 
 @pytest.mark.slow
-def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path):
+def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -> None:
     pipeline_specification = EP_SPECIFICATIONS_DIR / "pipeline_loop_step.yaml"
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
@@ -46,7 +46,7 @@ def _run_pipeline(
     pipeline_specification: Path,
     input_data: Path,
     computing_environment: Path | None = None,
-):
+) -> None:
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main(
             command="run",
