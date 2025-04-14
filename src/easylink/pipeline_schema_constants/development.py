@@ -74,17 +74,8 @@ NODES = [
                     ),
                 ],
             ),
-            input_slots=[
-                InputSlot(
-                    name="step_3_main_input",
-                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=validate_input_file_dummy,
-                    splitter=split_data_by_size,
-                ),
-            ],
-            output_slots=[OutputSlot("step_3_main_output", aggregator=concatenate_datasets)],
-            # splitter=(split_data_by_size, "step_3_main_input"),
-            # aggregator=(concatenate_datasets, "step_3_main_output"),
+            splitter={"step_3_main_input": split_data_by_size},
+            aggregator={"step_3_main_output": concatenate_datasets},
         ),
         self_edges=[
             EdgeParams(
