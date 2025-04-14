@@ -83,20 +83,8 @@ NODES = [
                 ),
             ],
             output_slots=[OutputSlot("step_3_main_output", aggregator=concatenate_datasets)],
-            input_slot_mappings=[
-                InputSlotMapping(
-                    parent_slot="step_3_main_input",
-                    child_node="step_3",
-                    child_slot="step_3_main_input",
-                ),
-            ],
-            output_slot_mappings=[
-                OutputSlotMapping(
-                    parent_slot="step_3_main_output",
-                    child_node="step_3",
-                    child_slot="step_3_main_output",
-                ),
-            ],
+            # splitter=(split_data_by_size, "step_3_main_input"),
+            # aggregator=(concatenate_datasets, "step_3_main_output"),
         ),
         self_edges=[
             EdgeParams(

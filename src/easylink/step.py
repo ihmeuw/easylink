@@ -1168,20 +1168,17 @@ class EmbarrassinglyParallelStep(Step):
         step: Step,
         input_slots: Iterable[InputSlot],
         output_slots: Iterable[OutputSlot],
-        input_slot_mappings: Iterable[InputSlotMapping],
-        output_slot_mappings: Iterable[OutputSlotMapping],
     ) -> None:
         super().__init__(
             step.step_name,
             step.name,
             input_slots,
             output_slots,
-            input_slot_mappings,
-            output_slot_mappings,
             is_embarrassingly_parallel=True,
         )
         self.step_graph = None
         self.step = step
+        self.step.set_parent_step(self)
         self._validate()
 
     def _validate(self) -> None:
@@ -1246,22 +1243,19 @@ class EmbarrassinglyParallelStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        if self.step.name != self.name:
-            # Update the step name if the parent got renamed, e.g. a parent LoopStep
-            # 'step_1' that got expanded to 'step_1_loop_1', etc.
-            self.step.name = self.name
-            input_mappings = [
-                InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
-            ]
-            output_mappings = [
-                OutputSlotMapping(slot, self.name, slot) for slot in self.output_slots
-            ]
-            self.slot_mappings = {"input": input_mappings, "output": output_mappings}
+        # Generate the slot mappings
+        input_mappings = [
+            InputSlotMapping(slot, self.step.name, slot) for slot in self.input_slots
+        ]
+        output_mappings = [
+            OutputSlotMapping(slot, self.step.name, slot) for slot in self.output_slots
+        ]
+        self.slot_mappings = {"input": input_mappings, "output": output_mappings}
         # Generate step graph from the single ``step`` attr
         self.step_graph = StepGraph()
         self.step_graph.add_node_from_step(self.step)
         # Add the key back to the expanded config
-        expanded_config = LayeredConfigTree({self.name: step_config})
+        expanded_config = LayeredConfigTree({self.step.name: step_config})
 
         # EmbarrassinglyParallelSteps are by definition non-leaf steps
         self._configuration_state = NonLeafConfigurationState(
