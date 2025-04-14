@@ -380,15 +380,8 @@ LOOPING_EP_STEP_NODES = [
                     ),
                 ],
             ),
-            input_slots=[
-                InputSlot(
-                    name="step_1_main_input",
-                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    validator=validate_input_file_dummy,
-                    splitter=split_data_in_two,
-                ),
-            ],
-            output_slots=[OutputSlot("step_1_main_output", aggregator=concatenate_datasets)],
+            splitter={"step_1_main_input": split_data_in_two},
+            aggregator={"step_1_main_output": concatenate_datasets},
         ),
         self_edges=[
             EdgeParams(

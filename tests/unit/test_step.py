@@ -9,6 +9,7 @@ rather than try to get full coverage in the e2e tests. It also allows us to test
 future pipeline schema expansion/flexibility in a relative simple manner now.
 """
 
+from collections.abc import Callable
 from typing import Any
 
 import pytest
@@ -1154,15 +1155,8 @@ def embarrassingly_parallel_step_params() -> dict[str, Any]:
             ],
             output_slots=[OutputSlot("step_3_main_output")],
         ),
-        "input_slots": [
-            InputSlot(
-                "step_3_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-                split_data_by_size,
-            )
-        ],
-        "output_slots": [OutputSlot("step_3_main_output", concatenate_datasets)],
+        "splitter": {"step_3_main_input": split_data_by_size},
+        "aggregator": {"step_3_main_output": concatenate_datasets},
     }
 
 
@@ -1204,7 +1198,7 @@ def test_embarrassingly_parallel_step_implementation_graph(
 
 
 @pytest.mark.parametrize(
-    "input_slots, output_slots, expected_error_msg",
+    "input_slots, output_slots, splitter, aggregator, expected_error_msg",
     [
         (
             [
@@ -1214,7 +1208,9 @@ def test_embarrassingly_parallel_step_implementation_graph(
                     validate_input_file_dummy,
                 ),
             ],
-            [OutputSlot("main_output", concatenate_datasets)],
+            [OutputSlot("main_output")],
+            {},
+            {"main_output": concatenate_datasets},
             "does not have any input slots with a splitter method assigned",
         ),
         (
@@ -1223,16 +1219,16 @@ def test_embarrassingly_parallel_step_implementation_graph(
                     "main_input",
                     "FOO",
                     validate_input_file_dummy,
-                    split_data_by_size,
                 ),
                 InputSlot(
                     "secondary_input",
                     "BAR",
                     validate_input_file_dummy,
-                    split_data_by_size,
                 ),
             ],
-            [OutputSlot("main_output", concatenate_datasets)],
+            [OutputSlot("main_output")],
+            {"main_input": split_data_by_size, "secondary_input": split_data_by_size},
+            {"main_output": concatenate_datasets},
             "has multiple input slots with splitter methods assigned",
         ),
         (
@@ -1241,13 +1237,14 @@ def test_embarrassingly_parallel_step_implementation_graph(
                     "main_input",
                     "FOO",
                     validate_input_file_dummy,
-                    split_data_by_size,
                 ),
             ],
             [
-                OutputSlot("main_output", concatenate_datasets),
+                OutputSlot("main_output"),
                 OutputSlot("secondary_output"),
             ],
+            {"main_input": split_data_by_size},
+            {"main_output": concatenate_datasets},
             "has output slots without aggregator methods",
         ),
         (
@@ -1262,6 +1259,8 @@ def test_embarrassingly_parallel_step_implementation_graph(
                 OutputSlot("main_output", concatenate_datasets),
                 OutputSlot("secondary_output"),
             ],
+            {},
+            {"main_output": concatenate_datasets},
             [
                 "does not have any input slots with a splitter method assigned",
                 "has output slots without aggregator methods",
@@ -1286,6 +1285,8 @@ def test_embarrassingly_parallel_step_implementation_graph(
                 OutputSlot("main_output", concatenate_datasets),
                 OutputSlot("secondary_output"),
             ],
+            {"main_input": split_data_by_size, "secondary_input": split_data_by_size},
+            {"main_output": concatenate_datasets},
             [
                 "has multiple input slots with splitter methods assigned",
                 "has output slots without aggregator methods",
@@ -1303,14 +1304,18 @@ def test_embarrassingly_parallel_step_implementation_graph(
 def test_embarrassingly_parallel_step__validation(
     input_slots: list[InputSlot],
     output_slots: list[OutputSlot],
+    splitter: dict[str, Callable],
+    aggregator: dict[str, Callable],
     expected_error_msg: str | list[str],
 ):
     step_params = {
         "step": Step(
             step_name="step",
+            input_slots=input_slots,
+            output_slots=output_slots,
         ),
-        "input_slots": input_slots,
-        "output_slots": output_slots,
+        "splitter": splitter,
+        "aggregator": aggregator,
     }
     with pytest.raises(ValueError) as error:
         EmbarrassinglyParallelStep(**step_params)
@@ -1427,23 +1432,11 @@ def embarrassingly_parallel_hierarchical_step_params() -> dict[str, Any]:
                 ),
             ],
         ),
-        "input_slots": [
-            InputSlot(
-                "steps_1_2_3_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-                split_data_by_size,
-            ),
-            InputSlot(
-                "steps_1_2_3_secondary_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-            ),
-        ],
-        "output_slots": [
-            OutputSlot("steps_1_2_3_main_output", concatenate_datasets),
-            OutputSlot("steps_1_2_3_secondary_output", concatenate_datasets),
-        ],
+        "splitter": {"steps_1_2_3_main_input": split_data_by_size},
+        "aggregator": {
+            "steps_1_2_3_main_output": concatenate_datasets,
+            "steps_1_2_3_secondary_output": concatenate_datasets,
+        },
     }
 
 
@@ -1560,22 +1553,8 @@ def embarrassingly_parallel_loop_step_params(
 ) -> dict[str, Any]:
     return {
         "step": LoopStep(**loop_step_params),
-        "input_slots": [
-            InputSlot(
-                "step_3_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-                split_data_by_size,
-            ),
-            InputSlot(
-                "step_3_secondary_input",
-                "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-            ),
-        ],
-        "output_slots": [
-            OutputSlot("step_3_main_output", concatenate_datasets),
-        ],
+        "splitter": {"step_3_main_input": split_data_by_size},
+        "aggregator": {"step_3_main_output": concatenate_datasets},
     }
 
 
@@ -1720,22 +1699,8 @@ def embarrassingly_parallel_parallel_step_params(
 ) -> dict[str, Any]:
     return {
         "step": ParallelStep(**parallel_step_params),
-        "input_slots": [
-            InputSlot(
-                "step_1_main_input",
-                "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-                split_data_by_size,
-            ),
-            InputSlot(
-                "step_1_secondary_input",
-                "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
-                validate_input_file_dummy,
-            ),
-        ],
-        "output_slots": [
-            OutputSlot("step_1_main_output", concatenate_datasets),
-        ],
+        "splitter": {"step_1_main_input": split_data_by_size},
+        "aggregator": {"step_1_main_output": concatenate_datasets},
     }
 
 

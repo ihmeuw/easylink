@@ -14,7 +14,7 @@ from __future__ import annotations
 import copy
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 from layered_config_tree import LayeredConfigTree
 
@@ -1166,19 +1166,24 @@ class EmbarrassinglyParallelStep(Step):
     def __init__(
         self,
         step: Step,
-        input_slots: Iterable[InputSlot],
-        output_slots: Iterable[OutputSlot],
+        splitter: dict[str, Callable],
+        aggregator: dict[str, Callable],
     ) -> None:
         super().__init__(
             step.step_name,
             step.name,
-            input_slots,
-            output_slots,
             is_embarrassingly_parallel=True,
         )
         self.step_graph = None
         self.step = step
         self.step.set_parent_step(self)
+        # Set the i/o slots and their splitter/aggregator methods
+        self.input_slots = copy.deepcopy(self.step.input_slots)
+        self.output_slots = copy.deepcopy(self.step.output_slots)
+        for input_slot_name, input_slot in self.input_slots.items():
+            input_slot.splitter = splitter.get(input_slot_name)
+        for output_slot_name, output_slot in self.output_slots.items():
+            output_slot.aggregator = aggregator.get(output_slot_name)
         self._validate()
 
     def _validate(self) -> None:
