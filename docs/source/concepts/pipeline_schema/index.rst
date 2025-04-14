@@ -485,3 +485,253 @@ Data dependencies *between* these steps are removed, and then the step nodes are
 .. image:: images/19_schema_to_pipeline_combined.drawio.png
    :alt: Diagram of the two conceptual steps transforming a pipeline schema into a particular
       pipeline graph which includes a combined implementation
+
+Entity resolution pipeline schema
+---------------------------------
+
+.. image:: images/entity_resolution_pipeline_schema.drawio.png
+
+Input datasets
+^^^^^^^^^^^^^^
+
+**Interpretation:**
+A set of named datasets.
+Each dataset contains observations recorded about (some) entities in the population of interest for analysis.
+
+**Specification:**
+A directory of files, where each file is in a tabular format.
+Each file's name identifies the name of that input dataset.
+Each file may have any number of columns,
+but one of them must be called “Record ID” and it must have unique values.
+
+**Example:**
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Record ID
+     - First
+     - Last
+     - Address
+   * - 1
+     - Vicki
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - 2
+     - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+
+Clusters
+^^^^^^^^
+
+**Interpretation:**
+A (partial) clustering of the input records,
+which indicates that records assigned the same cluster ID are observations of the same entity
+and records with different cluster IDs are observations of different entities.
+Records without a cluster ID are unresolved
+(they may or may not be part of one of the existing clusters).
+Pre-assigned clusters can be used to indicate any prior knowledge of clustering.
+If there is no prior knowledge, this can be an empty table (which is the default),
+indicating that all records are unresolved.
+
+**Specification:**
+A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
+"Input Record ID" must have unique values,
+each of which is the combination of a dataset name and a Record ID value found in the corresponding input dataset.
+"Cluster ID" may take any value.
+
+**Example:**
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Input Record ID
+     - Cluster ID
+   * - input_file_1
+     - 1
+   * - input_file_2
+     - 2
+   * - reference_file_1
+     - 2
+   * - input_file_4
+     - 3
+   * - input_file_5
+     - 3
+   * - reference_file_2
+     - 3
+
+In this example, record ID 1 from the dataset "input_file" has been put in its own cluster,
+meaning that it does not match any of the other records listed.
+input_file_2 has been put in a cluster with reference_file_1,
+indicating that they refer to the same person.
+input_file_3 doesn't appear in the table at all, meaning that its cluster is unknown.
+Lastly, input_file_4 and input_file_5 are considered duplicates
+(records, from the same data source, referring to the same entity)
+and are also a match to reference_file_2.
+
+Clustering pass
+^^^^^^^^^^^^^^^
+
+**Interpretation:**
+A pass at clustering (some) records.
+This may take into account already-found clusters as it sees fit:
+anything from using them as a starting point for optimization to treating those clusters as set-in-stone and unchangeable.
+
+Going from one of these passes to the next is
+one kind of *cascading*, in which a consistent clustering
+which satisfies transitivity (as opposed to pairwise comparisons)
+is confirmed before moving to the next iteration.
+
+.. todo::
+
+   Document cascading somewhere in more depth, as this seems to be unfamiliar
+   even to most entity resolution practitioners.
+
+This step :ref:`has sub-steps <>`, which may be expanded for more detail.
+
+**Examples:**
+
+- The US Census Bureau's Person Identification and Validation System (PVS)
+  *modules* would be clustering passes, since clusters
+  -- called "protected identification keys" (PIKs) in that system --
+  are resolved in between modules.
+  As described below, each module only considers records not already clustered.
+- In `FIRLA <https://www.sciencedirect.com/science/article/pii/S1532046422001101>`_
+  and similar incremental methods, the already-found clusters would be used directly
+  and updated with new decisions about not-yet-clustered records.
+
+Canonicalizing and downstream analysis
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Everything else you want to do, after determining which records belong to the same entity and which don't.
+This definition is a little fuzzy.
+The downstream task is only included in the pipeline schema at all
+so that combined implementations can jointly do part of the ER task with the downstream task,
+each informing the other.
+If this kind of joint model isn't necessary,
+this step can simply output entire datasets
+to leave options open for later analysis.
+
+**Examples:**
+
+- In PVS, the downstream task is not included in the pipeline,
+  and this step would simply attach the PIKs (cluster IDs) to
+  the input file (which is one of the two input datasets)
+  and then output the entire file
+- Fitting a linear regression and outputting association statistics
+- Estimating population size and outputting a single number
+
+Analysis output
+^^^^^^^^^^^^^^^
+
+**Interpretation:**
+The result of the analysis, whatever that may be.
+Could be a single statistic, a set of statistics, a whole dataset,
+or multiple datasets.
+May contain multiple draws in different files or subdirectories, or not.
+
+**Specification:**
+None. May take any form.
+
+Clustering pass sub-steps
+-------------------------
+
+.. image:: images/clustering_pass_sub_steps.drawio.png
+
+Eliminating records
+^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Identify records that can be eliminated from the input datasets for the purposes of this pass
+to save computational time.
+Usually these will be records that have already been clustered sufficiently well
+(whatever that means as defined by the implementation of this step)
+that we don't need to look at them anymore.
+
+**Example:**
+As mentioned above, our main example of clustering passes is PVS *modules*
+such as NameSearch, DOBSearch, etc.
+In those modules, the implementation of this step would be to eliminate
+all input-file records that are already linked to at least one reference-file
+record.
+
+IDs to remove
+^^^^^^^^^^^^^
+
+**Interpretation:**
+Record IDs slated to be dropped for the purposes of this pass.
+
+**Specification:**
+A single column called "Record ID."
+Every value in the column should be unique and should exist in one of the input datasets.
+
+**Example:**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Record ID
+   * - input_file_2
+   * - input_file_4
+
+Removing records
+^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Actually removing records slated to be dropped.
+
+**Default implementation:**
+Pandas code dropping records with matching record IDs.
+Note that if the default implementation is used,
+input and output data specifications do not need to be checked.
+
+Datasets for pass
+^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+The input datasets to consider for the purposes of this clustering pass.
+
+**Specification:**
+See specification for "Input datasets."
+
+Clustering
+^^^^^^^^^^
+
+**Interpretation:**
+Assigning cluster IDs to (some) records to indicate which correspond to the same entity.
+May use information about "old" clusters as a starting point.
+
+**Examples:**
+
+- The core part of a PVS module
+- `dblink <https://github.com/cleanzr/dblink>`_
+  (would ignore "old" clusters, since there is no way for it to update)
+- In Splink, this step would correspond to estimating parameters, making pairwise
+  predictions, and then clustering entities with connected components or similar
+
+New clusters
+^^^^^^^^^^^^
+
+**Interpretation:**
+Clusters generated by this pass.
+May include some or all of the same records as the “old” clusters.
+
+**Specification:**
+See specification for "Clusters."
+
+Updating clusters
+^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Updating/reconciling previously-found clusters with newly-found clusters.
+
+**Examples:**
+
+- In PVS, simply appending PIKs found in this module to those found in previous
+  modules.
+  Because of the "eliminating records" strategy used in PVS, these are guaranteed
+  to not include any of the same input file records.
+- A simple approach would be to make each set of clusters into a graph of records,
+  merge the graphs, and take the connected components as the updated clusters.
