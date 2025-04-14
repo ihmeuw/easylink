@@ -1156,19 +1156,13 @@ def embarrassingly_parallel_step_params() -> dict[str, Any]:
         ),
         "input_slots": [
             InputSlot(
-                "ep_step_3_main_input",
+                "step_3_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
                 split_data_by_size,
             )
         ],
-        "output_slots": [OutputSlot("ep_step_3_main_output", concatenate_datasets)],
-        "input_slot_mappings": [
-            InputSlotMapping("ep_step_3_main_input", "step_3", "step_3_main_input")
-        ],
-        "output_slot_mappings": [
-            OutputSlotMapping("ep_step_3_main_output", "step_3", "step_3_main_output")
-        ],
+        "output_slots": [OutputSlot("step_3_main_output", concatenate_datasets)],
     }
 
 
@@ -1178,15 +1172,15 @@ def test_embarrassingly_parallel_step_slots(
     step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
     assert step.name == "step_3"
     assert step.input_slots == {
-        "ep_step_3_main_input": InputSlot(
-            "ep_step_3_main_input",
+        "step_3_main_input": InputSlot(
+            "step_3_main_input",
             "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             validate_input_file_dummy,
             split_data_by_size,
         ),
     }
     assert step.output_slots == {
-        "ep_step_3_main_output": OutputSlot("ep_step_3_main_output", concatenate_datasets),
+        "step_3_main_output": OutputSlot("step_3_main_output", concatenate_datasets),
     }
 
 
@@ -1317,8 +1311,6 @@ def test_embarrassingly_parallel_step__validation(
         ),
         "input_slots": input_slots,
         "output_slots": output_slots,
-        "input_slot_mappings": [],
-        "output_slot_mappings": [],
     }
     with pytest.raises(ValueError) as error:
         EmbarrassinglyParallelStep(**step_params)
@@ -1437,38 +1429,20 @@ def embarrassingly_parallel_hierarchical_step_params() -> dict[str, Any]:
         ),
         "input_slots": [
             InputSlot(
-                "ep_steps_1_2_3_main_input",
+                "steps_1_2_3_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
                 split_data_by_size,
             ),
             InputSlot(
-                "ep_steps_1_2_3_secondary_input",
+                "steps_1_2_3_secondary_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
             ),
         ],
         "output_slots": [
-            OutputSlot("ep_steps_1_2_3_main_output", concatenate_datasets),
-            OutputSlot("ep_steps_1_2_3_secondary_output", concatenate_datasets),
-        ],
-        "input_slot_mappings": [
-            InputSlotMapping(
-                "ep_steps_1_2_3_main_input", "steps_1_2_3", "steps_1_2_3_main_input"
-            ),
-            InputSlotMapping(
-                "ep_steps_1_2_3_secondary_input", "steps_1_2_3", "steps_1_2_3_secondary_input"
-            ),
-        ],
-        "output_slot_mappings": [
-            OutputSlotMapping(
-                "ep_steps_1_2_3_main_output", "steps_1_2_3", "steps_1_2_3_main_output"
-            ),
-            OutputSlotMapping(
-                "ep_steps_1_2_3_secondary_output",
-                "steps_1_2_3",
-                "steps_1_2_3_secondary_output",
-            ),
+            OutputSlot("steps_1_2_3_main_output", concatenate_datasets),
+            OutputSlot("steps_1_2_3_secondary_output", concatenate_datasets),
         ],
     }
 
@@ -1588,26 +1562,19 @@ def embarrassingly_parallel_loop_step_params(
         "step": LoopStep(**loop_step_params),
         "input_slots": [
             InputSlot(
-                "ep_step_3_main_input",
+                "step_3_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
                 split_data_by_size,
             ),
             InputSlot(
-                "ep_step_3_secondary_input",
+                "step_3_secondary_input",
                 "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
             ),
         ],
         "output_slots": [
-            OutputSlot("ep_step_3_main_output", concatenate_datasets),
-        ],
-        "input_slot_mappings": [
-            InputSlotMapping("ep_step_3_main_input", "step_3", "step_3_main_input"),
-            InputSlotMapping("ep_step_3_secondary_input", "step_3", "step_3_secondary_input"),
-        ],
-        "output_slot_mappings": [
-            OutputSlotMapping("ep_step_3_main_output", "step_3", "step_3_main_output"),
+            OutputSlot("step_3_main_output", concatenate_datasets),
         ],
     }
 
@@ -1703,7 +1670,7 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
             "step_3a_main_input": {
                 "splitter": split_data_by_size,
                 "splitter_origin_node": "step_3",
-                "splitter_origin_slot": "ep_step_3_main_input",
+                "splitter_origin_slot": "step_3_main_input",
             },
             # nothing defined on secondary input slots or the output slot
         },
@@ -1713,7 +1680,7 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
             "step_3_main_output": {
                 "aggregator": concatenate_datasets,
                 "splitter_origin_node": "step_3",
-                "splitter_origin_slot": "ep_step_3_main_input",
+                "splitter_origin_slot": "step_3_main_input",
             },
             # nothing defined on the secondary input slot or the output slot
         },
@@ -1755,26 +1722,19 @@ def embarrassingly_parallel_parallel_step_params(
         "step": ParallelStep(**parallel_step_params),
         "input_slots": [
             InputSlot(
-                "ep_step_1_main_input",
+                "step_1_main_input",
                 "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
                 split_data_by_size,
             ),
             InputSlot(
-                "ep_step_1_secondary_input",
+                "step_1_secondary_input",
                 "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
                 validate_input_file_dummy,
             ),
         ],
         "output_slots": [
-            OutputSlot("ep_step_1_main_output", concatenate_datasets),
-        ],
-        "input_slot_mappings": [
-            InputSlotMapping("ep_step_1_main_input", "step_1", "step_1_main_input"),
-            InputSlotMapping("ep_step_1_secondary_input", "step_1", "step_1_secondary_input"),
-        ],
-        "output_slot_mappings": [
-            OutputSlotMapping("ep_step_1_main_output", "step_1", "step_1_main_output"),
+            OutputSlot("step_1_main_output", concatenate_datasets),
         ],
     }
 
