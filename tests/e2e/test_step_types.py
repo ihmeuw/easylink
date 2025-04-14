@@ -1,12 +1,10 @@
 # mypy: ignore-errors
 import subprocess
 import sys
-import tempfile
-from pathlib import Path
 
 import pytest
 
-from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
+from tests.conftest import SPECIFICATIONS_DIR
 
 
 @pytest.mark.slow
@@ -39,23 +37,17 @@ from tests.conftest import RESULTS_DIR, SPECIFICATIONS_DIR
         ),
     ],
 )
-def test_step_types(pipeline_specification, implementations, capsys):
+def test_step_types(
+    pipeline_specification, implementations, test_specific_results_dir, capsys
+):
     """Tests against various permutations of complex step types.
 
     The goal is to test that EasyLink generates the correct output implementations
     depending on the configuration; i.e. if we have a 'substeps' key in the config,
     we get an implementation for each (or else we get a single implementation).
     """
-    # Create a temporary directory to store results. We cannot use pytest's tmp_path fixture
-    # because other nodes do not have access to it. Also, do not use a context manager
-    # (i.e. tempfile.TemporaryDirectory) because it's too difficult to debug when the test
-    # fails b/c the dir gets deleted.
-    results_dir = tempfile.mkdtemp(dir=RESULTS_DIR)
     input_data = "common/input_data.yaml"
     computing_environment = "common/environment_local.yaml"
-    # give the tmpdir the same permissions as the parent directory so that
-    # cluster jobs can write to it
-    results_dir = Path(results_dir)
     with capsys.disabled():  # disabled so we can monitor job submissions
         print("\n\n*** RUNNING TEST ***\n" f"[{pipeline_specification}]\n")
 
@@ -64,7 +56,7 @@ def test_step_types(pipeline_specification, implementations, capsys):
             f"-p {SPECIFICATIONS_DIR / pipeline_specification} "
             f"-i {SPECIFICATIONS_DIR / input_data} "
             f"-e {SPECIFICATIONS_DIR / computing_environment} "
-            f"-o {str(results_dir)} "
+            f"-o {str(test_specific_results_dir)} "
             "--no-timestamp"
         )
         subprocess.run(
@@ -74,12 +66,14 @@ def test_step_types(pipeline_specification, implementations, capsys):
             stderr=sys.stderr,
             check=True,
         )
-        final_output = results_dir / "result.parquet"
+        final_output = test_specific_results_dir / "result.parquet"
         assert final_output.exists()
 
         # Check that we get directories for particular implementations
-        diagnostics_dir = results_dir / "diagnostics"
+        diagnostics_dir = test_specific_results_dir / "diagnostics"
         for implementation in implementations:
             assert (diagnostics_dir / implementation).exists()
-            assert (results_dir / "intermediate" / implementation / "result.parquet").exists()
+            assert (
+                test_specific_results_dir / "intermediate" / implementation / "result.parquet"
+            ).exists()
         print("\n\n*** END OF TEST ***\n" f"[{pipeline_specification}]\n")

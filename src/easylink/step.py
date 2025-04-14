@@ -781,7 +781,7 @@ class TemplatedStep(Step, ABC):
         """Validates the ``TemplatedStep``.
 
         Regardless of whether or not a :attr:`Step.config_key` is set, we always
-        validate the the base ``Step`` used to create the ``TemplatedStep``. If a
+        validate the base ``Step`` used to create the ``TemplatedStep``. If a
         ``config_key`` is indeed set (that is, there is some multiplicity), we
         complete additional validations.
 
