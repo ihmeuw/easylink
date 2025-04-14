@@ -588,7 +588,7 @@ is confirmed before moving to the next iteration.
    Document cascading somewhere in more depth, as this seems to be unfamiliar
    even to most entity resolution practitioners.
 
-This step :ref:`has sub-steps <>`, which may be expanded for more detail.
+This step :ref:`has sub-steps <clustering_pass_sub_steps>`, which may be expanded for more detail.
 
 **Examples:**
 
@@ -634,6 +634,8 @@ May contain multiple draws in different files or subdirectories, or not.
 
 **Specification:**
 None. May take any form.
+
+.. _clustering_pass_sub_steps:
 
 Clustering pass sub-steps
 -------------------------
