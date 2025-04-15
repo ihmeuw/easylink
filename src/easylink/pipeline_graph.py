@@ -60,6 +60,7 @@ class PipelineGraph(ImplementationGraph):
     """
 
     def __init__(self, config: Config, freeze: bool = True) -> None:
+        raise ValueError()
         super().__init__(incoming_graph_data=config.schema.get_implementation_graph())
         self._merge_combined_implementations(config)
         self._update_slot_filepaths(config)
