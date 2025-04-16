@@ -705,6 +705,10 @@ Clustering
 Assigning cluster IDs to (some) records to indicate which correspond to the same entity.
 May use information about "old" clusters as a starting point.
 
+This step :ref:`has sub-steps <clustering_sub_steps>`, which may be expanded for more detail
+*by pairwise methods.*
+Methods that are not pairwise should implement this step directly.
+
 **Examples:**
 
 - The core part of a PVS module
@@ -737,3 +741,145 @@ Updating/reconciling previously-found clusters with newly-found clusters.
   to not include any of the same input file records.
 - A simple approach would be to make each set of clusters into a graph of records,
   merge the graphs, and take the connected components as the updated clusters.
+
+.. _clustering_sub_steps:
+
+Clustering sub-steps
+--------------------
+
+.. image:: images/clustering_pass_sub_steps.drawio.png
+
+Clusters to links
+^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Converting *clusters* (sets of records that are all linked)
+to *links* (pairs of records that are linked).
+
+**Default implementation:**
+Pandas code that gets of list of Record IDs for each Cluster ID,
+then generates all the unique (unordered) pairs of records,
+and pairs them with probability 1.
+
+In code:
+
+.. code::
+
+   import pandas as pd
+   from itertools import combinations
+
+   def clusters_to_links(clusters_df):
+      # Group by Cluster ID and collect Record IDs for each cluster
+      grouped = clusters_df.groupby("Cluster ID")["Input Record ID"].apply(list)
+
+      # Generate all unique pairs of Record IDs within each cluster
+      links = []
+      for record_ids in grouped:
+         links.extend(combinations(sorted(record_ids), 2))
+
+      # Create a DataFrame for the links
+      links_df = pd.DataFrame(links, columns=["Left Record ID", "Right Record ID"])
+      links_df["Probability"] = 1.0
+      return links_df
+
+Links
+^^^^^
+
+**Interpretation:**
+Pairs of records that are linked with some probability.
+If a method doesn't represent uncertainty, it can set
+all probabilities to 1 (or another constant).
+Pairwise probabilities are a more efficient system for
+representing uncertainty on each pairwise link than draws,
+when the covariance structure between the pairwise links
+is unknown (which is typically the case for pairwise methods).
+Draws may be used in addition to pairwise
+probabilities when (some information about) the covariance
+structure is known.
+It is up to downstream steps to interpret/assume the covariance structure between pairwise probabilities.
+
+**Specification:**
+A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
+Every value in both Record ID columns should exist in one of the input datasets.
+Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
+Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
+The Left Record ID value should be alphabetically before the Right Record ID
+value in each row.
+(This ensures each pair is truly unique, and not
+a mirror image of another.)
+Each value in the Probability column must be between
+0 and 1 (inclusive).
+
+**Example:**
+
+.. list-table::
+   :header-rows: 1
+
+   * - Left Record ID
+     - Right Record ID
+     - Probability
+   * - input_file_2
+     - reference_file_3
+     - 0.9
+   * - input_file_2
+     - reference_file_4
+     - 0.8
+   * - input_file_3
+     - reference_file_6
+     - 0.4
+
+Linking cascade pass
+^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+A pass at finding pairs of records that should
+be considered links (correspond to the same entity).
+May use information about already-found links as a starting point.
+
+**Examples:**
+
+- A single PVS pass *within* a module, such as the first pass
+  of GeoSearch, which `as of 2014 <https://www.census.gov/content/dam/Census/library/working-papers/2014/adrm/carra-wp-2014-02.pdf>`_
+  used blocking on the Master Address File (MAF) ID.
+- In Splink, this step would correspond to estimating parameters and making pairwise predictions (possibly with a threshold)
+
+Links to clusters
+^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Converting *links* (pairs of records that are linked) to *clusters* (sets of records that are all linked).
+
+.. note::
+
+   This is much more difficult than the reverse,
+   because decisions have to be made about resolving
+   inconsistencies -- sets of links and non-links that
+   violate transitivity, such as linking record A to B
+   and B to C but not A to C.
+
+**Examples:**
+
+- The simplest algorithm is finding the
+  `components <https://en.wikipedia.org/wiki/Component_(graph_theory)>`_
+  (also called "connected components")
+  of the graph created by giving every record a node
+  and every pair (with probability above a threshold) an edge.
+  This is implemented `in Splink <https://moj-analytical-services.github.io/splink/api_docs/clustering.html>`_.
+- In PVS, the algorithm incorporates the restriction
+  that multiple records from the *reference* file
+  should never be in the same cluster.
+  Therefore, the links are filtered before going
+  into connected components:
+  only the link with the highest probability for
+  each input file record is kept, and if there are
+  ties for the highest probability, no links
+  involving that input file record are kept.
+  This is described `here <https://www.census.gov/content/dam/Census/library/working-papers/2014/adrm/carra-wp-2014-02.pdf>`_
+  as a "post-search program."
+- In other Census Bureau processes such as the linkage of
+  the Post Enumeration Survey (PES) to the Census,
+  there is a 1-to-1 restriction: there can only be one record
+  from each file in a cluster.
+  This is achieved by finding the matching such that the
+  sum of the (logit) probabilities of the accepted matches
+  is maximized, as described in `Jaro (1989) <https://www.jstor.org/stable/2289924?seq=4>`_.
