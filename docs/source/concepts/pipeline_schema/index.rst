@@ -579,14 +579,26 @@ This may take into account already-found clusters as it sees fit:
 anything from using them as a starting point for optimization to treating those clusters as set-in-stone and unchangeable.
 
 Going from one of these passes to the next is
-one kind of *cascading*, in which a consistent clustering
-which satisfies transitivity (as opposed to pairwise comparisons)
-is confirmed before moving to the next iteration.
+one kind of *cascading*, an iterative approach to entity resolution
+used by the US Census Bureau (and possibly other organizations too)
+to deal with the computational challenge of linking billions of records.
+In cascading, multiple passes are made to find clusters, starting with
+faster techniques (such as exact matching) that
+can solve some "easy" cases and make the problem smaller.
+As the focus narrows to only the records that
+are hardest to cluster/link, making the size of the problem smaller,
+more sophisticated and computationally expensive
+techniques can be used.
 
 .. todo::
 
-   Document cascading somewhere in more depth, as this seems to be unfamiliar
-   even to most entity resolution practitioners.
+   Give cascading its own documentation page?
+
+The sort of cascading represented by clustering passes is
+the kind in which a consistent clustering
+which satisfies transitivity (as opposed to pairwise comparisons)
+is confirmed before moving to the next iteration.
+See the sub-steps of clustering for the other kind of cascading.
 
 This step :ref:`has sub-steps <clustering_pass_sub_steps>`, which may be expanded for more detail.
 
