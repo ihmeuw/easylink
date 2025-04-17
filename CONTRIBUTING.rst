@@ -4,6 +4,9 @@ Contributing
 
 To run or develop easylink tests or documentation, you can install easylink with the ``[dev]`` extra::
 
-    $ pip install easylink[dev]
+    $ git clone git@github.com:ihmeuw/easylink.git # or git clone https://github.com/ihmeuw/easylink.git
+    $ cd easylink
+    $ pip install -e .[dev]
 
-See `github <https://github.com/ihmeuw/easylink>`_ for more installation details.
+.. todo::
+    Show how to run the tests and build the documentation

@@ -28,24 +28,22 @@ There are a few things to install in order to use this package:
 - Install conda. 
   
   We recommend `miniforge <https://github.com/conda-forge/miniforge>`_. You can check if you already
-  have conda installed by running the command ``conda list``. For an existing installation, a list of installed 
-  packages appears.
+  have conda installed by running the command ``conda --version``. For an existing installation, a version 
+  will be displayed.
 
 - Install easylink, python and graphviz in a conda environment.
 
   Option 1 - Install from PyPI with pip::
 
-    $ conda create --name easylink python=3.12 graphviz -y
+    $ conda create --name easylink -c conda-forge python=3.12 graphviz 'gcc<14' -y
     $ conda activate easylink
     $ pip install easylink
 
   Option 2 - Build from source with pip::
     
-    $ conda create --name easylink python=3.12 graphviz -y
+    $ conda create --name easylink -c conda-forge python=3.12 graphviz 'gcc<14' -y
     $ conda activate easylink
-    $ git clone git@github.com:ihmeuw/easylink.git  # or git clone https://github.com/ihmeuw/easylink.git
-    $ cd easylink
-    $ pip install .
+    $ pip install git+https://github.com/ihmeuw/easylink.git
 
 .. _end_installation:
 
