@@ -747,7 +747,7 @@ Updating/reconciling previously-found clusters with newly-found clusters.
 Clustering sub-steps
 --------------------
 
-.. image:: images/clustering_pass_sub_steps.drawio.png
+.. image:: images/clustering_sub_steps.drawio.png
 
 Clusters to links
 ^^^^^^^^^^^^^^^^^
