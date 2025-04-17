@@ -761,7 +761,7 @@ Pandas code that gets of list of Record IDs for each Cluster ID,
 then generates all the unique (unordered) pairs of records,
 and pairs them with probability 1.
 
-In code:
+Here is a rough draft of the code for this default implementation:
 
 .. code::
 
