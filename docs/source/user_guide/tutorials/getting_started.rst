@@ -7,21 +7,26 @@ Getting Started
 First Pipeline
 ==============
 
-`common/pipeline.yaml`
+``common/pipeline.yaml``
 ----------------------
-Let's run our first pipeline by passing pipeline specification, input data specification, and 
-environment specification files to the easylink run command.
+Let's run our first pipeline with EasyLink by passing pipeline specification, input data specification, and 
+environment specification files to the :ref:`easylink run <cli>` command.
 
 This command will validate the pipeline specification against the pipeline schema and configure and run the pipeline.
-We will start by using some pre-written specifications from the the easylink automated tests, and will explain 
+We will start by using some pre-written specifications from the the EasyLink automated tests, and will explain 
 more about the contents of the specifications later.
 
-Note that the steps run by this pipeline are dummy steps designed for pipeline development, and that this tutorial 
-will need to be updated to reflect the record linkage pipeline schema when it is available, rather than the dummy
-development schema.
+.. note::
+   The steps run by this pipeline are dummy steps designed for EasyLink development. This tutorial 
+   will need to be updated to reflect the record linkage pipeline schema when it is available, rather than the dummy
+   development schema.
 
-Finally, at the moment the Easylink tests require input files stored on the IHME cluster, so it is not yet 
-possible to run them without IHME cluster access.
+.. note::
+   At the moment the EasyLink tests require input files stored on the IHME cluster, so it is not yet 
+   possible to run them without IHME cluster access.
+
+.. todo::
+   Change below to use local environment
 
 .. code-block:: console
 
@@ -53,12 +58,14 @@ The last job gets the final output from step 4.
 
 Inputs and outputs
 ------------------
-Input and output data is stored in parquet files. The locations of the input data files passed to easylink 
-in our last command is `specifications/common/input_data.yaml`.
-We can check what is in these files using code like the example below.
+Input and output data is stored in parquet files. The locations of the input data files passed to EasyLink 
+in our last command are found in ``specifications/common/input_data.yaml``.
+We can view the contents of these Parquet files using Python:
 
 .. code-block:: console
 
+   $ # Create/activate a conda environment if you don't want to install globally!
+   $ pip install pandas pyarrow
    $ python
    >>> import pandas as pd
    >>> pd.read_parquet("/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet")
@@ -80,7 +87,7 @@ We can check what is in these files using code like the example below.
 The other two input files look identical, each with 10k rows.
 
 It can also be useful to setup an alias to more easily preview parquet files. Add the following to your 
-`.bash_aliases` or `.bashrc file`, and restart your terminal.
+``.bash_aliases`` or ``.bashrc file``, and restart your terminal.
 
 .. code-block:: console
 
@@ -90,7 +97,7 @@ Let's use the alias to print the results parquet, the location of which was prin
 
 .. code-block:: console
 
-   $ pqprint results/2025_04_01_06_51_22
+   $ pqprint results/2025_04_01_06_51_22/result.parquet
            foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
    0         0   a        4             0.0             1.0             2.0             3.0               4
    1         1   b        4             0.0             1.0             2.0             3.0               4
@@ -107,55 +114,69 @@ Let's use the alias to print the results parquet, the location of which was prin
 If we compare the input data to the results, we can see that new columns were added, the data now has 60k rows, 
 the counter column is incremented for many rows, and other columns have different values for different rows 
 as well.
-Next we will examine the steps the pipeline executed, where they are defined/implemented, and how they transformed 
+Next we will examine the steps the pipeline executed, where they are defined and implemented, and how they transformed 
 the data.
 
 Pipeline schema and steps
 -------------------------
-.. todo::
-   Note that this section will likely be very different for the record linkage pipeline schema which will have 
+.. note::
+   This section will likely be very different for the record linkage pipeline schema which will have 
    different steps. It will need to be updated when we are no longer using the dummy development schema, but 
    for now these are my notes for understanding what happens when we run a schema.
 
-The pipeline specification we passed to ``easylink run``, `specifications/common/pipeline.yaml`, 
-configures the pipeline schema for this run, by specifying configuration details for each step 
-defined by the schema. The schema steps, and the edges between them, are defined in 
-`pipeline_schema_constants/development.py`. The schema steps, or nodes, define input and outputs slots for 
+The pipeline specification we passed to ``easylink run``, ``specifications/common/pipeline.yaml``, 
+configures the pipeline for this run, by specifying configuration details for each step 
+defined by the pipeline schema. The schema steps, and the edges between them, are defined in 
+``pipeline_schema_constants/development.py``. The schema steps, or nodes, define input and output slots for 
 data used or produced by the schema steps, as well as any logical or behavioral structure of the step,
 such as defining a step as a ``LoopStep``, ``ParallelStep``, ``ChoiceStep``, or ``HierarchicalStep``. The edges 
 define how data moves between steps' input and output slots.
 
-`pipeline_schema_constants/development.py` defines that the pipeline schema requires four steps, that the 
+``pipeline_schema_constants/development.py`` defines that the pipeline schema requires four steps, that the 
 third step is ``EmbarrassinglyParallel``, that the fourth step is a ``ChoiceStep``, and that all steps have 
 one input except the fourth step, which has two.
 
+.. todo::
+   Include a diagram for the record linkage schema when available.
+
 An implementation is chosen for each step, which defines a 
-container, script, outputs and other details for a step. The implementations for steps of this pipeline are 
-defined in `implementation_metadata.yaml`.
+container, script, outputs and other details for a step. The possible implementations for each of the steps in 
+``pipeline_schema_constants/development.py`` are defined in ``implementation_metadata.yaml``. For each 
+development schema step, one of these implementations is chosen and specified in the pipeline specification 
+``specifications/common/pipeline.yaml``.
 
-In this file you can see that `step_1_python_pandas`, `step_2_python_pandas` and `step_3_python_pandas` 
-have no value for `INPUT_ENV_VARS`, but `step_4_python_pandas` does. `INPUT_ENV_VARS` has a default value of 
-`DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS`, and `step_4_python_pandas` adds 
-`DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS`. The edges in `pipeline_schema_constants/development.py` connect
-these inputs to step outputs.
+With this understanding of the schema/implementation/configuration architecture, we can check the inputs 
+to each step in our specified implementation. ``step_4_python_pandas`` in ``implementation_metadata.yaml`` 
+passes the value ``"DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"`` 
+to the ``env`` parameter ``INPUT_ENV_VARS``, specifying its two inputs. Note that the default value for 
+``INPUT_ENV_VARS`` in the dummy implementation is ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which will be 
+used for ``step_1_python_pandas``, ``step_2_python_pandas`` and ``step_3_python_pandas`` which do not set a 
+value for ``INPUT_ENV_VARS`` as they only have one input (the default).
 
-Running the pipeline generates a DAG.svg file in the results directory which shows the steps and edges of the 
-pipeline schema as it is configured.
+.. note::
+   ``INPUT_ENV_VARS`` will probably not have an analogue in the record linkage pipeline schema.
+
+Running the pipeline generates a DAG.svg file in the results directory which shows the implementations 
+and data dependencies in the pipeline.
 
 .. image:: DAG-common-pipeline.svg
    :width: 400
 
-As you can see, each step has a single input, validation step, and output, 
-except that `step_4` has two inputs, as defined in 
-`pipeline_schema_constants/development.py`. Note that this diagram doesn't show the input data dependencies, and 
-shows input validation steps. See `this ticket <https://jira.ihme.washington.edu/browse/MIC-5767>`_.
+As you can see, each implementation has a single input and a validator for it, 
+except that ``step_4`` has two inputs, as defined in 
+``pipeline_schema_constants/development.py`` and discussed above. 
+
+.. warning::
+   Note that this diagram doesn't show the dependencies on original (user-provided) input data, and 
+   displays validations, and doesn't show Step 3 because it is embarrassingly parallel. See 
+   `this ticket <https://jira.ihme.washington.edu/browse/MIC-5767>`_ where we plan to fix these issues.
 
 Now we can understand why the final output has 60k rows. For the current dummy implementation, when there are multiple input data files, the rows 
-in the files are concatenated. So `step_1` concatenates three 10k row datasets, and `step_4` concatenates these 
+in the files are concatenated. So ``step_1`` concatenates three 10k row datasets, and ``step_4`` concatenates these 
 30k rows with another 30k rows.
 
-`step_3` is aggregated and split because it is defined as 
-`EmbarrassinglyParallel`.
+``step_3`` is aggregated and split because it is defined as 
+``EmbarrassinglyParallel``.
 
 We've already viewed the final output, but if we want to see how the data is transformed over the course 
 of the pipeline, we can view intermediary outputs as well::
@@ -178,12 +199,15 @@ of the pipeline, we can view intermediary outputs as well::
 
 More Pipeline Specifications
 ============================
-The easylink tests folder includes several other pipeline specification files (yaml files). While some are special 
-configurations utilized by the testing infrastructure, others can be run directly using the command line - the 
+The ``tests`` folder includes several other pipeline specification files (YAML files). While some are special 
+configurations only usable by the testing infrastructure, others can be run directly using the command line - the 
 ones with four steps which target the development schema. Let's try running another complete pipeline.
 
-`e2e/pipeline.yaml`
+``e2e/pipeline.yaml``
 -------------------
+This pipeline is different from ``common/pipeline.yaml`` in that steps 2 and 4 have different implementations 
+(for example, step 2 runs on Spark here), and that steps 2-4 increment the input data, as can be seen by 
+comparing the YAMLs.
 
 .. code-block:: console
 
@@ -217,9 +241,13 @@ ones with four steps which target the development schema. Let's try running anot
 .. image:: DAG-e2e-pipeline.svg
    :width: 500
 
+.. todo::
+   Explain spark in above diagram
 
-`e2e/pipeline_expanded.yaml`
+
+``e2e/pipeline_expanded.yaml``
 ----------------------------
+A longer, more complex pipeline.
 
 .. code-block:: console
 
@@ -254,5 +282,5 @@ ones with four steps which target the development schema. Let's try running anot
    :width: 600
 
 
-That's all the valid pipelines currently available in the easylink `tests` directory! Next we will create
-some pipelines of our own to run by copying the `tests` pipelines and making some changes.
+That's all the valid pipelines currently available in the ``tests`` directory! Next we will create
+some pipelines of our own to run by copying the ``tests`` pipelines and making some changes.
