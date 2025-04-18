@@ -71,6 +71,7 @@ if __name__ == "__main__":
         "sphinx-rtd-theme",
         "sphinx-autodoc-typehints",
         "sphinx-click",
+        "sphinx-autobuild",
         "typing_extensions",
     ]
     lint_requirements = [
