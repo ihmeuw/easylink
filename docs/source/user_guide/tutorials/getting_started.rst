@@ -149,7 +149,7 @@ development schema step, one of these implementations is chosen and specified in
 ``specifications/common/pipeline.yaml``.
 
 You can see in the ``implementation_metadata.yaml`` that the ``_python_pandas`` implementations we've selected
-for the four steps all use the same Singularity container.
+for the four steps all use the same Singularity container (``image_path``).
 However, the implementations do need to behave a bit differently, because Step 4 has two inputs.
 The default behavior of the container is to accept a *single* input using the environment variable
 ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the environment variable specified in the single
