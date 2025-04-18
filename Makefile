@@ -17,5 +17,5 @@ include $(MAKE_INCLUDES)/test.mk
 install:
 	# Don't install Graphviz for docs. This could break if we add doctests which require graphviz!
 	# Note that installing the python package graphviz doesn't actually require the graphviz system package.
-	$(if $(filter-out doc,${ENV_REQS:=dev}),conda install -y python-graphviz,)
+	$(if $(filter-out docs,${ENV_REQS}),conda install -y python-graphviz,)
 	$(MAKE) -f $(MAKE_INCLUDES)/base.mk install ENV_REQS=${ENV_REQS}
