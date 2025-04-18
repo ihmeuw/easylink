@@ -149,8 +149,8 @@ development schema step, one of these implementations is chosen and specified in
 ``specifications/common/pipeline.yaml``.
 
 You can see in the ``implementation_metadata.yaml`` that the ``_python_pandas`` implementations we've selected
-for the four steps all use the same Singularity container (``image_path``).
-However, the implementations do need to behave a bit differently, because Step 4 has two inputs.
+for the four steps all use the same Singularity container, or ``image_path``.
+However, the step implementations can't be the exact same, because Step 4 has two inputs.
 The default behavior of the container is to accept a *single* input using the environment variable
 ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the environment variable specified in the single
 input slot defined in ``pipeline_schema_constants/development.py`` for Steps 1, 2, and 3.
@@ -160,9 +160,7 @@ To correct this, ``step_4_python_pandas`` in ``implementation_metadata.yaml``
 passes the value ``"DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"`` 
 to the ``env`` parameter ``INPUT_ENV_VARS``.
 This changes the behavior of the container to read from both environment variables specified
-on Step 4's input slots.
-(The default value for ``INPUT_ENV_VARS`` is ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``,
-which is what creates the default behavior when ``INPUT_ENV_VARS`` isn't set.)
+on Step 4's input slots, rather than only ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the default value for ``INPUT_ENV_VARS``.
 
 .. note::
    EasyLink wouldn't throw an error if the container's default behavior were used for ``step_4_python_pandas``;
