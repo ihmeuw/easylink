@@ -87,7 +87,7 @@ We can view the contents of these Parquet files using Python:
 The other two input files look identical, each with 10k rows.
 
 It can also be useful to setup an alias to more easily preview parquet files. Add the following to your 
-``.bash_aliases`` or ``.bashrc file``, and restart your terminal.
+``.bash_aliases`` or ``.bashrc`` file, and restart your terminal.
 
 .. code-block:: console
 
@@ -206,7 +206,7 @@ ones with four steps which target the development schema. Let's try running anot
 ``e2e/pipeline.yaml``
 ---------------------
 This pipeline is different from ``common/pipeline.yaml`` in that steps 2 and 4 have different implementations 
-(for example, step 2 runs on Spark here), and that steps 2-4 increment the input data, as can be seen by 
+(for example, step 2 runs on Spark here), and that steps 2-4 are configured to increment the counter in the input data by a custom value, as can be seen by
 comparing the YAMLs.
 
 .. code-block:: console
