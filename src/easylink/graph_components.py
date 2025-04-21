@@ -54,13 +54,13 @@ class InputSlot:
     with a descriptive error message which will then be reported to the user.
     **Note that the function *must* be defined in the** :mod:`easylink.utilities.validation_utils` 
     **module!**"""
-    splitter: Callable[[list[str], str, Any], None] | None = field(
-        default=None, compare=False
-    )
-    """A function that splits the incoming data to this ``InputSlot`` into smaller
-    pieces. The primary purpose of this functionality is to run sections of the 
-    pipeline in an embarrassingly parallel manner. **Note that the function *must* 
-    be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
+    # splitter: Callable[[list[str], str, Any], None] | None = field(
+    #     default=None, compare=False
+    # )
+    # """A function that splits the incoming data to this ``InputSlot`` into smaller
+    # pieces. The primary purpose of this functionality is to run sections of the
+    # pipeline in an embarrassingly parallel manner. **Note that the function *must*
+    # be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
     # splitter_origin_node: str = None
     # """The name of the node where a splitter is originally defined."""
     # splitter_origin_slot: str = None
@@ -76,13 +76,13 @@ class InputSlot:
             return NotImplemented
         validator_name = self.validator.__name__ if self.validator else None
         other_validator_name = other.validator.__name__ if other.validator else None
-        splitter_name = self.splitter.__name__ if self.splitter else None
-        other_splitter_name = other.splitter.__name__ if other.splitter else None
+        # splitter_name = self.splitter.__name__ if self.splitter else None
+        # other_splitter_name = other.splitter.__name__ if other.splitter else None
         return (
             self.name == other.name
             and self.env_var == other.env_var
             and validator_name == other_validator_name
-            and splitter_name == other_splitter_name
+            # and splitter_name == other_splitter_name
             # and self.splitter_origin_node == other.splitter_origin_node
             # and self.splitter_origin_slot == other.splitter_origin_slot
         )
@@ -93,13 +93,13 @@ class InputSlot:
         The hash is based on the name of the ``InputSlot``, its ``env_var``, and
         the names of its ``validator`` and ``splitter``.
         """
-        splitter_name = self.splitter.__name__ if self.splitter else None
+        # splitter_name = self.splitter.__name__ if self.splitter else None
         return hash(
             (
                 self.name,
                 self.env_var,
                 self.validator.__name__,
-                splitter_name,
+                # splitter_name,
                 # self.splitter_origin_node,
                 # self.splitter_origin_slot,
             )
@@ -127,11 +127,11 @@ class OutputSlot:
 
     name: str
     """The name of the ``OutputSlot``."""
-    aggregator: Callable[[list[str], str], None] = field(default=None, compare=False)
-    """A function that aggregates all of the generated data to be passed out via this
-    ``OutputSlot``. The primary purpose of this functionality is to run sections
-    of the pipeline in an embarrassingly parallel manner. **Note that the function 
-    *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
+    # aggregator: Callable[[list[str], str], None] = field(default=None, compare=False)
+    # """A function that aggregates all of the generated data to be passed out via this
+    # ``OutputSlot``. The primary purpose of this functionality is to run sections
+    # of the pipeline in an embarrassingly parallel manner. **Note that the function
+    # *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
     # splitter_origin_node: str = None
     # """The name of the node where the aggregator's corresponding splitter is originally defined."""
     # splitter_origin_slot: str = None
@@ -145,11 +145,12 @@ class OutputSlot:
         """
         if not isinstance(other, OutputSlot):
             return NotImplemented
-        aggregator_name = self.aggregator.__name__ if self.aggregator else None
-        other_aggregator_name = other.aggregator.__name__ if other.aggregator else None
+        # aggregator_name = self.aggregator.__name__ if self.aggregator else None
+        # other_aggregator_name = other.aggregator.__name__ if other.aggregator else None
         return (
-            self.name == other.name
-            and aggregator_name == other_aggregator_name
+            self.name
+            == other.name
+            # and aggregator_name == other_aggregator_name
             # and self.splitter_origin_node == other.splitter_origin_node
             # and self.splitter_origin_slot == other.splitter_origin_slot
         )
@@ -159,11 +160,11 @@ class OutputSlot:
 
         The hash is based on the name of the ``OutputSlot`` and the name of its ``aggregator``.
         """
-        aggregator_name = self.aggregator.__name__ if self.aggregator else None
+        # aggregator_name = self.aggregator.__name__ if self.aggregator else None
         return hash(
             (
                 self.name,
-                aggregator_name,
+                # aggregator_name,
                 # self.splitter_origin_node,
                 # self.splitter_origin_slot,
             )

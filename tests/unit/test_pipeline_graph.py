@@ -631,59 +631,16 @@ def test_spark_is_required(default_config_params, requires_spark):
     assert pipeline_graph.spark_is_required == requires_spark
 
 
-def test_get_embarrassingly_parallel_details(default_config_params):
+def test_get_whether_embarrassingly_parallel(default_config_params):
     config_params = default_config_params
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
     nodes = [node for node in pipeline_graph.nodes if node not in ["input_data", "results"]]
     for node in nodes:
-        embarrassingly_parallel_details = pipeline_graph.get_embarrassingly_parallel_details(
-            node
-        )
-        is_embarrassingly_parallel = embarrassingly_parallel_details[
-            "is_embarrassingly_parallel"
-        ]
-        is_splitter = embarrassingly_parallel_details["is_splitter"]
-        is_aggregator = embarrassingly_parallel_details["is_aggregator"]
         if node == "step_3_python_pandas":
-            assert is_embarrassingly_parallel == is_splitter == is_aggregator == True
+            assert pipeline_graph.get_whether_embarrassingly_parallel(node)
         else:
-            assert is_embarrassingly_parallel == is_splitter == is_aggregator == False
-
-
-@pytest.mark.parametrize("is_splitter", [True, False])
-@pytest.mark.parametrize("is_aggregator", [True, False])
-def test_get_embarrassingly_parallel_details_raises(
-    is_splitter: bool, is_aggregator: bool, default_config_params
-):
-    config_params = default_config_params
-    config = Config(config_params)
-    pipeline_graph = PipelineGraph(config, freeze=False)
-    # Let's arbitrarily use step 1 for the test
-    node = "step_1_python_pandas"
-    imp = pipeline_graph.nodes[node]["implementation"]
-
-    # Set everything
-    imp.is_embarrassingly_parallel = False
-    imp.input_slots["step_1_main_input"].splitter = None
-    imp.output_slots["step_1_main_output"].aggregator = None
-
-    unexpected = []
-    if is_splitter:
-        imp.input_slots["step_1_main_input"].splitter = split_data_by_size
-        unexpected.append("splitter")
-    if is_aggregator:
-        imp.output_slots["step_1_main_output"].aggregator = concatenate_datasets
-        unexpected.append("aggregator")
-
-    if not is_splitter and not is_aggregator:
-        pipeline_graph.get_embarrassingly_parallel_details(node)
-    else:
-        with pytest.raises(
-            ValueError,
-            match=f"Node '{node}' is marked as being a {' and '.join(unexpected)} but not embarrassingly parallel.",
-        ):
-            pipeline_graph.get_embarrassingly_parallel_details(node)
+            assert not pipeline_graph.get_whether_embarrassingly_parallel(node)
 
 
 @pytest.mark.parametrize("any_embarrassingly_parallel", [True, False])

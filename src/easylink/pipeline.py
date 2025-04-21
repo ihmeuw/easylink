@@ -291,9 +291,9 @@ use rule start_spark_worker from spark_cluster with:
             The name of the ``Implementation`` to write the rule(s) for.
         """
 
-        is_embarrassingly_parallel = self.pipeline_graph.get_embarrassingly_parallel_details(
+        is_embarrassingly_parallel = self.pipeline_graph.get_whether_embarrassingly_parallel(
             node_name
-        )["is_embarrassingly_parallel"]
+        )
         input_slots, _output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
         validation_files, validation_rules = self._get_validations(
             node_name, input_slots, is_embarrassingly_parallel
