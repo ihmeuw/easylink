@@ -535,6 +535,11 @@ Pre-assigned clusters can be used to indicate any prior knowledge of clustering.
 If there is no prior knowledge, this can be an empty table (which is the default),
 indicating that all records are unresolved.
 
+Clusters are similar to pairwise *links* (described in more detail :ref:`below <clustering_sub_steps>`)
+but inherently enforce the logical consistency of *transitivity* --
+if A and B are in the same cluster, and B and C are in the same cluster,
+then A and C are in the same cluster by definition.
+
 **Specification:**
 A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
 "Input Record ID" must have unique values,
@@ -595,10 +600,9 @@ techniques can be used.
    Give cascading its own documentation page?
 
 The sort of cascading represented by clustering passes is
-the kind in which a consistent clustering
-which satisfies transitivity (as opposed to pairwise comparisons)
+the kind in which a clustering guaranteed to satisfy transitivity
 is confirmed before moving to the next iteration.
-See the sub-steps of clustering for the other kind of cascading.
+See :ref:`the sub-steps of clustering <clustering_sub_steps>` for the other kind of cascading.
 
 This step :ref:`has sub-steps <clustering_pass_sub_steps>`, which may be expanded for more detail.
 
@@ -775,7 +779,7 @@ Clusters to links
 ^^^^^^^^^^^^^^^^^
 
 **Interpretation:**
-Converting *clusters* (sets of records that are all linked)
+Converting *clusters* (sets of records that are all mutually linked)
 to *links* (pairs of records that are linked).
 
 **Default implementation:**
@@ -809,16 +813,26 @@ Links
 
 **Interpretation:**
 Pairs of records that are linked with some probability.
-If a method doesn't represent uncertainty, it can set
-all probabilities to 1 (or another constant).
+
+Links can be seen as another way to represent
+the same information as *clusters*,
+but links are not conducive to enforcing the structural constraint
+of *transitivity*: that if A links to B
+and B links to C, A must link to C.
+This lack of structural awareness is inherent to pairwise methods,
+and the loss of information this represents is a tradeoff with the
+benefits of the simplicity of the pairwise approach to entity resolution.
+
 Pairwise probabilities are a more efficient system for
 representing uncertainty on each pairwise link than draws,
 when the statistical dependence structure between the pairwise links
-is unknown (which is typically the case for pairwise methods).
+is unknown.
 Draws may be used in addition to pairwise
 probabilities when (some information about) the dependence
 structure is known.
 It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
+If a method doesn't represent uncertainty, it can set
+all probabilities to 1 (or another constant).
 
 **Specification:**
 A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
@@ -861,7 +875,7 @@ May use information about already-found links as a starting point.
 Looping from one of these linking passes to the next is
 the second form of *cascading*.
 In this kind of cascading, pairwise matches are not resolved to
-respect transitivity or other clustering structure restrictions
+respect any clustering structure restrictions
 before moving to the next iteration.
 See the top level of the pipeline schema for the other kind of cascading.
 
@@ -876,15 +890,15 @@ Links to clusters
 ^^^^^^^^^^^^^^^^^
 
 **Interpretation:**
-Converting *links* (pairs of records that are linked) to *clusters* (sets of records that are all linked).
+Converting *links* (pairs of records that are linked) to *clusters* (sets of records that are all mutually linked).
 
-.. note::
-
-   This is much more difficult than the reverse,
-   because decisions have to be made about resolving
-   inconsistencies -- sets of links and non-links that
-   violate transitivity, such as linking record A to B
-   and B to C but not A to C.
+This implies resolving issues with transitivity: if A links to B
+and B links to C, A must link to C.
+Resolving these issues requires making after-the-fact corrections
+to some of the links found, taking advantage of the context provided
+by other links.
+Making these corrections outside the linkage model is not ideal,
+but this is the price paid in return for the simplicity of the pairwise approach.
 
 **Examples:**
 
@@ -912,3 +926,10 @@ Converting *links* (pairs of records that are linked) to *clusters* (sets of rec
   This is achieved by finding the matching such that the
   sum of the (logit) probabilities of the accepted matches
   is maximized, as described in `Jaro (1989) <https://www.jstor.org/stable/2289924?seq=4>`_.
+
+.. note::
+
+   None of the methods in this list are able to
+   propagate the uncertainty represented by the pairwise probabilities
+   through this step, e.g. by *sampling* clusters somehow.
+   Further research is needed in this area. 
