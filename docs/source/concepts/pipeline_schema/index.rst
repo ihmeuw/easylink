@@ -759,6 +759,16 @@ Updating/reconciling previously-found clusters with newly-found clusters.
 Clustering sub-steps
 --------------------
 
+As mentioned above, the sub-steps of clustering are designed for *pairwise* methods --
+models of entity resolution that only consider *pairs* of records at a time.
+Breaking down the entity resolution task into a binary classification problem
+about whether or not each pair of two records belong to the same entity simplifies
+it enormously, and traditional methods going back to `Fellegi and Sunter (1969) <https://courses.cs.washington.edu/courses/cse590q/04au/papers/Felligi69.pdf>`_
+take this approach.
+
+Methods that are not pairwise will need to implement the "clustering" step as a whole,
+as they are not composed of parts that align with these sub-steps.
+
 .. image:: images/clustering_sub_steps.drawio.png
 
 Clusters to links
