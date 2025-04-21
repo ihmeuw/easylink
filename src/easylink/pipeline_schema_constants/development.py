@@ -66,16 +66,37 @@ NODES = [
                         name="step_3_main_input",
                         env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                         validator=validate_input_file_dummy,
-                        splitter=split_data_by_size,
                     ),
                 ],
                 output_slots=[
                     OutputSlot(
                         name="step_3_main_output",
-                        aggregator=concatenate_datasets,
                     ),
                 ],
             ),
+            input_slots=[
+                InputSlot(
+                    name="step_3_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                    splitter=split_data_by_size,
+                ),
+            ],
+            output_slots=[OutputSlot("step_3_main_output", aggregator=concatenate_datasets)],
+            input_slot_mappings=[
+                InputSlotMapping(
+                    parent_slot="step_3_main_input",
+                    child_node="step_3",
+                    child_slot="step_3_main_input",
+                ),
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping(
+                    parent_slot="step_3_main_output",
+                    child_node="step_3",
+                    child_slot="step_3_main_output",
+                ),
+            ],
         ),
         self_edges=[
             EdgeParams(
