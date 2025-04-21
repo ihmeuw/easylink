@@ -8,7 +8,7 @@ First Pipeline
 ==============
 
 ``common/pipeline.yaml``
-----------------------
+------------------------
 Let's run our first pipeline with EasyLink by passing pipeline specification, input data specification, and 
 environment specification files to the :ref:`easylink run <cli>` command.
 
@@ -204,7 +204,7 @@ configurations only usable by the testing infrastructure, others can be run dire
 ones with four steps which target the development schema. Let's try running another complete pipeline.
 
 ``e2e/pipeline.yaml``
--------------------
+---------------------
 This pipeline is different from ``common/pipeline.yaml`` in that steps 2 and 4 have different implementations 
 (for example, step 2 runs on Spark here), and that steps 2-4 increment the input data, as can be seen by 
 comparing the YAMLs.
@@ -246,7 +246,7 @@ comparing the YAMLs.
 
 
 ``e2e/pipeline_expanded.yaml``
-----------------------------
+------------------------------
 A longer, more complex pipeline.
 
 .. code-block:: console
