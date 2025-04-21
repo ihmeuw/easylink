@@ -813,12 +813,12 @@ If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
 Pairwise probabilities are a more efficient system for
 representing uncertainty on each pairwise link than draws,
-when the covariance structure between the pairwise links
+when the statistical dependence structure between the pairwise links
 is unknown (which is typically the case for pairwise methods).
 Draws may be used in addition to pairwise
-probabilities when (some information about) the covariance
+probabilities when (some information about) the dependence
 structure is known.
-It is up to downstream steps to interpret/assume the covariance structure between pairwise probabilities.
+It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
 
 **Specification:**
 A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
