@@ -303,74 +303,6 @@ use rule start_spark_worker from spark_cluster with:
 
         _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
 
-        # if embarrassingly_parallel_details["is_embarrassingly_parallel"]:
-        #     breakpoint()
-        #     # Update the outputs to be the processed chunks
-        #     if len(output_files) > 1:
-        #         raise NotImplementedError(
-        #             "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-        #         )
-        #     output_files = [
-        #         str(
-        #             Path(output_files[0]).parent
-        #             / "processed/{chunk}"
-        #             / Path(output_files[0]).name
-        #         )
-        #     ]
-
-        # Create a splitter origin mapper to reduce bottlenecks later.
-        # Loop through all implementations and their input slots and generate
-        # a mapping of any splitter origin nodes and slots to the names of the
-        # implementation and input slot that they are defined at.
-        # i.e. {(splitter_origin_node, splitter_origin_slot): (implementation_name, implementation_input_slot)}
-        # splitter_origin_mapper = {}
-        # # checkpoint_output_dir = None
-        # for implementation, implementation_node in zip(
-        #     self.pipeline_graph.implementations, self.pipeline_graph.implementation_nodes
-        # ):
-        #     for input_slot_name, input_slot in implementation.input_slots.items():
-        #         key = (input_slot.splitter_origin_node, input_slot.splitter_origin_slot)
-        #         if key == (None, None):  # no splitter origin to map
-        #             continue
-        #         if key not in splitter_origin_mapper:
-        #             splitter_origin_mapper[key] = (implementation_node, input_slot_name)
-        #         else:
-        #             raise ValueError(
-        #                 f"Duplicate splitter found for {key}: "
-        #                 f"{splitter_origin_mapper[key]} and {implementation_node}"
-        #             )
-
-        # Extract where the checkpoint output dir is located
-        # FIXME: this won't work for ep sections b/c the output directory
-        # for a non-splitting node is definitely not where the checkpoint
-        # directory is located
-        # checkpoint_output_dir = output_files[0].split("/processed/")[0] + "/input_chunks"
-        # if embarrassingly_parallel_details["is_splitter"]:
-        #     input_slots_to_split = self._get_input_slots_to_split(input_slots)
-        #     if len(input_slots_to_split) > 1:
-        #         raise NotImplementedError(
-        #             "FIXME [MIC-5883] Multiple input slots to split not yet supported"
-        #         )
-        #     input_slot_to_split = input_slots_to_split[0]
-        #     breakpoint()
-        #     self._write_checkpoint_rule(
-        #         node_name,
-        #         input_slots,
-        #         input_slot_to_split,
-        #         validation_files,
-        #         checkpoint_output_dir,
-        #     )
-
-        #     # Update the input files to be the unprocessed chunks in '/input_chunks/{chunk}'
-        #     input_slots[input_slot_to_split]["filepaths"] = [
-        #         checkpoint_output_dir + "/{chunk}/result.parquet"
-        #     ]
-
-        # if embarrassingly_parallel_details["is_aggregator"]:
-        #     self._write_aggregation_rule(
-        #         node_name, output_slots, splitter_origin_mapper, checkpoint_output_dir
-        #     )
-
         implementation = self.pipeline_graph.nodes[node_name]["implementation"]
         diagnostics_dir = Path("diagnostics") / node_name
         diagnostics_dir.mkdir(parents=True, exist_ok=True)
@@ -394,28 +326,6 @@ use rule start_spark_worker from spark_cluster with:
             requires_spark=implementation.requires_spark,
             is_embarrassingly_parallel=is_embarrassingly_parallel,
         ).write_to_snakefile(self.snakefile_path)
-
-    # def _write_checkpoint_rule(
-    #     self,
-    #     node_name,
-    #     input_slots,
-    #     input_slot_to_split,
-    #     validation_files,
-    #     checkpoint_output_dir,
-    # ):
-    #     """Writes the snakemake checkpoint rule.
-
-    #     This build the ``CheckpointRule`` which splits the data into (unprocessed)
-    #     chunks and saves them to this step's '/input_chunks/' subdirectory.
-    #     """
-    #     CheckpointRule(
-    #         name=node_name,
-    #         input_files=input_slots[input_slot_to_split]["filepaths"],
-    #         input_slot_to_split=input_slot_to_split,
-    #         splitter_name=input_slots[input_slot_to_split]["splitter"].__name__,
-    #         validations=validation_files,
-    #         output_dir=checkpoint_output_dir,
-    #     ).write_to_snakefile(self.snakefile_path)
 
     def _write_checkpoint_rule(self, node_name: str, checkpoint_filepath: str):
         """TBD"""
@@ -442,40 +352,6 @@ use rule start_spark_worker from spark_cluster with:
             output_dir=output_dir,
             checkpoint_filepath=checkpoint_filepath,
         ).write_to_snakefile(self.snakefile_path)
-
-    # def _write_aggregation_rule(
-    #     self, node_name, output_slots, splitter_origin_mapper, checkpoint_output_dir
-    # ):
-    #     """Writes the snakemake aggregation rule."""
-    #     for output_slot_name, output_slot_attrs in output_slots.items():
-    #         # We need to aggregate *each* output slot
-    #         if len(output_slot_attrs["filepaths"]) > 1:
-    #             raise NotImplementedError(
-    #                 "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-    #             )
-    #         aggregated_output_file = output_slot_attrs["filepaths"][0]
-    #         # Use the mapping to get the checkpoint_filepath
-    #         split_node, splitting_slot = splitter_origin_mapper[
-    #             (
-    #                 output_slot_attrs["splitter_origin_node"],
-    #                 output_slot_attrs["splitter_origin_slot"],
-    #             )
-    #         ]
-    #         checkpoint_rule_name = f"checkpoints.split_{split_node}_{splitting_slot}"
-    #         processed_chunks_to_aggregate = str(
-    #             Path(aggregated_output_file).parent
-    #             / "processed/{chunk}"
-    #             / Path(aggregated_output_file).name
-    #         )
-    #         AggregationRule(
-    #             name=node_name,
-    #             input_files=processed_chunks_to_aggregate,
-    #             output_slot_name=output_slot_name,
-    #             aggregated_output_file=aggregated_output_file,
-    #             aggregator_name=output_slot_attrs["aggregator"].__name__,
-    #             checkpoint_filepath=str(Path(checkpoint_output_dir) / "checkpoint.txt"),
-    #             checkpoint_rule_name=checkpoint_rule_name,
-    #         ).write_to_snakefile(self.snakefile_path)
 
     def _write_aggregation_rule(self, node_name: str, checkpoint_filepath: str):
         """Writes the snakemake aggregation rule."""

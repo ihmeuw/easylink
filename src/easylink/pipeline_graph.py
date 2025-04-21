@@ -528,27 +528,14 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
-            (
-                slot_name,
-                env_var,
-                validator,
-                # splitter,
-                # splitter_origin_node,
-                # splitter_origin_slot,
-            ) = (
+            (slot_name, env_var, validator,) = (
                 input_slot.name,
                 input_slot.env_var,
                 input_slot.validator,
-                # input_slot.splitter,
-                # input_slot.splitter_origin_node,
-                # input_slot.splitter_origin_slot,
             )
             attrs = {
                 "env_var": env_var,
                 "validator": validator,
-                # "splitter": splitter,
-                # "splitter_origin_node": splitter_origin_node,
-                # "splitter_origin_slot": splitter_origin_slot,
             }
             if slot_name in condensed_slot_dict:
                 for key, value in attrs.items():
@@ -563,9 +550,6 @@ class PipelineGraph(ImplementationGraph):
                     "env_var": env_var,
                     "validator": validator,
                     "filepaths": filepaths,
-                    # "splitter": splitter,
-                    # "splitter_origin_node": splitter_origin_node,
-                    # "splitter_origin_slot": splitter_origin_slot,
                 }
         return condensed_slot_dict
 
@@ -588,28 +572,8 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for output_slot, filepaths in zip(output_slots, filepaths_by_slot):
-            (
-                slot_name,
-                # aggregator,
-                # splitter_origin_node,
-                # splitter_origin_slot,
-            ) = (
-                output_slot.name,
-                # output_slot.aggregator,
-                # output_slot.splitter_origin_node,
-                # output_slot.splitter_origin_slot,
-            )
-            # attrs = {
-            #     # "aggregator": aggregator,
-            #     # "splitter_origin_node": splitter_origin_node,
-            #     # "splitter_origin_slot": splitter_origin_slot,
-            # }
+            slot_name = output_slot.name
             if slot_name in condensed_slot_dict:
-                # for key, value in attrs.items():
-                #     if value != condensed_slot_dict[slot_name][key]:
-                #         raise ValueError(
-                #             f"Duplicate output slots named '{slot_name}' have different {key} values."
-                #         )
                 # Add any new/unique filepaths to the existing slot
                 condensed_slot_dict[slot_name]["filepaths"].extend(
                     item
@@ -619,8 +583,5 @@ class PipelineGraph(ImplementationGraph):
             else:
                 condensed_slot_dict[slot_name] = {
                     "filepaths": filepaths,
-                    # "aggregator": aggregator,
-                    # "splitter_origin_node": splitter_origin_node,
-                    # "splitter_origin_slot": splitter_origin_slot,
                 }
         return condensed_slot_dict

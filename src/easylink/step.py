@@ -1164,6 +1164,12 @@ class EmbarrassinglyParallelStep(Step):
     step
         The ``Step`` to be run in an embarrassingly parallel manner. To run multiple
         steps in parallel, use a :class:`HierarchicalStep`.
+    slot_splitter_mapping
+        A mapping of the :class:`~easylink.graph_components.InputSlot` name to split
+        to the actual splitter function to be used.
+    slot_aggregator_mapping
+        A mapping of all :class:`~easylink.graph_components.OutputSlot` names to
+        be aggregated and the actual aggregator function to be used.
 
     """
 
@@ -1183,18 +1189,11 @@ class EmbarrassinglyParallelStep(Step):
         self.step_graph = None
         self.step = step
         self.step.set_parent_step(self)
-        # NOTE: We validate that the slot_splitter_mapping has only one item in self._validate() below
-        self.split_slot_name = list(self.slot_splitter_mapping.keys())[0]
-        # Set the i/o slots and their splitter/aggregator methods
-        # TODO: try and get rid of these input slots?
-        # it may be that we don't even have splitter and aggregators in ioslots anymore?
-        self.input_slots = copy.deepcopy(self.step.input_slots)
-        self.output_slots = copy.deepcopy(self.step.output_slots)
-        for input_slot_name, input_slot in self.input_slots.items():
-            input_slot.splitter = slot_splitter_mapping.get(input_slot_name)
-        for output_slot_name, output_slot in self.output_slots.items():
-            output_slot.aggregator = slot_aggregator_mapping.get(output_slot_name)
+        self.input_slots = self.step.input_slots
+        self.output_slots = self.step.output_slots
         self._validate()
+        # NOTE: We validated that the slot_splitter_mapping has only one item in self._validate()
+        self.split_slot_name = list(self.slot_splitter_mapping.keys())[0]
 
     def _validate(self) -> None:
         """Validates the ``EmbarrassinglyParallelStep``.
@@ -1209,42 +1208,29 @@ class EmbarrassinglyParallelStep(Step):
         """
         errors = []
 
-        # check that self.splitter is only length one
+        # check that only one input slot has a splitter assigned
         if len(self.slot_splitter_mapping) != 1:
             errors.append(
                 f"EmbarrassinglyParallelStep '{self.step_name}' is attempting to define "
                 f"{len(self.slot_splitter_mapping)} splitters when only one should be defined."
             )
-
-        # check that self.aggregator is the same length as the number of output slots
-        if len(self.slot_aggregator_mapping) != len(self.output_slots):
-            errors.append(
-                f"EmbarrassinglyParallelStep '{self.step_name}' is attempting to define "
-                f"{len(self.slot_aggregator_mapping)} aggregators when exactly one per output slot "
-                f"({len(self.output_slots)}) should be defined."
-            )
-
-        # check that only one input slot has a splitter assigned
-        splitters = {
-            slot.name: slot.splitter.__name__
-            for slot in self.input_slots.values()
-            if slot.splitter
-        }
-        if len(splitters) == 0:
+        if len(self.slot_splitter_mapping) == 0:
             errors.append(
                 f"EmbarrassinglyParallelStep '{self.step_name}' does not have any input slots with a "
                 "splitter method assigned; one and only one input slot must have a splitter."
             )
-        if len(splitters) > 1:
+        if len(self.slot_splitter_mapping) > 1:
             errors.append(
                 f"EmbarrassinglyParallelStep '{self.step_name}' has multiple input slots with "
                 "splitter methods assigned; one and only one input slot must have a splitter.\n"
-                f"Input slots with splitters: {splitters}"
+                f"Input slots with splitters: {list(self.slot_splitter_mapping)}"
             )
 
         # check that all output slots have an aggregator assigned
         missing_aggregators = [
-            slot.name for slot in self.output_slots.values() if not slot.aggregator
+            slot.name
+            for slot in self.output_slots.values()
+            if slot.name not in self.slot_aggregator_mapping
         ]
         if len(missing_aggregators) != 0:
             errors.append(
@@ -1289,10 +1275,6 @@ class EmbarrassinglyParallelStep(Step):
             slot_aggregator_mapping=self.slot_aggregator_mapping,
             splitter_step_name=splitter_step_name,
         )
-        # # The split slot's input validation happens as input to the SplitterStep
-        # # and so we don't need it again on inputs to the Step.
-        # # FIXME is it better to validate each chunk separately for consistency?
-        # self.step.input_slots[self.split_slot_name].validator = None
         self._update_step_graph(splitter_step, aggregator_step)
         self._update_slot_mappings(splitter_step, aggregator_step)
         # Add the key back to the expanded config
@@ -1965,76 +1947,6 @@ class NonLeafConfigurationState(ConfigurationState):
                 substep.is_embarrassingly_parallel = True
                 # self._propagate_splitter_aggregators(self._step, substep)
             substep.add_nodes_to_implementation_graph(implementation_graph)
-
-    # @staticmethod
-    # def _propagate_splitter_aggregators(parent: Step, child: Step):
-    #     """Propagates splitters and aggregators to child ``Steps``.
-
-    #     This method adds the :meth:`~easylink.graph_components.InputSlot.splitter`
-    #     and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
-    #     parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
-    #     :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
-    #     child steps' slots.
-
-    #     Parameters
-    #     ----------
-    #     parent
-    #         The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
-    #         to be propagated to the appropriate child ``Step``.
-    #     child
-    #         A child ``Step`` to potentially have its parent's ``splitter`` and
-    #         ``aggregators`` assigned to its ``InputSlot`` and ``OutputSlots``,
-    #         respectively.
-    #     """
-    #     parent_split_slots = [
-    #         slot_name for slot_name, slot in parent.input_slots.items() if slot.splitter
-    #     ]
-    #     if len(parent_split_slots) > 1:
-    #         raise ValueError(
-    #             f"More than one input slot with splitter assigned in parent step {parent.name}: {parent_split_slots}"
-    #         )
-    #     parent_split_slot = parent_split_slots[0] if parent_split_slots else None
-
-    #     for slot_type in ["input", "output"]:
-    #         parent_slots = parent.input_slots if slot_type == "input" else parent.output_slots
-    #         child_slots = child.input_slots if slot_type == "input" else child.output_slots
-    #         callable_attr = "splitter" if slot_type == "input" else "aggregator"
-    #         for parent_slot_name, parent_slot in parent_slots.items():
-    #             if not getattr(parent_slot, callable_attr):
-    #                 # If the parent slot doesn't have the splitter/aggretagor,
-    #                 # there is nothing to propagate
-    #                 continue
-    #             mappings_with_callable = [
-    #                 mapping
-    #                 for mapping in parent.slot_mappings[slot_type]
-    #                 if mapping.parent_slot == parent_slot_name
-    #             ]
-    #             for mapping in mappings_with_callable:
-    #                 child_node = mapping.child_node
-    #                 child_slot = mapping.child_slot
-    #                 if not (child_node == child.name and child_slot in child_slots):
-    #                     # If this is not the relevant child or slot, skip
-    #                     continue
-    #                 # Assign the callable (splitter or aggregator) to the appropriate child slot
-    #                 setattr(
-    #                     child_slots[child_slot],
-    #                     callable_attr,
-    #                     getattr(parent_slot, callable_attr),
-    #                 )
-    #                 # If the parent slot already has defined splitter origin details,
-    #                 # assign them to the child. If it doesn't, then it (the parent),
-    #                 # must itself be the origin; assign the parent's name
-    #                 # and split slot to the child
-    #                 child_slots[child_slot].splitter_origin_node = (
-    #                     parent_slot.splitter_origin_node
-    #                     if parent_slot.splitter_origin_node
-    #                     else parent.name
-    #                 )
-    #                 child_slots[child_slot].splitter_origin_slot = (
-    #                     parent_slot.splitter_origin_slot
-    #                     if parent_slot.splitter_origin_slot
-    #                     else parent_split_slot
-    #                 )
 
     def add_edges_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
