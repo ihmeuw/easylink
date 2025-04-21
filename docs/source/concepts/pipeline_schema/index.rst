@@ -848,6 +848,13 @@ A pass at finding pairs of records that should
 be considered links (correspond to the same entity).
 May use information about already-found links as a starting point.
 
+Looping from one of these linking passes to the next is
+the second form of *cascading*.
+In this kind of cascading, pairwise matches are not resolved to
+respect transitivity or other clustering structure restrictions
+before moving to the next iteration.
+See the top level of the pipeline schema for the other kind of cascading.
+
 **Examples:**
 
 - A single PVS pass *within* a module, such as the first pass
