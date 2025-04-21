@@ -30,7 +30,9 @@ from easylink.graph_components import (
 )
 from easylink.implementation import (
     Implementation,
+    NullAggregatorImplementation,
     NullImplementation,
+    NullSplitterImplementation,
     PartialImplementation,
 )
 from easylink.utilities import paths
@@ -890,14 +892,16 @@ class TemplatedStep(Step, ABC):
             self.step_graph.add_node_from_step(self.template_step)
             # Update the slot mappings with renamed children
             input_mappings = [
-                InputSlotMapping(slot, self.name, slot) for slot in self.input_slots
+                InputSlotMapping(slot, self.template_step.name, slot)
+                for slot in self.input_slots
             ]
             output_mappings = [
-                OutputSlotMapping(slot, self.name, slot) for slot in self.output_slots
+                OutputSlotMapping(slot, self.template_step.name, slot)
+                for slot in self.output_slots
             ]
             self.slot_mappings = {"input": input_mappings, "output": output_mappings}
             # Add the key back to the expanded config
-            expanded_config = LayeredConfigTree({self.name: step_config})
+            expanded_config = LayeredConfigTree({self.template_step.name: step_config})
         else:
             expanded_config = self._get_config(step_config)
             num_repeats = len(expanded_config)
@@ -1166,24 +1170,30 @@ class EmbarrassinglyParallelStep(Step):
     def __init__(
         self,
         step: Step,
-        splitter: dict[str, Callable],
-        aggregator: dict[str, Callable],
+        slot_splitter_mapping: dict[str, Callable],
+        slot_aggregator_mapping: dict[str, Callable],
     ) -> None:
         super().__init__(
             step.step_name,
             step.name,
             is_embarrassingly_parallel=True,
         )
+        self.slot_splitter_mapping = slot_splitter_mapping
+        self.slot_aggregator_mapping = slot_aggregator_mapping
         self.step_graph = None
         self.step = step
         self.step.set_parent_step(self)
+        # NOTE: We validate that the slot_splitter_mapping has only one item in self._validate() below
+        self.split_slot_name = list(self.slot_splitter_mapping.keys())[0]
         # Set the i/o slots and their splitter/aggregator methods
+        # TODO: try and get rid of these input slots?
+        # it may be that we don't even have splitter and aggregators in ioslots anymore?
         self.input_slots = copy.deepcopy(self.step.input_slots)
         self.output_slots = copy.deepcopy(self.step.output_slots)
         for input_slot_name, input_slot in self.input_slots.items():
-            input_slot.splitter = splitter.get(input_slot_name)
+            input_slot.splitter = slot_splitter_mapping.get(input_slot_name)
         for output_slot_name, output_slot in self.output_slots.items():
-            output_slot.aggregator = aggregator.get(output_slot_name)
+            output_slot.aggregator = slot_aggregator_mapping.get(output_slot_name)
         self._validate()
 
     def _validate(self) -> None:
@@ -1198,7 +1208,23 @@ class EmbarrassinglyParallelStep(Step):
         an :attr:`~easylink.graph_components.OutputSlot.aggregator` method.
         """
         errors = []
-        # assert that only one input slot has a splitter assigned
+
+        # check that self.splitter is only length one
+        if len(self.slot_splitter_mapping) != 1:
+            errors.append(
+                f"EmbarrassinglyParallelStep '{self.step_name}' is attempting to define "
+                f"{len(self.slot_splitter_mapping)} splitters when only one should be defined."
+            )
+
+        # check that self.aggregator is the same length as the number of output slots
+        if len(self.slot_aggregator_mapping) != len(self.output_slots):
+            errors.append(
+                f"EmbarrassinglyParallelStep '{self.step_name}' is attempting to define "
+                f"{len(self.slot_aggregator_mapping)} aggregators when exactly one per output slot "
+                f"({len(self.output_slots)}) should be defined."
+            )
+
+        # check that only one input slot has a splitter assigned
         splitters = {
             slot.name: slot.splitter.__name__
             for slot in self.input_slots.values()
@@ -1215,6 +1241,8 @@ class EmbarrassinglyParallelStep(Step):
                 "splitter methods assigned; one and only one input slot must have a splitter.\n"
                 f"Input slots with splitters: {splitters}"
             )
+
+        # check that all output slots have an aggregator assigned
         missing_aggregators = [
             slot.name for slot in self.output_slots.values() if not slot.aggregator
         ]
@@ -1248,24 +1276,279 @@ class EmbarrassinglyParallelStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        # Generate the slot mappings
-        input_mappings = [
-            InputSlotMapping(slot, self.step.name, slot) for slot in self.input_slots
-        ]
-        output_mappings = [
-            OutputSlotMapping(slot, self.step.name, slot) for slot in self.output_slots
-        ]
-        self.slot_mappings = {"input": input_mappings, "output": output_mappings}
-        # Generate step graph from the single ``step`` attr
-        self.step_graph = StepGraph()
-        self.step_graph.add_node_from_step(self.step)
+        splitter_step_name = f"{self.name}_{self.split_slot_name}_split"
+        splitter_step = SplitterStep(
+            splitter_step_name,
+            split_slot=self.input_slots[self.split_slot_name],
+            splitter_func_name=self.slot_splitter_mapping[self.split_slot_name].__name__,
+        )
+        aggregator_step_name = f"{self.name}_aggregate"
+        aggregator_step = AggregatorStep(
+            aggregator_step_name,
+            output_slots=self.output_slots.values(),
+            slot_aggregator_mapping=self.slot_aggregator_mapping,
+            splitter_step_name=splitter_step_name,
+        )
+        # # The split slot's input validation happens as input to the SplitterStep
+        # # and so we don't need it again on inputs to the Step.
+        # # FIXME is it better to validate each chunk separately for consistency?
+        # self.step.input_slots[self.split_slot_name].validator = None
+        self._update_step_graph(splitter_step, aggregator_step)
+        self._update_slot_mappings(splitter_step, aggregator_step)
         # Add the key back to the expanded config
         expanded_config = LayeredConfigTree({self.step.name: step_config})
-
         # EmbarrassinglyParallelSteps are by definition non-leaf steps
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
+
+    def _update_step_graph(
+        self, splitter_step: SplitterStep, aggregator_step: AggregatorStep
+    ):
+        """TODO"""
+        self.step_graph = StepGraph()
+        for node in [splitter_step, self.step, aggregator_step]:
+            self.step_graph.add_node_from_step(node)
+
+        # Add SplitterStep -> Step edge
+        self.step_graph.add_edge_from_params(
+            EdgeParams(
+                source_node=splitter_step.name,
+                target_node=self.step.name,
+                input_slot=self.split_slot_name,
+                output_slot=list(splitter_step.output_slots.keys())[0],
+            )
+        )
+        # Add the Step -> AggregatorStep edge
+        if len(self.step.output_slots) > 1:
+            raise NotImplementedError(
+                "EmbarrassinglyParallelStep does not support multiple output slots."
+            )
+        self.step_graph.add_edge_from_params(
+            EdgeParams(
+                source_node=self.step.name,
+                target_node=aggregator_step.name,
+                input_slot=list(aggregator_step.input_slots.keys())[0],
+                output_slot=list(self.step.output_slots.keys())[0],
+            )
+        )
+
+    def _update_slot_mappings(
+        self, splitter_step: SplitterStep, aggregator_step: AggregatorStep
+    ) -> None:
+        """TODO"""
+        # map the split input slot
+        split_slot_name = list(splitter_step.input_slots.keys())[0]
+        input_mappings = [
+            InputSlotMapping(split_slot_name, splitter_step.name, split_slot_name)
+        ]
+        # map remaining input slots
+        for input_slot in [slot for slot in self.input_slots if slot != split_slot_name]:
+            input_mappings.append(InputSlotMapping(input_slot, self.step.name, input_slot))
+        # map the output slots
+        output_mappings = [
+            OutputSlotMapping(slot, aggregator_step.name, slot) for slot in self.output_slots
+        ]
+        self.slot_mappings = {"input": input_mappings, "output": output_mappings}
+
+
+class SplitterStep(Step):
+    def __init__(self, name: str, split_slot: InputSlot, splitter_func_name: str) -> None:
+        input_slot = copy.deepcopy(split_slot)
+        input_slot.env_var = None
+        input_slot.validator = None
+        super().__init__(
+            name, input_slots=[input_slot], output_slots=[OutputSlot(f"{name}_main_output")]
+        )
+        self.splitter_func_name = splitter_func_name
+
+    @property
+    def implementation_node_name(self) -> str:
+        """Dummy name to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation` and thus do not
+        require a different node name than its own ``Step`` name. This property
+        only exists so that ``IOSteps`` can be used interchangeably with other
+        ``Steps`` in the codebase.
+
+        Returns
+        -------
+            The ``IOStep's`` name.
+        """
+        return self.name
+
+    def validate_step(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
+        """Dummy validation method to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation` and thus do not
+        require any sort of validation since no new data is created. This method
+        only exists so that ``IOSteps`` can be used interchangeably with other
+        ``Steps`` in the codebase.
+
+        Returns
+        -------
+            An empty dictionary.
+        """
+        return {}
+
+    def set_configuration_state(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> None:
+        """Sets the configuration state to 'leaf'.
+
+        Parameters
+        ----------
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
+        combined_implementations
+            The configuration for any ``Implementations`` to be combined.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
+        self._configuration_state = LeafConfigurationState(
+            self, step_config, combined_implementations, input_data_config
+        )
+
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """TBD"""
+        implementation_graph.add_node_from_implementation(
+            self.name,
+            implementation=NullSplitterImplementation(
+                self.name,
+                self.input_slots.values(),
+                self.output_slots.values(),
+                self.splitter_func_name,
+            ),
+        )
+
+    def add_edges_to_implementation_graph(self, implementation_graph):
+        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
+
+        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
+        since they are represented by a single ``NullImplementation`` node, and so we
+        simply pass.
+        """
+        pass
+
+
+class AggregatorStep(Step):
+    def __init__(
+        self,
+        name: str,
+        output_slots: Iterable[OutputSlot],
+        slot_aggregator_mapping: dict[str, Callable],
+        splitter_step_name: str,
+    ) -> None:
+        super().__init__(
+            name,
+            input_slots=[
+                InputSlot(
+                    f"{name}_main_input",
+                    env_var=None,
+                    validator=None,
+                )
+            ],
+            output_slots=output_slots,
+        )
+        self.slot_aggregator_mapping = slot_aggregator_mapping
+        self.splitter_step_name = splitter_step_name
+
+    @property
+    def implementation_node_name(self) -> str:
+        """Dummy name to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation` and thus do not
+        require a different node name than its own ``Step`` name. This property
+        only exists so that ``IOSteps`` can be used interchangeably with other
+        ``Steps`` in the codebase.
+
+        Returns
+        -------
+            The ``IOStep's`` name.
+        """
+        return self.name
+
+    def validate_step(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
+        """Dummy validation method to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+
+        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation` and thus do not
+        require any sort of validation since no new data is created. This method
+        only exists so that ``IOSteps`` can be used interchangeably with other
+        ``Steps`` in the codebase.
+
+        Returns
+        -------
+            An empty dictionary.
+        """
+        return {}
+
+    def set_configuration_state(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> None:
+        """Sets the configuration state to 'leaf'.
+
+        Parameters
+        ----------
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
+        combined_implementations
+            The configuration for any ``Implementations`` to be combined.
+        input_data_config
+            The input data configuration for the entire pipeline.
+        """
+        self._configuration_state = LeafConfigurationState(
+            self, step_config, combined_implementations, input_data_config
+        )
+
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """TBD"""
+        # TODO: need to add aggregator function name and checkpoint path (maybe make it as an
+        # attr to EPSs?)
+        implementation_graph.add_node_from_implementation(
+            self.name,
+            implementation=NullAggregatorImplementation(
+                self.name,
+                self.input_slots.values(),
+                self.output_slots.values(),
+                self.slot_aggregator_mapping,
+                self.splitter_step_name,
+            ),
+        )
+
+    def add_edges_to_implementation_graph(self, implementation_graph):
+        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
+
+        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
+        since they are represented by a single ``NullImplementation`` node, and so we
+        simply pass.
+        """
+        pass
 
 
 class ChoiceStep(Step):
@@ -1680,78 +1963,78 @@ class NonLeafConfigurationState(ConfigurationState):
             substep = self._step.step_graph.nodes[node]["step"]
             if self._step.is_embarrassingly_parallel:
                 substep.is_embarrassingly_parallel = True
-                self._propagate_splitter_aggregators(self._step, substep)
+                # self._propagate_splitter_aggregators(self._step, substep)
             substep.add_nodes_to_implementation_graph(implementation_graph)
 
-    @staticmethod
-    def _propagate_splitter_aggregators(parent: Step, child: Step):
-        """Propagates splitters and aggregators to child ``Steps``.
+    # @staticmethod
+    # def _propagate_splitter_aggregators(parent: Step, child: Step):
+    #     """Propagates splitters and aggregators to child ``Steps``.
 
-        This method adds the :meth:`~easylink.graph_components.InputSlot.splitter`
-        and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
-        parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
-        :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
-        child steps' slots.
+    #     This method adds the :meth:`~easylink.graph_components.InputSlot.splitter`
+    #     and :meth:`~easylink.graph_components.OutputSlot.aggregator` methods from a
+    #     parent ``Step's`` :class:`~easylink.graph_components.InputSlot` and
+    #     :class:`OutputSlots<easylink.graph_components.OutputSlot>` to the corresponding
+    #     child steps' slots.
 
-        Parameters
-        ----------
-        parent
-            The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
-            to be propagated to the appropriate child ``Step``.
-        child
-            A child ``Step`` to potentially have its parent's ``splitter`` and
-            ``aggregators`` assigned to its ``InputSlot`` and ``OutputSlots``,
-            respectively.
-        """
-        parent_split_slots = [
-            slot_name for slot_name, slot in parent.input_slots.items() if slot.splitter
-        ]
-        if len(parent_split_slots) > 1:
-            raise ValueError(
-                f"More than one input slot with splitter assigned in parent step {parent.name}: {parent_split_slots}"
-            )
-        parent_split_slot = parent_split_slots[0] if parent_split_slots else None
+    #     Parameters
+    #     ----------
+    #     parent
+    #         The parent ``Step`` whose ``splitter`` and ``aggregator`` methods are
+    #         to be propagated to the appropriate child ``Step``.
+    #     child
+    #         A child ``Step`` to potentially have its parent's ``splitter`` and
+    #         ``aggregators`` assigned to its ``InputSlot`` and ``OutputSlots``,
+    #         respectively.
+    #     """
+    #     parent_split_slots = [
+    #         slot_name for slot_name, slot in parent.input_slots.items() if slot.splitter
+    #     ]
+    #     if len(parent_split_slots) > 1:
+    #         raise ValueError(
+    #             f"More than one input slot with splitter assigned in parent step {parent.name}: {parent_split_slots}"
+    #         )
+    #     parent_split_slot = parent_split_slots[0] if parent_split_slots else None
 
-        for slot_type in ["input", "output"]:
-            parent_slots = parent.input_slots if slot_type == "input" else parent.output_slots
-            child_slots = child.input_slots if slot_type == "input" else child.output_slots
-            callable_attr = "splitter" if slot_type == "input" else "aggregator"
-            for parent_slot_name, parent_slot in parent_slots.items():
-                if not getattr(parent_slot, callable_attr):
-                    # If the parent slot doesn't have the splitter/aggretagor,
-                    # there is nothing to propagate
-                    continue
-                mappings_with_callable = [
-                    mapping
-                    for mapping in parent.slot_mappings[slot_type]
-                    if mapping.parent_slot == parent_slot_name
-                ]
-                for mapping in mappings_with_callable:
-                    child_node = mapping.child_node
-                    child_slot = mapping.child_slot
-                    if not (child_node == child.name and child_slot in child_slots):
-                        # If this is not the relevant child or slot, skip
-                        continue
-                    # Assign the callable (splitter or aggregator) to the appropriate child slot
-                    setattr(
-                        child_slots[child_slot],
-                        callable_attr,
-                        getattr(parent_slot, callable_attr),
-                    )
-                    # If the parent slot already has defined splitter origin details,
-                    # assign them to the child. If it doesn't, then it (the parent),
-                    # must itself be the origin; assign the parent's name
-                    # and split slot to the child
-                    child_slots[child_slot].splitter_origin_node = (
-                        parent_slot.splitter_origin_node
-                        if parent_slot.splitter_origin_node
-                        else parent.name
-                    )
-                    child_slots[child_slot].splitter_origin_slot = (
-                        parent_slot.splitter_origin_slot
-                        if parent_slot.splitter_origin_slot
-                        else parent_split_slot
-                    )
+    #     for slot_type in ["input", "output"]:
+    #         parent_slots = parent.input_slots if slot_type == "input" else parent.output_slots
+    #         child_slots = child.input_slots if slot_type == "input" else child.output_slots
+    #         callable_attr = "splitter" if slot_type == "input" else "aggregator"
+    #         for parent_slot_name, parent_slot in parent_slots.items():
+    #             if not getattr(parent_slot, callable_attr):
+    #                 # If the parent slot doesn't have the splitter/aggretagor,
+    #                 # there is nothing to propagate
+    #                 continue
+    #             mappings_with_callable = [
+    #                 mapping
+    #                 for mapping in parent.slot_mappings[slot_type]
+    #                 if mapping.parent_slot == parent_slot_name
+    #             ]
+    #             for mapping in mappings_with_callable:
+    #                 child_node = mapping.child_node
+    #                 child_slot = mapping.child_slot
+    #                 if not (child_node == child.name and child_slot in child_slots):
+    #                     # If this is not the relevant child or slot, skip
+    #                     continue
+    #                 # Assign the callable (splitter or aggregator) to the appropriate child slot
+    #                 setattr(
+    #                     child_slots[child_slot],
+    #                     callable_attr,
+    #                     getattr(parent_slot, callable_attr),
+    #                 )
+    #                 # If the parent slot already has defined splitter origin details,
+    #                 # assign them to the child. If it doesn't, then it (the parent),
+    #                 # must itself be the origin; assign the parent's name
+    #                 # and split slot to the child
+    #                 child_slots[child_slot].splitter_origin_node = (
+    #                     parent_slot.splitter_origin_node
+    #                     if parent_slot.splitter_origin_node
+    #                     else parent.name
+    #                 )
+    #                 child_slots[child_slot].splitter_origin_slot = (
+    #                     parent_slot.splitter_origin_slot
+    #                     if parent_slot.splitter_origin_slot
+    #                     else parent_split_slot
+    #                 )
 
     def add_edges_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
@@ -1864,10 +2147,10 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for sub_node in self._step.step_graph.nodes:
             sub_step = self._step.step_graph.nodes[sub_node]["step"]
-            # IOStep names never appear in configuration
+            # IOSteps, SplitterSteps, and AggregatorSteps never appear explicitly in the configuration
             step_config = (
                 self.step_config
-                if isinstance(sub_step, IOStep)
+                if isinstance(sub_step, (IOStep, SplitterStep, AggregatorStep))
                 else self.step_config[sub_step.name]
             )
             sub_step.set_configuration_state(

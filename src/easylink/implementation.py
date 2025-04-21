@@ -9,14 +9,19 @@ information about what container to run for a given step and other related detai
 
 """
 
-from collections.abc import Iterable
+from __future__ import annotations
+
+from collections.abc import Callable, Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from layered_config_tree import LayeredConfigTree
 
-from easylink.graph_components import InputSlot, OutputSlot
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
+
+if TYPE_CHECKING:
+    from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
@@ -156,8 +161,8 @@ class NullImplementation:
     def __init__(
         self,
         name: str,
-        input_slots: Iterable["InputSlot"] = (),
-        output_slots: Iterable["OutputSlot"] = (),
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
     ):
         self.name = name
         """The name of this ``NullImplementation``."""
@@ -170,6 +175,35 @@ class NullImplementation:
         self.combined_name = None
         """The name of the combined implementation of which ``NullImplementation`` 
         is a constituent. This is definitionally None."""
+
+
+class NullSplitterImplementation(NullImplementation):
+    def __init__(
+        self,
+        name: str,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+        splitter_func_name: str,
+    ):
+        super().__init__(name, input_slots, output_slots)
+        self.splitter_func_name = splitter_func_name
+        """The name of the splitter function to use."""
+
+
+class NullAggregatorImplementation(NullImplementation):
+    def __init__(
+        self,
+        name: str,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+        slot_aggregator_mapping: dict[str, Callable],
+        splitter_step_name: str,
+    ):
+        super().__init__(name, input_slots, output_slots)
+        self.slot_aggregator_mapping = slot_aggregator_mapping
+        """A mapping of slot names to their respective aggregation functions."""
+        self.splitter_step_name = splitter_step_name
+        """The name of the step that did the splitting that this is now aggregating."""
 
 
 class PartialImplementation:

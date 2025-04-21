@@ -1699,8 +1699,8 @@ def embarrassingly_parallel_parallel_step_params(
 ) -> dict[str, Any]:
     return {
         "step": ParallelStep(**parallel_step_params),
-        "splitter": {"step_1_main_input": split_data_by_size},
-        "aggregator": {"step_1_main_output": concatenate_datasets},
+        "slot_splitter_mapping": {"step_1_main_input": split_data_by_size},
+        "slot_aggregator_mapping": {"step_1_main_output": concatenate_datasets},
     }
 
 
@@ -1734,14 +1734,58 @@ def test_embarrassingly_parallel_parallel_step_implementation_graph(
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     implementation_graph = _create_implementation_graph(ep_step)
     assert list(implementation_graph.nodes) == [
+        "step_1_step_1_main_input_split",
         "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
         "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
         "step_1_parallel_split_2_step_1_python_pandas",
         "step_1_parallel_split_3_step_1_python_pandas",
+        "step_1_aggregate",
     ]
+    # Map the internal edges of the graph
     # NOTE: There are no internal edges to the secondary slot (they are all
     # mapped from the outer HierarchicalStep defined in the `loop_step_params`)
     expected_edges = [
+        # SplitterStep -> Step edges
+        (
+            "step_1_step_1_main_input_split",
+            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1a_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1_step_1_main_input_split_main_output"),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_1_step_1_main_input_split",
+            "step_1_parallel_split_2_step_1_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1_step_1_main_input_split_main_output"),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_1_step_1_main_input_split",
+            "step_1_parallel_split_3_step_1_python_pandas",
+            {
+                "input_slot": InputSlot(
+                    "step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                "output_slot": OutputSlot("step_1_step_1_main_input_split_main_output"),
+                "filepaths": None,
+            },
+        ),
+        # Step -> Step edges
         (
             "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
             "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
@@ -1752,6 +1796,46 @@ def test_embarrassingly_parallel_parallel_step_implementation_graph(
                     validate_input_file_dummy,
                 ),
                 "output_slot": OutputSlot("step_1a_main_output"),
+                "filepaths": None,
+            },
+        ),
+        # Step -> AggregatorStep edges
+        (
+            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+            "step_1_aggregate",
+            {
+                "input_slot": InputSlot(
+                    "step_1_aggregate_main_input",
+                    env_var=None,
+                    validator=None,
+                ),
+                "output_slot": OutputSlot("step_1b_main_output"),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_1_parallel_split_2_step_1_python_pandas",
+            "step_1_aggregate",
+            {
+                "input_slot": InputSlot(
+                    "step_1_aggregate_main_input",
+                    env_var=None,
+                    validator=None,
+                ),
+                "output_slot": OutputSlot("step_1_main_output"),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_1_parallel_split_3_step_1_python_pandas",
+            "step_1_aggregate",
+            {
+                "input_slot": InputSlot(
+                    "step_1_aggregate_main_input",
+                    env_var=None,
+                    validator=None,
+                ),
+                "output_slot": OutputSlot("step_1_main_output"),
                 "filepaths": None,
             },
         ),
