@@ -69,11 +69,12 @@ class InputSlot:
 
     def __hash__(self) -> int:
         """Hashes an ``InputSlot``."""
+        validator_name = self.validator.__name__ if self.validator else None
         return hash(
             (
                 self.name,
                 self.env_var,
-                self.validator.__name__,
+                validator_name,
             )
         )
 
