@@ -71,6 +71,8 @@ class Step:
         The :class:`InputSlotMapping<easylink.graph_components.InputSlotMapping>` of this ``Step``.
     output_slot_mappings
         The :class:`OutputSlotMapping<easylink.graph_components.OutputSlotMapping>` of this ``Step``.
+    is_embarrassingly_parallel
+        Whether or not this ``Step`` is to be run in an embarrassingly parallel manner.
 
     Notes
     -----
@@ -1151,7 +1153,7 @@ class ParallelStep(TemplatedStep):
 
 
 class EmbarrassinglyParallelStep(Step):
-    """A step that is run in parallel on the backend.
+    """A :class:`Step` that is run in parallel on the backend.
 
     An ``EmbarrassinglyParallelStep`` is different than a :class:`ParallelStep`
     in that it is not configured by the user to be run in parallel - it completely
@@ -1185,7 +1187,11 @@ class EmbarrassinglyParallelStep(Step):
             is_embarrassingly_parallel=True,
         )
         self.slot_splitter_mapping = slot_splitter_mapping
+        """A mapping of the :class:`~easylink.graph_components.InputSlot` name to split
+        to the actual splitter function to be used."""
         self.slot_aggregator_mapping = slot_aggregator_mapping
+        """A mapping of all :class:`~easylink.graph_components.OutputSlot` names to
+        be aggregated and the actual aggregator function to be used."""
         self.step_graph = None
         self.step = step
         self.step.set_parent_step(self)
@@ -1194,6 +1200,7 @@ class EmbarrassinglyParallelStep(Step):
         self._validate()
         # NOTE: We validated that the slot_splitter_mapping has only one item in self._validate()
         self.split_slot_name = list(self.slot_splitter_mapping.keys())[0]
+        """The name of the ``InputSlot`` to be split."""
 
     def _validate(self) -> None:
         """Validates the ``EmbarrassinglyParallelStep``.
@@ -1286,8 +1293,32 @@ class EmbarrassinglyParallelStep(Step):
 
     def _update_step_graph(
         self, splitter_step: SplitterStep, aggregator_step: AggregatorStep
-    ):
-        """TODO"""
+    ) -> StepGraph:
+        """Updates the :class:`~easylink.graph_components.StepGraph` to include the splitting and aggregating nodes.
+
+        This strings exactly three nodes together: the :class:`SplitterStep` that does
+        the splitting of the input data, the actual :class:`Step` to be run in parallel,
+        and the :class:`AggregatorStep` that aggregates the output data, i.e.
+        ``SplitterStep -> ``Step`` -> AggregatorStep``.
+
+        Notes
+        -----
+        The ``SplitterStep`` and ``AggregatorStep`` are backed by versions of
+        :class:`NullImplementations<easylink.implementation.NullImplementation>`,
+        i.e. they do *not* actually require containers to run.
+
+        Parameters
+        ----------
+        splitter_step
+            The :class:`SplitterStep` that does the splitting of the input data.
+        aggregator_step
+            The :class:`AggregatorStep` that aggregates the output data.
+
+        Returns
+        -------
+            The updated ``StepGraph`` that includes ``SplitterStep``, ``Step``,
+            and ``AggregatorStep`` nodes.
+        """
         self.step_graph = StepGraph()
         for node in [splitter_step, self.step, aggregator_step]:
             self.step_graph.add_node_from_step(node)
@@ -1318,7 +1349,22 @@ class EmbarrassinglyParallelStep(Step):
     def _update_slot_mappings(
         self, splitter_step: SplitterStep, aggregator_step: AggregatorStep
     ) -> None:
-        """TODO"""
+        """Updates the :class:`SlotMappings<easylink.graph_components.SlotMapping>`.
+
+        This updates the slot mappings to that the ``Step's`` inputs are redirected
+        to the ``SplitterStep`` and the outputs are redirected to the ``AggregatorStep``.
+
+        Parameters
+        ----------
+        splitter_step
+            The :class:`SplitterStep` that does the splitting of the input data.
+        aggregator_step
+            The :class:`AggregatorStep` that aggregates the output data.
+
+        Returns
+        -------
+            Updated ``SlotMappings`` that account for ``SplitterStep`` and ``AggregatorStep``.
+        """
         # map the split input slot
         split_slot_name = list(splitter_step.input_slots.keys())[0]
         input_mappings = [
@@ -1335,7 +1381,27 @@ class EmbarrassinglyParallelStep(Step):
 
 
 class SplitterStep(Step):
+    """A :class:`Step` that splits an :class:`~easylink.graph_components.InputSlot` for parallel processing.
+
+    A ``SplitterStep`` is intended to be used in conjunction with a corresponding
+    :class:`AggregatorStep` and only during construction of an :class:`EmbarrassinglyParallelStep`.
+    It is *not* an implemented step, i.e. it does not require a container to run
+    and is thus backed by a :class:`~easylink.implementation.NullImplementation`.
+
+    See :class:`Step` for inherited attributes.
+
+    Parameters
+    ----------
+    split_slot
+        The name of the ``InputSlot`` to be split.
+    splitter_func_name
+        The name of the splitter function to be used.
+
+    """
+
     def __init__(self, name: str, split_slot: InputSlot, splitter_func_name: str) -> None:
+        # Remove the env_var (not an implemented step) and validator (will be validated
+        # after the splitting during input to the actual step to run)
         input_slot = copy.deepcopy(split_slot)
         input_slot.env_var = None
         input_slot.validator = None
@@ -1343,20 +1409,21 @@ class SplitterStep(Step):
             name, input_slots=[input_slot], output_slots=[OutputSlot(f"{name}_main_output")]
         )
         self.splitter_func_name = splitter_func_name
+        """The name of the splitter function to be used."""
 
     @property
     def implementation_node_name(self) -> str:
-        """Dummy name to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+        """Dummy name to allow ``SplitterSteps`` to be used interchangeably with other ``Steps``.
 
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``SplitterSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation` and thus do not
         require a different node name than its own ``Step`` name. This property
-        only exists so that ``IOSteps`` can be used interchangeably with other
+        only exists so that ``SplitterSteps`` can be used interchangeably with other
         ``Steps`` in the codebase.
 
         Returns
         -------
-            The ``IOStep's`` name.
+            The ``SplitterSteps's`` name.
         """
         return self.name
 
@@ -1366,12 +1433,12 @@ class SplitterStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
-        """Dummy validation method to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+        """Dummy validation method to allow ``SplitterSteps`` to be used interchangeably with other ``Steps``.
 
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``SplitterSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation` and thus do not
         require any sort of validation since no new data is created. This method
-        only exists so that ``IOSteps`` can be used interchangeably with other
+        only exists so that ``SplitterSteps`` can be used interchangeably with other
         ``Steps`` in the codebase.
 
         Returns
@@ -1405,7 +1472,15 @@ class SplitterStep(Step):
     def add_nodes_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
     ) -> None:
-        """TBD"""
+        """Adds this ``SplitterStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
+
+        Notes
+        -----
+        Unlike other types of ``Steps``, ``SplitterSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation`. As such, we
+        leverage the :class:`~easylink.implementation.NullSplitterImplementation` class
+        to generate the graph node.
+        """
         implementation_graph.add_node_from_implementation(
             self.name,
             implementation=NullSplitterImplementation(
@@ -1416,11 +1491,13 @@ class SplitterStep(Step):
             ),
         )
 
-    def add_edges_to_implementation_graph(self, implementation_graph):
+    def add_edges_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
         """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
 
-        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
-        since they are represented by a single ``NullImplementation`` node, and so we
+        ``SplitterSteps`` do not have edges within them in the ``ImplementationGraph``,
+        since they are represented by a single ``NullSplitterImplementation`` node, and so we
         simply pass.
         """
         pass
@@ -1434,6 +1511,24 @@ class AggregatorStep(Step):
         slot_aggregator_mapping: dict[str, Callable],
         splitter_step_name: str,
     ) -> None:
+        """A :class:`Step` that aggregates :class:`OutputSlots<easylink.graph_components.Outputslot>` after parallel processing.
+
+        An ``AggregatorStep`` is intended to be used in conjunction with a corresponding
+        :class:`SplitterStep` and only during construction of an :class:`EmbarrassinglyParallelStep`.
+        It is *not* an implemented step, i.e. it does not require a container to
+        run and is thus backed by a :class:`~easylink.implementation.NullImplementation`.
+
+        See :class:`Step` for inherited attributes.
+
+        Parameters
+        ----------
+        slot_aggregator_mapping
+            A mapping of all ``OutputSlot`` names to be aggregated and the actual
+            aggregator function to be used.
+        splitter_step_name
+            The name of the ``SplitterStep`` that this ``AggregatorStep`` is associated with.
+
+        """
         super().__init__(
             name,
             input_slots=[
@@ -1446,21 +1541,24 @@ class AggregatorStep(Step):
             output_slots=output_slots,
         )
         self.slot_aggregator_mapping = slot_aggregator_mapping
+        """A mapping of all ``OutputSlot`` names to be aggregated and the actual 
+        aggregator function to be used."""
         self.splitter_step_name = splitter_step_name
+        """The name of the ``SplitterStep`` that this ``AggregatorStep`` is associated with."""
 
     @property
     def implementation_node_name(self) -> str:
-        """Dummy name to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+        """Dummy name to allow ``AggregatorSteps`` to be used interchangeably with other ``Steps``.
 
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``AggregatorSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation` and thus do not
         require a different node name than its own ``Step`` name. This property
-        only exists so that ``IOSteps`` can be used interchangeably with other
+        only exists so that ``AggregatorSteps`` can be used interchangeably with other
         ``Steps`` in the codebase.
 
         Returns
         -------
-            The ``IOStep's`` name.
+            The ``AggregatorStep's`` name.
         """
         return self.name
 
@@ -1470,12 +1568,12 @@ class AggregatorStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
-        """Dummy validation method to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+        """Dummy validation method to allow ``AggregatorSteps`` to be used interchangeably with other ``Steps``.
 
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``AggregatorSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation` and thus do not
         require any sort of validation since no new data is created. This method
-        only exists so that ``IOSteps`` can be used interchangeably with other
+        only exists so that ``AggregatorSteps`` can be used interchangeably with other
         ``Steps`` in the codebase.
 
         Returns
@@ -1509,9 +1607,15 @@ class AggregatorStep(Step):
     def add_nodes_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
     ) -> None:
-        """TBD"""
-        # TODO: need to add aggregator function name and checkpoint path (maybe make it as an
-        # attr to EPSs?)
+        """Adds this ``AggregatorStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
+
+        Notes
+        -----
+        Unlike other types of ``Steps``, ``AggregatorSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation`. As such, we
+        leverage the :class:`~easylink.implementation.NullSplitterImplementation` class
+        to generate the graph node.
+        """
         implementation_graph.add_node_from_implementation(
             self.name,
             implementation=NullAggregatorImplementation(
@@ -1523,10 +1627,12 @@ class AggregatorStep(Step):
             ),
         )
 
-    def add_edges_to_implementation_graph(self, implementation_graph):
+    def add_edges_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
         """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
 
-        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
+        ``AggregatorSteps`` do not have edges within them in the ``ImplementationGraph``,
         since they are represented by a single ``NullImplementation`` node, and so we
         simply pass.
         """
@@ -1945,7 +2051,6 @@ class NonLeafConfigurationState(ConfigurationState):
             substep = self._step.step_graph.nodes[node]["step"]
             if self._step.is_embarrassingly_parallel:
                 substep.is_embarrassingly_parallel = True
-                # self._propagate_splitter_aggregators(self._step, substep)
             substep.add_nodes_to_implementation_graph(implementation_graph)
 
     def add_edges_to_implementation_graph(

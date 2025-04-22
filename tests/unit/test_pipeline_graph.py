@@ -20,9 +20,9 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
         "input_data",
         "step_1_python_pandas",
         "step_2_python_pandas",
-        "split_step_3",
+        "step_3_step_3_main_input_split",
         "step_3_python_pandas",
-        "aggregate_step_3",
+        "step_3_aggregate",
         "step_4_python_pandas",
         "results",
     }
@@ -54,33 +54,35 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (Path("intermediate/step_1_python_pandas/result.parquet"),),
         },
-        ("step_2_python_pandas", "split_step_3"): {
+        ("step_2_python_pandas", "step_3_step_3_main_input_split"): {
             "input_slot_name": "step_3_main_input",
             "output_slot_name": "step_2_main_output",
-            "validator": validate_input_file_dummy,
+            "validator": None,
             "env_var": None,
             "filepaths": (Path("intermediate/step_2_python_pandas/result.parquet"),),
         },
-        ("split_step_3", "step_3_python_pandas"): {
+        ("step_3_step_3_main_input_split", "step_3_python_pandas"): {
             "input_slot_name": "step_3_main_input",
-            "output_slot_name": "split_step_3_main_output",
-            "validator": None,
+            "output_slot_name": "step_3_step_3_main_input_split_main_output",
+            "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/split_step_3/{chunk}/result.parquet"),),
+            "filepaths": (
+                Path("intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet"),
+            ),
         },
-        ("step_3_python_pandas", "aggregate_step_3"): {
-            "input_slot_name": "aggregate_step_3_main_input",
+        ("step_3_python_pandas", "step_3_aggregate"): {
+            "input_slot_name": "step_3_aggregate_main_input",
             "output_slot_name": "step_3_main_output",
             "validator": None,
             "env_var": None,
             "filepaths": (Path("intermediate/step_3_python_pandas/{chunk}/result.parquet"),),
         },
-        ("aggregate_step_3", "step_4_python_pandas"): {
+        ("step_3_aggregate", "step_4_python_pandas"): {
             "input_slot_name": "step_4_main_input",
             "output_slot_name": "step_3_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/aggregate_step_3/result.parquet"),),
+            "filepaths": (Path("intermediate/step_3_aggregate/result.parquet"),),
         },
         ("step_4_python_pandas", "results"): {
             "input_slot_name": "result",
@@ -90,7 +92,7 @@ def test__create_graph(default_config: Config, test_dir: str) -> None:
             "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
         },
     }
-    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+    _check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
 def test_implementations(default_config: Config) -> None:
@@ -194,17 +196,17 @@ def test_update_slot_filepaths(default_config: Config, test_dir: str) -> None:
         ("step_1_python_pandas", "step_2_python_pandas"): (
             "intermediate/step_1_python_pandas/result.parquet",
         ),
-        ("step_2_python_pandas", "split_step_3"): (
+        ("step_2_python_pandas", "step_3_step_3_main_input_split"): (
             "intermediate/step_2_python_pandas/result.parquet",
         ),
-        ("split_step_3", "step_3_python_pandas"): (
-            "intermediate/split_step_3/{chunk}/result.parquet",
+        ("step_3_step_3_main_input_split", "step_3_python_pandas"): (
+            "intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet",
         ),
-        ("step_3_python_pandas", "aggregate_step_3"): (
+        ("step_3_python_pandas", "step_3_aggregate"): (
             "intermediate/step_3_python_pandas/{chunk}/result.parquet",
         ),
-        ("aggregate_step_3", "step_4_python_pandas"): (
-            "intermediate/aggregate_step_3/result.parquet",
+        ("step_3_aggregate", "step_4_python_pandas"): (
+            "intermediate/step_3_aggregate/result.parquet",
         ),
         ("step_4_python_pandas", "results"): (
             "intermediate/step_4_python_pandas/result.parquet",
@@ -224,9 +226,6 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                         str(Path(f"{test_dir}/input_data1/file1.csv")),
                         str(Path(f"{test_dir}/input_data2/file2.csv")),
                     ],
-                    "aggregator": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 }
             },
         },
@@ -239,17 +238,11 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                         Path(f"{test_dir}/input_data1/file1.csv"),
                         Path(f"{test_dir}/input_data2/file2.csv"),
                     ],
-                    "splitter": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
             "output": {
                 "step_1_main_output": {
                     "filepaths": [Path("intermediate/step_1_python_pandas/result.parquet")],
-                    "aggregator": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
         },
@@ -259,37 +252,29 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                     "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     "validator": validate_input_file_dummy,
                     "files": [Path("intermediate/step_1_python_pandas/result.parquet")],
-                    "splitter": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
             "output": {
                 "step_2_main_output": {
                     "filepaths": [Path("intermediate/step_2_python_pandas/result.parquet")],
-                    "aggregator": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
         },
-        "split_step_3": {
+        "step_3_step_3_main_input_split": {
             "input": {
                 "step_3_main_input": {
                     "env_var": None,
-                    "validator": validate_input_file_dummy,
+                    "validator": None,
                     "files": [Path("intermediate/step_2_python_pandas/result.parquet")],
-                    "splitter": split_data_by_size,
-                    "splitter_origin_node": "step_3",
-                    "splitter_origin_slot": "step_3_main_input",
                 },
             },
             "output": {
-                "split_step_3_main_output": {
-                    "filepaths": [Path("intermediate/split_step_3/{chunk}/result.parquet")],
-                    "aggregator": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
+                "step_3_step_3_main_input_split_main_output": {
+                    "filepaths": [
+                        Path(
+                            "intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet"
+                        )
+                    ],
                 },
             },
         },
@@ -297,11 +282,12 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
             "input": {
                 "step_3_main_input": {
                     "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                    "validator": None,
-                    "files": [Path("intermediate/split_step_3/{chunk}/result.parquet")],
-                    "splitter": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
+                    "validator": validate_input_file_dummy,
+                    "files": [
+                        Path(
+                            "intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet"
+                        )
+                    ],
                 },
             },
             "output": {
@@ -309,31 +295,22 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                     "filepaths": [
                         Path("intermediate/step_3_python_pandas/{chunk}/result.parquet")
                     ],
-                    "aggregator": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
         },
-        "aggregate_step_3": {
+        "step_3_aggregate": {
             "input": {
-                "aggregate_step_3_main_input": {
+                "step_3_aggregate_main_input": {
                     "env_var": None,
                     "validator": None,
                     "files": [
                         Path("intermediate/step_3_python_pandas/{chunk}/result.parquet")
                     ],
-                    "splitter": None,
-                    "splitter_origin_node": "split_step_3",
-                    "splitter_origin_slot": "step_3_main_input",
                 },
             },
             "output": {
                 "step_3_main_output": {
-                    "filepaths": [Path("intermediate/aggregate_step_3/result.parquet")],
-                    "aggregator": concatenate_datasets,
-                    "splitter_origin_node": "step_3",
-                    "splitter_origin_slot": "step_3_main_input",
+                    "filepaths": [Path("intermediate/step_3_aggregate/result.parquet")],
                 },
             },
         },
@@ -342,10 +319,7 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                 "step_4_main_input": {
                     "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     "validator": validate_input_file_dummy,
-                    "files": [Path("intermediate/aggregate_step_3/result.parquet")],
-                    "splitter": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
+                    "files": [Path("intermediate/step_3_aggregate/result.parquet")],
                 },
                 "step_4_secondary_input": {
                     "env_var": "DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
@@ -354,17 +328,11 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                         Path(f"{test_dir}/input_data1/file1.csv"),
                         Path(f"{test_dir}/input_data2/file2.csv"),
                     ],
-                    "splitter": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
             "output": {
                 "step_4_main_output": {
                     "filepaths": [Path("intermediate/step_4_python_pandas/result.parquet")],
-                    "aggregator": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 },
             },
         },
@@ -374,9 +342,6 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
                     "env_var": None,
                     "validator": validate_input_file_dummy,
                     "files": [Path("intermediate/step_4_python_pandas/result.parquet")],
-                    "splitter": None,
-                    "splitter_origin_node": None,
-                    "splitter_origin_slot": None,
                 }
             },
             "output": {},
@@ -389,24 +354,16 @@ def test_get_io_slots(default_config: Config, test_dir: str) -> None:
         input_slots, output_slots = pipeline_graph.get_io_slot_attributes(node)
         # for slot_name, expected_slot in expected_slots["input"].items():
         for slot_name, slot in input_slots.items():
-            # slot = input_slots[slot_name]
             expected_slot = expected[node]["input"][slot_name]
-            assert len(slot) == 6
+            assert len(slot) == 3
             assert slot["env_var"] == expected_slot["env_var"]
             assert slot["validator"] == expected_slot["validator"]
             assert slot["filepaths"] == [str(file) for file in expected_slot["files"]]
-            assert slot["splitter"] == expected_slot["splitter"]
-            assert slot["splitter_origin_node"] == expected_slot["splitter_origin_node"]
-            assert slot["splitter_origin_slot"] == expected_slot["splitter_origin_slot"]
         # for slot_name, expected_slot in expected_slots["output"].items():
         for slot_name, slot in output_slots.items():
-            # slot = output_slots[slot_name]
             expected_slot = expected[node]["output"][slot_name]
-            assert len(slot) == 4
+            assert len(slot) == 1
             assert slot["filepaths"] == [str(file) for file in expected_slot["filepaths"]]
-            assert slot["aggregator"] == expected_slot["aggregator"]
-            assert slot["splitter_origin_node"] == expected_slot["splitter_origin_node"]
-            assert slot["splitter_origin_slot"] == expected_slot["splitter_origin_slot"]
 
 
 def test__deduplicate_input_slots() -> None:
@@ -477,31 +434,6 @@ def test__deduplicate_input_slots() -> None:
             ),
             "have different validator values",
         ),
-        (
-            InputSlot(
-                "step_1_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-                splitter=split_data_by_size,
-            ),
-            "have different splitter values",
-        ),
-        (
-            InputSlot(
-                "step_1_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
-            "have different splitter_origin_node values",
-        ),
-        (
-            InputSlot(
-                "step_1_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-                validator=validate_input_file_dummy,
-            ),
-            "have different splitter_origin_slot values",
-        ),
     ],
 )
 def test__deduplicate_input_slots_raises(duplicate_slot: InputSlot, error_msg: str) -> None:
@@ -548,43 +480,6 @@ def test__deduplicate_output_slots() -> None:
         assert slot["filepaths"] == expected_slot["filepaths"]
 
 
-@pytest.mark.parametrize(
-    "duplicate_slot, error_msg",
-    [
-        (
-            OutputSlot(
-                "step_1_main_output",
-                aggregator=concatenate_datasets,
-            ),
-            "have different aggregator values",
-        ),
-        (
-            OutputSlot(
-                "step_1_main_output",
-            ),
-            "have different splitter_origin_node values",
-        ),
-        (
-            OutputSlot(
-                "step_1_main_output",
-            ),
-            "have different splitter_origin_slot values",
-        ),
-    ],
-)
-def test__deduplicate_output_slots_raises(duplicate_slot: OutputSlot, error_msg: str) -> None:
-    output_slots = [
-        OutputSlot("step_1_main_output"),
-        duplicate_slot,
-    ]
-    filepaths_by_slot = [
-        ["file1", "file2"],
-        ["file3", "file4"],
-    ]
-    with pytest.raises(ValueError, match=error_msg):
-        PipelineGraph._deduplicate_output_slots(output_slots, filepaths_by_slot)
-
-
 def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
     expected = {
         "step_1_python_pandas": (
@@ -599,14 +494,14 @@ def test_get_input_output_files(default_config: Config, test_dir: str) -> None:
             ["intermediate/step_2_python_pandas/result.parquet"],
         ),
         "step_3_python_pandas": (
-            ["intermediate/step_2_python_pandas/result.parquet"],
-            ["intermediate/step_3_python_pandas/result.parquet"],
+            ["intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet"],
+            ["intermediate/step_3_python_pandas/{chunk}/result.parquet"],
         ),
         "step_4_python_pandas": (
             [
                 f"{test_dir}/input_data1/file1.csv",
                 f"{test_dir}/input_data2/file2.csv",
-                "intermediate/step_3_python_pandas/result.parquet",
+                "intermediate/step_3_aggregate/result.parquet",
             ],
             ["intermediate/step_4_python_pandas/result.parquet"],
         ),
@@ -635,8 +530,7 @@ def test_get_whether_embarrassingly_parallel(default_config_params):
     config_params = default_config_params
     config = Config(config_params)
     pipeline_graph = PipelineGraph(config)
-    nodes = [node for node in pipeline_graph.nodes if node not in ["input_data", "results"]]
-    for node in nodes:
+    for node in pipeline_graph.implementation_nodes:
         if node == "step_3_python_pandas":
             assert pipeline_graph.get_whether_embarrassingly_parallel(node)
         else:
@@ -664,7 +558,9 @@ def test_merge_combined_implementations(
     expected_nodes = {
         "input_data",
         "step_1_2",
+        "step_3_step_3_main_input_split",
         "step_3_python_pandas",
+        "step_3_aggregate",
         "step_4_python_pandas",
         "results",
     }
@@ -689,19 +585,35 @@ def test_merge_combined_implementations(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("step_1_2", "step_3_python_pandas"): {
+        ("step_1_2", "step_3_step_3_main_input_split"): {
             "input_slot_name": "step_3_main_input",
             "output_slot_name": "step_2_main_output",
-            "validator": validate_input_file_dummy,
-            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "validator": None,
+            "env_var": None,
             "filepaths": (Path("intermediate/step_1_2/result.parquet"),),
         },
-        ("step_3_python_pandas", "step_4_python_pandas"): {
+        ("step_3_step_3_main_input_split", "step_3_python_pandas"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_3_step_3_main_input_split_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path("intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet"),
+            ),
+        },
+        ("step_3_python_pandas", "step_3_aggregate"): {
+            "input_slot_name": "step_3_aggregate_main_input",
+            "output_slot_name": "step_3_main_output",
+            "validator": None,
+            "env_var": None,
+            "filepaths": (Path("intermediate/step_3_python_pandas/{chunk}/result.parquet"),),
+        },
+        ("step_3_aggregate", "step_4_python_pandas"): {
             "input_slot_name": "step_4_main_input",
             "output_slot_name": "step_3_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/step_3_python_pandas/result.parquet"),),
+            "filepaths": (Path("intermediate/step_3_aggregate/result.parquet"),),
         },
         ("step_4_python_pandas", "results"): {
             "input_slot_name": "result",
@@ -711,7 +623,7 @@ def test_merge_combined_implementations(
             "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
         },
     }
-    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+    _check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
 def test_merge_combined_implementations_iteration(
@@ -761,7 +673,7 @@ def test_merge_combined_implementations_iteration(
             "filepaths": (Path("intermediate/step_1_2/result.parquet"),),
         },
     }
-    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+    _check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
 def test_merge_combined_implementations_parallel(
@@ -777,7 +689,9 @@ def test_merge_combined_implementations_parallel(
         "step_1_parallel_split_1_step_1_python_pandas",
         "step_1_parallel_split_2_step_1_python_pandas",
         "steps_1_and_2_combined",
+        "step_3_step_3_main_input_split",
         "step_3_python_pandas",
+        "step_3_aggregate",
         "step_4_python_pandas",
         "results",
     }
@@ -844,19 +758,35 @@ def test_merge_combined_implementations_parallel(
                 ),
             ),
         },
-        ("steps_1_and_2_combined", "step_3_python_pandas"): {
+        ("steps_1_and_2_combined", "step_3_step_3_main_input_split"): {
             "input_slot_name": "step_3_main_input",
             "output_slot_name": "step_2_main_output",
-            "validator": validate_input_file_dummy,
-            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "validator": None,
+            "env_var": None,
             "filepaths": (Path("intermediate/steps_1_and_2_combined/result.parquet"),),
         },
-        ("step_3_python_pandas", "step_4_python_pandas"): {
+        ("step_3_step_3_main_input_split", "step_3_python_pandas"): {
+            "input_slot_name": "step_3_main_input",
+            "output_slot_name": "step_3_step_3_main_input_split_main_output",
+            "validator": validate_input_file_dummy,
+            "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+            "filepaths": (
+                Path("intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet"),
+            ),
+        },
+        ("step_3_python_pandas", "step_3_aggregate"): {
+            "input_slot_name": "step_3_aggregate_main_input",
+            "output_slot_name": "step_3_main_output",
+            "validator": None,
+            "env_var": None,
+            "filepaths": (Path("intermediate/step_3_python_pandas/{chunk}/result.parquet"),),
+        },
+        ("step_3_aggregate", "step_4_python_pandas"): {
             "input_slot_name": "step_4_main_input",
             "output_slot_name": "step_3_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
-            "filepaths": (Path("intermediate/step_3_python_pandas/result.parquet"),),
+            "filepaths": (Path("intermediate/step_3_aggregate/result.parquet"),),
         },
         ("step_4_python_pandas", "results"): {
             "input_slot_name": "result",
@@ -866,7 +796,7 @@ def test_merge_combined_implementations_parallel(
             "filepaths": (Path("intermediate/step_4_python_pandas/result.parquet"),),
         },
     }
-    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+    _check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
 @pytest.mark.parametrize(
@@ -1030,7 +960,7 @@ def test_nested_templated_steps(
             ),
         },
     }
-    check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
+    _check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges)
 
 
 ####################
@@ -1038,7 +968,7 @@ def test_nested_templated_steps(
 ####################
 
 
-def check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
+def _check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
     assert set(pipeline_graph.nodes) == set(expected_nodes)
     assert set(pipeline_graph.edges()) == expected_edges.keys()
     for source, sink, edge_attrs in pipeline_graph.edges(data=True):

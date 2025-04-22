@@ -79,7 +79,7 @@ class InputSlot:
         )
 
 
-@dataclass()
+@dataclass(frozen=True)
 class OutputSlot:
     """A single output slot from a specific node.
 

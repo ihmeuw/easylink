@@ -142,9 +142,8 @@ class Implementation:
 class NullImplementation:
     """A partial :class:`Implementation` interface when no container is needed to run.
 
-    The primary use case for this class is when adding an
-    :class:`~easylink.step.IOStep` - which does not have a corresponding
-    ``Implementation`` - to an :class:`~easylink.graph_components.ImplementationGraph`
+    The primary use case for this class is to be able to add a :class:`~easylink.step.Step`
+    that does *not* have a corresponding ``Implementation`` to an :class:`~easylink.graph_components.ImplementationGraph`
     since adding any new node requires an object with :class:`~easylink.graph_components.InputSlot`
     and :class:`~easylink.graph_components.OutputSlot` names.
 
@@ -156,6 +155,7 @@ class NullImplementation:
         All required ``InputSlots``.
     output_slots
         All required ``OutputSlots``.
+
     """
 
     def __init__(
@@ -178,6 +178,17 @@ class NullImplementation:
 
 
 class NullSplitterImplementation(NullImplementation):
+    """A type of :class:`NullImplementation` specifically for :class:`SplitterSteps<easylink.step.SplitterStep>`.
+
+    See ``NullImplementation`` for inherited attributes.
+
+    Parameters
+    ----------
+    splitter_func_name
+        The name of the splitter function to use.
+
+    """
+
     def __init__(
         self,
         name: str,
@@ -191,6 +202,19 @@ class NullSplitterImplementation(NullImplementation):
 
 
 class NullAggregatorImplementation(NullImplementation):
+    """A type of :class:`NullImplementation` specifically for :class:`AggregatorSteps<easylink.step.AggregatorStep>`.
+
+    See ``NullImplementation`` for inherited attributes.
+
+    Parameters
+    ----------
+    slot_aggregator_mapping
+        A mapping of slot names to their respective aggregation functions.
+    splitter_step_name
+        The name of the step that did the splitting.
+
+    """
+
     def __init__(
         self,
         name: str,
@@ -203,7 +227,7 @@ class NullAggregatorImplementation(NullImplementation):
         self.slot_aggregator_mapping = slot_aggregator_mapping
         """A mapping of slot names to their respective aggregation functions."""
         self.splitter_step_name = splitter_step_name
-        """The name of the step that did the splitting that this is now aggregating."""
+        """The name of the step that did the splitting."""
 
 
 class PartialImplementation:

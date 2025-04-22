@@ -1,18 +1,17 @@
 
 checkpoint:
-    name: "split_foo_rule_main"
+    name: "this_is_a_checkpoint_rule"
     input: 
         files=['some/input/file1', 'some/input/file2'],
-        validations=['baz'],
     output: 
-        output_dir=directory("some/path/to/quux"),
-        checkpoint_file=touch("some/path/to/quux/checkpoint.txt"),
+        output_dir=directory("this/is/the/output/dir"),
+        checkpoint_file=touch("this/is/the/checkpoint.txt"),
     params:
         input_files=lambda wildcards, input: ",".join(input.files),
     localrule: True
-    message: "Splitting foo_rule main into chunks"
+    message: "Splitting this_is_a_checkpoint_rule into chunks"
     run:
-        splitter_utils.this_is_a_splitter(
+        splitter_utils.my_splitter(
             input_files=list(input.files),
             output_dir=output.output_dir,
             desired_chunk_size_mb=0.1,

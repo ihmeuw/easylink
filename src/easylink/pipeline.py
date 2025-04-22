@@ -152,6 +152,7 @@ class Pipeline:
         ]
 
     def _get_checkpoint_filepaths(self) -> dict[str, str]:
+        """Gets a checkpoint filepath for each splitter node."""
         checkpoint_filepaths = {}
         for node_name in self.pipeline_graph.splitter_nodes:
             _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
@@ -327,8 +328,12 @@ use rule start_spark_worker from spark_cluster with:
             is_embarrassingly_parallel=is_embarrassingly_parallel,
         ).write_to_snakefile(self.snakefile_path)
 
-    def _write_checkpoint_rule(self, node_name: str, checkpoint_filepath: str):
-        """TBD"""
+    def _write_checkpoint_rule(self, node_name: str, checkpoint_filepath: str) -> None:
+        """Writes the snakemake checkpoint rule.
+
+        This builds the ``CheckpointRule`` which splits the data into (unprocessed)
+        chunks and saves them in the output directory using wildcards.
+        """
         splitter_func_name = self.pipeline_graph.nodes[node_name][
             "implementation"
         ].splitter_func_name
@@ -353,8 +358,12 @@ use rule start_spark_worker from spark_cluster with:
             checkpoint_filepath=checkpoint_filepath,
         ).write_to_snakefile(self.snakefile_path)
 
-    def _write_aggregation_rule(self, node_name: str, checkpoint_filepath: str):
-        """Writes the snakemake aggregation rule."""
+    def _write_aggregation_rule(self, node_name: str, checkpoint_filepath: str) -> None:
+        """Writes the snakemake aggregation rule.
+
+        This builds the ``AggregationRule`` which aggregates the processed data
+        from the chunks originally created by the ``SplitterRule``.
+        """
         _input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
         input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
         if len(input_files) > 1:

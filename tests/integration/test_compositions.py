@@ -23,16 +23,34 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
     _run_pipeline(schema, test_specific_results_dir, pipeline_specification, input_data)
 
     for loop in [1, 2]:
-        implementation = f"step_1_loop_{loop}_step_1_python_pandas"
-        implementation_subdir = test_specific_results_dir / "intermediate" / implementation
+        intermediate_results_dir = test_specific_results_dir / "intermediate"
+        step_name = f"step_1_loop_{loop}"
         # ensure that the input was split into two
         assert (
-            len(list((implementation_subdir / "input_chunks").rglob("result.parquet"))) == 2
+            len(
+                list(
+                    (intermediate_results_dir / f"{step_name}_step_1_main_input_split").rglob(
+                        "result.parquet"
+                    )
+                )
+            )
+            == 2
         )
         # ensure that each chunk was processed individually
-        assert len(list((implementation_subdir / "processed").rglob("result.parquet"))) == 2
+        assert (
+            len(
+                list(
+                    (
+                        intermediate_results_dir / f"{step_name}_step_1_step_1_python_pandas"
+                    ).rglob("result.parquet")
+                )
+            )
+            == 2
+        )
         # check for aggregated file
-        assert (implementation_subdir / "result.parquet").exists()
+        assert (
+            intermediate_results_dir / f"{step_name}_aggregate" / "result.parquet"
+        ).exists()
 
 
 ####################
