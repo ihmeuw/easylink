@@ -337,13 +337,11 @@ class Step:
         }
 
 
-class IOStep(Step):
-    """A special case type of :class:`Step` used to represent incoming and outgoing data.
+class StandaloneStep(Step, ABC):
+    """A special case type of :class:`Step` that is not implemented on the pipeline.
 
-    ``IOSteps`` are used to handle the incoming and outgoing data to the pipeline;
-    they are inherited by concrete :class:`InputStep` and :class:`OutputStep`
-    classes. These are not typical ``Steps`` in that they do not represent a unit
-    of work to be performed in the pipeline (i.e. there is no container to run) and,
+    These are not typical ``Steps`` in that they do not represent a unit of work
+    to be performed in the pipeline (i.e. there is no container to run) and,
     thus, are not implemented by an :class:`~easylink.implementation.Implementation`.
 
     See :class:`Step` for inherited attributes.
@@ -352,17 +350,17 @@ class IOStep(Step):
 
     @property
     def implementation_node_name(self) -> str:
-        """Dummy name to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+        """Dummy name to allow ``StandaloneSteps`` to be used interchangeably with other ``Steps``.
 
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``StandaloneSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation` and thus do not
         require a different node name than its own ``Step`` name. This property
-        only exists so that ``IOSteps`` can be used interchangeably with other
+        only exists so that ``StandaloneSteps`` can be used interchangeably with other
         ``Steps`` in the codebase.
 
         Returns
         -------
-            The ``IOStep's`` name.
+            The ``StandaloneStep's`` name.
         """
         return self.name
 
@@ -372,12 +370,12 @@ class IOStep(Step):
         combined_implementations: LayeredConfigTree,
         input_data_config: LayeredConfigTree,
     ) -> dict[str, list[str]]:
-        """Dummy validation method to allow ``IOSteps`` to be used interchangeably with other ``Steps``.
+        """Dummy validation method to allow ``StandaloneSteps`` to be used interchangeably with other ``Steps``.
 
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``StandaloneSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation` and thus do not
         require any sort of validation since no new data is created. This method
-        only exists so that ``IOSteps`` can be used interchangeably with other
+        only exists so that ``StandaloneSteps`` can be used interchangeably with other
         ``Steps`` in the codebase.
 
         Returns
@@ -408,18 +406,46 @@ class IOStep(Step):
             self, step_config, combined_implementations, input_data_config
         )
 
+    @abstractmethod
     def add_nodes_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
     ) -> None:
-        """Adds this ``IOStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
+        """Adds this ``StandaloneStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
 
         Notes
         -----
-        Unlike other types of ``Steps``, ``IOSteps`` are not actually implemented
+        Unlike other types of ``Steps``, ``StandaloneSteps`` are not actually implemented
         via an :class:`~easylink.implementation.Implementation`. As such, we
         leverage the :class:`~easylink.implementation.NullImplementation` class
         to generate the graph node.
         """
+        pass
+
+    def add_edges_to_implementation_graph(self, implementation_graph):
+        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
+
+        ``StandaloneSteps`` do not have edges within them in the ``ImplementationGraph``,
+        since they are represented by a single ``NullImplementation`` node, and so we
+        simply pass.
+        """
+        pass
+
+
+class IOStep(StandaloneStep):
+    """A type of :class:`StandaloneStep` used to represent incoming and outgoing data.
+
+    ``IOSteps`` are used to handle the incoming and outgoing data to the pipeline;
+    they are inherited by concrete :class:`InputStep` and :class:`OutputStep`
+    classes.
+
+    See :class:`Step` for inherited attributes.
+
+    """
+
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds a :class:`~easylink.implementation.NullImplementation` node to the :class:`~easylink.graph_components.ImplementationGraph`."""
         implementation_graph.add_node_from_implementation(
             self.name,
             implementation=NullImplementation(
@@ -427,18 +453,9 @@ class IOStep(Step):
             ),
         )
 
-    def add_edges_to_implementation_graph(self, implementation_graph):
-        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
-
-        ``IOSteps`` do not have edges within them in the ``ImplementationGraph``,
-        since they are represented by a single ``NullImplementation`` node, and so we
-        simply pass.
-        """
-        pass
-
 
 class InputStep(IOStep):
-    """A special case type of :class:`Step` used to represent incoming data.
+    """A special case type of :class:`IOStep` used to represent incoming data.
 
     An ``InputStep`` is used to pass data into the pipeline. Since we do not know
     what the data to pass into the pipeline will be a priori, we instantiate an
@@ -446,6 +463,7 @@ class InputStep(IOStep):
     *all* data defined in the input data specification file.
 
     See :class:`IOStep` for inherited attributes.
+
     """
 
     def __init__(self) -> None:
@@ -482,7 +500,7 @@ class InputStep(IOStep):
 
 
 class OutputStep(IOStep):
-    """A special case type of :class:`Step` used to represent final results data.
+    """A special case type of :class:`IOStep` used to represent final results data.
 
     An ``OutputStep`` is used to write the `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_
     Snakefile target rule in the :meth:`easylink.pipeline.Pipeline.build_snakefile`
@@ -1380,13 +1398,11 @@ class EmbarrassinglyParallelStep(Step):
         self.slot_mappings = {"input": input_mappings, "output": output_mappings}
 
 
-class SplitterStep(Step):
-    """A :class:`Step` that splits an :class:`~easylink.graph_components.InputSlot` for parallel processing.
+class SplitterStep(StandaloneStep):
+    """A :class:`StandaloneStep` that splits an :class:`~easylink.graph_components.InputSlot` for parallel processing.
 
     A ``SplitterStep`` is intended to be used in conjunction with a corresponding
     :class:`AggregatorStep` and only during construction of an :class:`EmbarrassinglyParallelStep`.
-    It is *not* an implemented step, i.e. it does not require a container to run
-    and is thus backed by a :class:`~easylink.implementation.NullImplementation`.
 
     See :class:`Step` for inherited attributes.
 
@@ -1411,76 +1427,10 @@ class SplitterStep(Step):
         self.splitter_func_name = splitter_func_name
         """The name of the splitter function to be used."""
 
-    @property
-    def implementation_node_name(self) -> str:
-        """Dummy name to allow ``SplitterSteps`` to be used interchangeably with other ``Steps``.
-
-        Unlike other types of ``Steps``, ``SplitterSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation` and thus do not
-        require a different node name than its own ``Step`` name. This property
-        only exists so that ``SplitterSteps`` can be used interchangeably with other
-        ``Steps`` in the codebase.
-
-        Returns
-        -------
-            The ``SplitterSteps's`` name.
-        """
-        return self.name
-
-    def validate_step(
-        self,
-        step_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> dict[str, list[str]]:
-        """Dummy validation method to allow ``SplitterSteps`` to be used interchangeably with other ``Steps``.
-
-        Unlike other types of ``Steps``, ``SplitterSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation` and thus do not
-        require any sort of validation since no new data is created. This method
-        only exists so that ``SplitterSteps`` can be used interchangeably with other
-        ``Steps`` in the codebase.
-
-        Returns
-        -------
-            An empty dictionary.
-        """
-        return {}
-
-    def set_configuration_state(
-        self,
-        step_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> None:
-        """Sets the configuration state to 'leaf'.
-
-        Parameters
-        ----------
-        step_config
-            The internal configuration of this ``Step``, i.e. it should not include
-            the ``Step's`` name.
-        combined_implementations
-            The configuration for any ``Implementations`` to be combined.
-        input_data_config
-            The input data configuration for the entire pipeline.
-        """
-        self._configuration_state = LeafConfigurationState(
-            self, step_config, combined_implementations, input_data_config
-        )
-
     def add_nodes_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
     ) -> None:
-        """Adds this ``SplitterStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
-
-        Notes
-        -----
-        Unlike other types of ``Steps``, ``SplitterSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation`. As such, we
-        leverage the :class:`~easylink.implementation.NullSplitterImplementation` class
-        to generate the graph node.
-        """
+        """Adds a :class:`~easylink.implementation.NullImplementation` node to the :class:`~easylink.graph_components.ImplementationGraph`."""
         implementation_graph.add_node_from_implementation(
             self.name,
             implementation=NullSplitterImplementation(
@@ -1491,19 +1441,8 @@ class SplitterStep(Step):
             ),
         )
 
-    def add_edges_to_implementation_graph(
-        self, implementation_graph: ImplementationGraph
-    ) -> None:
-        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
 
-        ``SplitterSteps`` do not have edges within them in the ``ImplementationGraph``,
-        since they are represented by a single ``NullSplitterImplementation`` node, and so we
-        simply pass.
-        """
-        pass
-
-
-class AggregatorStep(Step):
+class AggregatorStep(StandaloneStep):
     def __init__(
         self,
         name: str,
@@ -1511,12 +1450,10 @@ class AggregatorStep(Step):
         slot_aggregator_mapping: dict[str, Callable],
         splitter_step_name: str,
     ) -> None:
-        """A :class:`Step` that aggregates :class:`OutputSlots<easylink.graph_components.Outputslot>` after parallel processing.
+        """A :class:`StandaloneStep` that aggregates :class:`OutputSlots<easylink.graph_components.Outputslot>` after parallel processing.
 
         An ``AggregatorStep`` is intended to be used in conjunction with a corresponding
         :class:`SplitterStep` and only during construction of an :class:`EmbarrassinglyParallelStep`.
-        It is *not* an implemented step, i.e. it does not require a container to
-        run and is thus backed by a :class:`~easylink.implementation.NullImplementation`.
 
         See :class:`Step` for inherited attributes.
 
@@ -1546,76 +1483,10 @@ class AggregatorStep(Step):
         self.splitter_step_name = splitter_step_name
         """The name of the ``SplitterStep`` that this ``AggregatorStep`` is associated with."""
 
-    @property
-    def implementation_node_name(self) -> str:
-        """Dummy name to allow ``AggregatorSteps`` to be used interchangeably with other ``Steps``.
-
-        Unlike other types of ``Steps``, ``AggregatorSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation` and thus do not
-        require a different node name than its own ``Step`` name. This property
-        only exists so that ``AggregatorSteps`` can be used interchangeably with other
-        ``Steps`` in the codebase.
-
-        Returns
-        -------
-            The ``AggregatorStep's`` name.
-        """
-        return self.name
-
-    def validate_step(
-        self,
-        step_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> dict[str, list[str]]:
-        """Dummy validation method to allow ``AggregatorSteps`` to be used interchangeably with other ``Steps``.
-
-        Unlike other types of ``Steps``, ``AggregatorSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation` and thus do not
-        require any sort of validation since no new data is created. This method
-        only exists so that ``AggregatorSteps`` can be used interchangeably with other
-        ``Steps`` in the codebase.
-
-        Returns
-        -------
-            An empty dictionary.
-        """
-        return {}
-
-    def set_configuration_state(
-        self,
-        step_config: LayeredConfigTree,
-        combined_implementations: LayeredConfigTree,
-        input_data_config: LayeredConfigTree,
-    ) -> None:
-        """Sets the configuration state to 'leaf'.
-
-        Parameters
-        ----------
-        step_config
-            The internal configuration of this ``Step``, i.e. it should not include
-            the ``Step's`` name.
-        combined_implementations
-            The configuration for any ``Implementations`` to be combined.
-        input_data_config
-            The input data configuration for the entire pipeline.
-        """
-        self._configuration_state = LeafConfigurationState(
-            self, step_config, combined_implementations, input_data_config
-        )
-
     def add_nodes_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
     ) -> None:
-        """Adds this ``AggregatorStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
-
-        Notes
-        -----
-        Unlike other types of ``Steps``, ``AggregatorSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation`. As such, we
-        leverage the :class:`~easylink.implementation.NullSplitterImplementation` class
-        to generate the graph node.
-        """
+        """Adds a :class:`~easylink.implementation.NullImplementation` node to the :class:`~easylink.graph_components.ImplementationGraph`."""
         implementation_graph.add_node_from_implementation(
             self.name,
             implementation=NullAggregatorImplementation(
@@ -1626,17 +1497,6 @@ class AggregatorStep(Step):
                 self.splitter_step_name,
             ),
         )
-
-    def add_edges_to_implementation_graph(
-        self, implementation_graph: ImplementationGraph
-    ) -> None:
-        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
-
-        ``AggregatorSteps`` do not have edges within them in the ``ImplementationGraph``,
-        since they are represented by a single ``NullImplementation`` node, and so we
-        simply pass.
-        """
-        pass
 
 
 class ChoiceStep(Step):
