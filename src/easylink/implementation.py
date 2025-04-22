@@ -48,8 +48,8 @@ class Implementation:
         self,
         schema_steps: list[str],
         implementation_config: LayeredConfigTree,
-        input_slots: Iterable["InputSlot"] = (),
-        output_slots: Iterable["OutputSlot"] = (),
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
         is_embarrassingly_parallel: bool = False,
     ):
         self.name = implementation_config.name
@@ -263,8 +263,8 @@ class PartialImplementation:
         self,
         combined_name: str,
         schema_step: str,
-        input_slots: Iterable["InputSlot"] = (),
-        output_slots: Iterable["OutputSlot"] = (),
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
     ):
         self.combined_name = combined_name
         """The name of the combined implementation of which this ``PartialImplementation``

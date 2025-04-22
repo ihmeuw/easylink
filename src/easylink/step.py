@@ -1226,9 +1226,9 @@ class EmbarrassinglyParallelStep(Step):
         ``EmbarrassinglyParallelSteps`` are not configured by the user to be run
         in parallel. Since it happens on the back end, we need to do somewhat unique
         validations during construction. Specifically,
-        - one and only one :class:`~easylink.graph_components.InputSlot` *must* 
+        - one and only one :class:`~easylink.graph_components.InputSlot` *must*
         be mapped to a splitter method.
-        - all :class:`OutputSlots<easylink.graph_components.OutputSlot>` *must* 
+        - all :class:`OutputSlots<easylink.graph_components.OutputSlot>` *must*
         be mapped to aggregator methods.
         """
         errors = []
