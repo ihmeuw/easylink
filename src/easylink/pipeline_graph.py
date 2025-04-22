@@ -492,6 +492,8 @@ class PipelineGraph(ImplementationGraph):
             implementation = self.nodes[node]["implementation"]
             for src, sink, edge_attrs in self.out_edges(node, data=True):
                 for edge_idx in self[node][sink]:
+                    # splitter nodes rely on snakemake wildcards
+                    # TODO: [MIC-5787] - need to support multiple wildcards at once
                     self[src][sink][edge_idx]["filepaths"] = (
                         str(Path("intermediate") / node / "{chunk}" / "result.parquet"),
                     )
@@ -528,7 +530,7 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
-            (slot_name, env_var, validator,) = (
+            slot_name, env_var, validator = (
                 input_slot.name,
                 input_slot.env_var,
                 input_slot.validator,

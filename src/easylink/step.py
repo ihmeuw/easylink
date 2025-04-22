@@ -364,6 +364,21 @@ class StandaloneStep(Step, ABC):
         """
         return self.name
 
+    @abstractmethod
+    def add_nodes_to_implementation_graph(
+        self, implementation_graph: ImplementationGraph
+    ) -> None:
+        """Adds this ``StandaloneStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
+
+        Notes
+        -----
+        Unlike other types of ``Steps``, ``StandaloneSteps`` are not actually implemented
+        via an :class:`~easylink.implementation.Implementation`. As such, we
+        leverage the :class:`~easylink.implementation.NullImplementation` class
+        to generate the graph node.
+        """
+        pass
+
     def validate_step(
         self,
         step_config: LayeredConfigTree,
@@ -405,21 +420,6 @@ class StandaloneStep(Step, ABC):
         self._configuration_state = LeafConfigurationState(
             self, step_config, combined_implementations, input_data_config
         )
-
-    @abstractmethod
-    def add_nodes_to_implementation_graph(
-        self, implementation_graph: ImplementationGraph
-    ) -> None:
-        """Adds this ``StandaloneStep's`` ``Implementation`` as a node to the :class:`~easylink.graph_components.ImplementationGraph`.
-
-        Notes
-        -----
-        Unlike other types of ``Steps``, ``StandaloneSteps`` are not actually implemented
-        via an :class:`~easylink.implementation.Implementation`. As such, we
-        leverage the :class:`~easylink.implementation.NullImplementation` class
-        to generate the graph node.
-        """
-        pass
 
     def add_edges_to_implementation_graph(self, implementation_graph):
         """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
@@ -1226,10 +1226,10 @@ class EmbarrassinglyParallelStep(Step):
         ``EmbarrassinglyParallelSteps`` are not configured by the user to be run
         in parallel. Since it happens on the back end, we need to do somewhat unique
         validations during construction. Specifically,
-        - one and only one :class:`~easylink.graph_components.InputSlot` *must* include
-        a :attr:`~easylink.graph_components.InputSlot.splitter` method.
-        - all :class:`OutputSlots<easylink.graph_components.OutputSlot>` *must* include
-        an :attr:`~easylink.graph_components.OutputSlot.aggregator` method.
+        - one and only one :class:`~easylink.graph_components.InputSlot` *must* 
+        be mapped to a splitter method.
+        - all :class:`OutputSlots<easylink.graph_components.OutputSlot>` *must* 
+        be mapped to aggregator methods.
         """
         errors = []
 
