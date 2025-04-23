@@ -837,5 +837,5 @@ def check_nodes_and_edges(pipeline_graph, expected_nodes, expected_edges):
             == expected_edges[(source, sink)]["output_slot_name"]
         )
         assert edge_attrs["filepaths"] == tuple(
-            [str(file) for file in expected_edges[(source, sink)]["filepaths"]]
+            str(file) for file in expected_edges[(source, sink)]["filepaths"]
         )

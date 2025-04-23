@@ -1,3 +1,15 @@
+**0.1.13 - 4/21/25**
+
+ - remove graphviz from doc build install
+
+**0.1.12 - 4/1/25**
+
+ - Propagate embarrassingly parallel splitters and aggregators to leaf steps
+
+**0.1.11 - 3/28/25**
+
+ - Refactor the ImplementationGraph recursion logic for clarity
+
 **0.1.10 - 3/25/25**
 
  - Make InputSlots and OutputSlots mutable

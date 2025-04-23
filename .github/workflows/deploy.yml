@@ -23,7 +23,7 @@ jobs:
       - name: Test
         # NOTE: We only run tests not marked as `slow` here since github actions
         # does not have access to the cluster (which is required for some tests). 
-        # This means that we may inadvertenlly deploy code that has failing tests!
+        # This means that we may inadvertently deploy code that has failing tests!
         run: |
           pip install .[test]
           pytest ./tests

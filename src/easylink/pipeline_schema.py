@@ -13,7 +13,7 @@ from pathlib import Path
 
 from layered_config_tree import LayeredConfigTree
 
-from easylink.graph_components import EdgeParams
+from easylink.graph_components import EdgeParams, ImplementationGraph
 from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
 from easylink.step import HierarchicalStep, NonLeafConfigurationState, Step
 
@@ -53,6 +53,26 @@ class PipelineSchema(HierarchicalStep):
 
     def __repr__(self) -> str:
         return f"PipelineSchema.{self.name}"
+
+    def get_implementation_graph(self) -> ImplementationGraph:
+        """Gets the :class:`~easylink.graph_components.ImplementationGraph`.
+
+        The ``PipelineSchema`` is by definition a :class:`~easylink.step.HierarchicalStep`
+        which has a :class:`~easylink.graph_components.StepGraph` containing
+        sub-:class:`Steps<easylink.step.Step>` that need to be unrolled. This method
+        recursively traverses that ``StepGraph`` and its childrens' ``StepGraphs``
+        until all sub-``Steps`` are in a :class:`~easylink.step.LeafConfigurationState`,
+        i.e. all ``Steps`` are implemented by a single ``Implementation`` and we
+        have the desired ``ImplementationGraph``.
+
+        Returns
+        -------
+            The ``ImplementationGraph`` of this ``PipelineSchema``.
+        """
+        implementation_graph = ImplementationGraph()
+        self.add_nodes_to_implementation_graph(implementation_graph)
+        self.add_edges_to_implementation_graph(implementation_graph)
+        return implementation_graph
 
     def validate_step(
         self, pipeline_config: LayeredConfigTree, input_data_config: LayeredConfigTree
