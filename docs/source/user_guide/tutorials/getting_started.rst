@@ -84,7 +84,7 @@ We can view the contents of these Parquet files using Python:
 The other two input files look identical, each with 10k rows.
 
 It can also be useful to setup an alias to more easily preview parquet files. Add the following to your 
-``.bash_aliases`` or ``.bashrc file``, and restart your terminal.
+``.bash_aliases`` or ``.bashrc`` file, and restart your terminal.
 
 .. code-block:: console
 
@@ -132,26 +132,44 @@ define how data moves between steps' input and output slots.
 ``pipeline_schema_constants/development.py`` defines that the pipeline schema requires four steps, that the 
 third step is ``EmbarrassinglyParallel``, that the fourth step is a ``ChoiceStep``, and that all steps have 
 one input except the fourth step, which has two.
+The edges in the ``EDGES`` variable in that file connect the steps, so an output from one becomes an input
+to another.
 
 .. todo::
    Include a diagram for the record linkage schema when available.
 
 An implementation is chosen for each step, which defines a 
-container, script, outputs and other details for a step. The possible implementations for each of the steps in 
+`Singularity container <https://docs.sylabs.io/guides/latest/user-guide/>`_, script,
+outputs and other details for a step. The possible implementations for each of the steps in 
 ``pipeline_schema_constants/development.py`` are defined in ``implementation_metadata.yaml``. For each 
 development schema step, one of these implementations is chosen and specified in the pipeline specification 
 ``specifications/common/pipeline.yaml``.
 
-With this understanding of the schema/implementation/configuration architecture, we can check the inputs 
-to each step in our specified implementation. ``step_4_python_pandas`` in ``implementation_metadata.yaml`` 
+You can see in the ``implementation_metadata.yaml`` that the ``_python_pandas`` implementations we've selected
+for the four steps all use the same Singularity container, or ``image_path``.
+However, the step implementations can't be the exact same, because Step 4 has two inputs.
+The default behavior of the container is to accept a *single* input using the environment variable
+``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the environment variable specified in the single
+input slot defined in ``pipeline_schema_constants/development.py`` for Steps 1, 2, and 3.
+If this default behavior weren't changed for Step 4, ``step_4_python_pandas`` would ignore the second
+input it receives!
+To correct this, ``step_4_python_pandas`` in ``implementation_metadata.yaml``
 passes the value ``"DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"`` 
-to the ``env`` parameter ``INPUT_ENV_VARS``, specifying its two inputs. Note that the default value for 
-``INPUT_ENV_VARS`` in the dummy implementation is ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which will be 
-used for ``step_1_python_pandas``, ``step_2_python_pandas`` and ``step_3_python_pandas`` which do not set a 
-value for ``INPUT_ENV_VARS`` as they only have one input (the default).
+to the ``env`` parameter ``INPUT_ENV_VARS``.
+This changes the behavior of the container to read from both environment variables specified
+on Step 4's input slots, rather than only ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the default value for ``INPUT_ENV_VARS``.
 
 .. note::
-   ``INPUT_ENV_VARS`` will probably not have an analogue in the record linkage pipeline schema.
+   EasyLink wouldn't throw an error if the container's default behavior were used for ``step_4_python_pandas``;
+   EasyLink makes inputs *available* to each implementation according
+   to the definition of the implemented step in the pipeline schema, but it has no way of knowing whether
+   a given implementation is actually *using* those inputs.
+
+.. note::
+   This use of ``env`` in the ``implementation_metadata.yaml`` is a result of using a single container
+   for multiple implementations.
+   In the record linkage pipeline schema, we anticipate there being a separate container for each implementation,
+   so ``INPUT_ENV_VARS`` will probably not have an analogue.
 
 Running the pipeline generates a DAG.svg file in the results directory which shows the implementations 
 and data dependencies in the pipeline.
@@ -273,7 +291,7 @@ ones with four steps which target the development schema. Let's try running anot
 ``e2e/pipeline.yaml``
 ---------------------
 This pipeline is different from ``common/pipeline.yaml`` in that steps 2 and 4 have different implementations 
-(for example, step 2 runs on Spark here), and that steps 2-4 increment the input data, as can be seen by 
+(for example, step 2 runs on Spark here), and that steps 2-4 are configured to increment the counter in the input data by a custom value, as can be seen by
 comparing the YAMLs.
 
 .. code-block:: console
