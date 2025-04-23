@@ -1,3 +1,7 @@
+**0.1.13 - 4/21/25**
+
+ - remove graphviz from doc build install
+
 **0.1.12 - 4/1/25**
 
  - Propagate embarrassingly parallel splitters and aggregators to leaf steps
