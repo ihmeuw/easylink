@@ -1293,11 +1293,16 @@ class EmbarrassinglyParallelStep(Step):
             split_slot=self.input_slots[self.split_slot_name],
             splitter_func_name=self.slot_splitter_mapping[self.split_slot_name].__name__,
         )
-        aggregator_step_name = f"{self.name}_aggregate"
+        aggregator_node_name = f"{self.name}_aggregate"
+        if len(self.output_slots) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
+        output_slot = list(self.output_slots.values())[0]
         aggregator_step = AggregatorStep(
-            aggregator_step_name,
-            output_slots=self.output_slots.values(),
-            slot_aggregator_mapping=self.slot_aggregator_mapping,
+            aggregator_node_name,
+            output_slot=output_slot,
+            aggregator_func_name=self.slot_aggregator_mapping[output_slot.name].__name__,
             splitter_node_name=splitter_node_name,
         )
         self._update_step_graph(splitter_step, aggregator_step)
@@ -1446,8 +1451,8 @@ class AggregatorStep(StandaloneStep):
     def __init__(
         self,
         name: str,
-        output_slots: Iterable[OutputSlot],
-        slot_aggregator_mapping: dict[str, Callable],
+        output_slot: OutputSlot,
+        aggregator_func_name: str,
         splitter_node_name: str,
     ) -> None:
         """A :class:`StandaloneStep` that aggregates :class:`OutputSlots<easylink.graph_components.Outputslot>` after parallel processing.
@@ -1459,9 +1464,8 @@ class AggregatorStep(StandaloneStep):
 
         Parameters
         ----------
-        slot_aggregator_mapping
-            A mapping of all ``OutputSlot`` names to be aggregated and the actual
-            aggregator function to be used.
+        aggregator_func_name
+            The name of the aggregator function to be used.
         splitter_node_name
             The name of the ``SplitterStep`` and its corresponding
             :class:`~easylink.implementation.NullSplitterImplementation` that this ``AggregatorStep``
@@ -1476,11 +1480,10 @@ class AggregatorStep(StandaloneStep):
                     validator=None,
                 )
             ],
-            output_slots=output_slots,
+            output_slots=[output_slot],
         )
-        self.slot_aggregator_mapping = slot_aggregator_mapping
-        """A mapping of all ``OutputSlot`` names to be aggregated and the actual 
-        aggregator function to be used."""
+        self.aggregator_func_name = aggregator_func_name
+        """The name of the aggregator function to be used."""
         self.splitter_node_name = splitter_node_name
         """The name of the ``SplitterStep`` and its corresponding
         :class:`~easylink.implementation.NullSplitterImplementation` that this ``AggregatorStep``
@@ -1496,7 +1499,7 @@ class AggregatorStep(StandaloneStep):
                 self.name,
                 self.input_slots.values(),
                 self.output_slots.values(),
-                self.slot_aggregator_mapping,
+                self.aggregator_func_name,
                 self.splitter_node_name,
             ),
         )

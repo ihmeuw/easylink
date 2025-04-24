@@ -11,7 +11,7 @@ information about what container to run for a given step and other related detai
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -208,8 +208,8 @@ class NullAggregatorImplementation(NullImplementation):
 
     Parameters
     ----------
-    slot_aggregator_mapping
-        A mapping of slot names to their respective aggregation functions.
+    aggregator_func_name
+        The name of the aggregation function to use.
     splitter_node_name
         The name of the :class:`~easylink.step.SplitterStep` and its corresponding
         :class:`NullSplitterImplementation` that did the splitting.
@@ -221,12 +221,12 @@ class NullAggregatorImplementation(NullImplementation):
         name: str,
         input_slots: Iterable[InputSlot],
         output_slots: Iterable[OutputSlot],
-        slot_aggregator_mapping: dict[str, Callable],
+        aggregator_func_name: str,
         splitter_node_name: str,
     ):
         super().__init__(name, input_slots, output_slots)
-        self.slot_aggregator_mapping = slot_aggregator_mapping
-        """A mapping of slot names to their respective aggregation functions."""
+        self.aggregator_func_name = aggregator_func_name
+        """The name of the aggregation function to use."""
         self.splitter_node_name = splitter_node_name
         """The name of the :class:`~easylink.step.SplitterStep` and its corresponding
         :class:`NullSplitterImplementation` that did the splitting."""

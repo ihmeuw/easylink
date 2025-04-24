@@ -372,28 +372,30 @@ use rule start_spark_worker from spark_cluster with:
                 "length 1; wildcards handle the fact that there are actually "
                 "multiple files."
             )
+        if len(output_slots) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
         if len(output_files) > 1:
             raise ValueError(
                 "There should always only be a single output file from an AggregationRule."
             )
         implementation = self.pipeline_graph.nodes[node_name]["implementation"]
-        for output_slot_name, output_slot_attrs in output_slots.items():
-            # We need to aggregate *each* output slot
-            if len(output_slot_attrs["filepaths"]) > 1:
-                raise NotImplementedError(
-                    "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-                )
-            checkpoint_rule_name = f"checkpoints.{implementation.splitter_node_name}"
-            AggregationRule(
-                name=f"{node_name}_{output_slot_name}",
-                input_files=input_files[0],
-                aggregated_output_file=output_files[0],
-                aggregator_func_name=implementation.slot_aggregator_mapping[
-                    output_slot_name
-                ].__name__,
-                checkpoint_filepath=checkpoint_filepath,
-                checkpoint_rule_name=checkpoint_rule_name,
-            ).write_to_snakefile(self.snakefile_path)
+        output_slot_name = list(output_slots.keys())[0]
+        output_slot_attrs = list(output_slots.values())[0]
+        if len(output_slot_attrs["filepaths"]) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
+        checkpoint_rule_name = f"checkpoints.{implementation.splitter_node_name}"
+        AggregationRule(
+            name=f"{node_name}_{output_slot_name}",
+            input_files=input_files[0],
+            aggregated_output_file=output_files[0],
+            aggregator_func_name=implementation.aggregator_func_name,
+            checkpoint_filepath=checkpoint_filepath,
+            checkpoint_rule_name=checkpoint_rule_name,
+        ).write_to_snakefile(self.snakefile_path)
 
     @staticmethod
     def _get_validations(

@@ -1832,9 +1832,11 @@ def _check_embarrassingly_parallel_details(
         == list(ep_step.slot_splitter_mapping.values())[0].__name__
     )
     # check aggregator node has aggregator mappings and also points to splitter
+    implementation = nodes[aggregator_node_name]["implementation"]
+    output_slot_name = list(implementation.output_slots.keys())[0]
     assert (
-        nodes[aggregator_node_name]["implementation"].slot_aggregator_mapping
-        == ep_step.slot_aggregator_mapping
+        implementation.aggregator_func_name
+        == ep_step.slot_aggregator_mapping[output_slot_name].__name__
     )
     assert (
         nodes[aggregator_node_name]["implementation"].splitter_node_name == splitter_node_name
