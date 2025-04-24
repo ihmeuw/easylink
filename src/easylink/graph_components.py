@@ -101,16 +101,6 @@ class OutputSlot:
     name: str
     """The name of the ``OutputSlot``."""
 
-    def __eq__(self, other: Any) -> bool | NotImplementedType:
-        """Checks if two ``OutputSlots`` are equal."""
-        if not isinstance(other, OutputSlot):
-            return NotImplemented
-        return self.name == other.name
-
-    def __hash__(self) -> int:
-        """Hashes an ``OutputSlot``."""
-        return hash(self.name)
-
 
 @dataclass(frozen=True)
 class EdgeParams:

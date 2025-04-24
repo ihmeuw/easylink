@@ -1287,9 +1287,9 @@ class EmbarrassinglyParallelStep(Step):
         input_data_config
             The input data configuration for the entire pipeline.
         """
-        splitter_step_name = f"{self.name}_{self.split_slot_name}_split"
+        splitter_node_name = f"{self.name}_{self.split_slot_name}_split"
         splitter_step = SplitterStep(
-            splitter_step_name,
+            splitter_node_name,
             split_slot=self.input_slots[self.split_slot_name],
             splitter_func_name=self.slot_splitter_mapping[self.split_slot_name].__name__,
         )
@@ -1298,7 +1298,7 @@ class EmbarrassinglyParallelStep(Step):
             aggregator_step_name,
             output_slots=self.output_slots.values(),
             slot_aggregator_mapping=self.slot_aggregator_mapping,
-            splitter_step_name=splitter_step_name,
+            splitter_node_name=splitter_node_name,
         )
         self._update_step_graph(splitter_step, aggregator_step)
         self._update_slot_mappings(splitter_step, aggregator_step)
@@ -1448,7 +1448,7 @@ class AggregatorStep(StandaloneStep):
         name: str,
         output_slots: Iterable[OutputSlot],
         slot_aggregator_mapping: dict[str, Callable],
-        splitter_step_name: str,
+        splitter_node_name: str,
     ) -> None:
         """A :class:`StandaloneStep` that aggregates :class:`OutputSlots<easylink.graph_components.Outputslot>` after parallel processing.
 
@@ -1462,9 +1462,10 @@ class AggregatorStep(StandaloneStep):
         slot_aggregator_mapping
             A mapping of all ``OutputSlot`` names to be aggregated and the actual
             aggregator function to be used.
-        splitter_step_name
-            The name of the ``SplitterStep`` that this ``AggregatorStep`` is associated with.
-
+        splitter_node_name
+            The name of the ``SplitterStep`` and its corresponding
+            :class:`~easylink.implementation.NullSplitterImplementation` that this ``AggregatorStep``
+            is associated with.
         """
         super().__init__(
             name,
@@ -1480,8 +1481,10 @@ class AggregatorStep(StandaloneStep):
         self.slot_aggregator_mapping = slot_aggregator_mapping
         """A mapping of all ``OutputSlot`` names to be aggregated and the actual 
         aggregator function to be used."""
-        self.splitter_step_name = splitter_step_name
-        """The name of the ``SplitterStep`` that this ``AggregatorStep`` is associated with."""
+        self.splitter_node_name = splitter_node_name
+        """The name of the ``SplitterStep`` and its corresponding
+        :class:`~easylink.implementation.NullSplitterImplementation` that this ``AggregatorStep``
+        is associated with."""
 
     def add_nodes_to_implementation_graph(
         self, implementation_graph: ImplementationGraph
@@ -1494,7 +1497,7 @@ class AggregatorStep(StandaloneStep):
                 self.input_slots.values(),
                 self.output_slots.values(),
                 self.slot_aggregator_mapping,
-                self.splitter_step_name,
+                self.splitter_node_name,
             ),
         )
 

@@ -1838,7 +1838,7 @@ def _check_embarrassingly_parallel_details(
         == ep_step.slot_aggregator_mapping
     )
     assert (
-        nodes[aggregator_node_name]["implementation"].splitter_step_name == splitter_node_name
+        nodes[aggregator_node_name]["implementation"].splitter_node_name == splitter_node_name
     )
     # check the rest are embarrassingly parallel
     for node in implemented_node_names:

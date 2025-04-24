@@ -102,7 +102,7 @@ class Pipeline:
             self._write_aggregation_rule(
                 node_name,
                 checkpoint_filepaths[
-                    self.pipeline_graph.nodes[node_name]["implementation"].splitter_step_name
+                    self.pipeline_graph.nodes[node_name]["implementation"].splitter_node_name
                 ],
             )
         return self.snakefile_path
@@ -377,14 +377,13 @@ use rule start_spark_worker from spark_cluster with:
                 "There should always only be a single output file from an AggregationRule."
             )
         implementation = self.pipeline_graph.nodes[node_name]["implementation"]
-        splitter_step_name = implementation.splitter_step_name
         for output_slot_name, output_slot_attrs in output_slots.items():
             # We need to aggregate *each* output slot
             if len(output_slot_attrs["filepaths"]) > 1:
                 raise NotImplementedError(
                     "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
                 )
-            checkpoint_rule_name = f"checkpoints.{splitter_step_name}"
+            checkpoint_rule_name = f"checkpoints.{implementation.splitter_node_name}"
             AggregationRule(
                 name=f"{node_name}_{output_slot_name}",
                 input_files=input_files[0],

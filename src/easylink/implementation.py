@@ -210,8 +210,9 @@ class NullAggregatorImplementation(NullImplementation):
     ----------
     slot_aggregator_mapping
         A mapping of slot names to their respective aggregation functions.
-    splitter_step_name
-        The name of the step that did the splitting.
+    splitter_node_name
+        The name of the :class:`~easylink.step.SplitterStep` and its corresponding
+        :class:`NullSplitterImplementation` that did the splitting.
 
     """
 
@@ -221,13 +222,14 @@ class NullAggregatorImplementation(NullImplementation):
         input_slots: Iterable[InputSlot],
         output_slots: Iterable[OutputSlot],
         slot_aggregator_mapping: dict[str, Callable],
-        splitter_step_name: str,
+        splitter_node_name: str,
     ):
         super().__init__(name, input_slots, output_slots)
         self.slot_aggregator_mapping = slot_aggregator_mapping
         """A mapping of slot names to their respective aggregation functions."""
-        self.splitter_step_name = splitter_step_name
-        """The name of the step that did the splitting."""
+        self.splitter_node_name = splitter_node_name
+        """The name of the :class:`~easylink.step.SplitterStep` and its corresponding
+        :class:`NullSplitterImplementation` that did the splitting."""
 
 
 class PartialImplementation:
