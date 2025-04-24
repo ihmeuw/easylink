@@ -422,7 +422,7 @@ class StandaloneStep(Step, ABC):
         )
 
     def add_edges_to_implementation_graph(self, implementation_graph):
-        """Adds the edges of this ``Step's`` ``Implementation`` to the ``ImplementationGraph``.
+        """Overwrites the super ``Step``'s method to do nothing.
 
         ``StandaloneSteps`` do not have edges within them in the ``ImplementationGraph``,
         since they are represented by a single ``NullImplementation`` node, and so we
