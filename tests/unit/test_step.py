@@ -1209,7 +1209,7 @@ def test_embarrassingly_parallel_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, expected_nodes, ep_step)
+    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
 
 
 @pytest.mark.parametrize(
@@ -1518,7 +1518,7 @@ def test_embarrassingly_parallel_hierarchical_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, expected_nodes, ep_step)
+    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
 
 
 @pytest.fixture
@@ -1639,7 +1639,7 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, expected_nodes, ep_step)
+    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
 
 
 @pytest.fixture
@@ -1790,7 +1790,7 @@ def test_embarrassingly_parallel_parallel_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, expected_nodes, ep_step)
+    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
 
 
 ####################
@@ -1818,7 +1818,6 @@ def _check_nodes_and_edges(
 
 def _check_embarrassingly_parallel_details(
     implementation_graph: ImplementationGraph,
-    expected_nodes: list[str],
     ep_step: EmbarrassinglyParallelStep,
 ) -> None:
     nodes = implementation_graph.nodes
