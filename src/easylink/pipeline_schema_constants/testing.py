@@ -380,8 +380,8 @@ LOOPING_EP_STEP_NODES = [
                     ),
                 ],
             ),
-            splitter={"step_1_main_input": split_data_in_two},
-            aggregator={"step_1_main_output": concatenate_datasets},
+            slot_splitter_mapping={"step_1_main_input": split_data_in_two},
+            slot_aggregator_mapping={"step_1_main_output": concatenate_datasets},
         ),
         self_edges=[
             EdgeParams(

@@ -77,62 +77,26 @@ class PipelineGraph(ImplementationGraph):
         to be run in an embarrassingly parallel way."""
         return any(
             [
-                self.get_embarrassingly_parallel_details(node)["is_embarrassingly_parallel"]
+                self.get_whether_embarrassingly_parallel(node)
                 for node in self.implementation_nodes
             ]
         )
 
-    def get_embarrassingly_parallel_details(self, node: str) -> dict[str, bool]:
+    def get_whether_embarrassingly_parallel(self, node: str) -> dict[str, bool]:
         """Determines whether a node is to be run in an embarrassingly parallel way.
 
         Parameters
         ----------
         node
-            The node name to determine details about whether it is to be run in an
+            The node name to determine whether or not it is to be run in an
             embarrassingly parallel way.
 
         Returns
         -------
-            The details describing whether or not the node is to be run in an embarrassingly
-            parallel way, has a splitter defined, or has an aggregator defined, respectively.
-
-        Raises
-        ------
-        ValueError
-            If the node is marked as being a splitter or aggregator but is not
-            embarrassingly parallel.
-
-        Notes
-        -----
-        A node should never have a splitter or aggregator defined if it is *not*
-        embarrassingly parallel. However, nodes can be embarrassingly parallel
-        but not require splitting or aggregating (e.g. if you are running a series
-        of three substeps 'step_1a', 'step_1b', and 'step_1c' via a
-        :class:`~easylink.step.HierarchicalStep` in an embarrassingly parallel
-        manner, all three are embarrassingly parallel, but only 'step_1a' is to
-        split the input data and only 'step_1c' is the aggregate the results).
+            A boolean indicating whether the node is to be run in an embarrassingly
+            parallel way.
         """
-        implementation = self.nodes[node]["implementation"]
-        details = {
-            "is_embarrassingly_parallel": implementation.is_embarrassingly_parallel,
-            "is_splitter": any(slot.splitter for slot in implementation.input_slots.values()),
-            "is_aggregator": any(
-                slot.aggregator for slot in implementation.output_slots.values()
-            ),
-        }
-
-        unexpected = []
-        if details["is_splitter"] and not details["is_embarrassingly_parallel"]:
-            unexpected.append("splitter")
-        if details["is_aggregator"] and not details["is_embarrassingly_parallel"]:
-            unexpected.append("aggregator")
-        if unexpected:
-            raise ValueError(
-                f"Node '{node}' is marked as being a {' and '.join(unexpected)} "
-                "but not embarrassingly parallel."
-            )
-
-        return details
+        return self.nodes[node]["implementation"].is_embarrassingly_parallel
 
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.
@@ -516,8 +480,29 @@ class PipelineGraph(ImplementationGraph):
                         str(
                             Path("intermediate")
                             / node
+                            # embarrassingly parallel implementations rely on snakemake wildcards
+                            # TODO: [MIC-5787] - need to support multiple wildcards at once
+                            / ("{chunk}" if implementation.is_embarrassingly_parallel else "")
                             / imp_outputs[edge_attrs["output_slot"].name]
                         ),
+                    )
+
+        # Update splitters and aggregators with their filepaths
+        for node in self.splitter_nodes:
+            implementation = self.nodes[node]["implementation"]
+            for src, sink, edge_attrs in self.out_edges(node, data=True):
+                for edge_idx in self[node][sink]:
+                    # splitter nodes rely on snakemake wildcards
+                    # TODO: [MIC-5787] - need to support multiple wildcards at once
+                    self[src][sink][edge_idx]["filepaths"] = (
+                        str(Path("intermediate") / node / "{chunk}" / "result.parquet"),
+                    )
+        for node in self.aggregator_nodes:
+            implementation = self.nodes[node]["implementation"]
+            for src, sink, edge_attrs in self.out_edges(node, data=True):
+                for edge_idx in self[node][sink]:
+                    self[src][sink][edge_idx]["filepaths"] = (
+                        str(Path("intermediate") / node / "result.parquet"),
                     )
 
     @staticmethod
@@ -545,32 +530,21 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for input_slot, filepaths in zip(input_slots, filepaths_by_slot):
-            (
-                slot_name,
-                env_var,
-                validator,
-                splitter,
-                splitter_origin_node,
-                splitter_origin_slot,
-            ) = (
+            slot_name, env_var, validator = (
                 input_slot.name,
                 input_slot.env_var,
                 input_slot.validator,
-                input_slot.splitter,
-                input_slot.splitter_origin_node,
-                input_slot.splitter_origin_slot,
             )
+            attrs = {
+                "env_var": env_var,
+                "validator": validator,
+            }
             if slot_name in condensed_slot_dict:
-                if env_var != condensed_slot_dict[slot_name]["env_var"]:
-                    raise ValueError(
-                        f"Duplicate input slots named '{slot_name}' have different env vars."
-                    )
-                condensed_slot_validator = condensed_slot_dict[slot_name]["validator"]
-                if validator != condensed_slot_validator:
-                    raise ValueError(
-                        f"Duplicate input slots named '{slot_name}' have different validators: "
-                        f"'{validator.__name__}' and '{condensed_slot_validator.__name__}'."
-                    )
+                for key, value in attrs.items():
+                    if value != condensed_slot_dict[slot_name][key]:
+                        raise ValueError(
+                            f"Duplicate input slots named '{slot_name}' have different {key} values."
+                        )
                 # Add the new filepaths to the existing slot
                 condensed_slot_dict[slot_name]["filepaths"].extend(filepaths)
             else:
@@ -578,9 +552,6 @@ class PipelineGraph(ImplementationGraph):
                     "env_var": env_var,
                     "validator": validator,
                     "filepaths": filepaths,
-                    "splitter": splitter,
-                    "splitter_origin_node": splitter_origin_node,
-                    "splitter_origin_slot": splitter_origin_slot,
                 }
         return condensed_slot_dict
 
@@ -603,20 +574,16 @@ class PipelineGraph(ImplementationGraph):
         """
         condensed_slot_dict = {}
         for output_slot, filepaths in zip(output_slots, filepaths_by_slot):
-            slot_name, aggregator, splitter_origin_node, splitter_origin_slot = (
-                output_slot.name,
-                output_slot.aggregator,
-                output_slot.splitter_origin_node,
-                output_slot.splitter_origin_slot,
-            )
+            slot_name = output_slot.name
             if slot_name in condensed_slot_dict:
-                # Add the new filepaths to the existing slot
-                condensed_slot_dict[slot_name]["filepaths"].extend(filepaths)
+                # Add any new/unique filepaths to the existing slot
+                condensed_slot_dict[slot_name]["filepaths"].extend(
+                    item
+                    for item in filepaths
+                    if item not in condensed_slot_dict[slot_name]["filepaths"]
+                )
             else:
                 condensed_slot_dict[slot_name] = {
                     "filepaths": filepaths,
-                    "aggregator": aggregator,
-                    "splitter_origin_node": splitter_origin_node,
-                    "splitter_origin_slot": splitter_origin_slot,
                 }
         return condensed_slot_dict

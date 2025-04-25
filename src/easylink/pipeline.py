@@ -95,6 +95,16 @@ class Pipeline:
         self._write_spark_module()
         for node_name in self.pipeline_graph.implementation_nodes:
             self._write_implementation_rules(node_name)
+        checkpoint_filepaths = self._get_checkpoint_filepaths()
+        for node_name in self.pipeline_graph.splitter_nodes:
+            self._write_checkpoint_rule(node_name, checkpoint_filepaths[node_name])
+        for node_name in self.pipeline_graph.aggregator_nodes:
+            self._write_aggregation_rule(
+                node_name,
+                checkpoint_filepaths[
+                    self.pipeline_graph.nodes[node_name]["implementation"].splitter_node_name
+                ],
+            )
         return self.snakefile_path
 
     ##################
@@ -140,6 +150,27 @@ class Pipeline:
             for slot_name, slot_attrs in input_slot_dict.items()
             if slot_attrs.get("splitter", None)
         ]
+
+    def _get_checkpoint_filepaths(self) -> dict[str, str]:
+        """Gets a checkpoint filepath for each splitter node."""
+        checkpoint_filepaths = {}
+        for node_name in self.pipeline_graph.splitter_nodes:
+            _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
+            if len(output_files) > 1:
+                raise ValueError(
+                    "The list of output files from a CheckpointRule should always be "
+                    "length 1; wildcards handle the fact that there are actually "
+                    "multiple files."
+                )
+            # The snakemake checkpoint rule requires the output parent directory
+            # to the chunked sub-directories (which are created by the splitter).
+            # e.g. if the chunks are eventually going to be written to
+            # 'intermediate/split_step_1_python_pandas/{chunk}/result.parquet',
+            # we need the output directory 'intermediate/split_step_1_python_pandas'
+            checkpoint_filepaths[node_name] = str(
+                Path(output_files[0]).parent.parent / "checkpoint.txt"
+            )
+        return checkpoint_filepaths
 
     #################################
     # Snakefile Rule Writer Methods #
@@ -261,81 +292,17 @@ use rule start_spark_worker from spark_cluster with:
             The name of the ``Implementation`` to write the rule(s) for.
         """
 
-        input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
-        validation_files, validation_rules = self._get_validations(node_name, input_slots)
+        is_embarrassingly_parallel = self.pipeline_graph.get_whether_embarrassingly_parallel(
+            node_name
+        )
+        input_slots, _output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
+        validation_files, validation_rules = self._get_validations(
+            node_name, input_slots, is_embarrassingly_parallel
+        )
         for validation_rule in validation_rules:
             validation_rule.write_to_snakefile(self.snakefile_path)
 
         _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
-        embarrassingly_parallel_details = (
-            self.pipeline_graph.get_embarrassingly_parallel_details(node_name)
-        )
-
-        if embarrassingly_parallel_details["is_embarrassingly_parallel"]:
-            # Update the outputs to be the processed chunks
-            if len(output_files) > 1:
-                raise NotImplementedError(
-                    "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-                )
-            output_files = [
-                str(
-                    Path(output_files[0]).parent
-                    / "processed/{chunk}"
-                    / Path(output_files[0]).name
-                )
-            ]
-
-            # Create a splitter origin mapper to reduce bottlenecks later.
-            # Loop through all implementations and their input slots and generate
-            # a mapping of any splitter origin nodes and slots to the names of the
-            # implementation and input slot that they are defined at.
-            # i.e. {(splitter_origin_node, splitter_origin_slot): (implementation_name, implementation_input_slot)}
-            splitter_origin_mapper = {}
-            checkpoint_output_dir = None
-            for implementation, implementation_node in zip(
-                self.pipeline_graph.implementations, self.pipeline_graph.implementation_nodes
-            ):
-                for input_slot_name, input_slot in implementation.input_slots.items():
-                    key = (input_slot.splitter_origin_node, input_slot.splitter_origin_slot)
-                    if key == (None, None):  # no splitter origin to map
-                        continue
-                    if key not in splitter_origin_mapper:
-                        splitter_origin_mapper[key] = (implementation_node, input_slot_name)
-                    else:
-                        raise ValueError(
-                            f"Duplicate splitter found for {key}: "
-                            f"{splitter_origin_mapper[key]} and {implementation_node}"
-                        )
-
-            # Extract where the checkpoint output dir is located
-            # FIXME: this won't work for ep sections b/c the output directory
-            # for a non-splitting node is definitely not where the checkpoint
-            # directory is located
-            checkpoint_output_dir = output_files[0].split("/processed/")[0] + "/input_chunks"
-            if embarrassingly_parallel_details["is_splitter"]:
-                input_slots_to_split = self._get_input_slots_to_split(input_slots)
-                if len(input_slots_to_split) > 1:
-                    raise NotImplementedError(
-                        "FIXME [MIC-5883] Multiple input slots to split not yet supported"
-                    )
-                input_slot_to_split = input_slots_to_split[0]
-                self._write_checkpoint_rule(
-                    node_name,
-                    input_slots,
-                    input_slot_to_split,
-                    validation_files,
-                    checkpoint_output_dir,
-                )
-
-                # Update the input files to be the unprocessed chunks in '/input_chunks/{chunk}'
-                input_slots[input_slot_to_split]["filepaths"] = [
-                    checkpoint_output_dir + "/{chunk}/result.parquet"
-                ]
-
-            if embarrassingly_parallel_details["is_aggregator"]:
-                self._write_aggregation_rule(
-                    node_name, output_slots, splitter_origin_mapper, checkpoint_output_dir
-                )
 
         implementation = self.pipeline_graph.nodes[node_name]["implementation"]
         diagnostics_dir = Path("diagnostics") / node_name
@@ -358,70 +325,83 @@ use rule start_spark_worker from spark_cluster with:
             image_path=implementation.singularity_image_path,
             script_cmd=implementation.script_cmd,
             requires_spark=implementation.requires_spark,
-            is_embarrassingly_parallel=embarrassingly_parallel_details[
-                "is_embarrassingly_parallel"
-            ],
+            is_embarrassingly_parallel=is_embarrassingly_parallel,
         ).write_to_snakefile(self.snakefile_path)
 
-    def _write_checkpoint_rule(
-        self,
-        node_name,
-        input_slots,
-        input_slot_to_split,
-        validation_files,
-        checkpoint_output_dir,
-    ):
+    def _write_checkpoint_rule(self, node_name: str, checkpoint_filepath: str) -> None:
         """Writes the snakemake checkpoint rule.
 
-        This build the ``CheckpointRule`` which splits the data into (unprocessed)
-        chunks and saves them to this step's '/input_chunks/' subdirectory.
+        This builds the ``CheckpointRule`` which splits the data into (unprocessed)
+        chunks and saves them in the output directory using wildcards.
         """
+        splitter_func_name = self.pipeline_graph.nodes[node_name][
+            "implementation"
+        ].splitter_func_name
+        input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
+        if len(output_files) > 1:
+            raise ValueError(
+                "The list of output files from a CheckpointRule should always be "
+                "length 1; wildcards handle the fact that there are actually "
+                "multiple files."
+            )
+        # The snakemake checkpoint rule requires the output parent directory
+        # to the chunked sub-directories (which are created by the splitter).
+        # e.g. if the chunks are eventually going to be written to
+        # 'intermediate/split_step_1_python_pandas/{chunk}/result.parquet',
+        # we need the output directory 'intermediate/split_step_1_python_pandas'
+        output_dir = str(Path(output_files[0]).parent.parent)
         CheckpointRule(
             name=node_name,
-            input_files=input_slots[input_slot_to_split]["filepaths"],
-            input_slot_to_split=input_slot_to_split,
-            splitter_name=input_slots[input_slot_to_split]["splitter"].__name__,
-            validations=validation_files,
-            output_dir=checkpoint_output_dir,
+            input_files=input_files,
+            splitter_func_name=splitter_func_name,
+            output_dir=output_dir,
+            checkpoint_filepath=checkpoint_filepath,
         ).write_to_snakefile(self.snakefile_path)
 
-    def _write_aggregation_rule(
-        self, node_name, output_slots, splitter_origin_mapper, checkpoint_output_dir
-    ):
-        """Writes the snakemake aggregation rule."""
-        for output_slot_name, output_slot_attrs in output_slots.items():
-            # We need to aggregate *each* output slot
-            if len(output_slot_attrs["filepaths"]) > 1:
-                raise NotImplementedError(
-                    "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
-                )
-            aggregated_output_file = output_slot_attrs["filepaths"][0]
-            # Use the mapping to get the checkpoint_filepath
-            split_node, splitting_slot = splitter_origin_mapper[
-                (
-                    output_slot_attrs["splitter_origin_node"],
-                    output_slot_attrs["splitter_origin_slot"],
-                )
-            ]
-            checkpoint_rule_name = f"checkpoints.split_{split_node}_{splitting_slot}"
-            processed_chunks_to_aggregate = str(
-                Path(aggregated_output_file).parent
-                / "processed/{chunk}"
-                / Path(aggregated_output_file).name
+    def _write_aggregation_rule(self, node_name: str, checkpoint_filepath: str) -> None:
+        """Writes the snakemake aggregation rule.
+
+        This builds the ``AggregationRule`` which aggregates the processed data
+        from the chunks originally created by the ``SplitterRule``.
+        """
+        _input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
+        input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
+        if len(input_files) > 1:
+            raise ValueError(
+                "The list of input files to an AggregationRule should always be "
+                "length 1; wildcards handle the fact that there are actually "
+                "multiple files."
             )
-            AggregationRule(
-                name=node_name,
-                input_files=processed_chunks_to_aggregate,
-                output_slot_name=output_slot_name,
-                aggregated_output_file=aggregated_output_file,
-                aggregator_name=output_slot_attrs["aggregator"].__name__,
-                checkpoint_filepath=str(Path(checkpoint_output_dir) / "checkpoint.txt"),
-                checkpoint_rule_name=checkpoint_rule_name,
-            ).write_to_snakefile(self.snakefile_path)
+        if len(output_slots) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
+        if len(output_files) > 1:
+            raise ValueError(
+                "There should always only be a single output file from an AggregationRule."
+            )
+        implementation = self.pipeline_graph.nodes[node_name]["implementation"]
+        output_slot_name = list(output_slots.keys())[0]
+        output_slot_attrs = list(output_slots.values())[0]
+        if len(output_slot_attrs["filepaths"]) > 1:
+            raise NotImplementedError(
+                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+            )
+        checkpoint_rule_name = f"checkpoints.{implementation.splitter_node_name}"
+        AggregationRule(
+            name=f"{node_name}_{output_slot_name}",
+            input_files=input_files[0],
+            aggregated_output_file=output_files[0],
+            aggregator_func_name=implementation.aggregator_func_name,
+            checkpoint_filepath=checkpoint_filepath,
+            checkpoint_rule_name=checkpoint_rule_name,
+        ).write_to_snakefile(self.snakefile_path)
 
     @staticmethod
     def _get_validations(
-        node_name, input_slots
+        node_name: str,
+        input_slots: dict[str, dict[str, str | list[str]]],
+        is_embarrassingly_parallel: bool,
     ) -> tuple[list[str], list[InputValidationRule]]:
         """Gets the validation rule and its output filepath for each slot for a given node.
 
@@ -440,7 +420,11 @@ use rule start_spark_worker from spark_cluster with:
         validation_rules = []
 
         for input_slot_name, input_slot_attrs in input_slots.items():
-            validation_file = f"input_validations/{node_name}/{input_slot_name}_validator"
+            # embarrassingly parallel implementations rely on snakemake wildcards
+            # TODO: [MIC-5787] - need to support multiple wildcards at once
+            validation_file = f"input_validations/{node_name}/{input_slot_name}_validator" + (
+                "-{chunk}" if is_embarrassingly_parallel else ""
+            )
             validation_files.append(validation_file)
             validation_rules.append(
                 InputValidationRule(

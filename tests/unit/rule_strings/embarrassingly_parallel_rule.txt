@@ -5,6 +5,7 @@ rule:
     input:
         dummy_container_main_input_file_paths=['some/path/to/input_chunks/{chunk}/result.parquet'],
         dummy_container_secondary_input_file_paths=['bar'],
+        validations=['baz'],
     output: ['some/path/to/processed/{chunk}/result.parquet']
     log: "spam/foo_rule-output-{chunk}.log"
     container: "Multipolarity.sif"

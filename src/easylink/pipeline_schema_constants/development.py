@@ -74,8 +74,8 @@ NODES = [
                     ),
                 ],
             ),
-            splitter={"step_3_main_input": split_data_by_size},
-            aggregator={"step_3_main_output": concatenate_datasets},
+            slot_splitter_mapping={"step_3_main_input": split_data_by_size},
+            slot_aggregator_mapping={"step_3_main_output": concatenate_datasets},
         ),
         self_edges=[
             EdgeParams(

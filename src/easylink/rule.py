@@ -145,10 +145,7 @@ rule:
             env_var = attrs["env_var"].lower()
             input_str += f"""
         {env_var}={attrs["filepaths"]},"""
-        if not self.is_embarrassingly_parallel:
-            # validations were already handled in the checkpoint rule - no need
-            # to validate the individual chunks
-            input_str += f"""
+        input_str += f"""
         validations={self.validations},"""
         if self.requires_spark:
             input_str += f"""
@@ -223,7 +220,7 @@ class InputValidationRule(Rule):
     """List of filepaths to validate."""
     output: str
     """Filepath of validation output. It must be used as an input for next rule."""
-    validator: Callable
+    validator: Callable | None
     """Callable that takes a filepath as input. Raises an error if invalid."""
 
     def build_rule(self) -> str:
@@ -276,14 +273,12 @@ class CheckpointRule(Rule):
     """Name of the rule."""
     input_files: list[str]
     """The input filepaths."""
-    input_slot_to_split: str
-    """The input slot being split."""
-    splitter_name: str
+    splitter_func_name: str
     """The splitter function's name."""
-    validations: list[str]
-    """Validation files from previous rule."""
     output_dir: str
     """Output directory path. It must be used as an input for next rule."""
+    checkpoint_filepath: str
+    """Path to the checkpoint file. This is only needed for the bugfix workaround."""
 
     def build_rule(self) -> str:
         """Builds the Snakemake rule for this checkpoint.
@@ -295,19 +290,18 @@ class CheckpointRule(Rule):
         """
         checkpoint = f"""
 checkpoint:
-    name: "split_{self.name}_{self.input_slot_to_split}"
+    name: "{self.name}"
     input: 
         files={self.input_files},
-        validations={self.validations},
     output: 
         output_dir=directory("{self.output_dir}"),
-        checkpoint_file=touch("{self.output_dir}/checkpoint.txt"),
+        checkpoint_file=touch("{self.checkpoint_filepath}"),
     params:
         input_files=lambda wildcards, input: ",".join(input.files),
     localrule: True
-    message: "Splitting {self.name} {self.input_slot_to_split} into chunks"
+    message: "Splitting {self.name} into chunks"
     run:
-        splitter_utils.{self.splitter_name}(
+        splitter_utils.{self.splitter_func_name}(
             input_files=list(input.files),
             output_dir=output.output_dir,
             desired_chunk_size_mb=0.1,
@@ -328,11 +322,9 @@ class AggregationRule(Rule):
     """Name of the rule."""
     input_files: str
     """The input processed chunk files to aggregate."""
-    output_slot_name: str
-    """Name of the :class:`~easylink.graph_components.OutputSlot`."""
     aggregated_output_file: str
     """The final aggregated results file."""
-    aggregator_name: str
+    aggregator_func_name: str
     """The name of the aggregation function to run."""
     checkpoint_filepath: str
     """Path to the checkpoint file. This is only needed for the bugfix workaround."""
@@ -369,7 +361,7 @@ class AggregationRule(Rule):
     def _define_input_function(self):
         """Builds the `input function <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#input-functions>`_."""
         func = f"""
-def get_aggregation_inputs_{self.name}_{self.output_slot_name}(wildcards):
+def get_aggregation_inputs_{self.name}(wildcards):
     checkpoint_file = "{self.checkpoint_filepath}"
     if not os.path.exists(checkpoint_file):
         output, _ = {self.checkpoint_rule_name}.rule.expand_output(wildcards)
@@ -386,13 +378,13 @@ def get_aggregation_inputs_{self.name}_{self.output_slot_name}(wildcards):
         """Builds the rule that runs the aggregation."""
         rule = f"""
 rule:
-    name: "aggregate_{self.name}_{self.output_slot_name}"
-    input: get_aggregation_inputs_{self.name}_{self.output_slot_name}
+    name: "{self.name}"
+    input: get_aggregation_inputs_{self.name}
     output: {[self.aggregated_output_file]}
     localrule: True
-    message: "Aggregating {self.name} {self.output_slot_name}"
+    message: "Aggregating {self.name}"
     run:
-        aggregator_utils.{self.aggregator_name}(
+        aggregator_utils.{self.aggregator_func_name}(
             input_files=list(input),
             output_filepath="{self.aggregated_output_file}",
         )"""

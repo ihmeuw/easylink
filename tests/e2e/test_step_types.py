@@ -49,7 +49,7 @@ def test_step_types(
     input_data = "common/input_data.yaml"
     computing_environment = "common/environment_local.yaml"
     with capsys.disabled():  # disabled so we can monitor job submissions
-        print("\n\n*** RUNNING TEST ***\n" f"[{pipeline_specification}]\n")
+        print("\n\n*** STARTING RUN ***\n" f"[{pipeline_specification}]\n")
 
         cmd = (
             "easylink run "
@@ -66,14 +66,20 @@ def test_step_types(
             stderr=sys.stderr,
             check=True,
         )
-        final_output = test_specific_results_dir / "result.parquet"
-        assert final_output.exists()
+        print("\n\n*** END OF RUN ***\n" f"[{pipeline_specification}]\n")
 
-        # Check that we get directories for particular implementations
-        diagnostics_dir = test_specific_results_dir / "diagnostics"
-        for implementation in implementations:
-            assert (diagnostics_dir / implementation).exists()
-            assert (
-                test_specific_results_dir / "intermediate" / implementation / "result.parquet"
-            ).exists()
-        print("\n\n*** END OF TEST ***\n" f"[{pipeline_specification}]\n")
+    assert (test_specific_results_dir / "result.parquet").exists()
+
+    # Check that we get directories for particular implementations
+    for implementation in implementations:
+        assert (test_specific_results_dir / "diagnostics" / implementation).exists()
+        # step_3 is embarrassingly parallel so the final results land in _aggregate/
+        aggregate_mapping = {
+            "step_3_python_pandas": "step_3_aggregate",
+            "step_3_loop_1_step_3_python_pandas": "step_3_loop_1_aggregate",
+            "step_3_loop_2_step_3_python_pandas": "step_3_loop_2_aggregate",
+        }
+        subdir = aggregate_mapping.get(implementation, implementation)
+        assert (
+            test_specific_results_dir / "intermediate" / subdir / "result.parquet"
+        ).exists()

@@ -82,66 +82,27 @@ rule:
         '''
 rule:
     name: "step_3_python_pandas_step_3_main_input_validator"
-    input: ['intermediate/step_2_python_pandas/result.parquet']
-    output: touch("input_validations/step_3_python_pandas/step_3_main_input_validator")
+    input: ['intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet']
+    output: touch("input_validations/step_3_python_pandas/step_3_main_input_validator-{chunk}")
     localrule: True         
     message: "Validating step_3_python_pandas input slot step_3_main_input"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
-checkpoint:
-    name: "split_step_3_python_pandas_step_3_main_input"
-    input: 
-        files=['intermediate/step_2_python_pandas/result.parquet'],
-        validations=['input_validations/step_3_python_pandas/step_3_main_input_validator'],
-    output: 
-        output_dir=directory("intermediate/step_3_python_pandas/input_chunks"),
-        checkpoint_file=touch("intermediate/step_3_python_pandas/input_chunks/checkpoint.txt"),
-    params:
-        input_files=lambda wildcards, input: ",".join(input.files),
-    localrule: True
-    message: "Splitting step_3_python_pandas step_3_main_input into chunks"
-    run:
-        splitter_utils.split_data_by_size(
-            input_files=list(input.files),
-            output_dir=output.output_dir,
-            desired_chunk_size_mb=0.1,
-        )
-def get_aggregation_inputs_step_3_python_pandas_step_3_main_output(wildcards):
-    checkpoint_file = "intermediate/step_3_python_pandas/input_chunks/checkpoint.txt"
-    if not os.path.exists(checkpoint_file):
-        output, _ = checkpoints.split_step_3_python_pandas_step_3_main_input.rule.expand_output(wildcards)
-        raise IncompleteCheckpointException(checkpoints.split_step_3_python_pandas_step_3_main_input.rule, checkpoint_target(output[0]))
-    checkpoint_output = glob.glob(f"{checkpoints.split_step_3_python_pandas_step_3_main_input.get(**wildcards).output.output_dir}/*/")
-    chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
-    return expand(
-        "intermediate/step_3_python_pandas/processed/{chunk}/result.parquet",
-        chunk=chunks
-    )
-rule:
-    name: "aggregate_step_3_python_pandas_step_3_main_output"
-    input: get_aggregation_inputs_step_3_python_pandas_step_3_main_output
-    output: ['intermediate/step_3_python_pandas/result.parquet']
-    localrule: True
-    message: "Aggregating step_3_python_pandas step_3_main_output"
-    run:
-        aggregator_utils.concatenate_datasets(
-            input_files=list(input),
-            output_filepath="intermediate/step_3_python_pandas/result.parquet",
-        )
 rule:
     name: "step_3_python_pandas"
     message: "Running step_3 implementation: step_3_python_pandas"
     input:
-        dummy_container_main_input_file_paths=['intermediate/step_3_python_pandas/input_chunks/{chunk}/result.parquet'],        
-    output: ['intermediate/step_3_python_pandas/processed/{chunk}/result.parquet']
+        dummy_container_main_input_file_paths=['intermediate/step_3_step_3_main_input_split/{chunk}/result.parquet'],
+        validations=['input_validations/step_3_python_pandas/step_3_main_input_validator-{chunk}'], 
+    output: ['intermediate/step_3_python_pandas/{chunk}/result.parquet']
     log: "diagnostics/step_3_python_pandas/step_3_python_pandas-output-{chunk}.log"
     container: "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/step_3_python_pandas/processed/{wildcards.chunk}/result.parquet
+        export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/step_3_python_pandas/{wildcards.chunk}/result.parquet
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/step_3_python_pandas
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/step_3_python_pandas/input_chunks/{wildcards.chunk}/result.parquet
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/step_3_step_3_main_input_split/{wildcards.chunk}/result.parquet
         python /dummy_step.py > {log} 2>&1
         '''
 rule:
@@ -155,7 +116,7 @@ rule:
             validation_utils.validate_input_file_dummy(f)
 rule:
     name: "step_4_python_pandas_step_4_main_input_validator"
-    input: ['intermediate/step_3_python_pandas/result.parquet']
+    input: ['intermediate/step_3_aggregate/result.parquet']
     output: touch("input_validations/step_4_python_pandas/step_4_main_input_validator")
     localrule: True         
     message: "Validating step_4_python_pandas input slot step_4_main_input"
@@ -167,7 +128,7 @@ rule:
     message: "Running step_4 implementation: step_4_python_pandas"
     input:
         dummy_container_secondary_input_file_paths=['{test_dir}/input_data1/file1.csv', '{test_dir}/input_data2/file2.csv'],
-        dummy_container_main_input_file_paths=['intermediate/step_3_python_pandas/result.parquet'],
+        dummy_container_main_input_file_paths=['intermediate/step_3_aggregate/result.parquet'],
         validations=['input_validations/step_4_python_pandas/step_4_secondary_input_validator', 'input_validations/step_4_python_pandas/step_4_main_input_validator'],
     output: ['intermediate/step_4_python_pandas/result.parquet']
     log: "diagnostics/step_4_python_pandas/step_4_python_pandas-output.log"
@@ -177,7 +138,46 @@ rule:
         export DUMMY_CONTAINER_OUTPUT_PATHS=intermediate/step_4_python_pandas/result.parquet
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=diagnostics/step_4_python_pandas
         export DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS={test_dir}/input_data1/file1.csv,{test_dir}/input_data2/file2.csv
-        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/step_3_python_pandas/result.parquet
+        export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=intermediate/step_3_aggregate/result.parquet
         export INPUT_ENV_VARS=DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
         python /dummy_step.py > {log} 2>&1
         '''
+checkpoint:
+    name: "step_3_step_3_main_input_split"
+    input: 
+        files=['intermediate/step_2_python_pandas/result.parquet'],
+    output: 
+        output_dir=directory("intermediate/step_3_step_3_main_input_split"),
+        checkpoint_file=touch("intermediate/step_3_step_3_main_input_split/checkpoint.txt"),
+    params:
+        input_files=lambda wildcards, input: ",".join(input.files),
+    localrule: True
+    message: "Splitting step_3_step_3_main_input_split into chunks"
+    run:
+        splitter_utils.split_data_by_size(
+            input_files=list(input.files),
+            output_dir=output.output_dir,
+            desired_chunk_size_mb=0.1,
+        )
+def get_aggregation_inputs_step_3_aggregate_step_3_main_output(wildcards):
+    checkpoint_file = "intermediate/step_3_step_3_main_input_split/checkpoint.txt"
+    if not os.path.exists(checkpoint_file):
+        output, _ = checkpoints.step_3_step_3_main_input_split.rule.expand_output(wildcards)
+        raise IncompleteCheckpointException(checkpoints.step_3_step_3_main_input_split.rule, checkpoint_target(output[0]))
+    checkpoint_output = glob.glob(f"{checkpoints.step_3_step_3_main_input_split.get(**wildcards).output.output_dir}/*/")
+    chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
+    return expand(
+        "intermediate/step_3_python_pandas/{chunk}/result.parquet",
+        chunk=chunks
+    )
+rule:
+    name: "step_3_aggregate_step_3_main_output"
+    input: get_aggregation_inputs_step_3_aggregate_step_3_main_output
+    output: ['intermediate/step_3_aggregate/result.parquet']
+    localrule: True
+    message: "Aggregating step_3_aggregate_step_3_main_output"
+    run:
+        aggregator_utils.concatenate_datasets(
+            input_files=list(input),
+            output_filepath="intermediate/step_3_aggregate/result.parquet",
+        )
