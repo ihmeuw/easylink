@@ -71,7 +71,9 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
         "input_data",
         "step_1_python_pandas",
         "step_2_python_pandas",
+        "step_3_step_3_main_input_split",
         "step_3_python_pandas",
+        "step_3_aggregate",
         "step_4_python_pandas",
         "results",
     ]
@@ -117,30 +119,48 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
         ),
         (
             "step_2_python_pandas",
-            "step_3_python_pandas",
+            "step_3_step_3_main_input_split",
             {
                 "output_slot": OutputSlot("step_2_main_output"),
                 "input_slot": InputSlot(
                     name="step_3_main_input",
+                    env_var=None,
+                    validator=None,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_3_step_3_main_input_split",
+            "step_3_python_pandas",
+            {
+                "output_slot": OutputSlot("step_3_step_3_main_input_split_main_output"),
+                "input_slot": InputSlot(
+                    name="step_3_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                     validator=validate_input_file_dummy,
-                    splitter=split_data_by_size,
-                    splitter_origin_node="step_3",
-                    splitter_origin_slot="step_3_main_input",
                 ),
                 "filepaths": None,
             },
         ),
         (
             "step_3_python_pandas",
+            "step_3_aggregate",
+            {
+                "output_slot": OutputSlot("step_3_main_output"),
+                "input_slot": InputSlot(
+                    name="step_3_aggregate_main_input",
+                    env_var=None,
+                    validator=None,
+                ),
+                "filepaths": None,
+            },
+        ),
+        (
+            "step_3_aggregate",
             "step_4_python_pandas",
             {
-                "output_slot": OutputSlot(
-                    "step_3_main_output",
-                    aggregator=concatenate_datasets,
-                    splitter_origin_node="step_3",
-                    splitter_origin_slot="step_3_main_input",
-                ),
+                "output_slot": OutputSlot("step_3_main_output"),
                 "input_slot": InputSlot(
                     name="step_4_main_input",
                     env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
