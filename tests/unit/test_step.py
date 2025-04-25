@@ -118,6 +118,13 @@ def test_basic_step_implementation_graph(
     )
 
 
+def test_basic_step_missing_names_raises() -> None:
+    with pytest.raises(
+        ValueError, match="All Steps must contain a step_name, name, or both."
+    ):
+        Step(step_name=None)
+
+
 @pytest.fixture
 def hierarchical_step_params() -> dict[str, Any]:
     return {

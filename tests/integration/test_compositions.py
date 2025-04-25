@@ -40,9 +40,9 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
         assert (
             len(
                 list(
-                    (
-                        intermediate_results_dir / f"{step_name}_step_1_step_1_python_pandas"
-                    ).rglob("result.parquet")
+                    (intermediate_results_dir / f"{step_name}_step_1_python_pandas").rglob(
+                        "result.parquet"
+                    )
                 )
             )
             == 2

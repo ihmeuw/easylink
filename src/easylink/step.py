@@ -85,7 +85,7 @@ class Step:
 
     def __init__(
         self,
-        step_name: str,
+        step_name: str | None,
         name: str | None = None,
         input_slots: Iterable[InputSlot] = (),
         output_slots: Iterable[OutputSlot] = (),
@@ -93,10 +93,12 @@ class Step:
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
         is_embarrassingly_parallel: bool = False,
     ) -> None:
+        if not step_name and not name:
+            raise ValueError("All Steps must contain a step_name, name, or both.")
         self.step_name = step_name
         """The name of the pipeline step in the ``PipelineSchema``. It must also match
         the key in the implementation metadata file to be used to run this ``Step``."""
-        self.name = name if name else step_name
+        self._name = name if name else step_name
         """The name of this ``Step's`` node in its :class:`easylink.graph_components.StepGraph`. 
         This can be different from the ``step_name`` due to the need for disambiguation 
         during the process of flattening the ``Stepgraph``, e.g. unrolling loops, etc. 
@@ -118,6 +120,20 @@ class Step:
         """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
         """This ``Step's`` :class:`~easylink.step.ConfigurationState`."""
+
+    @property
+    def name(self):
+        """The name of this ``Step's`` node in its :class:`easylink.graph_components.StepGraph`.
+        This can be different from the ``step_name`` due to the need for disambiguation
+        during the process of flattening the ``Stepgraph``, e.g. unrolling loops, etc.
+        For example, if step 1 is looped multiple times, each node would have a
+        ``step_name`` of, perhaps, "step_1" but unique ``names`` ("step_1_loop_1", etc)."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """Sets the ``name`` of this ``Step``."""
+        self._name = value
 
     @property
     def config_key(self):
@@ -165,8 +181,9 @@ class Step:
         node_names = []
         step_names = []
         while step:
-            node_names.append(step.name)
-            step_names.append(step.step_name)
+            if step.step_name:
+                node_names.append(step.name)
+                step_names.append(step.step_name)
             step = step.parent_step
 
         prefix = []
@@ -1200,8 +1217,8 @@ class EmbarrassinglyParallelStep(Step):
         slot_aggregator_mapping: dict[str, Callable],
     ) -> None:
         super().__init__(
-            step.step_name,
-            step.name,
+            step_name=None,
+            name=step.name,
             is_embarrassingly_parallel=True,
         )
         self.slot_splitter_mapping = slot_splitter_mapping
@@ -1219,6 +1236,12 @@ class EmbarrassinglyParallelStep(Step):
         # NOTE: We validated that the slot_splitter_mapping has only one item in self._validate()
         self.split_slot_name = list(self.slot_splitter_mapping.keys())[0]
         """The name of the ``InputSlot`` to be split."""
+
+    @Step.name.setter
+    def name(self, value: str) -> None:
+        """Changes the name of the ``EmbarrassinglyParallelStep`` and the underlying :class:`Step` to the given value."""
+        self._name = value
+        self.step._name = value
 
     def _validate(self) -> None:
         """Validates the ``EmbarrassinglyParallelStep``.
