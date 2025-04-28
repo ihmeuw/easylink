@@ -119,11 +119,13 @@ class PipelineGraph(ImplementationGraph):
             )
         )
         output_files = list(
-            itertools.chain.from_iterable(
-                [
-                    edge_attrs["filepaths"]
-                    for _, _, edge_attrs in self.out_edges(node, data=True)
-                ]
+            set(
+                itertools.chain.from_iterable(
+                    [
+                        edge_attrs["filepaths"]
+                        for _, _, edge_attrs in self.out_edges(node, data=True)
+                    ]
+                )
             )
         )
         return input_files, output_files

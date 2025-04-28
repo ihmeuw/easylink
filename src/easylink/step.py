@@ -1288,6 +1288,49 @@ class EmbarrassinglyParallelStep(Step):
         if errors:
             raise ValueError("\n".join(errors))
 
+    def validate_step(
+        self,
+        step_config: LayeredConfigTree,
+        combined_implementations: LayeredConfigTree,
+        input_data_config: LayeredConfigTree,
+    ) -> dict[str, list[str]]:
+        """Validates the ``TemplatedStep``.
+
+        Regardless of whether or not a :attr:`Step.config_key` is set, we always
+        validate the base ``Step`` used to create the ``TemplatedStep``. If a
+        ``config_key`` is indeed set (that is, there is some multiplicity), we
+        complete additional validations.
+
+        Parameters
+        ----------
+        step_config
+            The internal configuration of this ``Step``, i.e. it should not include
+            the ``Step's`` name.
+        combined_implementations
+            The configuration for any implementations to be combined.
+        input_data_config
+            The input data configuration for the entire pipeline.
+
+        Returns
+        -------
+            A dictionary of errors, where the keys are the ``TemplatedStep`` name
+            and the values are lists of error messages associated with the given
+            ``TemplatedStep``.
+
+        Notes
+        -----
+        If the ``TemplatedStep`` does not validate (i.e. errors are found and the returned
+        dictionary is non-empty), the tool will exit and the pipeline will not run.
+
+        We attempt to batch error messages as much as possible, but there may be
+        times where the configuration is so ill-formed that we are unable to handle
+        all issues in one pass. In these cases, new errors may be found after the
+        initial ones are handled.
+        """
+        return self.step.validate_step(
+            step_config, combined_implementations, input_data_config
+        )
+
     def set_configuration_state(
         self,
         step_config: LayeredConfigTree,

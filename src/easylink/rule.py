@@ -320,7 +320,7 @@ class AggregationRule(Rule):
 
     name: str
     """Name of the rule."""
-    input_files: str
+    input_files: list[str]
     """The input processed chunk files to aggregate."""
     aggregated_output_file: str
     """The final aggregated results file."""
@@ -368,10 +368,10 @@ def get_aggregation_inputs_{self.name}(wildcards):
         raise IncompleteCheckpointException({self.checkpoint_rule_name}.rule, checkpoint_target(output[0]))
     checkpoint_output = glob.glob(f"{{{self.checkpoint_rule_name}.get(**wildcards).output.output_dir}}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
-    return expand(
-        "{self.input_files}",
-        chunk=chunks
-    )"""
+    input_files = []
+    for filepath in {self.input_files}:
+        input_files.extend(expand(filepath, chunk=chunks))
+    return input_files"""
         return func
 
     def _define_aggregator_rule(self):

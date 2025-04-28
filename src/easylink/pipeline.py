@@ -156,7 +156,7 @@ class Pipeline:
         checkpoint_filepaths = {}
         for node_name in self.pipeline_graph.splitter_nodes:
             _input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
-            if len(output_files) > 1:
+            if len(set(output_files)) > 1:
                 raise ValueError(
                     "The list of output files from a CheckpointRule should always be "
                     "length 1; wildcards handle the fact that there are actually "
@@ -366,12 +366,6 @@ use rule start_spark_worker from spark_cluster with:
         """
         _input_slots, output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
         input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
-        if len(input_files) > 1:
-            raise ValueError(
-                "The list of input files to an AggregationRule should always be "
-                "length 1; wildcards handle the fact that there are actually "
-                "multiple files."
-            )
         if len(output_slots) > 1:
             raise NotImplementedError(
                 "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
@@ -390,7 +384,7 @@ use rule start_spark_worker from spark_cluster with:
         checkpoint_rule_name = f"checkpoints.{implementation.splitter_node_name}"
         AggregationRule(
             name=f"{node_name}_{output_slot_name}",
-            input_files=input_files[0],
+            input_files=input_files,
             aggregated_output_file=output_files[0],
             aggregator_func_name=implementation.aggregator_func_name,
             checkpoint_filepath=checkpoint_filepath,
