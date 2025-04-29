@@ -1,10 +1,13 @@
 from pathlib import Path
 
+import pandas as pd
+import pyarrow.parquet as pq
 import pytest
 
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
 from easylink.runner import main
+from easylink.utilities.data_utils import load_yaml
 from tests.conftest import SPECIFICATIONS_DIR
 
 COMMON_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "common"
@@ -20,10 +23,12 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
     schema = PipelineSchema("looping_ep_step", *TESTING_SCHEMA_PARAMS["looping_ep_step"])
 
     # Run the pipeline. Snakemake will exit at the end so we need to catch that here
-    _run_pipeline(schema, test_specific_results_dir, pipeline_specification, input_data)
+    _run_pipeline_and_confirm_finished(
+        schema, test_specific_results_dir, pipeline_specification, input_data
+    )
 
+    intermediate_results_dir = test_specific_results_dir / "intermediate"
     for loop in [1, 2]:
-        intermediate_results_dir = test_specific_results_dir / "intermediate"
         step_name = f"step_1_loop_{loop}"
         # ensure that the input was split into two
         assert (
@@ -53,12 +58,89 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
         ).exists()
 
 
+@pytest.mark.slow
+def test_embarrassingly_parallel_parallel_step(test_specific_results_dir: Path) -> None:
+    pipeline_specification = EP_SPECIFICATIONS_DIR / "pipeline_parallel_step.yaml"
+    input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
+
+    # Load the schema to test against
+    schema = PipelineSchema("ep_parallel_step", *TESTING_SCHEMA_PARAMS["ep_parallel_step"])
+
+    # Run the pipeline. Snakemake will exit at the end so we need to catch that here
+    _run_pipeline_and_confirm_finished(
+        schema, test_specific_results_dir, pipeline_specification, input_data
+    )
+
+    intermediate_results_dir = test_specific_results_dir / "intermediate"
+    # ensure that the input was split into two
+    assert (
+        len(
+            list(
+                (intermediate_results_dir / "step_1_step_1_main_input_split").rglob(
+                    "result.parquet"
+                )
+            )
+        )
+        == 2
+    )
+    for split in [1, 2]:
+        step_name = f"step_1_parallel_split_{split}"
+        # ensure that each chunk was processed individually
+        assert (
+            len(
+                list(
+                    (intermediate_results_dir / f"{step_name}_step_1_python_pandas").rglob(
+                        "result.parquet"
+                    )
+                )
+            )
+            == 2
+        )
+    # check for aggregated file
+    aggregated_filepath = intermediate_results_dir / "step_1_aggregate" / "result.parquet"
+    assert aggregated_filepath.exists()
+    # check that aggregated file was passed along correctly (i.e. made it to the next
+    # step, which for this schema is the output step)
+    df_aggregated = pd.read_parquet(aggregated_filepath)
+    df_final = pd.read_parquet(test_specific_results_dir / "result.parquet")
+    assert df_aggregated.equals(df_final)
+    # check that the aggregated file is the expected shape
+    input_num_rows = 0
+    input_filepaths = load_yaml(input_data)
+    for filepath in input_filepaths.values():
+        input_num_rows += pq.read_metadata(filepath).num_rows
+    # The embarrassingly parallel splitting shouldn't increase the number of rows
+    # in and of itself, but the underlying parallel step does. We had two
+    # splits and so expect there to be twice as many rows in the final result.
+    assert len(df_final) == input_num_rows * 2
+    # We have run step_1 exactly one time on each of the four subsets of data and
+    # so we expect the final counter to be 1 and to only have two new added_columns
+    # (0 and 1)
+    assert all(df_final["counter"] == 1)
+    assert [column for column in df_final.columns if column.startswith("added_column")] == [
+        "added_column_0",
+        "added_column_1",
+    ]
+
+
+@pytest.mark.skip(reason="TODO [MIC-5980]")
+@pytest.mark.slow
+def test_embarrassingly_parallel_loop_step(test_specific_results_dir: Path) -> None:
+    ...
+
+
+@pytest.mark.skip(reason="TODO [MIC-5979]")
+@pytest.mark.slow
+def test_embarrassingly_parallel_hierarchical_step(test_specific_results_dir: Path) -> None:
+    ...
+
+
 ####################
 # Helper Functions #
 ####################
 
 
-def _run_pipeline(
+def _run_pipeline_and_confirm_finished(
     schema: PipelineSchema,
     results_dir: Path,
     pipeline_specification: Path,

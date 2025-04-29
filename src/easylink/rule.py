@@ -320,7 +320,7 @@ class AggregationRule(Rule):
 
     name: str
     """Name of the rule."""
-    input_files: str
+    input_files: list[str]
     """The input processed chunk files to aggregate."""
     aggregated_output_file: str
     """The final aggregated results file."""
@@ -360,6 +360,11 @@ class AggregationRule(Rule):
 
     def _define_input_function(self):
         """Builds the `input function <https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#input-functions>`_."""
+        # NOTE: In the f-string below, we serialize the list `self.input_files`
+        # into a string which must later be executed as python code (by snakemake).
+        # Let's expand the list into a string representation of a python list so that
+        # we explicitly rely on `eval(repr(self.input_files)) == self.input_files`.
+        input_files_list_str = repr(self.input_files)
         func = f"""
 def get_aggregation_inputs_{self.name}(wildcards):
     checkpoint_file = "{self.checkpoint_filepath}"
@@ -368,10 +373,10 @@ def get_aggregation_inputs_{self.name}(wildcards):
         raise IncompleteCheckpointException({self.checkpoint_rule_name}.rule, checkpoint_target(output[0]))
     checkpoint_output = glob.glob(f"{{{self.checkpoint_rule_name}.get(**wildcards).output.output_dir}}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
-    return expand(
-        "{self.input_files}",
-        chunk=chunks
-    )"""
+    input_files = []
+    for filepath in {input_files_list_str}:
+        input_files.extend(expand(filepath, chunk=chunks))
+    return input_files"""
         return func
 
     def _define_aggregator_rule(self):

@@ -6,10 +6,10 @@ def get_aggregation_inputs_this_is_an_aggregation_rule(wildcards):
         raise IncompleteCheckpointException(checkpoints.this_is_a_checkpoint_rule.rule, checkpoint_target(output[0]))
     checkpoint_output = glob.glob(f"{checkpoints.this_is_a_checkpoint_rule.get(**wildcards).output.output_dir}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
-    return expand(
-        "these/are/processed/{chunk}/result.parquet",
-        chunk=chunks
-    )
+    input_files = []
+    for filepath in ['these/are/processed/{chunk}/result.parquet']:
+        input_files.extend(expand(filepath, chunk=chunks))
+    return input_files
 rule:
     name: "this_is_an_aggregation_rule"
     input: get_aggregation_inputs_this_is_an_aggregation_rule
