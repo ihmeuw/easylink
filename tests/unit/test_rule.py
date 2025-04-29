@@ -175,7 +175,7 @@ def test_checkpoint_rule_build_rule():
 def test_aggregation_rule_build_rule():
     rule = AggregationRule(
         name="this_is_an_aggregation_rule",
-        input_files="these/are/processed/{chunk}/result.parquet",
+        input_files=["these/are/processed/{chunk}/result.parquet"],
         aggregated_output_file="some/path/to/aggregated/results/result.parquet",
         aggregator_func_name="my_aggregator",
         checkpoint_filepath="this/is/the/checkpoint.txt",

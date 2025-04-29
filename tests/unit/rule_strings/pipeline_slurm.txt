@@ -190,10 +190,10 @@ def get_aggregation_inputs_step_3_aggregate_step_3_main_output(wildcards):
         raise IncompleteCheckpointException(checkpoints.step_3_step_3_main_input_split.rule, checkpoint_target(output[0]))
     checkpoint_output = glob.glob(f"{checkpoints.step_3_step_3_main_input_split.get(**wildcards).output.output_dir}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
-    return expand(
-        "intermediate/step_3_python_pandas/{chunk}/result.parquet",
-        chunk=chunks
-    )
+    input_files = []
+    for filepath in ['intermediate/step_3_python_pandas/{chunk}/result.parquet']:
+        input_files.extend(expand(filepath, chunk=chunks))
+    return input_files
 rule:
     name: "step_3_aggregate_step_3_main_output"
     input: get_aggregation_inputs_step_3_aggregate_step_3_main_output

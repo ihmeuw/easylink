@@ -401,3 +401,36 @@ LOOPING_EP_STEP_NODES = [
 
 
 LOOPING_EP_STEP_SCHEMA_PARAMS = (LOOPING_EP_STEP_NODES, SINGLE_STEP_EDGES)
+
+
+EP_PARALLEL_STEP_NODES = [
+    InputStep(),
+    EmbarrassinglyParallelStep(
+        step=ParallelStep(
+            template_step=Step(
+                step_name="step_1",
+                input_slots=[
+                    InputSlot(
+                        name="step_1_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                ],
+                output_slots=[
+                    OutputSlot(
+                        name="step_1_main_output",
+                    ),
+                ],
+            ),
+        ),
+        slot_splitter_mapping={"step_1_main_input": split_data_in_two},
+        slot_aggregator_mapping={"step_1_main_output": concatenate_datasets},
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ]
+    ),
+]
+
+EP_PARALLEL_STEP_SCHEMA_PARAMS = (EP_PARALLEL_STEP_NODES, SINGLE_STEP_EDGES)
