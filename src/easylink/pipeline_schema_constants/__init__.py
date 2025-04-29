@@ -25,4 +25,5 @@ TESTING_SCHEMA_PARAMS = {
     "combine_with_extra_node": testing.TRIPLE_STEP_SCHEMA_PARAMS,
     "looping_ep_step": testing.LOOPING_EP_STEP_SCHEMA_PARAMS,
     "ep_parallel_step": testing.EP_PARALLEL_STEP_SCHEMA_PARAMS,
+    "ep_loop_step": testing.EP_LOOP_STEP_SCHEMA_PARAMS,
 }

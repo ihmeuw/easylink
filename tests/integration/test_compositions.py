@@ -58,13 +58,56 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
         ).exists()
 
 
+EP_SECTION_MAPPING = {
+    "parallel_step": {
+        "pipeline_spec": "pipeline_parallel_step.yaml",
+        "schema_name": "ep_parallel_step",
+        "node_prefix": "parallel_split",
+    },
+    "loop_step": {
+        "pipeline_spec": "pipeline_loop_step.yaml",
+        "schema_name": "ep_loop_step",
+        "node_prefix": "loop",
+    },
+}
+
+
 @pytest.mark.slow
-def test_embarrassingly_parallel_parallel_step(test_specific_results_dir: Path) -> None:
-    pipeline_specification = EP_SPECIFICATIONS_DIR / "pipeline_parallel_step.yaml"
+@pytest.mark.parametrize(
+    "step_type, expected_counter, num_rows_multiplier",
+    [
+        (
+            "loop_step",
+            2,
+            1,
+        ),
+        (
+            "parallel_step",
+            # We will run step_1 exactly one time on each of the four subsets of data
+            1,
+            # The embarrassingly parallel splitting shouldn't increase the number of rows
+            # in and of itself, but the underlying parallel step does. We have two
+            # splits and so expect there to be twice as many rows in the final result.
+            2,
+        ),
+    ],
+)
+def test_embarrassingly_parallel_sections(
+    step_type: str,
+    expected_counter: int,
+    num_rows_multiplier: int,
+    test_specific_results_dir: Path,
+) -> None:
+    # unpack the mapping
+    pipeline_spec = EP_SECTION_MAPPING[step_type]["pipeline_spec"]
+    schema_name = EP_SECTION_MAPPING[step_type]["schema_name"]
+    node_prefix = EP_SECTION_MAPPING[step_type]["node_prefix"]
+
+    pipeline_specification = EP_SPECIFICATIONS_DIR / pipeline_spec
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
     # Load the schema to test against
-    schema = PipelineSchema("ep_parallel_step", *TESTING_SCHEMA_PARAMS["ep_parallel_step"])
+    schema = PipelineSchema(schema_name, *TESTING_SCHEMA_PARAMS[schema_name])
 
     # Run the pipeline. Snakemake will exit at the end so we need to catch that here
     _run_pipeline_and_confirm_finished(
@@ -83,8 +126,8 @@ def test_embarrassingly_parallel_parallel_step(test_specific_results_dir: Path) 
         )
         == 2
     )
-    for split in [1, 2]:
-        step_name = f"step_1_parallel_split_{split}"
+    for increment in [1, 2]:
+        step_name = f"step_1_{node_prefix}_{increment}"
         # ensure that each chunk was processed individually
         assert (
             len(
@@ -109,24 +152,11 @@ def test_embarrassingly_parallel_parallel_step(test_specific_results_dir: Path) 
     input_filepaths = load_yaml(input_data)
     for filepath in input_filepaths.values():
         input_num_rows += pq.read_metadata(filepath).num_rows
-    # The embarrassingly parallel splitting shouldn't increase the number of rows
-    # in and of itself, but the underlying parallel step does. We had two
-    # splits and so expect there to be twice as many rows in the final result.
-    assert len(df_final) == input_num_rows * 2
-    # We have run step_1 exactly one time on each of the four subsets of data and
-    # so we expect the final counter to be 1 and to only have two new added_columns
-    # (0 and 1)
-    assert all(df_final["counter"] == 1)
+    assert len(df_final) == input_num_rows * num_rows_multiplier
+    assert all(df_final["counter"] == expected_counter)
     assert [column for column in df_final.columns if column.startswith("added_column")] == [
-        "added_column_0",
-        "added_column_1",
-    ]
-
-
-@pytest.mark.skip(reason="TODO [MIC-5980]")
-@pytest.mark.slow
-def test_embarrassingly_parallel_loop_step(test_specific_results_dir: Path) -> None:
-    ...
+        "added_column_0"
+    ] + [f"added_column_{i+1}" for i in range(expected_counter)]
 
 
 @pytest.mark.skip(reason="TODO [MIC-5979]")
