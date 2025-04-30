@@ -215,19 +215,22 @@ of the pipeline, we can view intermediary outputs as well::
 Environments
 ============
 The ``-e`` argument to ``easylink run`` accepts a YAML file specifying information about the computing environment which will execute the steps of the 
-pipeline. When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/environment_local.yaml`` as this YAML file, 
-shown below.
+pipeline. When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/environment_local.yaml`` to this argument.
+The contents of this YAML file are shown below.
 
 .. code-block:: yaml
 
    computing_environment: local
    container_engine: singularity
 
-It specifies a ``local`` computing environment using ``singluarity`` as the container engine. These parameters indicate that no new compute resources will 
-be launched to execute the pipeline steps, and that within the current compute environment, a singluarity container will run the software.
+It specifies a ``local`` computing environment using ``singularity`` as the container engine. These parameters indicate that no new compute resources will 
+be used to execute the pipeline steps, and that the Singularity container for each implementation will run within the context where ``easylink run`` is being executed.
+For example, if you ran the ``easylink run`` command on your laptop, the implementations would run on your laptop;
+if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
+and so on.
 
 Let's run this same pipeline with the ``slurm`` computing environment. `Slurm <https://slurm.schedmd.com/overview.html>`_ is an open-source job scheduler and 
-cluster management system which EasyLink uses to schedule and run the steps of a pipeline using the resources of a computing cluster. This means that instead of 
+cluster management system which EasyLink can interface with to schedule and run the steps of a pipeline using the resources of a computing cluster. This means that instead of 
 running all pipeline steps in your local computing environment, each step can be run with the additional resources of a separate compute node.
 
 To run the pipeline using slurm, we will pass ``specifications/examples/environment_slurm.yaml`` 
@@ -256,7 +259,7 @@ system for the implementation container for each step, and a ``time_limit`` for 
    When using the ``slurm`` environment, you may have to wait for the computing resources your jobs need to become 
    available on the cluster. The wait time will depend on how busy your cluster is with jobs submitted by other users. 
 
-So now that we understand the ``slurm`` configuration, lets run the same ``common/pipeline.yaml`` pipeline from the last 
+So now that we understand the ``slurm`` configuration, let's run the same ``common/pipeline.yaml`` pipeline from the last 
 section, but using the ``slurm`` environment rather than ``local``.
 
 .. code-block:: console
@@ -276,7 +279,7 @@ section, but using the ``slurm`` environment rather than ``local``.
 The output should look identical to the ``local`` output, except that you may notice the timestamps of the jobs are more spread out 
 using the ``slurm`` environment. This is because, as noted above, ``slurm`` jobs for each step may need to wait for cluster computing 
 resources to become available before they can be scheduled, whereas the computing environment for ``local`` jobs is already active when 
-the pipeline is run, since it *is* the environment the pipeline was run in.
+the pipeline is launched (via ``easylink run``), since it *is* the environment the pipeline was launched in.
 
 Since the current step implementations are trivial, this wait time makes the total pipeline execution time longer under the ``slurm`` 
 environment. However, for a real record linkage pipeline, the additional computing resources available on a cluster can make it 
