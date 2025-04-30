@@ -279,8 +279,9 @@ resources to become available before they can be scheduled, whereas the computin
 the pipeline is run, since it *is* the environment the pipeline was run in.
 
 Since the current step implementations are trivial, this wait time makes the total pipeline execution time longer under the ``slurm`` 
-environment. However, for a real record linkage pipeline, the additional computing resources available on a cluster will make it 
-faster than ``local``.
+environment. However, for a real record linkage pipeline, the additional computing resources available on a cluster can make it 
+faster than ``local``, or even make it *possible* to run the pipeline at all (in the case where the local environment doesn't have 
+sufficient resources to run the pipeline).
 
 More Pipeline Specifications
 ============================
