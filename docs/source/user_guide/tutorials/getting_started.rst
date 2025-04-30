@@ -214,8 +214,10 @@ of the pipeline, we can view intermediary outputs as well::
 
 Environments
 ============
-The ``-e`` argument to ``easylink run`` accepts a YAML file specifying information about the computing environment which will execute the steps of the 
-pipeline. When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/environment_local.yaml`` as this YAML file, 
+The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying a list 
+of paths to files or directories containing input data to be used by the pipeline. 
+When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed 
+``specifications/common/environment_local.yaml`` as this YAML file, 
 shown below.
 
 .. code-block:: yaml
@@ -281,6 +283,127 @@ the pipeline is run, since it *is* the environment the pipeline was run in.
 Since the current step implementations are trivial, this wait time makes the total pipeline execution time longer under the ``slurm`` 
 environment. However, for a real record linkage pipeline, the additional computing resources available on a cluster will make it 
 faster than ``local``.
+
+Input data
+==========
+The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying information about the 
+computing environment which will execute the steps of the pipeline. 
+When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/input_data.yaml`` 
+as this YAML file, shown below::
+
+   input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet
+   input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_2.parquet
+   input_file_3: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_3.parquet
+
+Let's try passing a different input data specification YAML file, ``specifications/examples/input_data.yaml``::
+
+   input_file_1: ./specifications/examples/input_file_1.parquet
+   input_file_2: ./specifications/examples/input_file_2.parquet
+   input_file_3: ./specifications/examples/input_file_3.parquet
+
+.. todo::
+   Download link? Or in repository? Or both?
+
+These input files look a little different than the three input files we used in the pipelines we ran above, 
+where all three input files listed in the YAML specification were identical. Let's compare one of those, 
+``/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet``, to 
+the three files we will use here::
+
+   $ pqprint /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet
+         foo bar  counter
+   0        0   a        0
+   1        1   b        0
+   2        2   c        0
+   3        3   d        0
+   4        4   e        0
+   ...    ...  ..      ...
+   9995  9995   a        0
+   9996  9996   b        0
+   9997  9997   c        0
+   9998  9998   d        0
+   9999  9999   e        0
+   [10000 rows x 3 columns]
+   $ pqprint specifications/examples/input_file_1.parquet
+      foo bar  counter
+   0     0   l       10
+   1     1   m       10
+   2     2   n       10
+   3     3   o       10
+   4     4   p       10
+   ..  ...  ..      ...
+   95   95   l       10
+   96   96   m       10
+   97   97   n       10
+   98   98   o       10
+   99   99   p       10
+   [100 rows x 3 columns]
+   $ pqprint specifications/examples/input_file_2.parquet
+      foo bar  counter
+   0     0   q       20
+   1     1   r       20
+   2     2   s       20
+   3     3   t       20
+   4     4   u       20
+   ..  ...  ..      ...
+   95   95   q       20
+   96   96   r       20
+   97   97   s       20
+   98   98   t       20
+   99   99   u       20
+   [100 rows x 3 columns]
+   $ pqprint specifications/examples/input_file_3.parquet
+      foo bar  counter
+   0     0   v       30
+   1     1   w       30
+   2     2   x       30
+   3     3   y       30
+   4     4   z       30
+   ..  ...  ..      ...
+   95   95   v       30
+   96   96   w       30
+   97   97   x       30
+   98   98   y       30
+   99   99   z       30
+   [100 rows x 3 columns]
+
+Our three new input files look different from each other and from the previous input files.
+They have 100 rows each instead of 10000, the ``bar`` column has a different set of values 
+for each file, and the counter in each file starts at a different value.
+
+Let's run the same pipeline as before, but with this new input data YAML.
+
+.. code-block:: console
+   
+   $ easylink run -p specifications/common/pipeline.yaml -i specifications/examples/input_data.yaml -e specifications/common/environment_local.yaml
+   2025-04-29 07:33:15.683 | 0:00:02.516034 | run:158 - Running pipeline
+   2025-04-29 07:33:15.684 | 0:00:02.516358 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_29_07_33_15
+   2025-04-29 07:33:18.949 | 0:00:05.781634 | main:115 - Running Snakemake
+   [Tue Apr 29 07:33:19 2025]
+   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
+   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
+   ...
+   [Tue Apr 29 07:33:47 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
+   $ pqprint /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_29_07_33_15/result.parquet 
+            foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
+      0      0   l       14             0.0             1.0             2.0             3.0               4
+      1      1   m       14             0.0             1.0             2.0             3.0               4
+      2      2   n       14             0.0             1.0             2.0             3.0               4
+      3      3   o       14             0.0             1.0             2.0             3.0               4
+      4      4   p       14             0.0             1.0             2.0             3.0               4
+      ..   ...  ..      ...             ...             ...             ...             ...             ...
+      595   95   v       31             0.0             0.0             0.0             0.0               4
+      596   96   w       31             0.0             0.0             0.0             0.0               4
+      597   97   x       31             0.0             0.0             0.0             0.0               4
+      598   98   y       31             0.0             0.0             0.0             0.0               4
+      599   99   z       31             0.0             0.0             0.0             0.0               4
+      [600 rows x 8 columns]
+
+As you can see, the results parqet has 600 rows and the range of ``bar`` and ``counter``   values are consistent 
+with our input files. As before, the transformation of the data is specific to the development schema and will 
+change.
+
 
 More Pipeline Specifications
 ============================
