@@ -83,7 +83,10 @@ EP_SECTION_MAPPING = {
         ),
         (
             "parallel_step",
-            # We will run step_1 exactly one time on each of the four subsets of data
+            # We have two mutually exclusive and collectively exhaustive subsets of
+            # input data from the EmbarrassinglyParallelStep, each of which
+            # is duplicated twice (from the ParallelStep). The step_1 container
+            # is then run exactly one time on each of these four dataset.
             1,
             # The embarrassingly parallel splitting shouldn't increase the number of rows
             # in and of itself, but the underlying parallel step does. We have two
