@@ -25,6 +25,10 @@ more about the contents of the specifications later.
    At the moment the EasyLink tests require input files stored on the IHME cluster, so it is not yet 
    possible to run them without IHME cluster access.
 
+.. todo:: 
+   Change this example so that users download the files involved to a location of their choice and 
+   run easylink from there.
+
 .. code-block:: console
 
    $ conda activate easylink
@@ -247,6 +251,10 @@ Let's run this same pipeline with the ``slurm`` computing environment. `Slurm <h
 cluster management system which EasyLink can interface with to schedule and run the steps of a pipeline using the resources of a computing cluster. This means that instead of 
 running all pipeline steps in your local computing environment, each step can be run with the additional resources of a separate compute node.
 
+.. todo::
+   Change this example so that the user downloads the relevant files to a location of their choice and 
+   then runs easylink there.
+
 To run the pipeline using slurm, we will pass ``specifications/examples/environment_slurm.yaml`` 
 to the ``environment`` command line parameter, which looks like this:
 
@@ -302,8 +310,8 @@ faster than ``local``, or make it *possible* to run the pipeline when it wouldn'
 
 Input data
 ==========
-The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying information about the 
-computing environment which will execute the steps of the pipeline. 
+The ``--input-data`` (``-i``) argument to ``easylink run``accepts a YAML file specifying a list 
+of paths to files or directories containing input data to be used by the pipeline. 
 When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/input_data.yaml`` 
 as this YAML file, shown below::
 
@@ -311,14 +319,16 @@ as this YAML file, shown below::
    input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_2.parquet
    input_file_3: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_3.parquet
 
-Let's try passing a different input data specification YAML file, ``specifications/examples/input_data.yaml``::
+Let's try passing a different input data specification YAML file, 
+:download:`input_data.yaml <input_data.yaml>`, which looks like this::
 
-   input_file_1: ./specifications/examples/input_file_1.parquet
-   input_file_2: ./specifications/examples/input_file_2.parquet
-   input_file_3: ./specifications/examples/input_file_3.parquet
+   input_file_1: input_file_1.parquet
+   input_file_2: input_file_2.parquet
+   input_file_3: input_file_3.parquet
 
-.. todo::
-   Download link? Or in repository? Or both?
+Download the file to the directory you will run easylink from, and then download the three input 
+parquets, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
+and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory.
 
 These input files look a little different than the three input files we used in the pipelines we ran above, 
 where all three input files listed in the YAML specification were identical. Let's compare one of those, 
