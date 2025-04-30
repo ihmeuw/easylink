@@ -62,7 +62,7 @@ more about the contents of the specifications later.
    why the job was run (the step inputs were ready but the output file did not yet exist), not 
    conveying an error message.
 
-   TBD ticket?
+   We have a `ticket <https://jira.ihme.washington.edu/browse/MIC-6019>`_ about improving this.
 
 Inputs and outputs
 ------------------
