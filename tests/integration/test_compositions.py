@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -22,7 +23,6 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
     # Load the schema to test against
     schema = PipelineSchema("looping_ep_step", *TESTING_SCHEMA_PARAMS["looping_ep_step"])
 
-    # Run the pipeline. Snakemake will exit at the end so we need to catch that here
     _run_pipeline_and_confirm_finished(
         schema, test_specific_results_dir, pipeline_specification, input_data
     )
@@ -62,12 +62,23 @@ EP_SECTION_MAPPING = {
     "parallel_step": {
         "pipeline_spec": "pipeline_parallel_step.yaml",
         "schema_name": "ep_parallel_step",
-        "node_prefix": "parallel_split",
+        "implementation_names": [
+            "step_1_parallel_split_1_step_1_python_pandas",
+            "step_1_parallel_split_2_step_1_python_pandas",
+        ],
     },
     "loop_step": {
         "pipeline_spec": "pipeline_loop_step.yaml",
         "schema_name": "ep_loop_step",
-        "node_prefix": "loop",
+        "implementation_names": [
+            "step_1_loop_1_step_1_python_pandas",
+            "step_1_loop_2_step_1_python_pandas",
+        ],
+    },
+    "hierarchical_step": {
+        "pipeline_spec": "pipeline_hierarchical_step.yaml",
+        "schema_name": "ep_hierarchical_step",
+        "implementation_names": ["step_1a_python_pandas", "step_1b_python_pandas"],
     },
 }
 
@@ -93,6 +104,22 @@ EP_SECTION_MAPPING = {
             # splits and so expect there to be twice as many rows in the final result.
             2,
         ),
+        (
+            "hierarchical_step",
+            2,
+            # The particular schema used here has two input slots, where the main
+            # one gets split into two for embarrassingly parallel processing.
+            # The total number of rows in the entire set of input data (which gets
+            # fed into both the main and the secondary input slots) is ROWS.
+            # The first substep (in each branch of the embarrassingly parallel split)
+            # gets 1/2xROWS (due to the splitting) in the main input slot plus 1xROWS
+            # in the secondary input slot for a total of 1.5xROWS.
+            # The second substep then gets the processed 1.5xROWS from the first
+            # substep in the main slot plus 1xROWS in the secondary input slot for
+            # a total of 2.5xROWS.
+            # The two branches are then aggregated for a total multiplier of 5x.
+            5,
+        ),
     ],
 )
 def test_embarrassingly_parallel_sections(
@@ -102,9 +129,10 @@ def test_embarrassingly_parallel_sections(
     test_specific_results_dir: Path,
 ) -> None:
     # unpack the mapping
-    pipeline_spec = EP_SECTION_MAPPING[step_type]["pipeline_spec"]
-    schema_name = EP_SECTION_MAPPING[step_type]["schema_name"]
-    node_prefix = EP_SECTION_MAPPING[step_type]["node_prefix"]
+    step_mapping = EP_SECTION_MAPPING[step_type]
+    pipeline_spec = cast(str, step_mapping["pipeline_spec"])
+    schema_name = cast(str, step_mapping["schema_name"])
+    implementation_names = cast(list[str], step_mapping["implementation_names"])
 
     pipeline_specification = EP_SPECIFICATIONS_DIR / pipeline_spec
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
@@ -112,7 +140,6 @@ def test_embarrassingly_parallel_sections(
     # Load the schema to test against
     schema = PipelineSchema(schema_name, *TESTING_SCHEMA_PARAMS[schema_name])
 
-    # Run the pipeline. Snakemake will exit at the end so we need to catch that here
     _run_pipeline_and_confirm_finished(
         schema, test_specific_results_dir, pipeline_specification, input_data
     )
@@ -129,19 +156,9 @@ def test_embarrassingly_parallel_sections(
         )
         == 2
     )
-    for increment in [1, 2]:
-        step_name = f"step_1_{node_prefix}_{increment}"
+    for imp_name in implementation_names:
         # ensure that each chunk was processed individually
-        assert (
-            len(
-                list(
-                    (intermediate_results_dir / f"{step_name}_step_1_python_pandas").rglob(
-                        "result.parquet"
-                    )
-                )
-            )
-            == 2
-        )
+        assert len(list((intermediate_results_dir / imp_name).rglob("result.parquet"))) == 2
     # check for aggregated file
     aggregated_filepath = intermediate_results_dir / "step_1_aggregate" / "result.parquet"
     assert aggregated_filepath.exists()
@@ -156,16 +173,10 @@ def test_embarrassingly_parallel_sections(
     for filepath in input_filepaths.values():
         input_num_rows += pq.read_metadata(filepath).num_rows
     assert len(df_final) == input_num_rows * num_rows_multiplier
-    assert all(df_final["counter"] == expected_counter)
+    assert max(df_final["counter"]) == expected_counter
     assert [column for column in df_final.columns if column.startswith("added_column")] == [
         "added_column_0"
     ] + [f"added_column_{i+1}" for i in range(expected_counter)]
-
-
-@pytest.mark.skip(reason="TODO [MIC-5979]")
-@pytest.mark.slow
-def test_embarrassingly_parallel_hierarchical_step(test_specific_results_dir: Path) -> None:
-    ...
 
 
 ####################
@@ -180,6 +191,7 @@ def _run_pipeline_and_confirm_finished(
     input_data: Path,
     computing_environment: Path | None = None,
 ) -> None:
+    # Run the pipeline. Snakemake exits at the end so we need to catch that here
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         main(
             command="run",

@@ -28,7 +28,7 @@ from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.splitter_utils import split_data_in_two
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
-SINGLE_STEP_NODES = [
+NODES_ONE_STEP = [
     InputStep(),
     Step(
         step_name="step_1",
@@ -47,7 +47,7 @@ SINGLE_STEP_NODES = [
         ],
     ),
 ]
-SINGLE_STEP_EDGES = [
+EDGES_ONE_STEP = [
     EdgeParams(
         source_node="input_data",
         target_node="step_1",
@@ -61,10 +61,10 @@ SINGLE_STEP_EDGES = [
         input_slot="result",
     ),
 ]
+SCHEMA_PARAMS_ONE_STEP = (NODES_ONE_STEP, EDGES_ONE_STEP)
 
-SINGLE_STEP_SCHEMA_PARAMS = (SINGLE_STEP_NODES, SINGLE_STEP_EDGES)
 
-TRIPLE_STEP_NODES = [
+NODES_THREE_STEPS = [
     InputStep(),
     Step(
         step_name="step_1",
@@ -105,7 +105,7 @@ TRIPLE_STEP_NODES = [
         ],
     ),
 ]
-TRIPLE_STEP_EDGES = [
+EDGES_THREE_STEPS = [
     EdgeParams(
         source_node="input_data",
         target_node="step_1",
@@ -131,11 +131,10 @@ TRIPLE_STEP_EDGES = [
         input_slot="result",
     ),
 ]
+SCHEMA_PARAMS_THREE_STEPS = (NODES_THREE_STEPS, EDGES_THREE_STEPS)
 
-TRIPLE_STEP_SCHEMA_PARAMS = (TRIPLE_STEP_NODES, TRIPLE_STEP_EDGES)
 
-
-BAD_COMBINED_TOPOLOGY_NODES = [
+NODES_BAD_COMBINED_TOPOLOGY = [
     InputStep(),
     LoopStep(
         template_step=HierarchicalStep(
@@ -210,11 +209,10 @@ BAD_COMBINED_TOPOLOGY_NODES = [
         ],
     ),
 ]
+SCHEMA_PARAMS_BAD_COMBINED_TOPOLOGY = (NODES_BAD_COMBINED_TOPOLOGY, EDGES_ONE_STEP)
 
-BAD_COMBINED_TOPOLOGY_SCHEMA_PARAMS = (BAD_COMBINED_TOPOLOGY_NODES, SINGLE_STEP_EDGES)
 
-
-NESTED_TEMPLATED_STEPS_NODES = [
+NODES_NESTED_TEMPLATED_STEPS = [
     InputStep(),
     LoopStep(
         template_step=ParallelStep(
@@ -291,12 +289,10 @@ NESTED_TEMPLATED_STEPS_NODES = [
         ],
     ),
 ]
+SCHEMA_PARAMS_NESTED_TEMPLATED_STEPS = (NODES_NESTED_TEMPLATED_STEPS, EDGES_ONE_STEP)
 
 
-NESTED_TEMPLATED_STEPS_SCHEMA_PARAMS = (NESTED_TEMPLATED_STEPS_NODES, SINGLE_STEP_EDGES)
-
-
-COMBINE_WITH_ITERATION_NODES = [
+NODES_COMBINE_WITH_ITERATION = [
     InputStep(),
     LoopStep(
         template_step=Step(
@@ -336,7 +332,7 @@ COMBINE_WITH_ITERATION_NODES = [
         ],
     ),
 ]
-DOUBLE_STEP_EDGES = [
+EDGES_TWO_STEPS = [
     EdgeParams(
         source_node="input_data",
         target_node="step_1",
@@ -356,12 +352,10 @@ DOUBLE_STEP_EDGES = [
         input_slot="result",
     ),
 ]
+SCHEMA_PARAMS_COMBINE_WITH_ITERATION = (NODES_COMBINE_WITH_ITERATION, EDGES_TWO_STEPS)
 
 
-COMBINE_WITH_ITERATION_SCHEMA_PARAMS = (COMBINE_WITH_ITERATION_NODES, DOUBLE_STEP_EDGES)
-
-
-LOOPING_EP_STEP_NODES = [
+NODES_LOOPING_EP_STEP = [
     InputStep(),
     LoopStep(
         template_step=EmbarrassinglyParallelStep(
@@ -398,12 +392,10 @@ LOOPING_EP_STEP_NODES = [
         ]
     ),
 ]
+SCHEMA_PARAMS_LOOPING_EP_STEP = (NODES_LOOPING_EP_STEP, EDGES_ONE_STEP)
 
 
-LOOPING_EP_STEP_SCHEMA_PARAMS = (LOOPING_EP_STEP_NODES, SINGLE_STEP_EDGES)
-
-
-EP_PARALLEL_STEP_NODES = [
+NODES_EP_PARALLEL_STEP = [
     InputStep(),
     EmbarrassinglyParallelStep(
         step=ParallelStep(
@@ -432,11 +424,10 @@ EP_PARALLEL_STEP_NODES = [
         ]
     ),
 ]
+SCHEMA_PARAMS_EP_PARALLEL_STEP = (NODES_EP_PARALLEL_STEP, EDGES_ONE_STEP)
 
-EP_PARALLEL_STEP_SCHEMA_PARAMS = (EP_PARALLEL_STEP_NODES, SINGLE_STEP_EDGES)
 
-
-EP_LOOP_STEP_NODES = [
+NODES_EP_LOOP_STEP = [
     InputStep(),
     EmbarrassinglyParallelStep(
         step=LoopStep(
@@ -473,5 +464,121 @@ EP_LOOP_STEP_NODES = [
         ]
     ),
 ]
+SCHEMA_PARAMS_EP_LOOP_STEP = (NODES_EP_LOOP_STEP, EDGES_ONE_STEP)
 
-EP_LOOP_STEP_SCHEMA_PARAMS = (EP_LOOP_STEP_NODES, SINGLE_STEP_EDGES)
+
+NODES_EP_HIERARCHICAL_STEP = [
+    InputStep(),
+    EmbarrassinglyParallelStep(
+        step=HierarchicalStep(
+            step_name="step_1",
+            input_slots=[
+                InputSlot(
+                    name="step_1_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+                InputSlot(
+                    name="step_1_secondary_input",
+                    env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+            ],
+            output_slots=[OutputSlot("step_1_main_output")],
+            nodes=[
+                Step(
+                    step_name="step_1a",
+                    input_slots=[
+                        InputSlot(
+                            name="step_1a_main_input",
+                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            name="step_1a_secondary_input",
+                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[OutputSlot("step_1a_main_output")],
+                ),
+                Step(
+                    step_name="step_1b",
+                    input_slots=[
+                        InputSlot(
+                            name="step_1b_main_input",
+                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                        InputSlot(
+                            name="step_1b_secondary_input",
+                            env_var="DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[OutputSlot("step_1b_main_output")],
+                ),
+            ],
+            edges=[
+                EdgeParams(
+                    source_node="step_1a",
+                    target_node="step_1b",
+                    output_slot="step_1a_main_output",
+                    input_slot="step_1b_main_input",
+                ),
+            ],
+            input_slot_mappings=[
+                InputSlotMapping(
+                    parent_slot="step_1_main_input",
+                    child_node="step_1a",
+                    child_slot="step_1a_main_input",
+                ),
+                InputSlotMapping(
+                    parent_slot="step_1_secondary_input",
+                    child_node="step_1a",
+                    child_slot="step_1a_secondary_input",
+                ),
+                InputSlotMapping(
+                    parent_slot="step_1_secondary_input",
+                    child_node="step_1b",
+                    child_slot="step_1b_secondary_input",
+                ),
+            ],
+            output_slot_mappings=[
+                OutputSlotMapping(
+                    parent_slot="step_1_main_output",
+                    child_node="step_1b",
+                    child_slot="step_1b_main_output",
+                ),
+            ],
+        ),
+        slot_splitter_mapping={"step_1_main_input": split_data_in_two},
+        slot_aggregator_mapping={"step_1_main_output": concatenate_datasets},
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ]
+    ),
+]
+EDGES_ONE_STEP_TWO_ISLOTS = [
+    EdgeParams(
+        source_node="input_data",
+        target_node="step_1",
+        output_slot="all",
+        input_slot="step_1_main_input",
+    ),
+    EdgeParams(
+        source_node="input_data",
+        target_node="step_1",
+        output_slot="all",
+        input_slot="step_1_secondary_input",
+    ),
+    EdgeParams(
+        source_node="step_1",
+        target_node="results",
+        output_slot="step_1_main_output",
+        input_slot="result",
+    ),
+]
+SCHEMA_PARAMS_EP_HIERARCHICAL_STEP = (NODES_EP_HIERARCHICAL_STEP, EDGES_ONE_STEP_TWO_ISLOTS)
