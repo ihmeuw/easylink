@@ -50,8 +50,19 @@ more about the contents of the specifications later.
    Job 0: Grabbing final output
    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
 
-When the pipeline runs, we see validation happen first for steps 1 and 4, then the steps running in order from 1 to 4.
-The last job gets the final output from step 4.
+.. note:: 
+   The pipeline output in its current state can be a little confusing. Note that the number assigned 
+   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
+   assigned by snakemake. Also note that the first job to be run is input validation for step 4, along 
+   with input validation for step 1 - this is because these are the only jobs with no dependencies 
+   in the pipeline DAG, which is shown in the `Pipeline schema and steps`_ section.
+
+   Finally, despite the final output line containing the phrase "Missing output files", 
+   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
+   why the job was run (the step inputs were ready but the output file did not yet exist), not 
+   conveying an error message.
+
+   TBD ticket?
 
 Inputs and outputs
 ------------------
@@ -113,6 +124,8 @@ the counter column is incremented for many rows, and other columns have differen
 as well.
 Next we will examine the steps the pipeline executed, where they are defined and implemented, and how they transformed 
 the data.
+
+.. _Pipeline schema and steps:
 
 Pipeline schema and steps
 -------------------------
@@ -252,8 +265,8 @@ The ``account`` and ``partition`` parameters are specific to your Slurm cluster 
 to ask your system administrator for these. The parameters shown above would work for someone on the Simulation 
 Science team at IHME. For more information see the `Slurm docs <https://slurm.schedmd.com/overview.html>`_.
 
-The ``implementation_resources`` specificies the compute resources which will be reserved by the Slurm 
-system for the implementation container for each step, and a ``time_limit`` for the job's execution.
+The ``implementation_resources`` parameter specificies the compute resources which will be reserved by the Slurm 
+system for the implementation container for each step, including a ``time_limit`` for the job's execution.
 
 .. note::
    When using the ``slurm`` environment, you may have to wait for the computing resources your jobs need to become 
@@ -282,9 +295,9 @@ resources to become available before they can be scheduled, whereas the computin
 the pipeline is launched (via ``easylink run``), since it *is* the environment the pipeline was launched in.
 
 Since the current step implementations are trivial, this wait time makes the total pipeline execution time longer under the ``slurm`` 
-environment. However, for a real record linkage pipeline, the additional computing resources available on a cluster can make it 
-faster than ``local``, or even make it *possible* to run the pipeline at all (in the case where the local environment doesn't have 
-sufficient resources to run the pipeline).
+environment. However, for a real large-scale record linkage pipeline, the additional computing resources available on a cluster can make it 
+faster than ``local``, or make it *possible* to run the pipeline when it wouldn't be otherwise 
+(in the case where the local environment doesn't have sufficient resources to run the pipeline).
 
 More Pipeline Specifications
 ============================
