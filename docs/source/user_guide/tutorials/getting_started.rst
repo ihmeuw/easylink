@@ -25,10 +25,6 @@ more about the contents of the specifications later.
    At the moment the EasyLink tests require input files stored on the IHME cluster, so it is not yet 
    possible to run them without IHME cluster access.
 
-.. todo:: 
-   Change this example so that users download the files involved to a location of their choice and 
-   run easylink from there.
-
 .. code-block:: console
 
    $ conda activate easylink
@@ -233,7 +229,8 @@ Environments
 ============
 The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
 information about the computing environment which will execute the steps of the 
-pipeline. When we ran our first pipeline, ``common/pipeline.yaml`` above, we passed ``specifications/common/environment_local.yaml`` 
+pipeline. When we ran our first pipeline, ``common/pipeline.yaml`` above, we passed 
+``tests/specifications/common/environment_local.yaml`` 
 to this argument. The contents of this YAML file are shown below.
 
 .. code-block:: yaml
