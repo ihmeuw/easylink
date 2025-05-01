@@ -25,36 +25,44 @@ more about the contents of the specifications later.
    At the moment the EasyLink tests require input files stored on the IHME cluster, so it is not yet 
    possible to run them without IHME cluster access.
 
-.. todo::
-   Change below to use local environment
-
 .. code-block:: console
 
    $ conda activate easylink
    $ cd tests
-   $ easylink run -p specifications/common/pipeline.yaml -i specifications/common/input_data.yaml -e specifications/e2e/environment_slurm.yaml
-   2025-04-01 06:51:22.146 | 0:00:09.139203 | run:158 - Running pipeline
-   2025-04-01 06:51:22.147 | 0:00:09.139873 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_01_06_51_22
-   2025-04-01 06:51:26.220 | 0:00:13.212825 | main:115 - Running Snakemake
-   [Tue Apr  1 06:51:26 2025]
+   $ easylink run -p specifications/common/pipeline.yaml -i specifications/common/input_data.yaml -e specifications/common/environment_local.yaml
+   2025-04-22 10:41:27.992 | 0:00:02.533972 | run:158 - Running pipeline
+   2025-04-22 10:41:27.993 | 0:00:02.535549 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_22_10_41_27
+   2025-04-22 10:41:31.621 | 0:00:06.163666 | main:115 - Running Snakemake
+   [Tue Apr 22 10:41:32 2025]
    Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
    Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
-   [Tue Apr  1 06:51:26 2025]
+   [Tue Apr 22 10:41:32 2025]
    Job 6: Validating step_1_python_pandas input slot step_1_main_input
    Reason: Missing output files: input_validations/step_1_python_pandas/step_1_main_input_validator
-   [Tue Apr  1 06:51:27 2025]
+   [Tue Apr 22 10:41:34 2025]
    Job 5: Running step_1 implementation: step_1_python_pandas
    Reason: Missing output files: intermediate/step_1_python_pandas/result.parquet; Input files updated by another job: input_validations/step_1_python_pandas/step_1_main_input_validator
-   [Tue Apr  1 07:23:28 2025]
+   [Tue Apr 22 10:41:37 2025]
    Job 7: Validating step_2_python_pandas input slot step_2_main_input
    Reason: Missing output files: input_validations/step_2_python_pandas/step_2_main_input_validator; Input files updated by another job: intermediate/step_1_python_pandas/result.parquet
    ...
-   [Tue Apr  1 07:26:18 2025]
+   [Tue Apr 22 10:41:58 2025]
    Job 0: Grabbing final output
    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
 
-When the pipeline runs, we see validation happen first for steps 1 and 4, then the steps running in order from 1 to 4.
-The last job gets the final output from step 4.
+.. note:: 
+   The pipeline output in its current state can be a little confusing. Note that the number assigned 
+   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
+   assigned by snakemake. Also note that the first job to be run is input validation for step 4, along 
+   with input validation for step 1 - this is because these are the only jobs with no dependencies 
+   in the pipeline DAG, which is shown in the `Pipeline schema and steps`_ section.
+
+   Finally, despite the final output line containing the phrase "Missing output files", 
+   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
+   why the job was run (the step inputs were ready but the output file did not yet exist), not 
+   conveying an error message.
+
+   We have a `ticket <https://jira.ihme.washington.edu/browse/MIC-6019>`_ about improving this.
 
 Inputs and outputs
 ------------------
@@ -97,7 +105,7 @@ Let's use the alias to print the results parquet, the location of which was prin
 
 .. code-block:: console
 
-   $ pqprint results/2025_04_01_06_51_22/result.parquet
+   $ pqprint results/2025_04_22_10_41_27/result.parquet
            foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
    0         0   a        4             0.0             1.0             2.0             3.0               4
    1         1   b        4             0.0             1.0             2.0             3.0               4
@@ -116,6 +124,8 @@ the counter column is incremented for many rows, and other columns have differen
 as well.
 Next we will examine the steps the pipeline executed, where they are defined and implemented, and how they transformed 
 the data.
+
+.. _Pipeline schema and steps:
 
 Pipeline schema and steps
 -------------------------
@@ -199,7 +209,7 @@ in the files are concatenated. So ``step_1`` concatenates three 10k row datasets
 We've already viewed the final output, but if we want to see how the data is transformed over the course 
 of the pipeline, we can view intermediary outputs as well::
 
-   $ pqprint results/2025_04_01_06_51_22/intermediate/step_1_python_pandas/result.parquet
+   $ pqprint results/2025_04_22_10_41_27/intermediate/step_1_python_pandas/result.parquet
             foo bar  counter  added_column_0  added_column_1
    0         0   a        1               0               1
    1         1   b        1               0               1
@@ -214,6 +224,80 @@ of the pipeline, we can view intermediary outputs as well::
    29999  9999   e        1               0               1
 
    [30000 rows x 5 columns]
+
+Environments
+============
+The ``-e`` argument to ``easylink run`` accepts a YAML file specifying information about the computing environment which will execute the steps of the 
+pipeline. When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/environment_local.yaml`` to this argument.
+The contents of this YAML file are shown below.
+
+.. code-block:: yaml
+
+   computing_environment: local
+   container_engine: singularity
+
+It specifies a ``local`` computing environment using ``singularity`` as the container engine. These parameters indicate that no new compute resources will 
+be used to execute the pipeline steps, and that the Singularity container for each implementation will run within the context where ``easylink run`` is being executed.
+For example, if you ran the ``easylink run`` command on your laptop, the implementations would run on your laptop;
+if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
+and so on.
+
+Let's run this same pipeline with the ``slurm`` computing environment. `Slurm <https://slurm.schedmd.com/overview.html>`_ is an open-source job scheduler and 
+cluster management system which EasyLink can interface with to schedule and run the steps of a pipeline using the resources of a computing cluster. This means that instead of 
+running all pipeline steps in your local computing environment, each step can be run with the additional resources of a separate compute node.
+
+To run the pipeline using slurm, we will pass ``specifications/examples/environment_slurm.yaml`` 
+to the ``environment`` command line parameter, which looks like this:
+
+.. code-block:: yaml
+
+   computing_environment: slurm
+   container_engine: singularity
+   slurm:
+      account: proj_simscience
+      partition: all.q
+   implementation_resources:
+      memory: 1  # GB
+      cpus: 1
+      time_limit: 1  # hours
+
+The ``account`` and ``partition`` parameters are specific to your Slurm cluster configuration - you may need 
+to ask your system administrator for these. The parameters shown above would work for someone on the Simulation 
+Science team at IHME. For more information see the `Slurm docs <https://slurm.schedmd.com/overview.html>`_.
+
+The ``implementation_resources`` parameter specifies the compute resources which will be reserved by the Slurm 
+system for the implementation container for each step, including a ``time_limit`` for the job's execution.
+
+.. note::
+   When using the ``slurm`` environment, you may have to wait for the computing resources your jobs need to become 
+   available on the cluster. The wait time will depend on how busy your cluster is with jobs submitted by other users. 
+
+So now that we understand the ``slurm`` configuration, let's run the same ``common/pipeline.yaml`` pipeline from the last 
+section, but using the ``slurm`` environment rather than ``local``.
+
+.. code-block:: console
+
+   $ easylink run -p specifications/common/pipeline.yaml -i specifications/common/input_data.yaml -e specifications/examples/environment_slurm.yaml
+   2025-04-23 08:39:45.486 | 0:00:02.489631 | run:158 - Running pipeline
+   2025-04-23 08:39:45.486 | 0:00:02.489962 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_23_08_39_45
+   2025-04-23 08:39:48.973 | 0:00:05.976983 | main:115 - Running Snakemake
+   [Wed Apr 23 08:39:49 2025]
+   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
+   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
+   ...
+   [Wed Apr 23 08:43:00 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
+
+The output should look identical to the ``local`` output, except that you may notice the timestamps of the jobs are more spread out 
+using the ``slurm`` environment. This is because, as noted above, ``slurm`` jobs for each step may need to wait for cluster computing 
+resources to become available before they can be scheduled, whereas the computing environment for ``local`` jobs is already active when 
+the pipeline is launched (via ``easylink run``), since it *is* the environment the pipeline was launched in.
+
+Since the current step implementations are trivial, this wait time makes the total pipeline execution time longer under the ``slurm`` 
+environment. However, for a real large-scale record linkage pipeline, the additional computing resources available on a cluster can make it 
+faster than ``local``, or make it *possible* to run the pipeline when it wouldn't be otherwise 
+(in the case where the local environment doesn't have sufficient resources to run the pipeline).
 
 More Pipeline Specifications
 ============================
