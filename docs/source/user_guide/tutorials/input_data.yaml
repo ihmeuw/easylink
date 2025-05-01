@@ -1,0 +1,3 @@
+input_file_1: input_file_1.parquet
+input_file_2: input_file_2.parquet
+input_file_3: input_file_3.parquet

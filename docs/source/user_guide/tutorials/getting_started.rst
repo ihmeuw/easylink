@@ -233,8 +233,8 @@ Environments
 ============
 The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
 information about the computing environment which will execute the steps of the 
-pipeline. When we ran our first pipeline, ``common/pipeline.yaml`` above, we passed ``specifications/common/environment_local.yaml`` to this argument.
-The contents of this YAML file are shown below.
+pipeline. When we ran our first pipeline, ``common/pipeline.yaml`` above, we passed ``specifications/common/environment_local.yaml`` 
+to this argument. The contents of this YAML file are shown below.
 
 .. code-block:: yaml
 
@@ -251,12 +251,9 @@ Let's run this same pipeline with the ``slurm`` computing environment. `Slurm <h
 cluster management system which EasyLink can interface with to schedule and run the steps of a pipeline using the resources of a computing cluster. This means that instead of 
 running all pipeline steps in your local computing environment, each step can be run with the additional resources of a separate compute node.
 
-.. todo::
-   Change this example so that the user downloads the relevant files to a location of their choice and 
-   then runs easylink there.
-
-To run the pipeline using slurm, we will pass ``specifications/examples/environment_slurm.yaml`` 
-to the ``environment`` command line parameter, which looks like this:
+To run the pipeline using slurm, we will pass :download:`environment_slurm.yaml <environment_slurm.yaml>` 
+to the ``environment`` command line parameter. Download the file to the directory you will run ``easylink`` 
+from -- I downloaded it to the root ``easylink`` directory. The YAML looks like this:
 
 .. code-block:: yaml
 
@@ -286,15 +283,15 @@ section, but using the ``slurm`` environment rather than ``local``.
 
 .. code-block:: console
 
-   $ easylink run -p specifications/common/pipeline.yaml -i specifications/common/input_data.yaml -e specifications/examples/environment_slurm.yaml
-   2025-04-23 08:39:45.486 | 0:00:02.489631 | run:158 - Running pipeline
-   2025-04-23 08:39:45.486 | 0:00:02.489962 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_23_08_39_45
-   2025-04-23 08:39:48.973 | 0:00:05.976983 | main:115 - Running Snakemake
-   [Wed Apr 23 08:39:49 2025]
+   $ easylink run -p tests/specifications/common/pipeline.yaml -i tests/specifications/common/input_data.yaml -e environment_slurm.yaml
+   2025-05-01 08:24:01.901 | 0:00:02.805179 | run:158 - Running pipeline
+   2025-05-01 08:24:01.901 | 0:00:02.805621 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_01_08_24_01
+   2025-05-01 08:24:05.205 | 0:00:06.109547 | main:115 - Running Snakemake
+   [Thu May  1 08:24:06 2025]
    Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
    Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
    ...
-   [Wed Apr 23 08:43:00 2025]
+   [Thu May  1 08:26:16 2025]
    Job 0: Grabbing final output
    Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
 
@@ -310,7 +307,7 @@ faster than ``local``, or make it *possible* to run the pipeline when it wouldn'
 
 Input data
 ==========
-The ``--input-data`` (``-i``) argument to ``easylink run``accepts a YAML file specifying a list 
+The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying a list 
 of paths to files or directories containing input data to be used by the pipeline. 
 When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/input_data.yaml`` 
 as this YAML file, shown below::
@@ -328,7 +325,8 @@ Let's try passing a different input data specification YAML file,
 
 Download the file to the directory you will run easylink from, and then download the three input 
 parquets, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
-and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory.
+and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory. In this case 
+I downloaded them to the root ``easylink`` directory.
 
 These input files look a little different than the three input files we used in the pipelines we ran above, 
 where all three input files listed in the YAML specification were identical. Let's compare one of those, 
@@ -349,7 +347,7 @@ the three files we will use here::
    9998  9998   d        0
    9999  9999   e        0
    [10000 rows x 3 columns]
-   $ pqprint specifications/examples/input_file_1.parquet
+   $ pqprint input_file_1.parquet 
       foo bar  counter
    0     0   l       10
    1     1   m       10
@@ -362,8 +360,9 @@ the three files we will use here::
    97   97   n       10
    98   98   o       10
    99   99   p       10
+
    [100 rows x 3 columns]
-   $ pqprint specifications/examples/input_file_2.parquet
+   $ pqprint input_file_2.parquet 
       foo bar  counter
    0     0   q       20
    1     1   r       20
@@ -377,7 +376,7 @@ the three files we will use here::
    98   98   t       20
    99   99   u       20
    [100 rows x 3 columns]
-   $ pqprint specifications/examples/input_file_3.parquet
+   $ pqprint input_file_3.parquet 
       foo bar  counter
    0     0   v       30
    1     1   w       30
@@ -394,40 +393,27 @@ the three files we will use here::
 
 Our three new input files look different from each other and from the previous input files.
 They have 100 rows each instead of 10000, the ``bar`` column has a different set of values 
-for each file, and the counter in each file starts at a different value.
+for each file, and the ``counter`` in each file starts at a different value.
 
 Let's run the same pipeline as before, but with this new input data YAML.
 
 .. code-block:: console
    
-   $ easylink run -p specifications/common/pipeline.yaml -i specifications/examples/input_data.yaml -e specifications/common/environment_local.yaml
-   2025-04-29 07:33:15.683 | 0:00:02.516034 | run:158 - Running pipeline
-   2025-04-29 07:33:15.684 | 0:00:02.516358 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_29_07_33_15
-   2025-04-29 07:33:18.949 | 0:00:05.781634 | main:115 - Running Snakemake
-   [Tue Apr 29 07:33:19 2025]
+   $ easylink run -p tests/specifications/common/pipeline.yaml -i input_data.yaml -e tests/specifications/common/environment_local.yaml
+   2025-05-01 08:05:01.123 | 0:00:02.781384 | run:158 - Running pipeline
+   2025-05-01 08:05:01.123 | 0:00:02.781776 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_01_08_05_01
+   2025-05-01 08:05:04.498 | 0:00:06.156166 | main:115 - Running Snakemake
+   [Thu May  1 08:05:05 2025]
    Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
    Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
    ...
-   [Tue Apr 29 07:33:47 2025]
+   [Thu May  1 08:05:32 2025]
    Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
-   $ pqprint /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_29_07_33_15/result.parquet 
-            foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
-      0      0   l       14             0.0             1.0             2.0             3.0               4
-      1      1   m       14             0.0             1.0             2.0             3.0               4
-      2      2   n       14             0.0             1.0             2.0             3.0               4
-      3      3   o       14             0.0             1.0             2.0             3.0               4
-      4      4   p       14             0.0             1.0             2.0             3.0               4
-      ..   ...  ..      ...             ...             ...             ...             ...             ...
-      595   95   v       31             0.0             0.0             0.0             0.0               4
-      596   96   w       31             0.0             0.0             0.0             0.0               4
-      597   97   x       31             0.0             0.0             0.0             0.0               4
-      598   98   y       31             0.0             0.0             0.0             0.0               4
-      599   99   z       31             0.0             0.0             0.0             0.0               4
-      [600 rows x 8 columns]
+   Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
 
-As you can see, the results parqet has 600 rows and the range of ``bar`` and ``counter``   values are consistent 
-with our input files. As before, the transformation of the data is specific to the development schema and will 
+As expected, the results parqet has 600 rows, as opposed to 60k with the old input YAML, 
+and the range of ``bar`` and ``counter``  values are consistent 
+with our new input files. As before, the transformation of the data is specific to the development schema and will 
 change.
 
 
