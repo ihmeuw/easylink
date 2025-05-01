@@ -306,7 +306,8 @@ Input data
 ==========
 The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying a list 
 of paths to files or directories containing input data to be used by the pipeline. 
-When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed ``specifications/common/input_data.yaml`` 
+When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed 
+``tests/specifications/common/input_data.yaml`` 
 as this YAML file, shown below::
 
    input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet
