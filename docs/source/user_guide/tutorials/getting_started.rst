@@ -265,7 +265,7 @@ The ``account`` and ``partition`` parameters are specific to your Slurm cluster 
 to ask your system administrator for these. The parameters shown above would work for someone on the Simulation 
 Science team at IHME. For more information see the `Slurm docs <https://slurm.schedmd.com/overview.html>`_.
 
-The ``implementation_resources`` parameter specificies the compute resources which will be reserved by the Slurm 
+The ``implementation_resources`` parameter specifies the compute resources which will be reserved by the Slurm 
 system for the implementation container for each step, including a ``time_limit`` for the job's execution.
 
 .. note::
