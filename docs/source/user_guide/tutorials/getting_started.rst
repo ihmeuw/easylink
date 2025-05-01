@@ -408,6 +408,19 @@ Let's run the same pipeline as before, but with this new input data YAML.
    [Thu May  1 08:05:32 2025]
    Job 0: Grabbing final output
    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
+   $ pqprint results/2025_05_01_08_05_01/result.parquet 
+      foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
+   0      0   l       14             0.0             1.0             2.0             3.0               4
+   1      1   m       14             0.0             1.0             2.0             3.0               4
+   2      2   n       14             0.0             1.0             2.0             3.0               4
+   3      3   o       14             0.0             1.0             2.0             3.0               4
+   4      4   p       14             0.0             1.0             2.0             3.0               4
+   ..   ...  ..      ...             ...             ...             ...             ...             ...
+   595   95   v       31             0.0             0.0             0.0             0.0               4
+   596   96   w       31             0.0             0.0             0.0             0.0               4
+   597   97   x       31             0.0             0.0             0.0             0.0               4
+   598   98   y       31             0.0             0.0             0.0             0.0               4
+   599   99   z       31             0.0             0.0             0.0             0.0               4
 
 As expected, the ``results.parquet`` has 600 rows (as opposed to 60k with the old input YAML) 
 and the range of ``bar`` and ``counter``  values are consistent 
