@@ -229,7 +229,7 @@ Environments
 ============
 The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
 information about the computing environment which will execute the steps of the 
-pipeline. When we ran our first pipeline, ``common/pipeline.yaml`` above, we passed 
+pipeline. When we ran our first pipeline, ``tests/specifications/common/pipeline.yaml`` above, we passed 
 ``tests/specifications/common/environment_local.yaml`` 
 to this argument. The contents of this YAML file are shown below.
 
@@ -409,7 +409,7 @@ Let's run the same pipeline as before, but with this new input data YAML.
    Job 0: Grabbing final output
    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
 
-As expected, the results parqet has 600 rows, as opposed to 60k with the old input YAML, 
+As expected, the ``results.parqet`` has 600 rows (as opposed to 60k with the old input YAML) 
 and the range of ``bar`` and ``counter``  values are consistent 
 with our new input files. As before, the transformation of the data is specific to the development schema and will 
 change.
