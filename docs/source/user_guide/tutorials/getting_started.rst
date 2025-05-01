@@ -249,8 +249,8 @@ cluster management system which EasyLink can interface with to schedule and run 
 running all pipeline steps in your local computing environment, each step can be run with the additional resources of a separate compute node.
 
 To run the pipeline using slurm, we will pass :download:`environment_slurm.yaml <environment_slurm.yaml>` 
-to the ``environment`` command line parameter. Download the file to the directory you will run ``easylink`` 
-from -- I downloaded it to the root ``easylink`` directory. The YAML looks like this:
+to the ``--computing-environment`` command line parameter. Download the file to the directory you will run ``easylink`` 
+in -- I downloaded it to the root ``easylink`` directory. The YAML looks like this:
 
 .. code-block:: yaml
 
@@ -321,8 +321,8 @@ Let's try passing a different input data specification YAML file,
    input_file_2: input_file_2.parquet
    input_file_3: input_file_3.parquet
 
-Download the file to the directory you will run easylink from, and then download the three input 
-parquets, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
+Download the file to the directory you will run easylink in, and then download the three input 
+Parquet files, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
 and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory. In this case 
 I downloaded them to the root ``easylink`` directory.
 
@@ -409,7 +409,7 @@ Let's run the same pipeline as before, but with this new input data YAML.
    Job 0: Grabbing final output
    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
 
-As expected, the ``results.parqet`` has 600 rows (as opposed to 60k with the old input YAML) 
+As expected, the ``results.parquet`` has 600 rows (as opposed to 60k with the old input YAML) 
 and the range of ``bar`` and ``counter``  values are consistent 
 with our new input files. As before, the transformation of the data is specific to the development schema and will 
 change.
