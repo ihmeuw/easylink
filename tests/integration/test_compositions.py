@@ -112,7 +112,7 @@ EP_SECTION_MAPPING = {
             # The total number of rows in the entire set of input data (which gets
             # fed into both the main and the secondary input slots) is ROWS.
             # The first substep (in each branch of the embarrassingly parallel split)
-            # gets 1/2xROWS (due to the splitting) in the main input slot plus 1xROWS
+            # gets 0.5xROWS (due to the splitting) in the main input slot plus 1xROWS
             # in the secondary input slot for a total of 1.5xROWS.
             # The second substep then gets the processed 1.5xROWS from the first
             # substep in the main slot plus 1xROWS in the secondary input slot for
