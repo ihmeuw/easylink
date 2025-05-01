@@ -34,31 +34,6 @@ def test_input_slot_hashing() -> None:
     assert slot == slot_dupe
     assert {slot, slot_dupe} == {slot}
 
-    slot_with_splitter = InputSlot("slot", "foo", validate_input_file_dummy, dummy_splitter)
-
-    assert slot != slot_with_splitter
-    assert {slot, slot_with_splitter, slot, slot_with_splitter} == {
-        slot,
-        slot_with_splitter,
-    }
-
-    slot_with_different_splitter = InputSlot(
-        "slot", "foo", validate_input_file_dummy, dummy_splitter_2
-    )
-    assert slot_with_splitter != slot_with_different_splitter
-    assert {
-        slot,
-        slot_dupe,
-        slot_with_splitter,
-        slot_with_different_splitter,
-        slot_with_splitter,
-        slot_with_different_splitter,
-    } == {
-        slot,
-        slot_with_splitter,
-        slot_with_different_splitter,
-    }
-
     slot_with_different_validator = InputSlot("slot", "foo", dummy_validator)
     assert slot != slot_with_different_validator
     assert {slot, slot_dupe, slot_with_different_validator} == {
@@ -73,46 +48,12 @@ def test_output_slot_hashing() -> None:
     assert slot == slot_dupe
     assert {slot, slot_dupe} == {slot}
 
-    slot_with_aggregator = OutputSlot("slot", dummy_aggregator)
 
-    assert slot != slot_with_aggregator
-    assert {slot, slot_with_aggregator, slot, slot_with_aggregator} == {
-        slot,
-        slot_with_aggregator,
-    }
-
-    slot_with_different_aggregator = OutputSlot("slot", dummy_aggregator_2)
-    assert slot_with_aggregator != slot_with_different_aggregator
-    assert {
-        slot,
-        slot_dupe,
-        slot_with_aggregator,
-        slot_with_different_aggregator,
-        slot_with_aggregator,
-        slot_with_different_aggregator,
-    } == {
-        slot,
-        slot_with_aggregator,
-        slot_with_different_aggregator,
-    }
-
-    input_slot = InputSlot("slot", "foo", validate_input_file_dummy)
-
-
-def test_slot_mutability() -> None:
+def test_input_slot_mutability() -> None:
     slot = InputSlot("slot", "foo", validate_input_file_dummy)
-    assert slot.splitter is None
-    slot.splitter = dummy_splitter
-    assert slot.splitter == dummy_splitter
-    slot.splitter = dummy_splitter_2
-    assert slot.splitter == dummy_splitter_2
-
-    slot = OutputSlot("slot")
-    assert slot.aggregator is None
-    slot.aggregator = dummy_aggregator
-    assert slot.aggregator == dummy_aggregator
-    slot.aggregator = dummy_aggregator_2
-    assert slot.aggregator == dummy_aggregator_2
+    assert slot.validator == validate_input_file_dummy
+    slot.validator = dummy_validator
+    assert slot.validator == dummy_validator
 
 
 def test_edge() -> None:
