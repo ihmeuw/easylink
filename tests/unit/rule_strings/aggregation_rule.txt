@@ -1,23 +1,23 @@
 
-def get_aggregation_inputs_foo_rule_main_output(wildcards):
-    checkpoint_file = "some/path/to/input_chunks/checkpoint.txt"
+def get_aggregation_inputs_this_is_an_aggregation_rule(wildcards):
+    checkpoint_file = "this/is/the/checkpoint.txt"
     if not os.path.exists(checkpoint_file):
-        output, _ = checkpoints.split_foo_rule_main.rule.expand_output(wildcards)
-        raise IncompleteCheckpointException(checkpoints.split_foo_rule_main.rule, checkpoint_target(output[0]))
-    checkpoint_output = glob.glob(f"{checkpoints.split_foo_rule_main.get(**wildcards).output.output_dir}/*/")
+        output, _ = checkpoints.this_is_a_checkpoint_rule.rule.expand_output(wildcards)
+        raise IncompleteCheckpointException(checkpoints.this_is_a_checkpoint_rule.rule, checkpoint_target(output[0]))
+    checkpoint_output = glob.glob(f"{checkpoints.this_is_a_checkpoint_rule.get(**wildcards).output.output_dir}/*/")
     chunks = [Path(filepath).parts[-1] for filepath in checkpoint_output]
-    return expand(
-        "some/path/to/processed/{chunk}/quux",
-        chunk=chunks
-    )
+    input_files = []
+    for filepath in ['these/are/processed/{chunk}/result.parquet']:
+        input_files.extend(expand(filepath, chunk=chunks))
+    return input_files
 rule:
-    name: "aggregate_foo_rule_main_output"
-    input: get_aggregation_inputs_foo_rule_main_output
-    output: ['some/path/to/quux']
+    name: "this_is_an_aggregation_rule"
+    input: get_aggregation_inputs_this_is_an_aggregation_rule
+    output: ['some/path/to/aggregated/results/result.parquet']
     localrule: True
-    message: "Aggregating foo_rule main_output"
+    message: "Aggregating this_is_an_aggregation_rule"
     run:
-        aggregator_utils._dummy_aggregator(
+        aggregator_utils.my_aggregator(
             input_files=list(input),
-            output_filepath="some/path/to/quux",
+            output_filepath="some/path/to/aggregated/results/result.parquet",
         )
