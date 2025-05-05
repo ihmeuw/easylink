@@ -321,7 +321,7 @@ Let's try passing a different input data specification YAML file,
    input_file_2: input_file_2.parquet
    input_file_3: input_file_3.parquet
 
-Download the file to the directory you will run easylink in, and then download the three input 
+Download the file to the directory you will run EasyLink in, and then download the three input 
 Parquet files, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
 and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory. In this case 
 I downloaded them to the root ``easylink`` directory.
@@ -426,6 +426,119 @@ As expected, the ``results.parquet`` has 600 rows (as opposed to 60k with the ol
 and the range of ``bar`` and ``counter``  values are consistent 
 with our new input files. As before, the transformation of the data is specific to the development schema and will 
 change.
+
+Implementations
+===============
+EasyLink is a powerful tool that allows users to use any valid implementation for each step in the pipeline. 
+Users can define their own implementations or use Easylink-provided ones. In the pipelines we've run so far, 
+we've only used the ``python_pandas`` implementations of the development schema steps, as we can see if we 
+look at ``tests/specifications/common/pipeline.yaml``::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_python_pandas
+      step_2:
+         implementation:
+            name: step_2_python_pandas
+      step_3:
+         implementation:
+            name: step_3_python_pandas
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+               name: step_4_python_pandas
+
+Let's try an example where we choose some alternative implementations instead. For now, while we are using 
+the development pipeline schema, the implementations we can choose from are listed in 
+``implementation_metadata.yaml``. In addition to the ``step_N_python_pandas`` implementations, each step 
+also has a ``step_N_r`` implementation and a ``step_N_python_pyspark`` implementation to choose from.
+
+For the purposes of the development pipeline, all these implementations will have the same effect on the 
+data, but the ``r`` implementation is written in R instead of Python, and the ``python_pyspark`` implementation is written 
+using the `Python API for Apache Spark <https://spark.apache.org/docs/latest/api/python/index.html>`_ and 
+utilizes `Spark <https://spark.apache.org/>`_ for distributed data processing. Running a Spark 
+implementation involves some additional setup and initialization of the Spark engine during the step, but 
+enables distributed processing of a large-scale dataset on high-performance computing nodes or clusters. 
+
+Let's run a new pipeline defined in :download:`r_spark_pipeline.yaml <r_spark_pipeline.yaml>` which uses 
+all three of our currently available types of implementations::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_python_pandas
+      step_2:
+         implementation:
+            name: step_2_r
+      step_3:
+         implementation:
+            name: step_3_python_pyspark
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+            name: step_4_python_pandas
+
+Download the file to the directory you will run EasyLink in, and then run run the pipeline::
+
+   $ easylink run -p r_spark_pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml 
+   2025-05-05 09:42:39.741 | 0:00:08.797745 | run:158 - Running pipeline
+   2025-05-05 09:42:39.742 | 0:00:08.798666 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_05_09_42_39
+   2025-05-05 09:42:44.743 | 0:00:13.799429 | main:115 - Running Snakemake
+   [Mon May  5 09:42:45 2025]
+   localrule wait_for_spark_master:
+      output: spark_logs/spark_master_uri.txt
+      jobid: 15
+      reason: Missing output files: spark_logs/spark_master_uri.txt
+      resources: tmpdir=/tmp
+   [Mon May  5 09:42:45 2025]
+   localrule start_spark_master:
+      output: spark_logs/spark_master_log.txt
+      jobid: 13
+      reason: Missing output files: spark_logs/spark_master_log.txt
+      resources: tmpdir=/tmp
+   ...
+   [Mon May  5 09:42:54 2025]
+   Job 4: Running step_2 implementation: step_2_r
+   Reason: Missing output files: intermediate/step_2_r/result.parquet; Input files updated by another job: input_validations/step_2_r/step_2_main_input_validator, intermediate/step_1_python_pandas/result.parquet
+   ...
+   [Mon May  5 09:43:24 2025]
+   Job 20: Running step_3 implementation: step_3_python_pyspark
+   Reason: Missing output files: intermediate/step_3_python_pyspark/processed/chunk_0/result.parquet; Input files updated by another job: spark_logs/spark_worker_started_1-of-2.txt, spark_logs/spark_worker_started_2-of-2.txt
+   ...
+   [Mon May  5 09:43:54 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, spark_logs/spark_worker_log_2-of-2.txt, intermediate/step_4_python_pandas/result.parquet, spark_logs/spark_worker_log_1-of-2.txt, spark_logs/spark_master_log.txt, spark_logs/spark_master_terminated.txt
+
+We can see in the output that both the ``pyspark`` and ``r`` implementations were run. The output also shows 
+some of the PySpark setup -- the full output shows more of the process, such as the initialization of the Spark 
+master and workers (see the `Spark documentation <https://spark.apache.org/docs/latest/>`_ for more information) 
+and the splitting and aggregating of input data chunks for Spark processing. 
+
+We can also vizualize the new implementations in the pipeline DAG:
+
+.. image:: DAG-r-pyspark.svg
+   :width: 400
+
+If we check we'll see that the results are the same as they were when we ran
+``tests/specifications/common/pipeline.yaml`` previously::
+
+   $ pqprint results/2025_05_05_09_42_39/result.parquet
+         foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
+   0         0   a        4             0.0             1.0             2.0             3.0               4
+   1         1   b        4             0.0             1.0             2.0             3.0               4
+   2         2   c        4             0.0             1.0             2.0             3.0               4
+   3         3   d        4             0.0             1.0             2.0             3.0               4
+   4         4   e        4             0.0             1.0             2.0             3.0               4
+   ...     ...  ..      ...             ...             ...             ...             ...             ...
+   59995  9995   a        1             0.0             0.0             0.0             0.0               4
+   59996  9996   b        1             0.0             0.0             0.0             0.0               4
+   59997  9997   c        1             0.0             0.0             0.0             0.0               4
+   59998  9998   d        1             0.0             0.0             0.0             0.0               4
+   59999  9999   e        1             0.0             0.0             0.0             0.0               4
+   [60000 rows x 8 columns]
 
 
 More Pipeline Specifications
