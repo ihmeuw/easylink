@@ -1,3 +1,7 @@
+**0.1.15 - 5/5/25**
+
+ - Fix SyntaxWarning for unescaped backslashes
+
 **0.1.14 - 5/1/25**
 
  - Add support for EmbarrassinglyParallelSteps to accept sections (i.e. non-leaf steps)
