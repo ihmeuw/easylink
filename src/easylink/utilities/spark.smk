@@ -70,7 +70,7 @@ rule wait_for_spark_master:
         while true; do
 
             if [[ -e {params.spark_master_log_file} ]]; then
-                found=`grep -o "\(spark://.*$\)" {params.spark_master_log_file} || true`
+                found=`grep -o "\\(spark://.*$\\)" {params.spark_master_log_file} || true`
 
                 if [[ ! -z $found ]]; then
                     echo "Spark master URL found: $found"
@@ -178,7 +178,7 @@ rule wait_for_spark_worker:
         while true; do
 
             if [[ -e {params.spark_worker_log_file} ]]; then
-                found=`grep -o "\(Worker: Successfully registered with master $MASTER_URL\)" {params.spark_worker_log_file} || true`
+                found=`grep -o "\\(Worker: Successfully registered with master $MASTER_URL\\)" {params.spark_worker_log_file} || true`
 
                 if [[ ! -z $found ]]; then
                     echo "Spark Worker {wildcards.scatteritem} registered successfully"
