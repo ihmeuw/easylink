@@ -541,6 +541,99 @@ If we check we'll see that the results are the same as they were when we ran
    [60000 rows x 8 columns]
 
 
+Implementation Configuration
+----------------------------
+Additionally, implementations can be configured in the pipeline YAML. An implementation may have some variable parameters
+that allow it to be configured in different ways for different pipelines. These parameters are defined by the 
+implementation itself, rather than the pipeline schema, so it is up to the user of the implementation to 
+understand what parameters are configurable and to set them in the pipeline YAML. 
+
+These variable parameters are configured by setting environment variables in a ``configuration`` section of the 
+``implementation`` definition in the YAML. We'll use a new pipeline YAML, 
+:download:`impl-config-pipeline.yaml <impl-config-pipeline.yaml>`, as an example::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_python_pandas
+            configuration:
+               DUMMY_CONTAINER_INCREMENT: 11
+      step_2:
+         implementation:
+            name: step_2_python_pandas
+            configuration:
+               DUMMY_CONTAINER_INCREMENT: 50
+      step_3:
+         implementation:
+            name: step_3_python_pandas
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+               name: step_4_python_pandas
+
+The ``python_pandas`` implementations define an environment variable ``DUMMY_CONTAINER_INCREMENT`` which 
+specifies the number of columns the step should add to the dataset (the default is 1). As in other 
+parts of this tutorial, this particular implementation, and therefore the associated environment variable,
+is specific to the development schema, but the 
+concept of configuring implementations using environment variables is not. Real record linkage implementations 
+will have environment variables which will be configurable in the same way.
+
+Let's run our pipeline and see how the results compare to the ``tests/specifications/common/pipeline.yaml`` 
+results that have been our baseline throughout the tutorial. 
+
+.. code-block:: console
+
+   $ easylink run -p impl-config-pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml 
+   2025-05-06 08:44:38.236 | 0:00:04.044818 | run:158 - Running pipeline
+   2025-05-06 08:44:38.236 | 0:00:04.045102 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_06_08_44_38
+   2025-05-06 08:44:40.749 | 0:00:06.557575 | main:115 - Running Snakemake
+   [Tue May  6 08:44:41 2025]
+   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
+   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
+   ...
+   [Tue May  6 08:44:59 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
+   $ pqprint results/2025_05_06_08_44_38/result.parquet 
+         foo bar  counter  added_column_59  added_column_60  added_column_61  added_column_62  added_column_63
+   0         0   a       63             59.0             60.0             61.0             62.0               63
+   1         1   b       63             59.0             60.0             61.0             62.0               63
+   2         2   c       63             59.0             60.0             61.0             62.0               63
+   3         3   d       63             59.0             60.0             61.0             62.0               63
+   4         4   e       63             59.0             60.0             61.0             62.0               63
+   ...     ...  ..      ...              ...              ...              ...              ...              ...
+   59995  9995   a        1              0.0              0.0              0.0              0.0               63
+   59996  9996   b        1              0.0              0.0              0.0              0.0               63
+   59997  9997   c        1              0.0              0.0              0.0              0.0               63
+   59998  9998   d        1              0.0              0.0              0.0              0.0               63
+   59999  9999   e        1              0.0              0.0              0.0              0.0               63
+   [60000 rows x 8 columns]
+
+As you can see, the output shows that 63 columns were added, as expected.
+
+.. note::
+   11 from ``step_1``, 50 from ``step_2``, 1 from ``step_3`` and 1 from ``step_4``. 
+   Only the last 5 columns added are kept in the dataset at each step.
+
+To double check this behavior, we can look at the output after ``step_1`` and see that there have been 11 columns 
+added, as specified in the YAML::
+
+   $ pqprint results/2025_05_06_08_44_38/intermediate/step_1_python_pandas/result.parquet 
+           foo bar  counter  added_column_7  added_column_8  added_column_9  added_column_10  added_column_11
+   0         0   a       11               7               8               9               10               11
+   1         1   b       11               7               8               9               10               11
+   2         2   c       11               7               8               9               10               11
+   3         3   d       11               7               8               9               10               11
+   4         4   e       11               7               8               9               10               11
+   ...     ...  ..      ...             ...             ...             ...              ...              ...
+   29995  9995   a       11               7               8               9               10               11
+   29996  9996   b       11               7               8               9               10               11
+   29997  9997   c       11               7               8               9               10               11
+   29998  9998   d       11               7               8               9               10               11
+   29999  9999   e       11               7               8               9               10               11
+   [30000 rows x 8 columns]
+
 More Pipeline Specifications
 ============================
 The ``tests`` folder includes several other pipeline specification files (YAML files). While some are special 
