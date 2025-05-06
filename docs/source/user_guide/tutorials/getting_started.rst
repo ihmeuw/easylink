@@ -468,49 +468,53 @@ all three of our currently available types of implementations::
    steps:
       step_1:
          implementation:
-            name: step_1_python_pandas
+            name: step_1_r
       step_2:
          implementation:
-            name: step_2_r
+            name: step_2_python_pyspark
       step_3:
          implementation:
-            name: step_3_python_pyspark
+            name: step_3_python_pandas
       choice_section:
          type: simple
          step_4:
             implementation:
-            name: step_4_python_pandas
+               name: step_4_python_pandas
 
-Download the file to the directory you will run EasyLink in, and then run run the pipeline::
 
-   $ easylink run -p r_spark_pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml 
-   2025-05-05 09:42:39.741 | 0:00:08.797745 | run:158 - Running pipeline
-   2025-05-05 09:42:39.742 | 0:00:08.798666 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_05_09_42_39
-   2025-05-05 09:42:44.743 | 0:00:13.799429 | main:115 - Running Snakemake
-   [Mon May  5 09:42:45 2025]
+Download the file to the directory you will run EasyLink in, and then run the pipeline::
+
+   $ easylink run -p r_spark_pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml
+   2025-05-06 12:04:36.283 | 0:00:01.876659 | run:158 - Running pipeline
+   2025-05-06 12:04:36.283 | 0:00:01.876886 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_06_12_04_36
+   2025-05-06 12:04:39.437 | 0:00:05.031270 | main:115 - Running Snakemake
+   [Tue May  6 12:04:40 2025]
    localrule wait_for_spark_master:
       output: spark_logs/spark_master_uri.txt
-      jobid: 15
+      jobid: 9
       reason: Missing output files: spark_logs/spark_master_uri.txt
       resources: tmpdir=/tmp
-   [Mon May  5 09:42:45 2025]
+   [Tue May  6 12:04:40 2025]
+   Job 12: Validating step_4_python_pandas input slot step_4_secondary_input
+   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
+   [Tue May  6 12:04:40 2025]
    localrule start_spark_master:
       output: spark_logs/spark_master_log.txt
-      jobid: 13
+      jobid: 16
       reason: Missing output files: spark_logs/spark_master_log.txt
       resources: tmpdir=/tmp
    ...
-   [Mon May  5 09:42:54 2025]
-   Job 4: Running step_2 implementation: step_2_r
-   Reason: Missing output files: intermediate/step_2_r/result.parquet; Input files updated by another job: input_validations/step_2_r/step_2_main_input_validator, intermediate/step_1_python_pandas/result.parquet
+   [Tue May  6 12:04:42 2025]
+   Job 5: Running step_1 implementation: step_1_r
+   Reason: Missing output files: intermediate/step_1_r/result.parquet; Input files updated by another job: input_validations/step_1_r/step_1_main_input_validator
    ...
-   [Mon May  5 09:43:24 2025]
-   Job 20: Running step_3 implementation: step_3_python_pyspark
-   Reason: Missing output files: intermediate/step_3_python_pyspark/processed/chunk_0/result.parquet; Input files updated by another job: spark_logs/spark_worker_started_1-of-2.txt, spark_logs/spark_worker_started_2-of-2.txt
+   [Tue May  6 12:05:10 2025]
+   Job 4: Running step_2 implementation: step_2_python_pyspark
+   Reason: Missing output files: intermediate/step_2_python_pyspark/result.parquet; Input files updated by another job: spark_logs/spark_worker_started_2-of-2.txt, input_validations/step_2_python_pyspark/step_2_main_input_validator, intermediate/step_1_r/result.parquet, spark_logs/spark_worker_started_1-of-2.txt, spark_logs/spark_master_uri.txt
    ...
-   [Mon May  5 09:43:54 2025]
+   [Tue May  6 12:05:58 2025]
    Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, spark_logs/spark_worker_log_2-of-2.txt, intermediate/step_4_python_pandas/result.parquet, spark_logs/spark_worker_log_1-of-2.txt, spark_logs/spark_master_log.txt, spark_logs/spark_master_terminated.txt
+   Reason: Missing output files: result.parquet; Input files updated by another job: spark_logs/spark_worker_log_2-of-2.txt, spark_logs/spark_master_terminated.txt, intermediate/step_4_python_pandas/result.parquet, spark_logs/spark_worker_log_1-of-2.txt, input_validations/final_validator, spark_logs/spark_master_log.txt
 
 We can see in the output that both the ``pyspark`` and ``r`` implementations were run. The output also shows 
 some of the PySpark setup -- the full output shows more of the process, such as the initialization of the Spark 
@@ -525,8 +529,8 @@ We can also vizualize the new implementations in the pipeline DAG:
 If we check we'll see that the results are the same as they were when we ran
 ``tests/specifications/common/pipeline.yaml`` previously::
 
-   $ pqprint results/2025_05_05_09_42_39/result.parquet
-         foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
+   $ pqprint results/2025_05_06_12_04_36/result.parquet 
+           foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
    0         0   a        4             0.0             1.0             2.0             3.0               4
    1         1   b        4             0.0             1.0             2.0             3.0               4
    2         2   c        4             0.0             1.0             2.0             3.0               4
