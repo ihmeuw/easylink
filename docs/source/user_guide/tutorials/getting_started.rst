@@ -482,7 +482,7 @@ all three of our currently available types of implementations::
                name: step_4_python_pandas
 
 
-Download the file to the directory you will run EasyLink in, and then run run the pipeline::
+Download the file to the directory you will run EasyLink in, and then run the pipeline::
 
    $ easylink run -p r_spark_pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml
    2025-05-06 12:04:36.283 | 0:00:01.876659 | run:158 - Running pipeline
@@ -542,7 +542,6 @@ If we check we'll see that the results are the same as they were when we ran
    59997  9997   c        1             0.0             0.0             0.0             0.0               4
    59998  9998   d        1             0.0             0.0             0.0             0.0               4
    59999  9999   e        1             0.0             0.0             0.0             0.0               4
-
    [60000 rows x 8 columns]
 
 
