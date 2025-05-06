@@ -547,12 +547,12 @@ If we check we'll see that the results are the same as they were when we ran
 
 Implementation Configuration
 ----------------------------
-Additionally, implementations can be configured in the pipeline YAML. An implementation may have some variable parameters
-that allow it to be configured in different ways for different pipelines. These parameters are defined by the 
+Additionally, implementations can be configured in the pipeline YAML. An implementation may have some settings
+that allow it to be configured in different ways for different pipelines. These settings are defined by the 
 implementation itself, rather than the pipeline schema, so it is up to the user of the implementation to 
-understand what parameters are configurable and to set them in the pipeline YAML. 
+understand and configure them. 
 
-These variable parameters are configured by setting environment variables in a ``configuration`` section of the 
+These settings are configured by placing environment variables in the ``configuration`` section of the 
 ``implementation`` definition in the YAML. We'll use a new pipeline YAML, 
 :download:`impl-config-pipeline.yaml <impl-config-pipeline.yaml>`, as an example::
 
