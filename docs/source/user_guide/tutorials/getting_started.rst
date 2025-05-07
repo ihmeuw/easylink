@@ -321,7 +321,7 @@ Let's try passing a different input data specification YAML file,
    input_file_2: input_file_2.parquet
    input_file_3: input_file_3.parquet
 
-Download the file to the directory you will run easylink in, and then download the three input 
+Download the file to the directory you will run EasyLink in, and then download the three input 
 Parquet files, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
 and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory. In this case 
 I downloaded them to the root ``easylink`` directory.
@@ -427,6 +427,216 @@ and the range of ``bar`` and ``counter``  values are consistent
 with our new input files. As before, the transformation of the data is specific to the development schema and will 
 change.
 
+Implementations
+===============
+EasyLink is a powerful tool that allows users to use any valid implementation for each step in the pipeline. 
+Users can define their own implementations or use Easylink-provided ones. In the pipelines we've run so far, 
+we've only used the ``python_pandas`` implementations of the development schema steps, as we can see if we 
+look at ``tests/specifications/common/pipeline.yaml``::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_python_pandas
+      step_2:
+         implementation:
+            name: step_2_python_pandas
+      step_3:
+         implementation:
+            name: step_3_python_pandas
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+               name: step_4_python_pandas
+
+Let's try an example where we choose some alternative implementations instead. For now, while we are using 
+the development pipeline schema, the implementations we can choose from are listed in 
+``implementation_metadata.yaml``. In addition to the ``step_N_python_pandas`` implementations, each step 
+also has a ``step_N_r`` implementation and a ``step_N_python_pyspark`` implementation to choose from.
+
+For the purposes of the development pipeline, all these implementations will have the same effect on the 
+data, but the ``r`` implementation is written in R instead of Python, and the ``python_pyspark`` implementation is written 
+using the `Python API for Apache Spark <https://spark.apache.org/docs/latest/api/python/index.html>`_ and 
+utilizes `Spark <https://spark.apache.org/>`_ for distributed data processing. Running a Spark 
+implementation involves some additional setup and initialization of the Spark engine during the step, but 
+enables distributed processing of a large-scale dataset on high-performance computing nodes or clusters. 
+
+Let's run a new pipeline defined in :download:`r_spark_pipeline.yaml <r_spark_pipeline.yaml>` which uses 
+all three of our currently available types of implementations::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_r
+      step_2:
+         implementation:
+            name: step_2_python_pyspark
+      step_3:
+         implementation:
+            name: step_3_python_pandas
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+               name: step_4_python_pandas
+
+
+Download the file to the directory you will run EasyLink in, and then run the pipeline::
+
+   $ easylink run -p r_spark_pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml
+   2025-05-06 12:04:36.283 | 0:00:01.876659 | run:158 - Running pipeline
+   2025-05-06 12:04:36.283 | 0:00:01.876886 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_06_12_04_36
+   2025-05-06 12:04:39.437 | 0:00:05.031270 | main:115 - Running Snakemake
+   [Tue May  6 12:04:40 2025]
+   localrule wait_for_spark_master:
+      output: spark_logs/spark_master_uri.txt
+      jobid: 9
+      reason: Missing output files: spark_logs/spark_master_uri.txt
+      resources: tmpdir=/tmp
+   [Tue May  6 12:04:40 2025]
+   Job 12: Validating step_4_python_pandas input slot step_4_secondary_input
+   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
+   [Tue May  6 12:04:40 2025]
+   localrule start_spark_master:
+      output: spark_logs/spark_master_log.txt
+      jobid: 16
+      reason: Missing output files: spark_logs/spark_master_log.txt
+      resources: tmpdir=/tmp
+   ...
+   [Tue May  6 12:04:42 2025]
+   Job 5: Running step_1 implementation: step_1_r
+   Reason: Missing output files: intermediate/step_1_r/result.parquet; Input files updated by another job: input_validations/step_1_r/step_1_main_input_validator
+   ...
+   [Tue May  6 12:05:10 2025]
+   Job 4: Running step_2 implementation: step_2_python_pyspark
+   Reason: Missing output files: intermediate/step_2_python_pyspark/result.parquet; Input files updated by another job: spark_logs/spark_worker_started_2-of-2.txt, input_validations/step_2_python_pyspark/step_2_main_input_validator, intermediate/step_1_r/result.parquet, spark_logs/spark_worker_started_1-of-2.txt, spark_logs/spark_master_uri.txt
+   ...
+   [Tue May  6 12:05:58 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: spark_logs/spark_worker_log_2-of-2.txt, spark_logs/spark_master_terminated.txt, intermediate/step_4_python_pandas/result.parquet, spark_logs/spark_worker_log_1-of-2.txt, input_validations/final_validator, spark_logs/spark_master_log.txt
+
+We can see in the output that both the ``pyspark`` and ``r`` implementations were run. The output also shows 
+some of the PySpark setup -- the full output shows more of the process, such as the initialization of the Spark 
+master and workers (see the `Spark documentation <https://spark.apache.org/docs/latest/>`_ for more information) 
+and the splitting and aggregating of input data chunks for Spark processing. 
+
+We can also vizualize the new implementations in the pipeline DAG:
+
+.. image:: DAG-r-pyspark.svg
+   :width: 400
+
+If we check we'll see that the results are the same as they were when we ran
+``tests/specifications/common/pipeline.yaml`` previously::
+
+   $ pqprint results/2025_05_06_12_04_36/result.parquet 
+           foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
+   0         0   a        4             0.0             1.0             2.0             3.0               4
+   1         1   b        4             0.0             1.0             2.0             3.0               4
+   2         2   c        4             0.0             1.0             2.0             3.0               4
+   3         3   d        4             0.0             1.0             2.0             3.0               4
+   4         4   e        4             0.0             1.0             2.0             3.0               4
+   ...     ...  ..      ...             ...             ...             ...             ...             ...
+   59995  9995   a        1             0.0             0.0             0.0             0.0               4
+   59996  9996   b        1             0.0             0.0             0.0             0.0               4
+   59997  9997   c        1             0.0             0.0             0.0             0.0               4
+   59998  9998   d        1             0.0             0.0             0.0             0.0               4
+   59999  9999   e        1             0.0             0.0             0.0             0.0               4
+   [60000 rows x 8 columns]
+
+
+Implementation Configuration
+----------------------------
+Additionally, implementations can be configured in the pipeline YAML. An implementation may have some settings
+that allow it to be configured in different ways for different pipelines. These settings are defined by the 
+implementation itself, rather than the pipeline schema, so it is up to the user of the implementation to 
+understand and configure them. 
+
+These settings are configured by placing environment variables in the ``configuration`` section of the 
+``implementation`` definition in the YAML. We'll use a new pipeline YAML, 
+:download:`impl-config-pipeline.yaml <impl-config-pipeline.yaml>`, as an example::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_python_pandas
+            configuration:
+               DUMMY_CONTAINER_INCREMENT: 11
+      step_2:
+         implementation:
+            name: step_2_python_pandas
+            configuration:
+               DUMMY_CONTAINER_INCREMENT: 50
+      step_3:
+         implementation:
+            name: step_3_python_pandas
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+               name: step_4_python_pandas
+
+The ``python_pandas`` implementations define an environment variable ``DUMMY_CONTAINER_INCREMENT`` which 
+specifies the number of columns the step should add to the dataset (the default is 1). As in other 
+parts of this tutorial, this particular implementation, and therefore the associated environment variable,
+is specific to the development schema, but the 
+concept of configuring implementations using environment variables is not. Real record linkage implementations 
+will have environment variables which will be configurable in the same way.
+
+Let's run our pipeline and see how the results compare to the ``tests/specifications/common/pipeline.yaml`` 
+results that have been our baseline throughout the tutorial. 
+
+.. code-block:: console
+
+   $ easylink run -p impl-config-pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml 
+   2025-05-06 08:44:38.236 | 0:00:04.044818 | run:158 - Running pipeline
+   2025-05-06 08:44:38.236 | 0:00:04.045102 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_06_08_44_38
+   2025-05-06 08:44:40.749 | 0:00:06.557575 | main:115 - Running Snakemake
+   [Tue May  6 08:44:41 2025]
+   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
+   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
+   ...
+   [Tue May  6 08:44:59 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
+   $ pqprint results/2025_05_06_08_44_38/result.parquet 
+         foo bar  counter  added_column_59  added_column_60  added_column_61  added_column_62  added_column_63
+   0         0   a       63             59.0             60.0             61.0             62.0               63
+   1         1   b       63             59.0             60.0             61.0             62.0               63
+   2         2   c       63             59.0             60.0             61.0             62.0               63
+   3         3   d       63             59.0             60.0             61.0             62.0               63
+   4         4   e       63             59.0             60.0             61.0             62.0               63
+   ...     ...  ..      ...              ...              ...              ...              ...              ...
+   59995  9995   a        1              0.0              0.0              0.0              0.0               63
+   59996  9996   b        1              0.0              0.0              0.0              0.0               63
+   59997  9997   c        1              0.0              0.0              0.0              0.0               63
+   59998  9998   d        1              0.0              0.0              0.0              0.0               63
+   59999  9999   e        1              0.0              0.0              0.0              0.0               63
+   [60000 rows x 8 columns]
+
+As you can see, the output shows that 63 columns were added, as expected.
+
+.. note::
+   11 from ``step_1``, 50 from ``step_2``, 1 from ``step_3`` and 1 from ``step_4``. 
+   Only the last 5 columns added are kept in the dataset at each step.
+
+To double check this behavior, we can look at the output after ``step_1`` and see that there have been 11 columns 
+added, as specified in the YAML::
+
+   $ pqprint results/2025_05_06_08_44_38/intermediate/step_1_python_pandas/result.parquet 
+           foo bar  counter  added_column_7  added_column_8  added_column_9  added_column_10  added_column_11
+   0         0   a       11               7               8               9               10               11
+   1         1   b       11               7               8               9               10               11
+   2         2   c       11               7               8               9               10               11
+   3         3   d       11               7               8               9               10               11
+   4         4   e       11               7               8               9               10               11
+   ...     ...  ..      ...             ...             ...             ...              ...              ...
+   29995  9995   a       11               7               8               9               10               11
+   29996  9996   b       11               7               8               9               10               11
+   29997  9997   c       11               7               8               9               10               11
+   29998  9998   d       11               7               8               9               10               11
+   29999  9999   e       11               7               8               9               10               11
+   [30000 rows x 8 columns]
 
 More Pipeline Specifications
 ============================
