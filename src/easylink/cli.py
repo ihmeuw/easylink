@@ -204,3 +204,19 @@ def generate_dag(
         results_dir=results_dir,
     )
     logger.info("*** DAG saved to result directory ***")
+
+
+#####################
+# Development tools #
+#####################
+
+@click.group(hidden=True)
+def devtools():
+    """Development tools for EasyLink."""
+    pass
+
+easylink.add_command(devtools)
+
+@devtools.command()
+def create_implementation():
+    logger.info("TODO: create implementation")
