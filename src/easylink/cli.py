@@ -251,7 +251,7 @@ def create_implementation(
     This is a helper tool for developers to more easily create implementations
     and register them with the EasyLink framework.
 
-    SCRIPTS are the filepaths to the implementation scripts to be run from within
+    SCRIPTS are the filepaths to the implementation Python scripts to be run from within
     a newly created container. The script must specify required pypi dependencies
     as well as the name of the pipeline step it is implementing via comments
     with the exact format shown in the example below. 
