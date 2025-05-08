@@ -152,7 +152,9 @@ From: {self.BASE_IMAGE}
             raise ValueError("No recipe text to build.")
         if recipe_path.exists():
             logger.warning(f"Recipe file {recipe_path} already exists. Overwriting it.")
-        recipe_path.write_text(self.text)
+        with open(recipe_path, "w") as f:
+            f.write(self.text)
+            f.flush()
         if not recipe_path.exists():
             raise FileNotFoundError(f"Failed to write recipe to {recipe_path}.")
 
