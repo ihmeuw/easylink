@@ -25,7 +25,7 @@ def main(script_path: Path) -> None:
         The filepath to a single script that implements a step of the pipeline.
     """
     creator = ImplementationCreator(script_path)
-    creator.write_recipe()
+    creator.create_recipe()
     creator.build_container()
     creator.move_container()
     creator.register()
@@ -40,7 +40,7 @@ class ImplementationCreator:
         self.requirements = self._extract_requirements(script_path)
         self.step_name = self._extract_step_name(script_path)
 
-    def write_recipe(self) -> None:
+    def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
 
         recipe = PythonRecipe(self.script_path, self.requirements)
@@ -150,6 +150,8 @@ From: {self.BASE_IMAGE}
         recipe_path = self.script_path.with_suffix(".def")
         if not self.text:
             raise ValueError("No recipe text to build.")
+        if recipe_path.exists():
+            logger.warning(f"Recipe file {recipe_path} already exists. Overwriting it.")
         recipe_path.write_text(self.text)
         if not recipe_path.exists():
             raise FileNotFoundError(f"Failed to write recipe to {recipe_path}.")

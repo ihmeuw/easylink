@@ -74,7 +74,7 @@ def test_write_recipe(tmp_path: Path) -> None:
     with open(script_path, "w") as file:
         file.write(GOOD_METADATA)
     creator = ImplementationCreator(script_path)
-    creator.write_recipe()
+    creator.create_recipe()
     expected_recipe_path = (
         Path(os.path.dirname(__file__)) / "recipe_strings" / "python_pandas.txt"
     )
