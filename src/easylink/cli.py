@@ -46,7 +46,9 @@ from collections.abc import Callable
 import click
 from loguru import logger
 
+from pathlib import Path
 from easylink import runner
+from easylink.devtools import implementation_creator
 from easylink.utilities.data_utils import get_results_directory
 from easylink.utilities.general_utils import (
     configure_logging_to_terminal,
@@ -87,6 +89,9 @@ SHARED_OPTIONS = [
         default=False,
         help="Do not save the results in a timestamped sub-directory of ``--output-dir``.",
     ),
+]
+
+VERBOSE_WITH_DEBUGGER_OPTIONS = [
     click.option(
         "-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True
     ),
@@ -99,12 +104,8 @@ SHARED_OPTIONS = [
     ),
 ]
 
-
-def _pass_shared_options(func: Callable) -> Callable:
-    """Passes shared options to a click command.
-
-    This function is a decorator that takes a click command callable and adds the
-    shared options defined in ``SHARED_OPTIONS`` to it.
+def _pass_verbose_with_debugger_options(func: Callable) -> Callable:
+    """Passes verbosity and debugger options to a click command.
 
     Parameters
     ----------
@@ -115,7 +116,23 @@ def _pass_shared_options(func: Callable) -> Callable:
     -------
         The click command function with the shared options added.
     """
-    for option in SHARED_OPTIONS:
+    for option in VERBOSE_WITH_DEBUGGER_OPTIONS:
+        func = option(func)
+    return func
+
+def _pass_shared_options(func: Callable) -> Callable:
+    """Passes shared options to a click command.
+
+    Parameters
+    ----------
+    func
+        The click command function to add shared options to.
+
+    Returns
+    -------
+        The click command function with the shared options added.
+    """
+    for option in SHARED_OPTIONS + VERBOSE_WITH_DEBUGGER_OPTIONS:
         func = option(func)
     return func
 
@@ -218,5 +235,39 @@ def devtools():
 easylink.add_command(devtools)
 
 @devtools.command()
-def create_implementation():
-    logger.info("TODO: create implementation")
+@_pass_verbose_with_debugger_options
+@click.argument(
+    "scripts",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True, resolve_path=True),
+    nargs=-1,
+)
+def create_implementation(
+    scripts: tuple[str, ...],
+    verbose: int,
+    with_debugger: bool,
+):
+    """Creates EasyLink implementations from implementation details.
+    
+    This is a helper tool for developers to more easily create implementations
+    and register them with the EasyLink framework.
+
+    SCRIPTS are the filepaths to the implementation scripts to be run from within
+    a newly created container. The script must specify required pypi dependencies
+    as well as the name of the pipeline step it is implementing via comments
+    with the exact format shown in the example below. 
+    
+        # STEP_NAME: blocking
+
+        # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+
+    Note that the requirements should be formatted as a single line.
+    """
+    configure_logging_to_terminal(verbose)
+    main = handle_exceptions(
+        func=implementation_creator.main, exceptions_logger=logger, with_debugger=with_debugger
+    )
+    for script in scripts:
+        script = Path(script)
+        logger.info(f"Creating implementation for {script.name}")
+        main(script_path=script)
+    logger.info("*** Implementations created ***")
