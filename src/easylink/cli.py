@@ -271,7 +271,7 @@ def create_implementation(
     main = handle_exceptions(
         func=implementation_creator.main,
         exceptions_logger=logger,
-        with_debugger=with_debugger
+        with_debugger=with_debugger,
     )
     for script in scripts:
         script = Path(script)
