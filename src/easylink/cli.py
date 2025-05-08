@@ -47,7 +47,6 @@ from pathlib import Path
 import click
 from loguru import logger
 
-from pathlib import Path
 from easylink import runner
 from easylink.devtools import implementation_creator
 from easylink.utilities.data_utils import get_results_directory
@@ -105,21 +104,6 @@ VERBOSE_WITH_DEBUGGER_OPTIONS = [
     ),
 ]
 
-def _pass_verbose_with_debugger_options(func: Callable) -> Callable:
-    """Passes verbosity and debugger options to a click command.
-
-    Parameters
-    ----------
-    func
-        The click command function to add shared options to.
-
-    Returns
-    -------
-        The click command function with the shared options added.
-    """
-    for option in VERBOSE_WITH_DEBUGGER_OPTIONS:
-        func = option(func)
-    return func
 
 def _pass_verbose_with_debugger_options(func: Callable) -> Callable:
     """Passes verbosity and debugger options to a click command.
