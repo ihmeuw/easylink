@@ -12,10 +12,12 @@ In order to create an implementation, three things are needed:
 """
 
 from pathlib import Path
+
 from loguru import logger
 
+
 def main(script_path: Path) -> None:
-    """ Creates a container to run a specific script and registers it with EasyLink.
+    """Creates a container to run a specific script and registers it with EasyLink.
 
     Parameters
     ----------
@@ -30,9 +32,7 @@ def main(script_path: Path) -> None:
 
 
 class ImplementationCreator:
-    """A class used to create a container for a specific implementation.
-
-    """
+    """A class used to create a container for a specific implementation."""
 
     def __init__(self, script_path: Path) -> None:
         self.script_path = script_path
@@ -102,7 +102,7 @@ class PythonRecipe:
         self.implementation_name = script_path.name
 
     def build(self) -> None:
-        """ Builds the recipe for the container."""
+        """Builds the recipe for the container."""
         logger.info(f"Building recipe for '{self.implementation_name}'")
         ...
 
@@ -110,6 +110,3 @@ class PythonRecipe:
         """Writes the recipe to disk."""
         logger.info(f"Writing recipe for '{self.implementation_name}' to disk.")
         ...
-        
-
-

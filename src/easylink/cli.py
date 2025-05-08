@@ -42,11 +42,11 @@ For usage documentation, see :ref:`cli`.
 """
 
 from collections.abc import Callable
+from pathlib import Path
 
 import click
 from loguru import logger
 
-from pathlib import Path
 from easylink import runner
 from easylink.devtools import implementation_creator
 from easylink.utilities.data_utils import get_results_directory
@@ -104,6 +104,7 @@ VERBOSE_WITH_DEBUGGER_OPTIONS = [
     ),
 ]
 
+
 def _pass_verbose_with_debugger_options(func: Callable) -> Callable:
     """Passes verbosity and debugger options to a click command.
 
@@ -119,6 +120,7 @@ def _pass_verbose_with_debugger_options(func: Callable) -> Callable:
     for option in VERBOSE_WITH_DEBUGGER_OPTIONS:
         func = option(func)
     return func
+
 
 def _pass_shared_options(func: Callable) -> Callable:
     """Passes shared options to a click command.
@@ -227,12 +229,15 @@ def generate_dag(
 # Development tools #
 #####################
 
+
 @click.group(hidden=True)
 def devtools():
     """Development tools for EasyLink."""
     pass
 
+
 easylink.add_command(devtools)
+
 
 @devtools.command()
 @_pass_verbose_with_debugger_options
@@ -247,15 +252,15 @@ def create_implementation(
     with_debugger: bool,
 ):
     """Creates EasyLink implementations from implementation details.
-    
+
     This is a helper tool for developers to more easily create implementations
     and register them with the EasyLink framework.
 
     SCRIPTS are the filepaths to the implementation scripts to be run from within
     a newly created container. The script must specify required pypi dependencies
     as well as the name of the pipeline step it is implementing via comments
-    with the exact format shown in the example below. 
-    
+    with the exact format shown in the example below.
+
         # STEP_NAME: blocking
 
         # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
@@ -264,7 +269,9 @@ def create_implementation(
     """
     configure_logging_to_terminal(verbose)
     main = handle_exceptions(
-        func=implementation_creator.main, exceptions_logger=logger, with_debugger=with_debugger
+        func=implementation_creator.main,
+        exceptions_logger=logger,
+        with_debugger=with_debugger,
     )
     for script in scripts:
         script = Path(script)
