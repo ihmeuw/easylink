@@ -851,11 +851,6 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Clusters are also much more conducive to representing *other* structural
-constraints the analyst may have, such as a one-to-one link between two files.
-We expect that these constraints will typically be enforced upon conversion
-from links to clusters.
-
 Assigning a probability to each pair is a more efficient system for
 representing uncertainty than draws,
 when the statistical dependence structure between the pairwise links
@@ -937,6 +932,10 @@ to some of the links found, taking advantage of the context provided
 by other links.
 Making these corrections outside the linkage model is not ideal,
 but this is the price paid in return for the simplicity of the pairwise approach.
+
+Clusters are also much more conducive to representing *other* structural
+constraints the analyst may have, such as a one-to-one link between two files.
+We expect that these constraints will typically be enforced during this step.
 
 **Examples:**
 
