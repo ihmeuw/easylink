@@ -31,10 +31,7 @@ from easylink.utilities.validation_utils import (
 )
 
 NODES = [
-    InputStep(output_slots=[
-        OutputSlot("input_datasets"),
-        OutputSlot("known_clusters")
-    ]),
+    InputStep(output_slots=[OutputSlot("input_datasets"), OutputSlot("known_clusters")]),
     LoopStep(
         template_step=HierarchicalStep(
             step_name="entity_resolution",
