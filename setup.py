@@ -56,6 +56,9 @@ if __name__ == "__main__":
         # TODO MIC-4963: Resolve quoting issue and remove pin
         "snakemake-interface-executor-plugins<9.0.0",
         "snakemake-executor-plugin-slurm",
+        # Type stubs
+        "pandas-stubs",
+        "pyarrow-stubs",
     ]
 
     setup_requires = ["setuptools_scm"]
@@ -71,6 +74,7 @@ if __name__ == "__main__":
         "sphinx-rtd-theme",
         "sphinx-autodoc-typehints",
         "sphinx-click",
+        "sphinx-autobuild",
         "typing_extensions",
     ]
     lint_requirements = [

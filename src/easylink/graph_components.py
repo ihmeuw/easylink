@@ -18,6 +18,12 @@ from typing import TYPE_CHECKING, Any
 
 import networkx as nx
 
+from easylink.implementation import (
+    NullAggregatorImplementation,
+    NullImplementation,
+    NullSplitterImplementation,
+)
+
 if TYPE_CHECKING:
     from easylink.implementation import Implementation
     from easylink.step import Step
@@ -42,48 +48,38 @@ class InputSlot:
     env_var: str | None
     """The environment variable that is used to pass a list  of data filepaths to 
     an ``Implementation``."""
-    validator: Callable[[str], None] = field(compare=False)
+    validator: Callable[[str], None] | None = field(compare=False)
     """A function that validates the input data being passed into the pipeline via 
     this ``InputSlot``. If the data is invalid, the function should raise an exception 
     with a descriptive error message which will then be reported to the user.
     **Note that the function *must* be defined in the** :mod:`easylink.utilities.validation_utils` 
     **module!**"""
-    splitter: Callable[[list[str], str, Any], None] | None = field(
-        default=None, compare=False
-    )
-    """A function that splits the incoming data to this ``InputSlot`` into smaller
-    pieces. The primary purpose of this functionality is to run sections of the 
-    pipeline in an embarrassingly parallel manner. **Note that the function *must* 
-    be defined in the **:mod:`easylink.utilities.splitter_utils`** module!**"""
 
     def __eq__(self, other: Any) -> bool | NotImplementedType:
-        """Checks if two ``InputSlots`` are equal.
-
-        Two ``InputSlots`` are considered equal if their names, ``env_vars``, and
-        names of their ``validators`` and ``splitters`` are all the same.
-        """
+        """Checks if two ``InputSlots`` are equal."""
         if not isinstance(other, InputSlot):
             return NotImplemented
-        splitter_name = self.splitter.__name__ if self.splitter else None
-        other_splitter_name = other.splitter.__name__ if other.splitter else None
+        validator_name = self.validator.__name__ if self.validator else None
+        other_validator_name = other.validator.__name__ if other.validator else None
         return (
             self.name == other.name
             and self.env_var == other.env_var
-            and self.validator.__name__ == other.validator.__name__
-            and splitter_name == other_splitter_name
+            and validator_name == other_validator_name
         )
 
     def __hash__(self) -> int:
-        """Hashes an ``InputSlot``.
+        """Hashes an ``InputSlot``."""
+        validator_name = self.validator.__name__ if self.validator else None
+        return hash(
+            (
+                self.name,
+                self.env_var,
+                validator_name,
+            )
+        )
 
-        The hash is based on the name of the ``InputSlot``, its ``env_var``, and
-        the names of its ``validator`` and ``splitter``.
-        """
-        splitter_name = self.splitter.__name__ if self.splitter else None
-        return hash((self.name, self.env_var, self.validator.__name__, splitter_name))
 
-
-@dataclass()
+@dataclass(frozen=True)
 class OutputSlot:
     """A single output slot from a specific node.
 
@@ -104,31 +100,6 @@ class OutputSlot:
 
     name: str
     """The name of the ``OutputSlot``."""
-    aggregator: Callable[[list[str], str], None] = field(default=None, compare=False)
-    """A function that aggregates all of the generated data to be passed out via this
-    ``OutputSlot``. The primary purpose of this functionality is to run sections
-    of the pipeline in an embarrassingly parallel manner. **Note that the function 
-    *must* be defined in the **:py:mod:`easylink.utilities.aggregator_utils`** module!**"""
-
-    def __eq__(self, other: Any) -> bool | NotImplementedType:
-        """Checks if two ``OutputSlots`` are equal.
-
-        Two ``OutputSlots`` are considered equal if their names and the names of their
-        ``aggregators`` are the same.
-        """
-        if not isinstance(other, OutputSlot):
-            return NotImplemented
-        aggregator_name = self.aggregator.__name__ if self.aggregator else None
-        other_aggregator_name = other.aggregator.__name__ if other.aggregator else None
-        return self.name == other.name and aggregator_name == other_aggregator_name
-
-    def __hash__(self) -> int:
-        """Hashes an ``OutputSlot``.
-
-        The hash is based on the name of the ``OutputSlot`` and the name of its ``aggregator``.
-        """
-        aggregator_name = self.aggregator.__name__ if self.aggregator else None
-        return hash((self.name, aggregator_name))
 
 
 @dataclass(frozen=True)
@@ -263,7 +234,33 @@ class ImplementationGraph(nx.MultiDiGraph):
     def implementation_nodes(self) -> list[str]:
         """The topologically sorted list of ``Implementation`` names."""
         ordered_nodes = list(nx.topological_sort(self))
-        return [node for node in ordered_nodes if node != "input_data" and node != "results"]
+        # Remove nodes that do not actually have implementations
+        null_implementations = [
+            node
+            for node in ordered_nodes
+            if isinstance(self.nodes[node]["implementation"], NullImplementation)
+        ]
+        return [node for node in ordered_nodes if node not in null_implementations]
+
+    @property
+    def splitter_nodes(self) -> list[str]:
+        """The topologically sorted list of splitter nodes (which have no implementations)."""
+        ordered_nodes = list(nx.topological_sort(self))
+        return [
+            node
+            for node in ordered_nodes
+            if isinstance(self.nodes[node]["implementation"], NullSplitterImplementation)
+        ]
+
+    @property
+    def aggregator_nodes(self) -> list[str]:
+        """The topologically sorted list of aggregator nodes (which have no implementations)."""
+        ordered_nodes = list(nx.topological_sort(self))
+        return [
+            node
+            for node in ordered_nodes
+            if isinstance(self.nodes[node]["implementation"], NullAggregatorImplementation)
+        ]
 
     @property
     def implementations(self) -> list[Implementation]:

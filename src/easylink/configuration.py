@@ -274,10 +274,10 @@ class Config(LayeredConfigTree):
 
 
 def load_params_from_specification(
-    pipeline_specification: str,
-    input_data: str,
-    computing_environment: str | None,
-    results_dir: str,
+    pipeline_specification: str | Path,
+    input_data: str | Path,
+    computing_environment: str | Path | None,
+    results_dir: str | Path,
 ) -> dict[str, Any]:
     """Gathers together all specification data.
 
@@ -325,7 +325,7 @@ def _load_input_data_paths(
 
 
 def _load_computing_environment(
-    computing_environment_specification_path: str | None,
+    computing_environment_specification_path: str | Path | None,
 ) -> dict[Any, Any]:
     """Loads the computing environment specification file and returns the contents as a dict."""
     if not computing_environment_specification_path:
