@@ -31,7 +31,10 @@ from easylink.utilities.validation_utils import (
 )
 
 NODES = [
-    InputStep(),
+    InputStep(output_slots=[
+        OutputSlot("input_datasets"),
+        OutputSlot("known_clusters")
+    ]),
     LoopStep(
         template_step=HierarchicalStep(
             step_name="entity_resolution",
@@ -303,7 +306,7 @@ EDGES = [
         source_node="input_data",
         target_node="entity_resolution",
         output_slot="known_clusters",
-        input_slot="clusters",
+        input_slot="known_clusters",
     ),
     EdgeParams(
         source_node="input_data",
@@ -318,7 +321,7 @@ EDGES = [
         input_slot="clusters",
     ),
     EdgeParams(
-        source_node="entity_resolution",
+        source_node="canonicalizing_and_downstream_analysis",
         target_node="results",
         output_slot="analysis_output",
         input_slot="analysis_output",
