@@ -11,6 +11,8 @@ In order to create an implementation, three things are needed:
 
 """
 
+import os
+import subprocess
 from pathlib import Path
 
 from loguru import logger
@@ -36,6 +38,8 @@ class ImplementationCreator:
 
     def __init__(self, script_path: Path) -> None:
         self.script_path = script_path
+        self.recipe_path = script_path.with_suffix(".def")
+        self.container_path = script_path.with_suffix(".sif")
         self.implementation_name = script_path.stem
         self.requirements = self._extract_requirements(script_path)
         self.step_name = self._extract_step_name(script_path)
@@ -43,15 +47,65 @@ class ImplementationCreator:
     def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
 
-        recipe = PythonRecipe(self.script_path, self.requirements)
+        recipe = PythonRecipe(self.script_path, self.recipe_path, self.requirements)
         recipe.build()
         recipe.write()
         pass
 
     def build_container(self) -> None:
-        """Builds the container from the recipe."""
+        """Builds the container from the recipe.
+
+        Raises
+        ------
+        subprocess.CalledProcessError
+            If the container build fails.
+        FileNotFoundError
+            If singularity is not installed or not found in the system PATH.
+        """
         logger.info(f"Building container for '{self.implementation_name}'")
-        pass
+        if self.container_path.exists():
+            logger.warning(f"Container {self.container_path} already exists. Overwriting it.")
+
+        # Change to the recipe directory
+        os.chdir(self.container_path.parent)
+        try:
+            cmd = [
+                "singularity",
+                "build",
+                "--remote",
+                "--force",
+                str(self.container_path),
+                str(self.recipe_path),
+            ]
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            # stream output to console
+            if process.stdout:
+                for line in process.stdout:
+                    print(line, end="")
+            if process.stderr:
+                for line in process.stderr:
+                    print(line, end="")
+            process.wait()
+
+            if process.returncode == 0:
+                logger.info(f"Successfully built container '{self.container_path.name}'")
+            else:
+                logger.error(
+                    f"Failed to build container '{self.container_path.name}'. "
+                    f"Error: {process.returncode}"
+                )
+                raise subprocess.CalledProcessError(process.returncode, cmd)
+        except FileNotFoundError:
+            logger.error(
+                "Singularity is not installed or not found in the system PATH. "
+                "Please ensure Singularity is installed and accessible."
+            )
+            raise
 
     def move_container(self) -> None:
         """Moves the container to the proper location for EasyLink to find it."""
@@ -111,8 +165,9 @@ class PythonRecipe:
         "python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899"
     )
 
-    def __init__(self, script_path: Path, requirements: str) -> None:
+    def __init__(self, script_path: Path, recipe_path: Path, requirements: str) -> None:
         self.script_path = script_path
+        self.recipe_path = recipe_path
         self.requirements = requirements
         self.text: str | None = None
 
@@ -145,18 +200,25 @@ From: {self.BASE_IMAGE}
     python /{script_name} '$@'"""
 
     def write(self) -> None:
-        """Writes the recipe to disk."""
+        """Writes the recipe to disk.
+
+        Raises
+        ------
+        ValueError
+            If there is no recipe text to write a recipe from.
+        FileNotFoundError
+            If the recipe file was not written to disk.
+        """
         logger.info(f"Writing recipe for '{self.script_path.stem}' to disk.")
-        recipe_path = self.script_path.with_suffix(".def")
         if not self.text:
             raise ValueError("No recipe text to build.")
-        if recipe_path.exists():
-            logger.warning(f"Recipe file {recipe_path} already exists. Overwriting it.")
-        with open(recipe_path, "w") as f:
+        if self.recipe_path.exists():
+            logger.warning(f"Recipe file {self.recipe_path} already exists. Overwriting it.")
+        with open(self.recipe_path, "w") as f:
             f.write(self.text)
             f.flush()
-        if not recipe_path.exists():
-            raise FileNotFoundError(f"Failed to write recipe to {recipe_path}.")
+        if not self.recipe_path.exists():
+            raise FileNotFoundError(f"Failed to write recipe to {self.recipe_path}.")
 
 
 ####################
@@ -165,6 +227,24 @@ From: {self.BASE_IMAGE}
 
 
 def _extract_metadata(key: str, script_path: Path) -> list[str]:
+    """Extracts the container metadata from the script comments.
+
+    Parameters
+    ----------
+    key
+        The key to search for in the script comments, e.g. "REQUIREMENTS" or "STEP_NAME".
+    script_path
+        The path to the script file.
+
+    Returns
+    -------
+        A list of metadata values found in the script comments.
+
+    Raises
+    ------
+    ValueError
+        If a key is found multiple times in the script.
+    """
     metadata = []
     for line in script_path.read_text().splitlines():
         if key in line:

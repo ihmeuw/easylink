@@ -21,15 +21,16 @@ There are a few things to install in order to use this package:
 - Install singularity. 
 
   You may need to request it from your system admin. 
-  Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html. 
-  You can check if you already have singularity installed by running the command ``singularity --version``. For an
-  existing installation, your singularity version number is printed.
+  Refer to https://docs.sylabs.io/guides/4.1/admin-guide/installation.html.
+  You can check if you already have singularity installed by running the command
+  ``singularity --version``. For an existing installation, your singularity version
+  number is printed.
 
 - Install conda. 
   
-  We recommend `miniforge <https://github.com/conda-forge/miniforge>`_. You can check if you already
-  have conda installed by running the command ``conda --version``. For an existing installation, a version 
-  will be displayed.
+  We recommend `miniforge <https://github.com/conda-forge/miniforge>`_. You can
+  check if you already have conda installed by running the command ``conda --version``.
+  For an existing installation, a version will be displayed.
 
 - Install easylink, python and graphviz in a conda environment.
 
