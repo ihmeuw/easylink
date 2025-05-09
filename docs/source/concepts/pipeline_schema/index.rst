@@ -89,6 +89,7 @@ Default Implementations
 A step with a check mark on its top right corner has a default implementation.
 Therefore, the user doesn't *have* to specify anything.
 If the user wants to, they can override the default implementation.
+We draw these steps in gray.
 
 .. image:: images/02_default_implementation.drawio.png
    :alt: Diagram showing a step with a default implementation
@@ -384,6 +385,9 @@ Because this can get so complicated, we don't show all the hierarchical levels i
 as we've done above with the dotted line "insert."
 Instead, we make a separate diagram with the title "Step 2"
 that represents the step graph contained within Step 2.
+In this diagram, we show a little "mini-map" of the levels of hierarchy above,
+highlighting in red the step that we are diagramming the inside of.
+Think of this like a "You are Here!" label.
 
 At the top level of the step hierarchy,
 the pipeline schema splits the entity resolution task into very coarse steps,
@@ -486,10 +490,12 @@ Data dependencies *between* these steps are removed, and then the step nodes are
    :alt: Diagram of the two conceptual steps transforming a pipeline schema into a particular
       pipeline graph which includes a combined implementation
 
-Entity resolution pipeline schema
----------------------------------
+.. _easylink_pipeline_schema:
 
-.. image:: images/entity_resolution_pipeline_schema.drawio.png
+EasyLink pipeline schema
+------------------------
+
+.. image:: images/easylink_pipeline_schema.drawio.png
 
 Input datasets
 ^^^^^^^^^^^^^^
@@ -522,6 +528,15 @@ but one of them must be called “Record ID” and it must have unique values.
      - Allen
      - 456 Other Drive, Anytown WA, 99999
 
+Known clusters
+^^^^^^^^^^^^^^
+
+**Interpretation:**
+If any clusters are already known, they can be provided here
+(format described in "Clusters" sub-section).
+This is typically empty, which is the default,
+representing that there is no prior knowledge of clusters (all records are unresolved).
+
 Clusters
 ^^^^^^^^
 
@@ -531,9 +546,6 @@ which indicates that records assigned the same cluster ID are observations of th
 and records with different cluster IDs are observations of different entities.
 Records without a cluster ID are unresolved
 (they may or may not be part of one of the existing clusters).
-Pre-assigned clusters can be used to indicate any prior knowledge of clustering.
-If there is no prior knowledge, this can be an empty table (which is the default),
-indicating that all records are unresolved.
 
 Clusters are similar to pairwise *links* (described in more detail :ref:`below <clustering_sub_steps>`)
 but inherently enforce the logical consistency of *transitivity* --
@@ -575,23 +587,29 @@ Lastly, input_file_4 and input_file_5 are considered duplicates
 (records, from the same data source, referring to the same entity)
 and are also a match to reference_file_2.
 
-Clustering pass
-^^^^^^^^^^^^^^^
+.. _entity_resolution_step:
+
+Entity resolution
+^^^^^^^^^^^^^^^^^
 
 **Interpretation:**
-A pass at clustering (some) records.
-This may take into account already-found clusters as it sees fit:
+Resolving (some) records to correspond to particular entities.
+A set of records corresponding to the same entity is called a "cluster."
+
+This step may take into account already-known clusters as it sees fit:
 anything from using them as a starting point for optimization to treating those clusters as set-in-stone and unchangeable.
 
-Going from one of these passes to the next is
-one kind of *cascading*, an iterative approach to entity resolution
+Typically, this would only be be performed once, but the red dashed box
+in the diagram above indicates that it *may* be looped, with the clusters
+found in each iteration passed on to the next.
+This allows for one kind of *cascading*, an iterative approach to entity resolution
 used by the US Census Bureau (and possibly other organizations too)
 to deal with the computational challenge of linking billions of records.
 In cascading, multiple passes are made to find clusters, starting with
 faster techniques (such as exact matching) that
 can solve some "easy" cases and make the problem smaller.
 As the focus narrows to only the records that
-are hardest to cluster/link, making the size of the problem smaller,
+are hardest to cluster, making the size of the problem smaller,
 more sophisticated and computationally expensive
 techniques can be used.
 
@@ -599,19 +617,22 @@ techniques can be used.
 
    Give cascading its own documentation page?
 
-The sort of cascading represented by clustering passes is
-the kind in which a clustering guaranteed to satisfy transitivity
+The sort of cascading represented by the looping section in this diagram is
+the kind in which a *clustering* (guaranteed to satisfy transitivity)
 is confirmed before moving to the next iteration.
-See :ref:`the sub-steps of clustering <clustering_sub_steps>` for the other kind of cascading.
+There is another kind of cascading, in which *pairwise links* are confirmed
+but transitivity is not enforced.
+That kind of cascading is represented by the looping section in :ref:`the sub-steps of clustering <clustering_sub_steps>`,
+which nests within this entity resolution step.
 
-This step :ref:`has sub-steps <clustering_pass_sub_steps>`, which may be expanded for more detail.
+This step :ref:`has sub-steps <entity_resolution_sub_steps>`, which may be expanded for more detail.
 
 **Examples:**
 
 - The US Census Bureau's Person Identification and Validation System (PVS)
-  *modules* are considered clustering passes, since clusters
+  *modules* are considered entity resolution passes, since full *clusters*
   -- called "protected identification keys" (PIKs) in that system --
-  are resolved in between modules.
+  are resolved in between modules (not only pairwise links!).
   As described below, each module only considers records not already clustered.
 - In `FIRLA <https://www.sciencedirect.com/science/article/pii/S1532046422001101>`_
   and similar incremental methods, the already-found clusters would be used directly
@@ -624,7 +645,7 @@ Canonicalizing and downstream analysis
 Everything else you want to do, after determining which records belong to the same entity and which don't.
 This definition is a little fuzzy.
 The downstream task is only included in the pipeline schema at all
-so that combined implementations can jointly do part of the ER task with the downstream task,
+so that combined implementations can jointly do part of the entity resolution task with the downstream task,
 each informing the other.
 If this kind of joint model isn't necessary,
 this step can simply output entire datasets
@@ -651,12 +672,39 @@ May contain multiple draws in different files or subdirectories, or not.
 **Specification:**
 None. May take any form.
 
-.. _clustering_pass_sub_steps:
+.. _entity_resolution_sub_steps:
 
-Clustering pass sub-steps
--------------------------
+Entity resolution sub-steps
+---------------------------
 
-.. image:: images/clustering_pass_sub_steps.drawio.png
+The direct sub-steps of entity resolution mostly have to do with
+*cascading* and *incorporating already-known clusters*,
+both of which are rare situations.
+All of the steps except for **clustering** have default implementations
+and are not relevant in the common situation of starting from scratch
+(no known clusters) and clustering in one pass (no cascading).
+For this reason, clustering is described first below.
+
+.. image:: images/entity_resolution_sub_steps.drawio.png
+
+Clustering
+^^^^^^^^^^
+
+**Interpretation:**
+Assigning cluster IDs to (some) records to indicate which correspond to the same entity.
+*May* use information about "old" clusters as a starting point.
+
+This step :ref:`has sub-steps <clustering_sub_steps>`, which may be expanded for more detail
+*by pairwise methods.*
+Methods that are not pairwise should implement this step directly.
+
+**Examples:**
+
+- The core part of a PVS module
+- `dblink <https://github.com/cleanzr/dblink>`_
+  (would ignore "old" clusters, since there is no way for it to update)
+- In Splink, this step would correspond to estimating parameters, making pairwise
+  predictions, and then clustering entities with connected components or similar
 
 Eliminating records
 ^^^^^^^^^^^^^^^^^^^
@@ -668,8 +716,12 @@ Usually these will be records that have already been clustered sufficiently well
 (whatever that means as defined by the implementation of this step)
 that we don't need to look at them anymore.
 
+**Default implementation:**
+Throws an error if there are any known clusters.
+Otherwise, returns an empty list (no records to eliminate).
+
 **Example:**
-As mentioned above, our main example of clustering passes is PVS *modules*
+As mentioned above, our main example of entity resolution passes is PVS *modules*
 such as NameSearch, DOBSearch, etc.
 In those modules, the implementation of this step would be to eliminate
 all input-file records that are already linked to at least one reference-file
@@ -705,34 +757,6 @@ Pandas code dropping records with matching record IDs.
 Note that if the default implementation is used,
 input and output data specifications do not need to be checked.
 
-Datasets for pass
-^^^^^^^^^^^^^^^^^
-
-**Interpretation:**
-The input datasets to consider for the purposes of this clustering pass.
-
-**Specification:**
-See specification for "Input datasets."
-
-Clustering
-^^^^^^^^^^
-
-**Interpretation:**
-Assigning cluster IDs to (some) records to indicate which correspond to the same entity.
-May use information about "old" clusters as a starting point.
-
-This step :ref:`has sub-steps <clustering_sub_steps>`, which may be expanded for more detail
-*by pairwise methods.*
-Methods that are not pairwise should implement this step directly.
-
-**Examples:**
-
-- The core part of a PVS module
-- `dblink <https://github.com/cleanzr/dblink>`_
-  (would ignore "old" clusters, since there is no way for it to update)
-- In Splink, this step would correspond to estimating parameters, making pairwise
-  predictions, and then clustering entities with connected components or similar
-
 New clusters
 ^^^^^^^^^^^^
 
@@ -748,6 +772,10 @@ Updating clusters
 
 **Interpretation:**
 Updating/reconciling previously-found clusters with newly-found clusters.
+
+**Default implementation:**
+Throws an error if there are any known clusters.
+Otherwise, returns the new clusters unchanged.
 
 **Examples:**
 
@@ -823,8 +851,13 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Pairwise probabilities are a more efficient system for
-representing uncertainty on each pairwise link than draws,
+Clusters are also much more conducive to representing *other* structural
+constraints the analyst may have, such as a one-to-one link between two files.
+We expect that these constraints will typically be enforced upon conversion
+from links to clusters.
+
+Assigning a probability to each pair is a more efficient system for
+representing uncertainty than draws,
 when the statistical dependence structure between the pairwise links
 is unknown.
 Draws may be used in addition to pairwise
@@ -864,20 +897,25 @@ Each value in the Probability column must be between
      - reference_file_6
      - 0.4
 
-Linking cascade pass
-^^^^^^^^^^^^^^^^^^^^
+Linking
+^^^^^^^
 
 **Interpretation:**
-A pass at finding pairs of records that should
+Finding pairs of records that should
 be considered links (correspond to the same entity).
-May use information about already-found links as a starting point.
 
-Looping from one of these linking passes to the next is
-the second form of *cascading*.
-In this kind of cascading, pairwise matches are not resolved to
-respect any clustering structure restrictions
-before moving to the next iteration.
-See the top level of the pipeline schema for the other kind of cascading.
+Typically, this would only be be performed once, but the red dashed box
+in the diagram above indicates that it *may* be looped, with the links
+found in each iteration passed on to the next.
+This allows for the other kind of *cascading*, an iterative approach
+described :ref:`above <entity_resolution_step>`.
+
+The sort of cascading represented by the looping section in this diagram is
+the kind in which *links*
+are confirmed before moving to the next iteration.
+There is another kind of cascading, in which *clusters* are confirmed
+and transitivity is enforced.
+That kind of cascading is represented by the looping section in :ref:`the top-level pipeline schema <easylink_pipeline_schema>`.
 
 **Examples:**
 
