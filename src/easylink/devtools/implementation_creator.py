@@ -15,7 +15,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import yaml
 from loguru import logger
+
+from easylink.utilities.data_utils import load_yaml
+from easylink.utilities.paths import IMPLEMENTATION_METADATA
 
 
 def main(script_path: Path, host: Path) -> None:
@@ -42,10 +46,11 @@ class ImplementationCreator:
         self.script_path = script_path
         self.host = host
         self.recipe_path = script_path.with_suffix(".def")
-        self.container_path = script_path.with_suffix(".sif")
+        self.local_container_path = script_path.with_suffix(".sif")
+        self.hosted_container_path = self.host / self.local_container_path.name
         self.implementation_name = script_path.stem
         self.requirements = self._extract_requirements(script_path)
-        self.step_name = self._extract_step_name(script_path)
+        self.step = self._extract_step_being_implemented(script_path)
 
     def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
@@ -66,8 +71,10 @@ class ImplementationCreator:
             If the container fails to build for any reason.
         """
         logger.info(f"Building container for '{self.implementation_name}'")
-        if self.container_path.exists():
-            logger.warning(f"Container {self.container_path} already exists. Overwriting it.")
+        if self.local_container_path.exists():
+            logger.warning(
+                f"Container {self.local_container_path} already exists. Overwriting it."
+            )
 
         try:
             cmd = [
@@ -75,7 +82,7 @@ class ImplementationCreator:
                 "build",
                 "--remote",
                 "--force",
-                str(self.container_path),
+                str(self.local_container_path),
                 str(self.recipe_path),
             ]
             process = subprocess.Popen(
@@ -83,7 +90,7 @@ class ImplementationCreator:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                cwd=self.container_path.parent,
+                cwd=self.local_container_path.parent,
             )
 
             # stream output to console
@@ -92,10 +99,12 @@ class ImplementationCreator:
             process.wait()
 
             if process.returncode == 0:
-                logger.info(f"Successfully built container '{self.container_path.name}'")
+                logger.info(
+                    f"Successfully built container '{self.local_container_path.name}'"
+                )
             else:
                 logger.error(
-                    f"Failed to build container '{self.container_path.name}'. "
+                    f"Failed to build container '{self.local_container_path.name}'. "
                     f"Error: {process.returncode}"
                 )
                 raise subprocess.CalledProcessError(
@@ -103,17 +112,19 @@ class ImplementationCreator:
                 )
         except Exception as e:
             logger.error(
-                f"Failed to build container '{self.container_path.name}'. " f"Error: {e}"
+                f"Failed to build container '{self.local_container_path.name}'. "
+                f"Error: {e}"
             )
             raise
 
     def move_container(self) -> None:
         """Moves the container to the proper location for EasyLink to find it."""
         logger.info(f"Moving container '{self.implementation_name}' to {self.host}")
-        new_path = self.host / self.container_path.name
-        if new_path.exists():
-            logger.warning(f"Container {new_path} already exists. Overwriting it.")
-        shutil.move(str(self.container_path), str(new_path))
+        if self.hosted_container_path.exists():
+            logger.warning(
+                f"Container {self.hosted_container_path} already exists. Overwriting it."
+            )
+        shutil.move(str(self.local_container_path), str(self.hosted_container_path))
 
     def register(self) -> None:
         """Registers the container with EasyLink.
@@ -122,7 +133,21 @@ class ImplementationCreator:
         implementation_metadata.yaml registry file.
         """
         logger.info(f"Registering container '{self.implementation_name}'")
-        pass
+        info = load_yaml(IMPLEMENTATION_METADATA)
+        if self.implementation_name in info:
+            logger.warning(
+                f"Implementation '{self.implementation_name}' already exists in the registry. "
+                "Overwriting it with the latest data."
+            )
+        info[self.implementation_name] = {
+            "steps": [self.step],
+            "image_path": str(self.hosted_container_path),
+            "script_cmd": f"python /{self.script_path.name}",
+            "outputs": {
+                f"{self.step}_main_output": "result.parquet",
+            },
+        }
+        self._write_metadata(info)
 
     @staticmethod
     def _extract_requirements(script_path: Path) -> str:
@@ -143,7 +168,7 @@ class ImplementationCreator:
         return requirements[0]
 
     @staticmethod
-    def _extract_step_name(script_path: Path) -> str:
+    def _extract_step_being_implemented(script_path: Path) -> str:
         """Extracts the name of the step that this script is implementing.
 
         The expectation is that the step's name is specified within the script
@@ -152,13 +177,31 @@ class ImplementationCreator:
         .. code-block:: python
             # STEP_NAME: blocking
         """
-        step_name = _extract_metadata("STEP_NAME", script_path)
-        if len(step_name) == 0:
+        step_info = _extract_metadata("STEP_NAME", script_path)
+        if len(step_info) == 0:
             raise ValueError(
                 f"Could not find a step name in {script_path}. "
                 "Please ensure the script contains a comment of the form '# STEP_NAME: <name>'"
             )
-        return step_name[0]
+        steps = [step.strip() for step in step_info[0].split(",")]
+        if len(steps) > 1:
+            raise NotImplementedError(
+                f"Multiple steps are not yet supported. {script_path} is requesting "
+                f"to implement {steps}."
+            )
+        return steps[0]
+
+    @staticmethod
+    def _write_metadata(info: dict[str, dict[str, str]]) -> None:
+        """Writes the implementation metadata to disk.
+
+        Parameters
+        ----------
+        info
+            The implementation metadata to write to disk.
+        """
+        with open(IMPLEMENTATION_METADATA, "w") as f:
+            yaml.dump(info, f, sort_keys=False)
 
 
 class PythonRecipe:
