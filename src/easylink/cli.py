@@ -267,14 +267,19 @@ def create_implementation(
 
     Note that the requirements should be formatted as a single line.
     """
+    if not scripts:
+        logger.error("No scripts provided.")
+        return
     configure_logging_to_terminal(verbose)
     main = handle_exceptions(
         func=implementation_creator.main,
         exceptions_logger=logger,
         with_debugger=with_debugger,
     )
+    list_str = ""
     for script in scripts:
         script = Path(script)
         logger.info(f"Creating implementation for {script.name}")
         main(script_path=script)
-    logger.info("*** Implementations created ***")
+        list_str += f"  - {script.stem}\n"
+    logger.info("*** Implementations created ***\n" f"{list_str}")
