@@ -9,6 +9,7 @@ function(s) for processed data being passed out of one pipeline step and into th
 """
 
 from pathlib import Path
+
 import pandas as pd
 from pyarrow import parquet as pq
 
@@ -48,9 +49,7 @@ def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
 
     missing_columns = required_columns - set(df.columns)
     if missing_columns:
-        raise LookupError(
-            f"File {filepath} is missing required column(s): {missing_columns}"
-        )
+        raise LookupError(f"File {filepath} is missing required column(s): {missing_columns}")
 
     return df
 
@@ -188,7 +187,10 @@ def validate_links(filepath: str) -> None:
             f"File {filepath} contains rows where 'Left Record ID' is equal to 'Right Record ID'."
         )
 
-    if not df[["Left Record ID", "Right Record ID"]].drop_duplicates().shape[0] == df.shape[0]:
+    if (
+        not df[["Left Record ID", "Right Record ID"]].drop_duplicates().shape[0]
+        == df.shape[0]
+    ):
         raise ValueError(
             f"File {filepath} contains duplicate rows with the same 'Left Record ID' and 'Right Record ID'."
         )

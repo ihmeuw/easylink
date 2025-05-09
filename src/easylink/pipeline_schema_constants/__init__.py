@@ -9,7 +9,7 @@ package defines the nodes and edges required to instantiate such ``PipelineSchem
 
 """
 
-from easylink.pipeline_schema_constants import main, development, testing
+from easylink.pipeline_schema_constants import development, main, testing
 
 ALLOWED_SCHEMA_PARAMS = {
     "main": main.SCHEMA_PARAMS,

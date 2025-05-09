@@ -12,22 +12,22 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
+    EmbarrassinglyParallelStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
     OutputStep,
     ParallelStep,
-    EmbarrassinglyParallelStep,
     Step,
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import (
-    validate_input_datasets,
-    validate_clusters,
-    validate_links,
-    validate_ids_to_remove,
     dont_validate,
+    validate_clusters,
+    validate_ids_to_remove,
+    validate_input_datasets,
+    validate_links,
 )
 
 NODES = [
@@ -141,7 +141,7 @@ NODES = [
                                     output_slot="links",
                                     input_slot="known_links",
                                 )
-                            ]
+                            ],
                         ),
                         Step(
                             step_name="links_to_clusters",
@@ -259,7 +259,7 @@ NODES = [
                     child_slot="clusters",
                     parent_slot="clusters",
                 ),
-            ]
+            ],
         ),
         self_edges=[
             EdgeParams(
