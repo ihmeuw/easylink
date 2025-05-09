@@ -73,7 +73,7 @@ def test_write_recipe(tmp_path: Path) -> None:
     script_path = tmp_path / "cookies.py"
     with open(script_path, "w") as file:
         file.write(GOOD_METADATA)
-    creator = ImplementationCreator(script_path)
+    creator = ImplementationCreator(script_path, Path("some-host"))
     creator.create_recipe()
     expected_recipe_path = (
         Path(os.path.dirname(__file__)) / "recipe_strings" / "python_pandas.txt"
