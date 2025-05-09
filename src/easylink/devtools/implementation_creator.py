@@ -25,7 +25,7 @@ def main(script_path: Path) -> None:
         The filepath to a single script that implements a step of the pipeline.
     """
     creator = ImplementationCreator(script_path)
-    creator.write_recipe()
+    creator.create_recipe()
     creator.build_container()
     creator.move_container()
     creator.register()
@@ -36,14 +36,14 @@ class ImplementationCreator:
 
     def __init__(self, script_path: Path) -> None:
         self.script_path = script_path
-        self.implementation_name = script_path.name
+        self.implementation_name = script_path.stem
         self.requirements = self._extract_requirements(script_path)
         self.step_name = self._extract_step_name(script_path)
 
-    def write_recipe(self) -> None:
+    def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
 
-        recipe = PythonRecipe(self.script_path)
+        recipe = PythonRecipe(self.script_path, self.requirements)
         recipe.build()
         recipe.write()
         pass
@@ -79,7 +79,11 @@ class ImplementationCreator:
 
         The requirements must be specified as a single space-separated line.
         """
-        ...
+        requirements = _extract_metadata("REQUIREMENTS", script_path)
+        if len(requirements) == 0:
+            logger.info(f"No requirements found in {script_path}.")
+            requirements.append("")
+        return requirements[0]
 
     @staticmethod
     def _extract_step_name(script_path: Path) -> str:
@@ -91,22 +95,87 @@ class ImplementationCreator:
         .. code-block:: python
             # STEP_NAME: blocking
         """
-        ...
+        step_name = _extract_metadata("STEP_NAME", script_path)
+        if len(step_name) == 0:
+            raise ValueError(
+                f"Could not find a step name in {script_path}. "
+                "Please ensure the script contains a comment of the form '# STEP_NAME: <name>'"
+            )
+        return step_name[0]
 
 
 class PythonRecipe:
     """A singularity recipe generator specific to implementations written in Python."""
 
-    def __init__(self, script_path: Path) -> None:
+    BASE_IMAGE = (
+        "python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899"
+    )
+
+    def __init__(self, script_path: Path, requirements: str) -> None:
         self.script_path = script_path
-        self.implementation_name = script_path.name
+        self.requirements = requirements
+        self.text: str | None = None
 
     def build(self) -> None:
         """Builds the recipe for the container."""
-        logger.info(f"Building recipe for '{self.implementation_name}'")
-        ...
+        logger.info(f"Building recipe for '{self.script_path.stem}'")
+
+        script_name = self.script_path.name
+        self.text = f"""
+Bootstrap: docker
+From: {self.BASE_IMAGE}
+
+%files
+    ./{script_name} /{script_name}
+
+%post
+    # Create directories
+    mkdir -p /input_data
+    mkdir -p /extra_implementation_specific_input_data
+    mkdir -p /results
+    mkdir -p /diagnostics
+
+    # Install Python packages with specific versions
+    pip install {self.requirements}
+
+%environment
+    export LC_ALL=C
+
+%runscript
+    python /{script_name} '$@'"""
 
     def write(self) -> None:
         """Writes the recipe to disk."""
-        logger.info(f"Writing recipe for '{self.implementation_name}' to disk.")
-        ...
+        logger.info(f"Writing recipe for '{self.script_path.stem}' to disk.")
+        recipe_path = self.script_path.with_suffix(".def")
+        if not self.text:
+            raise ValueError("No recipe text to build.")
+        if recipe_path.exists():
+            logger.warning(f"Recipe file {recipe_path} already exists. Overwriting it.")
+        with open(recipe_path, "w") as f:
+            f.write(self.text)
+            f.flush()
+        if not recipe_path.exists():
+            raise FileNotFoundError(f"Failed to write recipe to {recipe_path}.")
+
+
+####################
+# Helper functions #
+####################
+
+
+def _extract_metadata(key: str, script_path: Path) -> list[str]:
+    metadata = []
+    for line in script_path.read_text().splitlines():
+        if key in line:
+            packed_line = line.replace(" ", "")
+            if packed_line.startswith(f"#{key}:"):
+                info = line.split(":")[1].strip()
+                metadata.append(info)
+
+    if len(metadata) > 1:
+        raise ValueError(
+            f"Found multiple {key.lower()} requests in {script_path}: {metadata}"
+            f"Please ensure the script contains only one comment of the form '# {key}: <request>'"
+        )
+    return metadata
