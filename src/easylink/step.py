@@ -1002,8 +1002,13 @@ class TemplatedStep(Step, ABC):
 class LoopStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that allows for looping.
 
-    A ``LoopStep`` allows a user to loop a single :class:`Step` or a sequence
-    of ``Steps`` multiple times such that each iteration depends on the previous.
+    A ``LoopStep`` allows a user to loop a :class:`Step` (or a sequence
+    of ``Steps`` in the case of a :class:`HierarchicalStep`) multiple times such that 
+    each iteration depends on the previous.
+
+    In the pipeline configuration an implementation must be specified for each 
+    iteration of the step.
+
 
     See :class:``TemplatedStep`` for inherited attributes.
 

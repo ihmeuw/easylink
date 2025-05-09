@@ -638,6 +638,79 @@ added, as specified in the YAML::
    29999  9999   e       11               7               8               9               10               11
    [30000 rows x 8 columns]
 
+Loop Steps
+==========
+EasyLink supports a number of `operators` which enable flexibility in selecting and configuring
+implementations for various record linkage pipeline steps. In this section we will discuss the 
+``LoopStep`` operator, but other operators include ``ParallelStep``, ``ChoiceStep``, and 
+``HierarchicalStep``. A ``LoopStep`` allows the user to loop a step multiple times such that 
+each iteration depends on the previous. An implementation is specified for each iteration -- each iteration 
+can have different implementations, or all can have the same one.
+
+.. note::
+   So that you may have an idea of the functionalities
+   enabled by operators, note that the other operators mentioned allow
+   the user to create pipeline sections with parallelized processing, multiple implementation options, and 
+   substeps resepctively.
+
+To demonstrate the use of a ``LoopStep`` we will use a new pipeline configuration YAML, 
+:download:`loop-pipeline.yaml <loop-pipeline.yaml>`::
+
+   steps:
+      step_1:
+         implementation:
+            name: step_1_python_pandas
+      step_2:
+         implementation:
+            name: step_2_python_pandas
+      step_3:
+         iterate:
+            - implementation:
+               name: step_3_python_pandas
+            - implementation:
+               name: step_3_python_pandas
+      choice_section:
+         type: simple
+         step_4:
+            implementation:
+            name: step_4_python_pandas
+      
+As shown in the YAML, to unroll a ``LoopStep`` (step 3 is defined as one by ``development.py``), 
+we use the ``iterate`` keyword followed by a list of implementations to iterate through. The sequence of 
+implementations must be known in advance. In this case, we will iterate on ``step_3_python_pandas`` twice. 
+Let's see what happens when we run the pipeline::
+
+   $ easylink run -p loop-pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml 
+   2025-05-09 09:19:20.879 | 0:00:06.914845 | run:158 - Running pipeline
+   2025-05-09 09:19:20.879 | 0:00:06.915059 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_09_09_19_20
+   2025-05-09 09:19:24.570 | 0:00:10.606476 | main:115 - Running Snakemake
+   [Fri May  9 09:19:25 2025]
+   Job 8: Validating step_1_python_pandas input slot step_1_main_input
+   Reason: Missing output files: input_validations/step_1_python_pandas/step_1_main_input_validator
+   ...
+   [Fri May  9 09:19:35 2025]
+   Job 18: Running step_3 implementation: step_3_python_pandas
+   Reason: Missing output files: intermediate/step_3_loop_1_step_3_python_pandas/processed/chunk_0/result.parquet
+   ...
+   [Fri May  9 09:19:42 2025]
+   Job 21: Running step_3 implementation: step_3_python_pandas
+   Reason: Missing output files: intermediate/step_3_loop_2_step_3_python_pandas/processed/chunk_0/result.parquet
+   ...
+   [Fri May  9 09:19:50 2025]
+   Job 0: Grabbing final output
+   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
+
+The output shows that ``step_3_python_pandas`` was run twice, once to get outputs for ``step_3_loop_1_step_3_python_pandas`` 
+and once for ``step_3_loop_2_step_3_python_pandas``. The DAG also shows both these iterations being run 
+in between ``step_2_python_pandas`` and ``step_4_python_pandas``.
+
+.. image:: DAG-loop.svg
+   :width: 400
+
+.. note::
+   Because step 3 is also an ``EmbarrassinglyParallelStep``, as defined in ``development.py``, 
+   the inputs and outputs for the iterations are split and aggregated respectively.
+
 More Pipeline Specifications
 ============================
 The ``tests`` folder includes several other pipeline specification files (YAML files). While some are special 
