@@ -9,14 +9,19 @@ information about what container to run for a given step and other related detai
 
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from layered_config_tree import LayeredConfigTree
 
-from easylink.graph_components import InputSlot, OutputSlot
 from easylink.utilities import paths
 from easylink.utilities.data_utils import load_yaml
+
+if TYPE_CHECKING:
+    from easylink.graph_components import InputSlot, OutputSlot
 
 
 class Implementation:
@@ -43,8 +48,8 @@ class Implementation:
         self,
         schema_steps: list[str],
         implementation_config: LayeredConfigTree,
-        input_slots: Iterable["InputSlot"] = (),
-        output_slots: Iterable["OutputSlot"] = (),
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
         is_embarrassingly_parallel: bool = False,
     ):
         self.name = implementation_config.name
@@ -137,9 +142,8 @@ class Implementation:
 class NullImplementation:
     """A partial :class:`Implementation` interface when no container is needed to run.
 
-    The primary use case for this class is when adding an
-    :class:`~easylink.step.IOStep` - which does not have a corresponding
-    ``Implementation`` - to an :class:`~easylink.graph_components.ImplementationGraph`
+    The primary use case for this class is to be able to add a :class:`~easylink.step.Step`
+    that does *not* have a corresponding ``Implementation`` to an :class:`~easylink.graph_components.ImplementationGraph`
     since adding any new node requires an object with :class:`~easylink.graph_components.InputSlot`
     and :class:`~easylink.graph_components.OutputSlot` names.
 
@@ -151,13 +155,14 @@ class NullImplementation:
         All required ``InputSlots``.
     output_slots
         All required ``OutputSlots``.
+
     """
 
     def __init__(
         self,
         name: str,
-        input_slots: Iterable["InputSlot"] = (),
-        output_slots: Iterable["OutputSlot"] = (),
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
     ):
         self.name = name
         """The name of this ``NullImplementation``."""
@@ -170,6 +175,61 @@ class NullImplementation:
         self.combined_name = None
         """The name of the combined implementation of which ``NullImplementation`` 
         is a constituent. This is definitionally None."""
+
+
+class NullSplitterImplementation(NullImplementation):
+    """A type of :class:`NullImplementation` specifically for :class:`SplitterSteps<easylink.step.SplitterStep>`.
+
+    See ``NullImplementation`` for inherited attributes.
+
+    Parameters
+    ----------
+    splitter_func_name
+        The name of the splitter function to use.
+
+    """
+
+    def __init__(
+        self,
+        name: str,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+        splitter_func_name: str,
+    ):
+        super().__init__(name, input_slots, output_slots)
+        self.splitter_func_name = splitter_func_name
+        """The name of the splitter function to use."""
+
+
+class NullAggregatorImplementation(NullImplementation):
+    """A type of :class:`NullImplementation` specifically for :class:`AggregatorSteps<easylink.step.AggregatorStep>`.
+
+    See ``NullImplementation`` for inherited attributes.
+
+    Parameters
+    ----------
+    aggregator_func_name
+        The name of the aggregation function to use.
+    splitter_node_name
+        The name of the :class:`~easylink.step.SplitterStep` and its corresponding
+        :class:`NullSplitterImplementation` that did the splitting.
+
+    """
+
+    def __init__(
+        self,
+        name: str,
+        input_slots: Iterable[InputSlot],
+        output_slots: Iterable[OutputSlot],
+        aggregator_func_name: str,
+        splitter_node_name: str,
+    ):
+        super().__init__(name, input_slots, output_slots)
+        self.aggregator_func_name = aggregator_func_name
+        """The name of the aggregation function to use."""
+        self.splitter_node_name = splitter_node_name
+        """The name of the :class:`~easylink.step.SplitterStep` and its corresponding
+        :class:`NullSplitterImplementation` that did the splitting."""
 
 
 class PartialImplementation:
@@ -205,8 +265,8 @@ class PartialImplementation:
         self,
         combined_name: str,
         schema_step: str,
-        input_slots: Iterable["InputSlot"] = (),
-        output_slots: Iterable["OutputSlot"] = (),
+        input_slots: Iterable[InputSlot] = (),
+        output_slots: Iterable[OutputSlot] = (),
     ):
         self.combined_name = combined_name
         """The name of the combined implementation of which this ``PartialImplementation``

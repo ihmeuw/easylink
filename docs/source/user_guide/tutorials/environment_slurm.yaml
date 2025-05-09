@@ -1,0 +1,9 @@
+computing_environment: slurm
+container_engine: singularity
+slurm:
+  account: proj_simscience
+  partition: all.q
+implementation_resources:
+  memory: 1  # GB
+  cpus: 1
+  time_limit: 1  # hours
