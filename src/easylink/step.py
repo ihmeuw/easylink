@@ -483,8 +483,11 @@ class InputStep(IOStep):
 
     """
 
-    def __init__(self) -> None:
-        super().__init__(step_name="input_data", output_slots=(OutputSlot("all"),))
+    def __init__(
+        self,
+        output_slots: Iterable[OutputSlot] = (OutputSlot("all"),),
+    ) -> None:
+        super().__init__(step_name="input_data", output_slots=output_slots)
 
     def set_configuration_state(
         self,
