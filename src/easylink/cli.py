@@ -41,6 +41,7 @@ As before, refer to ``easylink generate-dag --help`` for information on other op
 For usage documentation, see :ref:`cli`.
 """
 
+import os
 from collections.abc import Callable
 from pathlib import Path
 
@@ -54,6 +55,7 @@ from easylink.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
 )
+from easylink.utilities.paths import CONTAINER_DIR
 
 SHARED_OPTIONS = [
     click.option(
@@ -246,8 +248,18 @@ easylink.add_command(devtools)
     type=click.Path(exists=True, dir_okay=False, file_okay=True, resolve_path=True),
     nargs=-1,
 )
+@click.option(
+    "-o",
+    "--output-dir",
+    type=click.Path(exists=False, dir_okay=True, file_okay=False, resolve_path=True),
+    help=(
+        "The directory to move the container to. If no value is passed, it will "
+        f"be moved to {CONTAINER_DIR} in a sub-directory named with the username."
+    ),
+)
 def create_implementation(
     scripts: tuple[str, ...],
+    output_dir: str | None,
     verbose: int,
     with_debugger: bool,
 ):
@@ -266,10 +278,21 @@ def create_implementation(
         # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
 
     Note that the requirements should be formatted as a single line.
+
+    If an implementation of the same name already exists, it will be overwritten
+    automatically and the new one registered with EasyLink.
     """
     if not scripts:
         logger.error("No scripts provided.")
         return
+    output_dir = Path(output_dir) if output_dir else Path(f"{CONTAINER_DIR}/{os.getlogin()}")
+    if not output_dir.exists():
+        # make the directory with rwxrwxr-x permissions
+        output_dir.mkdir(parents=True, mode=0o775)
+    if not output_dir.exists():
+        raise FileNotFoundError(
+            f"Output directory {output_dir} does not exist and could not be created."
+        )
     configure_logging_to_terminal(verbose)
     main = handle_exceptions(
         func=implementation_creator.main,
@@ -280,6 +303,6 @@ def create_implementation(
     for script in scripts:
         script = Path(script)
         logger.info(f"Creating implementation for {script.name}")
-        main(script_path=script)
+        main(script_path=script, host=output_dir)
         list_str += f"  - {script.stem}\n"
     logger.info("*** Implementations created ***\n" f"{list_str}")
