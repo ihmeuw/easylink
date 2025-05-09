@@ -16,14 +16,12 @@ from pyarrow import parquet as pq
 
 def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
     """
-    Reads a file and checks for required columns.
+    Reads a file.
 
     Parameters
     ----------
     filepath : str
         The path to the file to read.
-    required_columns : set
-        A set of required column names.
 
     Returns
     -------
@@ -34,26 +32,35 @@ def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
     ------
     NotImplementedError
         If the file type is not supported.
-    LookupError
-        If the file is missing required columns.
     """
     extension = Path(filepath).suffix
     if extension == ".parquet":
-        df = pd.read_parquet(filepath)
+        return pd.read_parquet(filepath)
     elif extension == ".csv":
-        df = pd.read_csv(filepath)
+        return pd.read_csv(filepath)
     else:
         raise NotImplementedError(
             f"Data file type {extension} is not supported. Convert to Parquet or CSV instead."
         )
 
-    missing_columns = required_columns - set(df.columns)
+
+def _validate_required_columns(filepath: str) -> None:
+    extension = Path(filepath).suffix
+    if extension == ".parquet":
+        output_columns = set(pq.ParquetFile(filepath).schema.names)
+    elif extension == ".csv":
+        output_columns = set(pd.read_csv(filepath, nrows=5).columns)
+    else:
+        raise NotImplementedError(
+            f"Data file type {extension} is not supported. Convert to Parquet or CSV instead"
+        )
+
+    required_columns = {"foo", "bar", "counter"}
+    missing_columns = required_columns - output_columns
     if missing_columns:
         raise LookupError(
             f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
-
-    return df
 
 
 def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -> None:
@@ -96,8 +103,7 @@ def validate_input_file_dummy(filepath: str) -> None:
     LookupError
         If the file is missing required columns.
     """
-    required_columns = {"foo", "bar", "counter"}
-    _read_file(filepath, required_columns)
+    _validate_required_columns(filepath, required_columns={"foo", "bar", "counter"})
 
 
 def validate_input_datasets(filepath: str) -> None:
@@ -127,7 +133,8 @@ def validate_input_datasets(filepath: str) -> None:
 
     for file in input_path.iterdir():
         if file.is_file():
-            df = _read_file(file, {"Record ID"})
+            _validate_required_columns(file, {"Record ID"})
+            df = _read_file(file)
             _validate_unique_column(df, "Record ID", file.name)
 
 
@@ -150,8 +157,8 @@ def validate_clusters(filepath: str) -> None:
     ValueError
         If the "Input Record ID" column is not unique.
     """
-    required_columns = {"Input Record ID", "Cluster ID"}
-    df = _read_file(filepath, required_columns)
+    _validate_required_columns(filepath, {"Input Record ID", "Cluster ID"})
+    df = _read_file(filepath)
     _validate_unique_column(df, "Input Record ID", filepath)
 
 
@@ -181,8 +188,8 @@ def validate_links(filepath: str) -> None:
         - "Left Record ID" is not alphabetically before "Right Record ID".
         - Values in the "Probability" column are not between 0 and 1 (inclusive).
     """
-    required_columns = {"Left Record ID", "Right Record ID", "Probability"}
-    df = _read_file(filepath, required_columns)
+    _validate_required_columns(filepath, {"Left Record ID", "Right Record ID", "Probability"})
+    df = _read_file(filepath)
 
     if (df["Left Record ID"] == df["Right Record ID"]).any():
         raise ValueError(
@@ -227,7 +234,8 @@ def validate_ids_to_remove(filepath: str) -> None:
     ValueError
         If the "Record ID" column is not unique.
     """
-    df = _read_file(filepath, {"Record ID"})
+    _validate_required_columns(filepath, {"Record ID"})
+    df = _read_file(filepath)
     _validate_unique_column(df, "Record ID", filepath)
 
 
