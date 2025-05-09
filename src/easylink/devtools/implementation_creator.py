@@ -86,8 +86,6 @@ class ImplementationCreator:
             # stream output to console
             for line in process.stdout:  # type: ignore[union-attr]
                 print(line, end="")
-            for line in process.stderr:  # type: ignore[union-attr]
-                print(line, end="")
             process.wait()
 
             if process.returncode == 0:
