@@ -58,16 +58,14 @@ class ImplementationCreator:
         Raises
         ------
         subprocess.CalledProcessError
-            If the container build fails.
-        FileNotFoundError
-            If singularity is not installed or not found in the system PATH.
+            If the subprocess fails.
+        Exception
+            If the container fails to build for any reason.
         """
         logger.info(f"Building container for '{self.implementation_name}'")
         if self.container_path.exists():
             logger.warning(f"Container {self.container_path} already exists. Overwriting it.")
 
-        # Change to the recipe directory
-        os.chdir(self.container_path.parent)
         try:
             cmd = [
                 "singularity",
@@ -82,14 +80,14 @@ class ImplementationCreator:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                cwd=self.container_path.parent,
             )
+
             # stream output to console
-            if process.stdout:
-                for line in process.stdout:
-                    print(line, end="")
-            if process.stderr:
-                for line in process.stderr:
-                    print(line, end="")
+            for line in process.stdout:  # type: ignore[union-attr]
+                print(line, end="")
+            for line in process.stderr:  # type: ignore[union-attr]
+                print(line, end="")
             process.wait()
 
             if process.returncode == 0:
@@ -99,11 +97,12 @@ class ImplementationCreator:
                     f"Failed to build container '{self.container_path.name}'. "
                     f"Error: {process.returncode}"
                 )
-                raise subprocess.CalledProcessError(process.returncode, cmd)
-        except FileNotFoundError:
+                raise subprocess.CalledProcessError(
+                    process.returncode, cmd, output=process.stderr.read()  # type: ignore[union-attr]
+                )
+        except Exception as e:
             logger.error(
-                "Singularity is not installed or not found in the system PATH. "
-                "Please ensure Singularity is installed and accessible."
+                f"Failed to build container '{self.container_path.name}'. " f"Error: {e}"
             )
             raise
 
