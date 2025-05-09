@@ -44,12 +44,14 @@ def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
         df = pd.read_csv(filepath)
     else:
         raise NotImplementedError(
-            f"File type {extension} is not supported. Convert to Parquet or CSV instead."
+            f"Data file type {extension} is not supported. Convert to Parquet or CSV instead."
         )
 
     missing_columns = required_columns - set(df.columns)
     if missing_columns:
-        raise LookupError(f"File {filepath} is missing required column(s): {missing_columns}")
+        raise LookupError(
+            f"Data file {filepath} is missing required column(s) {missing_columns}"
+        )
 
     return df
 
@@ -74,7 +76,7 @@ def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -
     """
     if not df[column_name].is_unique:
         raise ValueError(
-            f"File {filepath} contains duplicate values in the '{column_name}' column."
+            f"Data file {filepath} contains duplicate values in the '{column_name}' column."
         )
 
 
@@ -184,7 +186,7 @@ def validate_links(filepath: str) -> None:
 
     if (df["Left Record ID"] == df["Right Record ID"]).any():
         raise ValueError(
-            f"File {filepath} contains rows where 'Left Record ID' is equal to 'Right Record ID'."
+            f"Data file {filepath} contains rows where 'Left Record ID' is equal to 'Right Record ID'."
         )
 
     if (
@@ -192,17 +194,17 @@ def validate_links(filepath: str) -> None:
         == df.shape[0]
     ):
         raise ValueError(
-            f"File {filepath} contains duplicate rows with the same 'Left Record ID' and 'Right Record ID'."
+            f"Data file {filepath} contains duplicate rows with the same 'Left Record ID' and 'Right Record ID'."
         )
 
     if not all(df["Left Record ID"] < df["Right Record ID"]):
         raise ValueError(
-            f"File {filepath} contains rows where 'Left Record ID' is not alphabetically before 'Right Record ID'."
+            f"Data file {filepath} contains rows where 'Left Record ID' is not alphabetically before 'Right Record ID'."
         )
 
     if not df["Probability"].between(0, 1).all():
         raise ValueError(
-            f"File {filepath} contains values in the 'Probability' column that are not between 0 and 1 (inclusive)."
+            f"Data file {filepath} contains values in the 'Probability' column that are not between 0 and 1 (inclusive)."
         )
 
 

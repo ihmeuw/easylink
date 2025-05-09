@@ -17,7 +17,7 @@ from easylink.pipeline_schema import PIPELINE_SCHEMAS
 
 def test__get_schema(default_config: Config) -> None:
     """Test default config gets "development schema", without errors"""
-    assert default_config.schema == PIPELINE_SCHEMAS[0]
+    assert default_config.schema == PIPELINE_SCHEMAS[1]
 
 
 def test_load_params_from_specification(
