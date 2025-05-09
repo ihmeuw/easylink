@@ -256,12 +256,10 @@ easylink.add_command(devtools)
         "The directory to move the container to. If no value is passed, it will "
         f"be moved to {CONTAINER_DIR} in a sub-directory named with the username."
     ),
-    default=f"{CONTAINER_DIR}/{os.getlogin()}",
-    show_default=True,
 )
 def create_implementation(
     scripts: tuple[str, ...],
-    output_dir: str,
+    output_dir: str | None,
     verbose: int,
     with_debugger: bool,
 ):
@@ -287,7 +285,7 @@ def create_implementation(
     if not scripts:
         logger.error("No scripts provided.")
         return
-    output_dir = Path(output_dir)
+    output_dir = Path(output_dir) if output_dir else Path(f"{CONTAINER_DIR}/{os.getlogin()}")
     if not output_dir.exists():
         # make the directory with rwxrwxr-x permissions
         output_dir.mkdir(parents=True, mode=0o775)
