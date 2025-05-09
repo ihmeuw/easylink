@@ -11,22 +11,24 @@ In order to create an implementation, three things are needed:
 
 """
 
-import os
+import shutil
 import subprocess
 from pathlib import Path
 
 from loguru import logger
 
 
-def main(script_path: Path) -> None:
+def main(script_path: Path, host: Path) -> None:
     """Creates a container to run a specific script and registers it with EasyLink.
 
     Parameters
     ----------
     script_path
         The filepath to a single script that implements a step of the pipeline.
+    host
+        The host directory to move the container to.
     """
-    creator = ImplementationCreator(script_path)
+    creator = ImplementationCreator(script_path, host)
     creator.create_recipe()
     creator.build_container()
     creator.move_container()
@@ -36,8 +38,9 @@ def main(script_path: Path) -> None:
 class ImplementationCreator:
     """A class used to create a container for a specific implementation."""
 
-    def __init__(self, script_path: Path) -> None:
+    def __init__(self, script_path: Path, host: Path) -> None:
         self.script_path = script_path
+        self.host = host
         self.recipe_path = script_path.with_suffix(".def")
         self.container_path = script_path.with_suffix(".sif")
         self.implementation_name = script_path.stem
@@ -106,8 +109,11 @@ class ImplementationCreator:
 
     def move_container(self) -> None:
         """Moves the container to the proper location for EasyLink to find it."""
-        logger.info(f"Moving container '{self.implementation_name}'")
-        pass
+        logger.info(f"Moving container '{self.implementation_name}' to {self.host}")
+        new_path = self.host / self.container_path.name
+        if new_path.exists():
+            logger.warning(f"Container {new_path} already exists. Overwriting it.")
+        shutil.move(str(self.container_path), str(new_path))
 
     def register(self) -> None:
         """Registers the container with EasyLink.
