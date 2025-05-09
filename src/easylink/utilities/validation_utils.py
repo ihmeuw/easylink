@@ -14,7 +14,7 @@ import pandas as pd
 from pyarrow import parquet as pq
 
 
-def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
+def _read_file(filepath: str) -> pd.DataFrame:
     """
     Reads a file.
 
@@ -44,7 +44,7 @@ def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
         )
 
 
-def _validate_required_columns(filepath: str) -> None:
+def _validate_required_columns(filepath: str, required_columns: set) -> None:
     extension = Path(filepath).suffix
     if extension == ".parquet":
         output_columns = set(pq.ParquetFile(filepath).schema.names)
@@ -55,7 +55,6 @@ def _validate_required_columns(filepath: str) -> None:
             f"Data file type {extension} is not supported. Convert to Parquet or CSV instead"
         )
 
-    required_columns = {"foo", "bar", "counter"}
     missing_columns = required_columns - output_columns
     if missing_columns:
         raise LookupError(
