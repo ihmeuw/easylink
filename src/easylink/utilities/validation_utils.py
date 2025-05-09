@@ -26,7 +26,7 @@ def _read_file(filepath: str, required_columns: set) -> pd.DataFrame:
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         The loaded DataFrame.
 
     Raises
@@ -61,7 +61,7 @@ def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df : pandas.DataFrame
         The DataFrame to validate.
     column_name : str
         The name of the column to check.
@@ -83,6 +83,8 @@ def validate_input_file_dummy(filepath: str) -> None:
     """
     Validates an input file to a dummy :class:`~easylink.step.Step`.
 
+    The file must contain the columns: "foo", "bar", and "counter".
+
     Parameters
     ----------
     filepath : str
@@ -92,10 +94,6 @@ def validate_input_file_dummy(filepath: str) -> None:
     ------
     LookupError
         If the file is missing required columns.
-
-    Specification
-    -------------
-    - The file must contain the columns: "foo", "bar", and "counter".
     """
     required_columns = {"foo", "bar", "counter"}
     _read_file(filepath, required_columns)
@@ -104,6 +102,9 @@ def validate_input_file_dummy(filepath: str) -> None:
 def validate_input_datasets(filepath: str) -> None:
     """
     Validates a directory of input dataset files.
+
+    - Each file in the directory must be in a tabular format and contain a "Record ID" column.
+    - The "Record ID" column must have unique values.
 
     Parameters
     ----------
@@ -118,11 +119,6 @@ def validate_input_datasets(filepath: str) -> None:
         If any file is missing the required "Record ID" column.
     ValueError
         If the "Record ID" column is not unique in any file.
-
-    Specification
-    -------------
-    - Each file in the directory must be in a tabular format and contain a "Record ID" column.
-    - The "Record ID" column must have unique values.
     """
     input_path = Path(filepath)
     if not input_path.is_dir():
@@ -138,6 +134,9 @@ def validate_clusters(filepath: str) -> None:
     """
     Validates a file containing cluster information.
 
+    - The file must contain two columns: "Input Record ID" and "Cluster ID".
+    - "Input Record ID" must have unique values.
+
     Parameters
     ----------
     filepath : str
@@ -149,11 +148,6 @@ def validate_clusters(filepath: str) -> None:
         If the file is missing required columns.
     ValueError
         If the "Input Record ID" column is not unique.
-
-    Specification
-    -------------
-    - The file must contain two columns: "Input Record ID" and "Cluster ID".
-    - "Input Record ID" must have unique values.
     """
     required_columns = {"Input Record ID", "Cluster ID"}
     df = _read_file(filepath, required_columns)
@@ -163,6 +157,12 @@ def validate_clusters(filepath: str) -> None:
 def validate_links(filepath: str) -> None:
     """
     Validates a file containing link information.
+
+    - The file must contain three columns: "Left Record ID", "Right Record ID", and "Probability".
+    - "Left Record ID" and "Right Record ID" must not be equal in any row.
+    - Rows must be unique.
+    - "Left Record ID" must be alphabetically before "Right Record ID".
+    - "Probability" values must be between 0 and 1 (inclusive).
 
     Parameters
     ----------
@@ -179,14 +179,6 @@ def validate_links(filepath: str) -> None:
         - Duplicate rows exist with the same "Left Record ID" and "Right Record ID".
         - "Left Record ID" is not alphabetically before "Right Record ID".
         - Values in the "Probability" column are not between 0 and 1 (inclusive).
-
-    Specification
-    -------------
-    - The file must contain three columns: "Left Record ID", "Right Record ID", and "Probability".
-    - "Left Record ID" and "Right Record ID" must not be equal in any row.
-    - Rows must be unique.
-    - "Left Record ID" must be alphabetically before "Right Record ID".
-    - "Probability" values must be between 0 and 1 (inclusive).
     """
     required_columns = {"Left Record ID", "Right Record ID", "Probability"}
     df = _read_file(filepath, required_columns)
@@ -216,6 +208,9 @@ def validate_ids_to_remove(filepath: str) -> None:
     """
     Validates a file containing IDs to remove.
 
+    - The file must contain a single column: "Record ID".
+    - "Record ID" must have unique values.
+
     Parameters
     ----------
     filepath : str
@@ -227,11 +222,6 @@ def validate_ids_to_remove(filepath: str) -> None:
         If the file is missing the "Record ID" column.
     ValueError
         If the "Record ID" column is not unique.
-
-    Specification
-    -------------
-    - The file must contain a single column: "Record ID".
-    - "Record ID" must have unique values.
     """
     df = _read_file(filepath, {"Record ID"})
     _validate_unique_column(df, "Record ID", filepath)
