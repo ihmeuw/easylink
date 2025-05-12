@@ -50,7 +50,7 @@ class ImplementationCreator:
         self.hosted_container_path = self.host / self.local_container_path.name
         self.implementation_name = script_path.stem
         self.requirements = self._extract_requirements(script_path)
-        self.step = self._extract_step_being_implemented(script_path)
+        self.step = self._extract_implemented_step(script_path)
 
     def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
@@ -168,7 +168,7 @@ class ImplementationCreator:
         return requirements[0]
 
     @staticmethod
-    def _extract_step_being_implemented(script_path: Path) -> str:
+    def _extract_implemented_step(script_path: Path) -> str:
         """Extracts the name of the step that this script is implementing.
 
         The expectation is that the step's name is specified within the script

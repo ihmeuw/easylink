@@ -36,11 +36,11 @@ MULTIPLE_STEPS_METADATA = """
 # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml"""
 
 
-def test__extract_step_being_implemented(tmp_path: Path) -> None:
+def test__extract_implemented_step(tmp_path: Path) -> None:
     script_path = tmp_path / "foo_step.py"
     with open(script_path, "w") as file:
         file.write(GOOD_METADATA)
-    assert ImplementationCreator._extract_step_being_implemented(script_path) == "step_1"
+    assert ImplementationCreator._extract_implemented_step(script_path) == "step_1"
 
 
 @pytest.mark.parametrize(
@@ -50,14 +50,14 @@ def test__extract_step_being_implemented(tmp_path: Path) -> None:
         (MULTIPLE_METADATA, "Found multiple step_name requests"),
     ],
 )
-def test__extract_step_being_implemented_raises(
+def test__extract_implemented_step_raises(
     script_content: str, error_msg: str, tmp_path: Path
 ) -> None:
     script_path = tmp_path / "foo_step.py"
     with open(script_path, "w") as file:
         file.write(script_content)
     with pytest.raises(ValueError, match=error_msg):
-        ImplementationCreator._extract_step_being_implemented(script_path)
+        ImplementationCreator._extract_implemented_step(script_path)
 
 
 @pytest.mark.parametrize(
