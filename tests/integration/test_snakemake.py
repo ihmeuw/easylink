@@ -33,3 +33,26 @@ def test_missing_results(test_specific_results_dir, mocker, caplog):
         )
     assert exit.value.code == 1
     assert "MissingOutputException" in caplog.text
+
+
+@pytest.mark.slow
+def test_outputting_a_directory(test_specific_results_dir, mocker, caplog):
+    """Test that the pipeline fails when a step is missing output files."""
+    nodes, edges = TESTING_SCHEMA_PARAMS["output_dir"]
+    mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
+    mocker.patch(
+        "easylink.configuration.Config._get_schema",
+        return_value=PipelineSchema("output_dir", nodes=nodes, edges=edges),
+    )
+
+    with pytest.raises(SystemExit) as exit:
+        main(
+            command="run",
+            pipeline_specification=SPECIFICATIONS_DIR
+            / "integration"
+            / "pipeline_output_dir.yaml",
+            input_data=SPECIFICATIONS_DIR / "common/input_data_one_file.yaml",
+            computing_environment=SPECIFICATIONS_DIR / "common/environment_local.yaml",
+            results_dir=test_specific_results_dir,
+        )
+    assert exit.value.code == 0

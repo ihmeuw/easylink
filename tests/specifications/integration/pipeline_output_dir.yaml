@@ -1,0 +1,7 @@
+steps:
+  step_1_for_output_dir_example:
+    implementation:
+      name: dummy_step_1_for_output_dir_example
+  step_2_for_output_dir_example:
+    implementation:
+      name: dummy_step_2_for_output_dir_example

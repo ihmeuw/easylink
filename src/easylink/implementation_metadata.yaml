@@ -192,3 +192,17 @@ step_1a_and_step_1b_combined_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
+dummy_step_1_for_output_dir_example:
+  steps:
+  - step_1_for_output_dir_example
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_1_for_output_dir_example.sif
+  script_cmd: python /dummy_step_1_for_output_dir_example.py
+  outputs:
+    step_1_main_output_directory: output_dir/
+dummy_step_2_for_output_dir_example:
+  steps:
+  - step_2_for_output_dir_example
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_2_for_output_dir_example.sif
+  script_cmd: python /dummy_step_2_for_output_dir_example.py
+  outputs:
+    step_2_main_output: result.parquet

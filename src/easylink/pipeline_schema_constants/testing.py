@@ -26,7 +26,7 @@ from easylink.step import (
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.splitter_utils import split_data_in_two
-from easylink.utilities.validation_utils import validate_input_file_dummy
+from easylink.utilities.validation_utils import validate_input_file_dummy, validate_dir
 
 NODES_ONE_STEP = [
     InputStep(),
@@ -582,3 +582,55 @@ EDGES_ONE_STEP_TWO_ISLOTS = [
     ),
 ]
 SCHEMA_PARAMS_EP_HIERARCHICAL_STEP = (NODES_EP_HIERARCHICAL_STEP, EDGES_ONE_STEP_TWO_ISLOTS)
+
+NODES_OUTPUT_DIR = [
+    InputStep(),
+    Step(
+        step_name="step_1_for_output_dir_example",
+        input_slots=[
+            InputSlot(
+                name="step_1_main_input",
+                env_var="STEP_1_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_1_main_output_directory")],
+    ),
+    Step(
+        step_name="step_2_for_output_dir_example",
+        input_slots=[
+            InputSlot(
+                name="step_2_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_DIR_PATH",
+                validator=validate_dir,
+            )
+        ],
+        output_slots=[OutputSlot("step_2_main_output")],
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ],
+    ),
+]
+EDGES_OUTPUT_DIR = [
+    EdgeParams(
+        source_node="input_data",
+        target_node="step_1_for_output_dir_example",
+        output_slot="all",
+        input_slot="step_1_main_input",
+    ),
+    EdgeParams(
+        source_node="step_1_for_output_dir_example",
+        target_node="step_2_for_output_dir_example",
+        output_slot="step_1_main_output_directory",
+        input_slot="step_2_main_input",
+    ),
+    EdgeParams(
+        source_node="step_2_for_output_dir_example",
+        target_node="results",
+        output_slot="step_2_main_output",
+        input_slot="result",
+    ),
+]
+SCHEMA_PARAMS_OUTPUT_DIR = (NODES_OUTPUT_DIR, EDGES_OUTPUT_DIR)
