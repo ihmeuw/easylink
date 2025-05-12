@@ -192,17 +192,3 @@ step_1a_and_step_1b_combined_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
-sbachmei_step_1:
-  steps:
-  - step_1
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/sbachmei/sbachmei_step_1.sif
-  script_cmd: python /sbachmei_step_1.py
-  outputs:
-    step_1_main_output: result.parquet
-sbachmei_step_4b:
-  steps:
-  - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/sbachmei/sbachmei_step_4b.sif
-  script_cmd: python /sbachmei_step_4b.py
-  outputs:
-    step_4b_main_output: result.parquet
