@@ -41,17 +41,21 @@ As before, refer to ``easylink generate-dag --help`` for information on other op
 For usage documentation, see :ref:`cli`.
 """
 
+import os
 from collections.abc import Callable
+from pathlib import Path
 
 import click
 from loguru import logger
 
 from easylink import runner
+from easylink.devtools import implementation_creator
 from easylink.utilities.data_utils import get_results_directory
 from easylink.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
 )
+from easylink.utilities.paths import CONTAINER_DIR
 
 SHARED_OPTIONS = [
     click.option(
@@ -87,6 +91,9 @@ SHARED_OPTIONS = [
         default=False,
         help="Do not save the results in a timestamped sub-directory of ``--output-dir``.",
     ),
+]
+
+VERBOSE_WITH_DEBUGGER_OPTIONS = [
     click.option(
         "-v", "--verbose", count=True, help="Increase logging verbosity.", hidden=True
     ),
@@ -100,11 +107,8 @@ SHARED_OPTIONS = [
 ]
 
 
-def _pass_shared_options(func: Callable) -> Callable:
-    """Passes shared options to a click command.
-
-    This function is a decorator that takes a click command callable and adds the
-    shared options defined in ``SHARED_OPTIONS`` to it.
+def _pass_verbose_with_debugger_options(func: Callable) -> Callable:
+    """Passes verbosity and debugger options to a click command.
 
     Parameters
     ----------
@@ -115,7 +119,24 @@ def _pass_shared_options(func: Callable) -> Callable:
     -------
         The click command function with the shared options added.
     """
-    for option in SHARED_OPTIONS:
+    for option in VERBOSE_WITH_DEBUGGER_OPTIONS:
+        func = option(func)
+    return func
+
+
+def _pass_shared_options(func: Callable) -> Callable:
+    """Passes shared options to a click command.
+
+    Parameters
+    ----------
+    func
+        The click command function to add shared options to.
+
+    Returns
+    -------
+        The click command function with the shared options added.
+    """
+    for option in SHARED_OPTIONS + VERBOSE_WITH_DEBUGGER_OPTIONS:
         func = option(func)
     return func
 
@@ -204,3 +225,90 @@ def generate_dag(
         results_dir=results_dir,
     )
     logger.info("*** DAG saved to result directory ***")
+
+
+#####################
+# Development tools #
+#####################
+
+
+@click.group(hidden=True)
+def devtools():
+    """Development tools for EasyLink."""
+    pass
+
+
+easylink.add_command(devtools)
+
+
+@devtools.command()
+@_pass_verbose_with_debugger_options
+@click.argument(
+    "scripts",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True, resolve_path=True),
+    nargs=-1,
+)
+@click.option(
+    "-o",
+    "--output-dir",
+    type=click.Path(exists=False, dir_okay=True, file_okay=False, resolve_path=True),
+    help=(
+        "The directory to move the container to. If no value is passed, it will "
+        f"be moved to {CONTAINER_DIR} in a sub-directory named with the username."
+    ),
+)
+def create_implementation(
+    scripts: tuple[str, ...],
+    output_dir: str | None,
+    verbose: int,
+    with_debugger: bool,
+):
+    """Creates EasyLink implementations from implementation details.
+
+    This is a helper tool for developers to more easily create implementations
+    and register them with the EasyLink framework.
+
+    SCRIPTS are the filepaths to the implementation Python scripts to be run from within
+    a newly created container. Each script must specify (1) the name of the pipeline
+    step that it is implementing as well as, optionally, (2) any required pypi dependencies,
+    and (3) the pipeline schema that that the step the script implements is part of
+    (will default to "main" if not specified).
+
+    These values are to be specified in the script using comments with the exact
+    format shown in the example below.
+
+        # STEP_NAME: blocking
+
+        # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+
+        # PIPELINE_SCHEMA: development
+
+    Note that the requirements should be formatted as a single line.
+
+    If an implementation of the same name already exists, it will be overwritten
+    automatically and the new one registered with EasyLink.
+    """
+    if not scripts:
+        logger.error("No scripts provided.")
+        return
+    output_dir = Path(output_dir) if output_dir else Path(f"{CONTAINER_DIR}/{os.getlogin()}")
+    if not output_dir.exists():
+        # make the directory with rwxrwxr-x permissions
+        output_dir.mkdir(parents=True, mode=0o775)
+    if not output_dir.exists():
+        raise FileNotFoundError(
+            f"Output directory {output_dir} does not exist and could not be created."
+        )
+    configure_logging_to_terminal(verbose)
+    main = handle_exceptions(
+        func=implementation_creator.main,
+        exceptions_logger=logger,
+        with_debugger=with_debugger,
+    )
+    list_str = ""
+    for script in scripts:
+        script = Path(script)
+        logger.info(f"Creating implementation for {script.name}")
+        main(script_path=script, host=output_dir)
+        list_str += f"  - {script.stem}\n"
+    logger.info("*** Implementations created ***\n" f"{list_str}")
