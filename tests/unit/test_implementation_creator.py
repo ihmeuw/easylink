@@ -12,13 +12,16 @@ from easylink.utilities.paths import IMPLEMENTATION_METADATA
 
 GOOD_METADATA = """
 # STEP_NAME: step_1
-# REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml"""
+# REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+# PIPELINE_SCHEMA: development"""
 
 MISSING_METADATA = """
 # step_name: step_1
 # requirements: pandas==2.1.2 pyarrow pyyaml
+# pipeline_schema: testing
 // STEP_NAME: step_1
 // REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+// PIPELINE_SCHEMA: testing
 gosh I wish I'd capitalized the metadata keys or used the correct comment symbol!"""
 
 MULTIPLE_METADATA = """
@@ -27,9 +30,6 @@ MULTIPLE_METADATA = """
 # STEP_NAME: step_1
 # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml"""
 
-DIFFERENT_GOOD_METADATA = """
-# STEP_NAME: step_1_different
-# REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml"""
 
 MULTIPLE_STEPS_METADATA = """
 # STEP_NAME: step_1, step_2
@@ -82,6 +82,76 @@ def test__extract_requirements_raises(tmp_path: Path) -> None:
         ImplementationCreator._extract_requirements(script_path)
 
 
+@pytest.mark.parametrize(
+    "script_content, expected",
+    [
+        (GOOD_METADATA, "development"),
+        (MISSING_METADATA, "main"),
+    ],
+)
+def test__extract_pipeline_schema(script_content: str, expected: str, tmp_path: Path) -> None:
+    script_path = tmp_path / "foo_step.py"
+    with open(script_path, "w") as file:
+        file.write(script_content)
+    assert ImplementationCreator._extract_pipeline_schema(script_path) == expected
+
+
+def test__extract_implementable_steps(tmp_path: Path) -> None:
+    script_path = tmp_path / "foo_step.py"
+    with open(script_path, "w") as file:
+        file.write(GOOD_METADATA)
+    steps = ImplementationCreator._extract_implementable_steps("development")
+
+    assert [step.name for step in steps] == [
+        "step_1",
+        "step_2",
+        "step_3",
+        "step_4",
+        "step_4a",
+        "step_4b",
+        "step_5_and_6",
+        "step_5",
+        "step_6",
+    ]
+
+
+@pytest.mark.parametrize(
+    "step_name",
+    [
+        "step_1",
+        "step_2",
+        "step_3",
+        "step_4",
+        "step_4a",
+        "step_4b",
+        "step_5_and_6",
+        "step_5",
+        "step_6",
+    ],
+)
+def test__extract_output_slot(step_name: str, tmp_path: Path) -> None:
+    script_path = tmp_path / "foo_step.py"
+    # Replace the hard-coded "step_1" with the parameterized step_name
+    metadata = GOOD_METADATA.replace("step_1", step_name)
+    with open(script_path, "w") as file:
+        file.write(metadata)
+    assert (
+        ImplementationCreator._extract_output_slot(script_path, step_name)
+        == f"{step_name}_main_output"
+    )
+
+
+def test__extract_output_slot_raises(tmp_path: Path) -> None:
+    script_path = tmp_path / "foo_step.py"
+    with open(script_path, "w") as file:
+        file.write(GOOD_METADATA)
+    with pytest.raises(
+        ValueError,
+        match="does not exist as an implementable step",
+    ):
+        ImplementationCreator._extract_output_slot(script_path, "foo_step")
+
+
 def test_write_recipe(tmp_path: Path) -> None:
     script_path = tmp_path / "cookies.py"
     with open(script_path, "w") as file:
@@ -96,7 +166,7 @@ def test_write_recipe(tmp_path: Path) -> None:
 
 def test_register(tmp_path: Path, mocker: MockerFixture) -> None:
 
-    script_path = tmp_path / "step_1_implementation.py"
+    script_path = tmp_path / "test_implementation.py"
     implementation_metadata = tmp_path / "test_implementation_metadata.yaml"
     # copy the real implementation metadata file to the test directory
     shutil.copy(IMPLEMENTATION_METADATA, implementation_metadata)
@@ -114,7 +184,7 @@ def test_register(tmp_path: Path, mocker: MockerFixture) -> None:
 
     creator = ImplementationCreator(script_path, Path("some-host"))
 
-    assert "step_1_implementation" not in load_yaml(implementation_metadata)
+    assert "test_implementation" not in load_yaml(implementation_metadata)
     mocker.patch(
         "easylink.devtools.implementation_creator.ImplementationCreator._write_metadata",
         side_effect=_write_test_metadata,
@@ -122,29 +192,34 @@ def test_register(tmp_path: Path, mocker: MockerFixture) -> None:
     creator.register()
 
     # load the new metadata and check it
-    details = load_yaml(implementation_metadata)["step_1_implementation"]
+    details = load_yaml(implementation_metadata)["test_implementation"]
     assert details == {
         "steps": ["step_1"],
-        "image_path": "some-host/step_1_implementation.sif",
-        "script_cmd": "python /step_1_implementation.py",
+        "image_path": "some-host/test_implementation.sif",
+        "script_cmd": "python /test_implementation.py",
         "outputs": {"step_1_main_output": "result.parquet"},
     }
 
     # register a new version of the same implementation
-    with open(script_path, "w") as file:
-        file.write(DIFFERENT_GOOD_METADATA)
+    new_script_path = tmp_path / "test_new_implementation.py"
+    with open(new_script_path, "w") as file:
+        file.write(GOOD_METADATA)
 
-    creator2 = ImplementationCreator(script_path, Path("some-other-host"))
+    new_creator = ImplementationCreator(new_script_path, Path("some-other-host"))
 
-    # the implementation should be in there now
-    assert "step_1_implementation" in load_yaml(implementation_metadata)
-    creator2.register()
-    details2 = load_yaml(implementation_metadata)["step_1_implementation"]
-    assert details2 == {
-        "steps": ["step_1_different"],
-        "image_path": "some-other-host/step_1_implementation.sif",
-        "script_cmd": "python /step_1_implementation.py",
-        "outputs": {"step_1_different_main_output": "result.parquet"},
+    # the original implementation should not be overwritten
+    md = load_yaml(implementation_metadata)
+    assert "test_implementation" in md
+    assert "test_new_implementation" not in md
+
+    new_creator.register()
+
+    new_details = load_yaml(implementation_metadata)["test_new_implementation"]
+    assert new_details == {
+        "steps": ["step_1"],
+        "image_path": "some-other-host/test_new_implementation.sif",
+        "script_cmd": "python /test_new_implementation.py",
+        "outputs": {"step_1_main_output": "result.parquet"},
     }
 
 

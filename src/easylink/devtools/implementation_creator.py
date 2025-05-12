@@ -14,10 +14,20 @@ In order to create an implementation, three things are needed:
 import shutil
 import subprocess
 from pathlib import Path
+from typing import cast
 
 import yaml
 from loguru import logger
 
+from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
+from easylink.step import (
+    ChoiceStep,
+    EmbarrassinglyParallelStep,
+    HierarchicalStep,
+    IOStep,
+    Step,
+    TemplatedStep,
+)
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.paths import IMPLEMENTATION_METADATA
 
@@ -40,17 +50,55 @@ def main(script_path: Path, host: Path) -> None:
 
 
 class ImplementationCreator:
-    """A class used to create a container for a specific implementation."""
+    """A class used to create a container for a specific implementation.
+
+    Parameters
+    ----------
+    script_path
+        The filepath to a single script that implements a step of the pipeline.
+    host
+        The host directory to move the container to.
+    recipe_path
+        The filepath to the recipe file that will be created. It will be created
+        in the same directory as the script.
+    local_container_path
+        The filepath to the local container that will be created. It will be created
+        in the same directory as the script.
+    hosted_container_path
+        The filepath to to move the container to. This is where EasyLink will look
+        for the container.
+    implementation_name
+        The name of the implementation. It is by definition the name of the script.
+    requirements
+        The install requirements for the implementation (if any).
+    step
+        The name of the step that this implementation implements.
+    output_slot
+        The name of the output slot that this implementation sends results to.
+    """
 
     def __init__(self, script_path: Path, host: Path) -> None:
         self.script_path = script_path
+        """The filepath to a single script that implements a step of the pipeline."""
         self.host = host
+        """The host directory to move the container to."""
         self.recipe_path = script_path.with_suffix(".def")
+        """The filepath to the recipe file that will be created. It will be created
+        in the same directory as the script."""
         self.local_container_path = script_path.with_suffix(".sif")
+        """The filepath to the local container that will be created. It will be created
+        in the same directory as the script."""
         self.hosted_container_path = self.host / self.local_container_path.name
+        """The filepath to to move the container to. This is where EasyLink will look
+        for the container."""
         self.implementation_name = script_path.stem
+        """The name of the implementation. It is by definition the name of the script."""
         self.requirements = self._extract_requirements(script_path)
+        """The install requirements for the implementation (if any)."""
         self.step = self._extract_implemented_step(script_path)
+        """The name of the step that this implementation implements."""
+        self.output_slot = self._extract_output_slot(script_path, self.step)
+        """The name of the output slot that this implementation sends results to."""
 
     def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
@@ -144,20 +192,22 @@ class ImplementationCreator:
             "image_path": str(self.hosted_container_path),
             "script_cmd": f"python /{self.script_path.name}",
             "outputs": {
-                f"{self.step}_main_output": "result.parquet",
+                self.output_slot: "result.parquet",
             },
         }
         self._write_metadata(info)
 
     @staticmethod
     def _extract_requirements(script_path: Path) -> str:
-        """Extracts the script's dependency requirements.
+        """Extracts the script's dependency requirements (if any).
 
-        The expectation is that the requirements are specified within the script
+        The expectation is that any requirements are specified within the script
         as a comment of the format:
 
         .. code-block:: python
             # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+
+        This is an optional field and only required if the script actually has dependencies.
 
         The requirements must be specified as a single space-separated line.
         """
@@ -190,6 +240,93 @@ class ImplementationCreator:
                 f"to implement {steps}."
             )
         return steps[0]
+
+    @staticmethod
+    def _extract_output_slot(script_path: Path, step_name: str) -> str:
+        """Extracts the name of the output slot that this script is implementing."""
+        schema = ImplementationCreator._extract_pipeline_schema(script_path)
+        implementable_steps = ImplementationCreator._extract_implementable_steps(schema)
+        step_names = [step.name for step in implementable_steps]
+        if step_name not in step_names:
+            raise ValueError(
+                f"'{step_name}' does not exist as an implementable step in the '{schema}' pipeline schema. "
+            )
+        duplicates = list(set([step for step in step_names if step_names.count(step) > 1]))
+        if duplicates:
+            raise ValueError(
+                f"Multiple implementable steps with the same name found in the '{schema}' "
+                f"pipeline schema: {duplicates}."
+            )
+        implemented_step = [step for step in implementable_steps if step.name == step_name][0]
+        if len(implemented_step.output_slots) != 1:
+            raise NotImplementedError(
+                f"Multiple output slots are not yet supported. {script_path} is requesting "
+                f"to implement {step_name} with {len(implemented_step.output_slots)} output slots."
+            )
+        return list(implemented_step.output_slots)[0]
+
+    @staticmethod
+    def _extract_implementable_steps(schema: str) -> list[Step]:
+        """Extracts all implementable steps from the pipeline schema.
+
+        This method recursively traverses the pipeline schema specified in the script
+        to dynamically build a list of all implementable steps.
+
+        Returns
+        -------
+            All implementable steps in the pipeline schema.
+
+        Raises
+        ------
+            ValueError
+                If there exists multiple implementable steps with the same name.
+        """
+
+        def _process_step(node: Step) -> None:
+            """Adds `step` to the `implementable_steps` list if it is implementable."""
+            if isinstance(node, IOStep):
+                return
+            elif isinstance(node, TemplatedStep):
+                _process_step(node.template_step)
+                return
+            elif isinstance(node, EmbarrassinglyParallelStep):
+                _process_step(node.step)
+                return
+            elif isinstance(node, ChoiceStep):
+                for choice_step in node.choices.values():
+                    _process_step(cast(Step, choice_step["step"]))
+                return
+            elif isinstance(node, HierarchicalStep):
+                implementable_steps.append(node)
+                for sub_step in node.nodes:
+                    _process_step(sub_step)
+                return
+            else:  # base Step
+                implementable_steps.append(node)
+                return
+
+        schema_steps = ALLOWED_SCHEMA_PARAMS[schema][0]
+
+        implementable_steps: list[Step] = []
+        for schema_step in schema_steps:
+            _process_step(schema_step)
+
+        return implementable_steps
+
+    @staticmethod
+    def _extract_pipeline_schema(script_path: Path) -> str:
+        """Extracts the relevant pipeline schema name.
+
+        The expectation is that the output slot's name is specified within the script
+        as a comment of the format:
+
+        .. code-block:: python
+            # PIPELINE_SCHEMA: development
+
+        If no pipeline schema is specified, "main" will be used by default.
+        """
+        schema = _extract_metadata("PIPELINE_SCHEMA", script_path)
+        return "main" if len(schema) == 0 else schema[0]
 
     @staticmethod
     def _write_metadata(info: dict[str, dict[str, str]]) -> None:
