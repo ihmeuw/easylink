@@ -1,4 +1,14 @@
 simulant_id,household_id,first_name,middle_initial,last_name,age,date_of_birth,street_number,street_name,unit_number,city,state,zipcode,housing_type,relationship_to_reference_person,sex,race_ethnicity,year,record_id
+0_2,0_7,Diana,P,Kofron,25,05/06/1994,5112,145th st,,Anytown,WA,00000,Household,Reference person,Female,White,2020,0
+0_3,0_7,Anna,A,Kofron,25,09/29/1994,5112,145th st,,Anytown,WA,00000,Household,Other relative,Female,White,2020,1
+0_923,0_8033,Gerald,R,Butler,76,11/03/1943,1130,mallory ln,,Anytown,WA,00000,Household,Reference person,Male,Black,2020,2
+0_2641,0_1066,Loretta,T,Carley,61,07/71/1958,,delacorte dr,,Anytown,WA,00000,Household,Reference person,Female,White,2020,3
+0_2801,0_1138,Richard,R,Jones,73,03/03/1947,950,caribou lane,,Anytown,WA,00000,Household,Reference person,Male,White,2020,4
+0_6176,0_2514,Sandra,S,Runnalls,66,03/18/1954,4458,windsor pl,,Anytown,WA,00000,Household,Reference person,Female,Multiracial or Other,2020,5
+0_13972,0_5627,Jerry,E,Murray,70,01/03/1950,17868,winding trail rd,,Anytown,WA,00000,Household,Reference person,Male,White,2020,6
+0_13973,0_5627,Anita,R,Murray,70,11/06/1949,17868,winding trail rd,,Anytown,WA,00000,Household,Opposite-sex spouse,Female,White,2020,7
+0_13974,0_5627,Jada,S,Murray,45,04/11/1974,17868,winding trail rd,,Anytown,WA,00000,Household,Biological child,Female,White,2020,8
+0_13975,0_5627,Toni,K,Murray,44,02/12/1976,17868,winding trail rd,,Anytown,WA,00000,Household,Biological child,Female,White,2020,9
 0_4,0_8,Eric,R,Alonso Tellez,38,05/29/1981,1501,interlake ave n,,Anytown,WA,00000,Household,Reference person,Male,Latino,2020,10
 0_5,0_8,,R,Alonso Tellez,40,10/27/1979,1501,interlake ave n,,Anytown,WA,00000,Household,Opposite-sex spouse,Female,Latino,2020,11
 0_6,0_8,Elan,N,Alonso Tellez,6,07/30/2013,1501,interlake ave n,,Anytown,WA,00000,Household,Biological child,Male,Latino,2020,12
