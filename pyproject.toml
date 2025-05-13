@@ -19,6 +19,7 @@ strict = true  # See all the enabled flags `mypy --help | grep -A 10 'Strict mod
 disallow_any_unimported = false
 implicit_reexport = true
 exclude = [
+    'src/easylink/steps/',
     # Files below here should have their errors fixed and then be removed from this list
     # You may need to remove a `# mypy: ignore-errors` comment from the file heading as well
     'docs/source/conf.py',
@@ -34,9 +35,6 @@ exclude = [
     'src/easylink/rule.py',
     'src/easylink/runner.py',
     'src/easylink/step.py',
-    'src/easylink/steps/dev/python_pandas/dummy_step.py',
-    'src/easylink/steps/dev/python_pyspark/dummy_step.py',
-    'src/easylink/steps/dev/test.py',
     'src/easylink/utilities/aggregator_utils.py',
     'src/easylink/utilities/splitter_utils.py',
     'src/easylink/utilities/validation_utils.py',
