@@ -2,9 +2,10 @@
 # STEP_NAME: step_1_for_output_dir_example
 # REQUIREMENTS: pandas==2.1.2 pyarrow
 
-import pandas as pd
 import os
 from pathlib import Path
+
+import pandas as pd
 
 data = pd.read_parquet(os.environ["STEP_1_MAIN_INPUT_FILE_PATHS"])
 

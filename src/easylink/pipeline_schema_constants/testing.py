@@ -26,7 +26,7 @@ from easylink.step import (
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.splitter_utils import split_data_in_two
-from easylink.utilities.validation_utils import validate_input_file_dummy, validate_dir
+from easylink.utilities.validation_utils import validate_dir, validate_input_file_dummy
 
 NODES_ONE_STEP = [
     InputStep(),
