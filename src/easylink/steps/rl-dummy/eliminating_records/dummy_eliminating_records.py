@@ -1,5 +1,12 @@
+# STEP_NAME: eliminating_records
+
+# REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+
+# PIPELINE_SCHEMA: main
+
 import logging
 import os
+
 import pandas as pd
 
 logging.basicConfig(

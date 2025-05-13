@@ -192,3 +192,10 @@ step_1a_and_step_1b_combined_python_pandas:
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
+dummy_eliminating_records:
+  steps:
+  - eliminating_records
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/eliminating_records/dummy_eliminating_records.sif
+  script_cmd: python /dummy_eliminating_records.py
+  outputs:
+    ids_to_remove: result.parquet
