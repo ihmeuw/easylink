@@ -1006,8 +1006,8 @@ class LoopStep(TemplatedStep):
     of ``Steps`` in the case of a :class:`HierarchicalStep`) multiple times such that 
     each iteration depends on the previous.
 
-    In the pipeline configuration an implementation must be specified for each 
-    iteration of the step.
+    In the pipeline configuration the implementation(s) must be specified for each 
+    iteration of the looped step.
 
 
     See :class:``TemplatedStep`` for inherited attributes.

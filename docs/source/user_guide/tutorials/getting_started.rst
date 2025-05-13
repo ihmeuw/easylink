@@ -650,8 +650,8 @@ can have different implementations, or all can have the same one.
 .. note::
    So that you may have an idea of the functionalities
    enabled by operators, note that the other operators mentioned allow
-   the user to create pipeline sections with parallelized processing, multiple implementation options, and 
-   substeps resepctively.
+   the user to create pipeline sections with parallelized processing, one of several branching paths, and 
+   substeps respectively.
 
 To demonstrate the use of a ``LoopStep`` we will use a new pipeline configuration YAML, 
 :download:`loop-pipeline.yaml <loop-pipeline.yaml>`::
