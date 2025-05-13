@@ -271,15 +271,6 @@ class ImplementationCreator:
 
         This method recursively traverses the pipeline schema specified in the script
         to dynamically build a list of all implementable steps.
-
-        Returns
-        -------
-            All implementable steps in the pipeline schema.
-
-        Raises
-        ------
-            ValueError
-                If there exists multiple implementable steps with the same name.
         """
 
         def _process_step(node: Step) -> None:
