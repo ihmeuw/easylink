@@ -1,3 +1,7 @@
+**0.1.16 - 5/13/25**
+
+ - Implement new cli command to simplify implementation creation
+
 **0.1.15 - 5/5/25**
 
  - Fix SyntaxWarning for unescaped backslashes
