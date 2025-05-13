@@ -36,7 +36,7 @@ def test_missing_results(test_specific_results_dir, mocker, caplog):
 
 
 @pytest.mark.slow
-def test_outputting_a_directory(test_specific_results_dir, mocker, caplog):
+def test_outputting_a_directory(test_specific_results_dir, mocker):
     """Test that the pipeline fails when a step is missing output files."""
     nodes, edges = TESTING_SCHEMA_PARAMS["output_dir"]
     mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
