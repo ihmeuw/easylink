@@ -1003,10 +1003,10 @@ class LoopStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that allows for looping.
 
     A ``LoopStep`` allows a user to loop a :class:`Step` (or a sequence
-    of ``Steps`` in the case of a :class:`HierarchicalStep`) multiple times such that 
+    of ``Steps`` in the case of a :class:`HierarchicalStep`) multiple times such that
     each iteration depends on the previous.
 
-    In the pipeline configuration the implementation(s) must be specified for each 
+    In the pipeline configuration the implementation(s) must be specified for each
     iteration of the looped step.
 
 

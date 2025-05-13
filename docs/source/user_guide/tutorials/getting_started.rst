@@ -653,6 +653,10 @@ can have different implementations, or all can have the same one.
    the user to create pipeline sections with parallelized processing, one of several branching paths, and 
    substeps respectively.
 
+.. todo::
+   This page references the ``LoopStep`` class in the EasyLink code rather than the operators described in 
+   the Pipeline Schema doc page eg "loop-able sections".
+
 To demonstrate the use of a ``LoopStep`` we will use a new pipeline configuration YAML, 
 :download:`loop-pipeline.yaml <loop-pipeline.yaml>`::
 
