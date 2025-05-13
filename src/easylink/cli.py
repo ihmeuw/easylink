@@ -269,13 +269,19 @@ def create_implementation(
     and register them with the EasyLink framework.
 
     SCRIPTS are the filepaths to the implementation Python scripts to be run from within
-    a newly created container. The script must specify required pypi dependencies
-    as well as the name of the pipeline step it is implementing via comments
-    with the exact format shown in the example below.
+    a newly created container. Each script must specify (1) the name of the pipeline
+    step that it is implementing as well as, optionally, (2) any required pypi dependencies,
+    and (3) the pipeline schema that that the step the script implements is part of
+    (will default to "main" if not specified).
+
+    These values are to be specified in the script using comments with the exact
+    format shown in the example below.
 
         # STEP_NAME: blocking
 
         # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
+
+        # PIPELINE_SCHEMA: development
 
     Note that the requirements should be formatted as a single line.
 
