@@ -315,8 +315,11 @@ class ImplementationCreator:
 
         If no pipeline schema is specified, "main" will be used by default.
         """
-        schema_name = _extract_metadata("PIPELINE_SCHEMA", script_path)
-        return "main" if len(schema_name) == 0 else schema_name[0]
+        schema_name_list: list[str] = _extract_metadata("PIPELINE_SCHEMA", script_path)
+        schema_name = "main" if len(schema_name_list) == 0 else schema_name_list[0]
+        if schema_name not in SCHEMA_PARAMS:
+            raise ValueError(f"Pipeline schema '{schema_name}' is not supported.")
+        return schema_name
 
     @staticmethod
     def _write_metadata(info: dict[str, dict[str, str]]) -> None:

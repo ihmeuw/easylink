@@ -30,7 +30,6 @@ MULTIPLE_METADATA = """
 # STEP_NAME: step_1
 # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml"""
 
-
 MULTIPLE_STEPS_METADATA = """
 # STEP_NAME: step_1, step_2
 # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml"""
@@ -96,6 +95,15 @@ def test__extract_pipeline_schema_name(
     with open(script_path, "w") as file:
         file.write(script_content)
     assert ImplementationCreator._extract_pipeline_schema_name(script_path) == expected
+
+
+def test__extract_pipeline_schema_name_raises(tmp_path: Path) -> None:
+    script_path = tmp_path / "foo_step.py"
+    metadata_str = GOOD_METADATA.replace("development", "some-non-existing-schema")
+    with open(script_path, "w") as file:
+        file.write(metadata_str)
+    with pytest.raises(ValueError, match="is not supported"):
+        ImplementationCreator._extract_pipeline_schema_name(script_path)
 
 
 def test__extract_implementable_steps(tmp_path: Path) -> None:

@@ -12,7 +12,7 @@ package defines the nodes and edges required to instantiate such ``PipelineSchem
 from easylink.pipeline_schema_constants import development, testing
 
 SCHEMA_PARAMS = {
-    "the_real_thing": testing.SCHEMA_PARAMS_EP_HIERARCHICAL_STEP,  # REMOVE THIS WHEN FINISHED TESTING
+    "main": "TODO",
     # development and testing
     "development": development.SCHEMA_PARAMS,
     "integration": testing.SCHEMA_PARAMS_ONE_STEP,

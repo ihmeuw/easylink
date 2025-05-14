@@ -204,9 +204,6 @@ dummy_step_1_for_output_dir_example_default:
   - step_1_for_output_dir_example
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
-  # leave outputs out for testing purposes
-  # outputs:
-  #   step_1_main_output_directory: output_dir/
 dummy_step_2_for_output_dir_example:
   steps:
   - step_2_for_output_dir_example
@@ -214,3 +211,17 @@ dummy_step_2_for_output_dir_example:
   script_cmd: python /dummy_step_2_for_output_dir_example.py
   outputs:
     step_2_main_output: result.parquet
+step_1_sbachmei:
+  steps:
+  - step_1
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/sbachmei/step_1_sbachmei.sif
+  script_cmd: python /step_1_sbachmei.py
+  outputs:
+    step_1_main_output: result.parquet
+step_4a_sbachmei:
+  steps:
+  - step_4a
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/sbachmei/step_4a_sbachmei.sif
+  script_cmd: python /step_4a_sbachmei.py
+  outputs:
+    step_4a_main_output: result.parquet
