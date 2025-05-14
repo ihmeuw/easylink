@@ -1208,6 +1208,8 @@ Evaluating pairs
 
 **Interpretation:**
 Determining a link probability for each pair of records based on those records' values.
+This transforms pairs (which are simply two record IDs) into the format of :ref:`Links <links>`,
+which include this probability.
 
 **Examples:**
 
