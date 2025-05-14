@@ -39,7 +39,7 @@ class PipelineSchema(HierarchicalStep):
 
     Notes
     -----
-    All ``PipelineSchema`` instances are intended to be created by the :meth:`_get_schemas`
+    A ``PipelineSchema`` is intended to be constructed by the :meth:`get_schema`
     class method.
 
     The ``PipelineSchema`` is a high-level abstraction; it represents the desired
