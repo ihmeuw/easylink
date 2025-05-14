@@ -238,6 +238,12 @@ def validate_ids_to_remove(filepath: str) -> None:
     _validate_unique_column(df, "Record ID", filepath)
 
 
+def validate_dir(filepath: str) -> None:
+    input_path = Path(filepath)
+    if not input_path.is_dir():
+        raise NotADirectoryError(f"The path {filepath} is not a directory.")
+
+
 def dont_validate(filepath: str) -> None:
     """
     Placeholder function that performs no validation.
