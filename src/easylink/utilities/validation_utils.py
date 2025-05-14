@@ -15,8 +15,7 @@ from pyarrow import parquet as pq
 
 
 def _read_file(filepath: str) -> pd.DataFrame:
-    """
-    Reads a file.
+    """Reads a file.
 
     Parameters
     ----------
@@ -63,8 +62,7 @@ def _validate_required_columns(filepath: str, required_columns: set) -> None:
 
 
 def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -> None:
-    """
-    Validates that a column in a DataFrame has unique values.
+    """Validates that a column in a DataFrame has unique values.
 
     Parameters
     ----------
@@ -87,8 +85,7 @@ def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -
 
 
 def validate_input_file_dummy(filepath: str) -> None:
-    """
-    Validates an input file to a dummy :class:`~easylink.step.Step`.
+    """Validates an input file to a dummy :class:`~easylink.step.Step`.
 
     The file must contain the columns: "foo", "bar", and "counter".
 
@@ -106,8 +103,7 @@ def validate_input_file_dummy(filepath: str) -> None:
 
 
 def validate_input_dataset(filepath: str) -> None:
-    """
-    Validates an input dataset file.
+    """Validates an input dataset file.
 
     - Must be in a tabular format and contain a "Record ID" column.
     - The "Record ID" column must have unique values.
@@ -130,8 +126,7 @@ def validate_input_dataset(filepath: str) -> None:
 
 
 def validate_datasets_directory(filepath: str) -> None:
-    """
-    Validates a directory of input dataset files.
+    """Validates a directory of input dataset files.
 
     - Each file in the directory must be in a tabular format and contain a "Record ID" column.
     - The "Record ID" column must have unique values.
@@ -161,8 +156,7 @@ def validate_datasets_directory(filepath: str) -> None:
 
 
 def validate_clusters(filepath: str) -> None:
-    """
-    Validates a file containing cluster information.
+    """Validates a file containing cluster information.
 
     - The file must contain two columns: "Input Record ID" and "Cluster ID".
     - "Input Record ID" must have unique values.
@@ -185,8 +179,7 @@ def validate_clusters(filepath: str) -> None:
 
 
 def validate_links(filepath: str) -> None:
-    """
-    Validates a file containing link information.
+    """Validates a file containing link information.
 
     - The file must contain three columns: "Left Record ID", "Right Record ID", and "Probability".
     - "Left Record ID" and "Right Record ID" must not be equal in any row.
@@ -238,8 +231,7 @@ def validate_links(filepath: str) -> None:
 
 
 def validate_ids_to_remove(filepath: str) -> None:
-    """
-    Validates a file containing IDs to remove.
+    """Validates a file containing IDs to remove.
 
     - The file must contain a single column: "Record ID".
     - "Record ID" must have unique values.
@@ -268,8 +260,7 @@ def validate_dir(filepath: str) -> None:
 
 
 def dont_validate(filepath: str) -> None:
-    """
-    Placeholder function that performs no validation.
+    """Placeholder function that performs no validation.
 
     Parameters
     ----------
