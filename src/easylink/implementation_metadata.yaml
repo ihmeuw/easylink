@@ -206,3 +206,10 @@ dummy_removing_records:
   script_cmd: python /dummy_removing_records.py
   outputs:
     datasets: result.parquet
+dummy_clusters_to_links:
+  steps:
+  - clusters_to_links
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/clusters_to_links/dummy_clusters_to_links.sif
+  script_cmd: python /dummy_clusters_to_links.py
+  outputs:
+    known_links: result.parquet
