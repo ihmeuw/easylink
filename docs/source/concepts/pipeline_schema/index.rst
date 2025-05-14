@@ -406,6 +406,62 @@ but lower levels in the hierarchy subdivide those and so on.
 The more detail in the pipeline schema that is used,
 the more interoperability and standardization the user gets.
 
+Draws
+^^^^^
+
+To facilitate the representation and propagation of uncertainty, EasyLink supports **draws**.
+This is a bit of jargon that means "samples randomly **draw**\ n from a probability distribution."
+Complicated probability distributions are often impossible to represent exactly,
+like how :math:`\pi` is impossible to represent exactly as a decimal.
+Just like we can approximate :math:`\pi` to some number of digits (e.g. 3.1415),
+we can approximate a distribution with some number of random samples/draws.
+Then, any operation we want to do to our random variable can be done on each draw,
+and any statistic about the distribution (possibly after many operations)
+can be approximated by calculating that statistic on the draws.
+
+Entity resolution involves some *very* complicated probability distributions.
+Instead of a distribution over real numbers, we might have a distribution over all the possible ways to link two files!
+Such a distribution can't feasibly be analyzed exactly, but we can still take draws from it.
+You can think of this as generating multiple plausible linkages,
+and doing the rest of our analysis with each of them to see how much our result varies.
+If you're familiar with multiple imputation methods for missing data, it's exactly the same idea!
+
+In the pipeline schema, certain steps can be marked as permitted to produce draws.
+Any implementation of such a step must indicate whether or not it is able to produce draws.
+For any step in the pipeline where the step is permitted and the implementation is able,
+the EasyLink user indicates whether or not they want this to occur.
+(This can all be resolved upfront,
+so EasyLink knows before even starting the pipeline which of its implementations *will* produce draws.)
+
+The EasyLink user also specifies how many draws they would like to produce
+(this number is global across the entire pipeline, not per-step).
+
+Implementations that will produce draws,
+but are not downstream of any *other* implementations that will produce draws,
+run normally except that they are passed a special flag so that they know to produce draws.
+Instead of saving one output (for each output slot),
+they will save :math:`N`, where :math:`N` is the user-configured number of draws.
+
+Implementations that are downstream of at least one other implementation that will produce draws are run N times.
+For run :math:`X` (:math:`X \le N`), draw :math:`X` of each input (that has draws) is used, which assumes independence between the uncertainty on each input.
+When such an implementation will also *produce* draws,
+run :math:`X` of that implementation is passed a special flag indicating to produce draw :math:`X`.
+
+The last steps in the pipeline schema (those that produce its final outputs)
+are marked as "gather" steps.
+This means that even if they are downstream of steps that produce draws,
+they are only run once and receive *all* draws of their inputs at once.
+
+Steps that are permitted to produce draws are marked in the diagrams by coloring the box purple,
+and gather steps are marked by coloring the box green.
+
+.. image:: images/17_draws.drawio.png
+   :alt: Diagram of a draws-producing and a draws-gathering step in a pipeline schema
+
+.. todo::
+
+   Add a diagram showing how the various cases described above expand.
+
 Pipelines
 ---------
 
@@ -627,6 +683,7 @@ Analysis output
 The result of the analysis, whatever that may be.
 Could be a single statistic, a set of statistics, a whole dataset,
 or multiple datasets.
+May contain multiple draws in different files or subdirectories, or not.
 
 **Specification:**
 None. May take any form.
@@ -823,10 +880,13 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Assigning a probability to each pair is an efficient system for
-representing uncertainty,
+Assigning a probability to each pair is a more efficient system for
+representing uncertainty than draws,
 when the statistical dependence structure between the pairwise links
 is unknown.
+Draws may be used in addition to pairwise
+probabilities when (some information about) the dependence
+structure is known.
 It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
 If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
