@@ -135,8 +135,17 @@ class Implementation:
 
     @property
     def outputs(self) -> dict[str, list[str]]:
-        """The expected output metadata."""
-        return self._metadata["outputs"]
+        """The expected output paths. If output metadata is provided, use it. Otherwise,
+        assume that the output is a sub-directory with the name of the output slot.
+        If there is only one output slot, use '.'."""
+        if len(self.output_slots) == 1:
+            return self._metadata.get("outputs", {list(self.output_slots.keys())[0]: "."})
+        return {
+            output_slot_name: self._metadata.get("outputs", {}).get(
+                output_slot_name, output_slot_name
+            )
+            for output_slot_name in self.output_slots
+        }
 
 
 class NullImplementation:
