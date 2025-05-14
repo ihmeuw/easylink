@@ -89,11 +89,13 @@ def test__extract_requirements_raises(tmp_path: Path) -> None:
         (MISSING_METADATA, "main"),
     ],
 )
-def test__extract_pipeline_schema(script_content: str, expected: str, tmp_path: Path) -> None:
+def test__extract_pipeline_schema_name(
+    script_content: str, expected: str, tmp_path: Path
+) -> None:
     script_path = tmp_path / "foo_step.py"
     with open(script_path, "w") as file:
         file.write(script_content)
-    assert ImplementationCreator._extract_pipeline_schema(script_path) == expected
+    assert ImplementationCreator._extract_pipeline_schema_name(script_path) == expected
 
 
 def test__extract_implementable_steps(tmp_path: Path) -> None:

@@ -11,11 +11,10 @@ package defines the nodes and edges required to instantiate such ``PipelineSchem
 
 from easylink.pipeline_schema_constants import development, testing
 
-ALLOWED_SCHEMA_PARAMS = {
+SCHEMA_PARAMS = {
+    "the_real_thing": testing.SCHEMA_PARAMS_EP_HIERARCHICAL_STEP,  # REMOVE THIS WHEN FINISHED TESTING
+    # development and testing
     "development": development.SCHEMA_PARAMS,
-}
-
-TESTING_SCHEMA_PARAMS = {
     "integration": testing.SCHEMA_PARAMS_ONE_STEP,
     "output_dir": testing.SCHEMA_PARAMS_OUTPUT_DIR,
     "combine_bad_topology": testing.SCHEMA_PARAMS_BAD_COMBINED_TOPOLOGY,
