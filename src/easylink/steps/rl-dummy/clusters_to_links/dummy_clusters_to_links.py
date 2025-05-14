@@ -6,9 +6,9 @@
 
 import logging
 import os
+from itertools import combinations
 
 import pandas as pd
-from itertools import combinations
 
 logging.basicConfig(
     level=logging.INFO,
