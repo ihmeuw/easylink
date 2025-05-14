@@ -199,3 +199,10 @@ dummy_eliminating_records:
   script_cmd: python /dummy_eliminating_records.py
   outputs:
     ids_to_remove: result.parquet
+dummy_removing_records:
+  steps:
+  - removing_records
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/removing_records/dummy_removing_records.sif
+  script_cmd: python /dummy_removing_records.py
+  outputs:
+    datasets: result.parquet
