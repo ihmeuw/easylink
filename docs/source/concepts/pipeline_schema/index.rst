@@ -157,17 +157,6 @@ to show the breadth of possible specifications:
   Each subdirectory must contain two files, where each is
   in a tabular format."
 
-.. _input_data_list_quirk:
-
-.. warning::
-
-   There is currently **one** exception to the "files or directories"
-   description.
-   Input data that come directly from the user (through an ``input_data.yaml``)
-   are represented and passed to implementations as *lists* of file paths.
-   We plan to change this in the future to make it consistent with other data
-   specifications.
-
 Data specifications are enforced by EasyLink;
 a pipeline will fail if any data do not follow their specification.
 
@@ -462,15 +451,10 @@ A set of named datasets.
 Each dataset contains observations recorded about (some) entities in the population of interest for analysis.
 
 **Specification:**
-A list of files, where each file is in a tabular format.
+A directory of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
 but one of them must be called “Record ID” and it must have unique values.
-
-.. note::
-
-   This is a **list** of files, not a directory.
-   See :ref:`this note above <input_data_list_quirk>` for context.
 
 **Example:**
 
@@ -721,15 +705,7 @@ input and output data specifications do not need to be checked.
 Datasets
 ^^^^^^^^
 
-**Interpretation:**
 See :ref:`input datasets <input_datasets>`.
-
-**Specification:**
-
-Exactly the same as :ref:`input datasets <input_datasets>`, but is
-a *directory* of files rather than a *list* of files.
-This is a result of the current quirk that
-:ref:`input datasets have a different kind of specification than other data dependencies <input_data_list_quirk>`.
 
 New clusters
 ^^^^^^^^^^^^
