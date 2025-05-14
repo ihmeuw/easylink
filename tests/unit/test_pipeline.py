@@ -27,7 +27,7 @@ def test_build_snakefile(
         config_paths["computing_environment"] = f"{test_dir}/spark_environment.yaml"
 
     config_params = load_params_from_specification(**config_paths)
-    config = Config(config_params)
+    config = Config(config_params, "development")
     mocker.patch("easylink.implementation.Implementation.validate", return_value={})
     pipeline = Pipeline(config)
     create_results_directory(results_dir)

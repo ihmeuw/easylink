@@ -2,7 +2,7 @@
 import pytest
 
 from easylink.pipeline_schema import PipelineSchema
-from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.runner import main
 from tests.conftest import SPECIFICATIONS_DIR
 
@@ -10,8 +10,7 @@ from tests.conftest import SPECIFICATIONS_DIR
 @pytest.mark.slow
 def test_missing_results(test_specific_results_dir, mocker, caplog):
     """Test that the pipeline fails when a step is missing output files."""
-    nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
-    mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
+    nodes, edges = SCHEMA_PARAMS["integration"]
     mocker.patch(
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("integration", nodes=nodes, edges=edges),
@@ -39,8 +38,7 @@ def test_missing_results(test_specific_results_dir, mocker, caplog):
 @pytest.mark.parametrize("outputs_specified", [True, False])
 def test_outputting_a_directory(outputs_specified: bool, test_specific_results_dir, mocker):
     """Test that the pipeline fails when a step is missing output files."""
-    nodes, edges = TESTING_SCHEMA_PARAMS["output_dir"]
-    mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
+    nodes, edges = SCHEMA_PARAMS["output_dir"]
     mocker.patch(
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("output_dir", nodes=nodes, edges=edges),

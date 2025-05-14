@@ -6,7 +6,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from easylink.pipeline_schema import PipelineSchema
-from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.runner import main
 from easylink.utilities.data_utils import load_yaml
 from tests.conftest import SPECIFICATIONS_DIR
@@ -20,11 +20,8 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
     pipeline_specification = EP_SPECIFICATIONS_DIR / "pipeline_loop_step.yaml"
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
-    # Load the schema to test against
-    schema = PipelineSchema("looping_ep_step", *TESTING_SCHEMA_PARAMS["looping_ep_step"])
-
     _run_pipeline_and_confirm_finished(
-        schema, test_specific_results_dir, pipeline_specification, input_data
+        "looping_ep_step", test_specific_results_dir, pipeline_specification, input_data
     )
 
     intermediate_results_dir = test_specific_results_dir / "intermediate"
@@ -137,11 +134,8 @@ def test_embarrassingly_parallel_sections(
     pipeline_specification = EP_SPECIFICATIONS_DIR / pipeline_spec
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
-    # Load the schema to test against
-    schema = PipelineSchema(schema_name, *TESTING_SCHEMA_PARAMS[schema_name])
-
     _run_pipeline_and_confirm_finished(
-        schema, test_specific_results_dir, pipeline_specification, input_data
+        schema_name, test_specific_results_dir, pipeline_specification, input_data
     )
 
     intermediate_results_dir = test_specific_results_dir / "intermediate"
@@ -185,7 +179,7 @@ def test_embarrassingly_parallel_sections(
 
 
 def _run_pipeline_and_confirm_finished(
-    schema: PipelineSchema,
+    schema_name: str,
     results_dir: Path,
     pipeline_specification: Path,
     input_data: Path,
@@ -199,7 +193,7 @@ def _run_pipeline_and_confirm_finished(
             input_data=input_data,
             computing_environment=computing_environment,
             results_dir=results_dir,
-            potential_schemas=schema,
+            schema_name=schema_name,
         )
     assert pytest_wrapped_e.value.code == 0
 
