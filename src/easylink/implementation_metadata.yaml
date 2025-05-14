@@ -199,6 +199,14 @@ dummy_step_1_for_output_dir_example:
   script_cmd: python /dummy_step_1_for_output_dir_example.py
   outputs:
     step_1_main_output_directory: output_dir/
+dummy_step_1_for_output_dir_example_default:
+  steps:
+  - step_1_for_output_dir_example
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_1_for_output_dir_example.sif
+  script_cmd: python /dummy_step_1_for_output_dir_example.py
+  # leave outputs out for testing purposes
+  # outputs:
+  #   step_1_main_output_directory: output_dir/
 dummy_step_2_for_output_dir_example:
   steps:
   - step_2_for_output_dir_example
