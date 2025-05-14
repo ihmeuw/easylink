@@ -208,6 +208,14 @@ NODES = [
             "complex": {
                 "step": HierarchicalStep(
                     step_name="step_5_and_6",
+                    input_slots=[
+                        InputSlot(
+                            name="step_5_and_6_main_input",
+                            env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                            validator=validate_input_file_dummy,
+                        ),
+                    ],
+                    output_slots=[OutputSlot("step_5_and_6_main_output")],
                     nodes=[
                         Step(
                             step_name="step_5",
@@ -240,19 +248,33 @@ NODES = [
                             input_slot="step_6_main_input",
                         ),
                     ],
+                    input_slot_mappings=[
+                        InputSlotMapping(
+                            parent_slot="step_5_and_6_main_input",
+                            child_node="step_5",
+                            child_slot="step_5_main_input",
+                        ),
+                    ],
+                    output_slot_mappings=[
+                        OutputSlotMapping(
+                            parent_slot="step_5_and_6_main_output",
+                            child_node="step_6",
+                            child_slot="step_6_main_output",
+                        ),
+                    ],
                 ),
                 "input_slot_mappings": [
                     InputSlotMapping(
                         parent_slot="choice_section_main_input",
-                        child_node="step_5",
-                        child_slot="step_5_main_input",
+                        child_node="step_5_and_6",
+                        child_slot="step_5_and_6_main_input",
                     ),
                 ],
                 "output_slot_mappings": [
                     OutputSlotMapping(
                         parent_slot="choice_section_main_output",
-                        child_node="step_6",
-                        child_slot="step_6_main_output",
+                        child_node="step_5_and_6",
+                        child_slot="step_5_and_6_main_output",
                     ),
                 ],
             },
