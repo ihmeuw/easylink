@@ -14,7 +14,6 @@ logging.basicConfig(
     format="%(asctime)s %(message)s",
     handlers=[logging.StreamHandler()],
 )
-diagnostics = {}
 
 # LOAD INPUTS
 
@@ -23,8 +22,6 @@ datasets_var = os.environ["INPUT_DATASETS_FILE_PATHS"]
 logging.info(f"Loading files for {datasets_var}")
 
 file_paths = os.environ[datasets_var].split(",")
-
-diagnostics[f"num_files_{datasets_var.lower()}"] = len(file_paths)
 
 # don't need to actually load inputs, just need the filepaths for the outputs
 

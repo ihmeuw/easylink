@@ -15,7 +15,6 @@ logging.basicConfig(
     format="%(asctime)s %(message)s",
     handlers=[logging.StreamHandler()],
 )
-diagnostics = {}
 
 
 def load_file(file_path, file_format=None):
@@ -26,6 +25,7 @@ def load_file(file_path, file_format=None):
     raise ValueError()
 
 
+# code example from pipeline schema docs
 def clusters_to_links(clusters_df):
     # Group by Cluster ID and collect Record IDs for each cluster
     grouped = clusters_df.groupby("Cluster ID")["Input Record ID"].apply(list)
@@ -44,7 +44,6 @@ def clusters_to_links(clusters_df):
 # LOAD INPUTS and SAVE OUTPUTS
 
 clusters_var = os.environ["KNOWN_CLUSTERS_FILE_PATHS"]
-# don't need to load ids_to_remove since its empty for dummy impl
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 logging.info(f"Loading files for {clusters_var}")
@@ -57,5 +56,3 @@ for path in file_paths:
     output_path = f"{results_dir}{os.path.basename(path)}.parquet"
     logging.info(f"Writing output for dataset from input {path} to {output_path}")
     links_df.to_parquet(output_path)
-
-diagnostics[f"num_files_{clusters_var.lower()}"] = len(file_paths)

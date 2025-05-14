@@ -14,7 +14,6 @@ logging.basicConfig(
     format="%(asctime)s %(message)s",
     handlers=[logging.StreamHandler()],
 )
-diagnostics = {}
 
 
 def load_file(file_path, file_format=None):
@@ -28,7 +27,7 @@ def load_file(file_path, file_format=None):
 # LOAD INPUTS and SAVE OUTPUTS
 
 datasets_var = os.environ["INPUT_DATASETS_FILE_PATHS"]
-# don't need to load ids_to_remove since its empty for dummy impl
+ids_var = os.environ["IDS_TO_REMOVE_FILE_PATHS"]
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 logging.info(f"Loading files for {datasets_var}")
@@ -37,8 +36,7 @@ datasets = []
 file_paths = os.environ[datasets_var].split(",")
 for path in file_paths:
     df = load_file(path)
+    df = df[~df["Record ID"].isin(ids_var)]
     output_path = f"{results_dir}{os.path.basename(path)}.parquet"
     logging.info(f"Writing output for dataset from input {path} to {output_path}")
     df.to_parquet(output_path)
-
-diagnostics[f"num_files_{datasets_var.lower()}"] = len(file_paths)
