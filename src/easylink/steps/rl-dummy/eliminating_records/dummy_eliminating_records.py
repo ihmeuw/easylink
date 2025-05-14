@@ -33,11 +33,11 @@ diagnostics[f"num_files_{datasets_var.lower()}"] = len(file_paths)
 
 # save empty dataframes for datasets_ids_to_remove
 
-id_to_remove = pd.DataFrame(columns=["record_ids"])
+ids_to_remove = pd.DataFrame(columns=["record_ids"])
 
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 for file_path in file_paths:
     output_path = f"{results_dir}{os.path.basename(file_path)}.parquet"
     logging.info(f"Writing output for dataset from input {file_path} to {output_path}")
-    id_to_remove.to_parquet(output_path)
+    ids_to_remove.to_parquet(output_path)
