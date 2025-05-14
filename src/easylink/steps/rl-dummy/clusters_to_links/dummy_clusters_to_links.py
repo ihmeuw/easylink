@@ -44,7 +44,6 @@ def clusters_to_links(clusters_df):
 # LOAD INPUTS and SAVE OUTPUTS
 
 clusters_var = os.environ["KNOWN_CLUSTERS_FILE_PATHS"]
-# don't need to load ids_to_remove since its empty for dummy impl
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 logging.info(f"Loading files for {clusters_var}")
