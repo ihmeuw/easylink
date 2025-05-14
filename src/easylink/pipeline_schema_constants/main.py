@@ -26,7 +26,8 @@ from easylink.utilities.validation_utils import (
     dont_validate,
     validate_clusters,
     validate_ids_to_remove,
-    validate_input_datasets,
+    validate_input_dataset,
+    validate_datasets_directory,
     validate_links,
 )
 
@@ -39,7 +40,10 @@ NODES = [
                 InputSlot(
                     name="input_datasets",
                     env_var="INPUT_DATASETS_FILE_PATHS",
-                    validator=validate_input_datasets,
+                    # NOTE: Since this originates from the InputStep, it will be a *list*
+                    # of files, and this validator will be called on *each*
+                    # TODO: Change this when https://jira.ihme.washington.edu/browse/MIC-6070 is implemented
+                    validator=validate_input_dataset,
                 ),
                 InputSlot(
                     name="known_clusters",
@@ -59,7 +63,7 @@ NODES = [
                                 InputSlot(
                                     name="input_datasets",
                                     env_var="INPUT_DATASETS_FILE_PATHS",
-                                    validator=validate_input_datasets,
+                                    validator=validate_input_dataset,
                                 ),
                                 InputSlot(
                                     name="clusters",
@@ -78,7 +82,7 @@ NODES = [
                         InputSlot(
                             name="input_datasets",
                             env_var="INPUT_DATASETS_FILE_PATHS",
-                            validator=validate_input_datasets,
+                            validator=validate_input_dataset,
                         ),
                         InputSlot(
                             name="ids_to_remove",
@@ -94,9 +98,12 @@ NODES = [
                         InputSlot(
                             name="datasets",
                             env_var="DATASETS_FILE_PATHS",
+                            # NOTE: Because this comes from the output of a previous step,
+                            # it is a *directory* of datasets, not a *list* like it was
+                            # before!
                             # TODO: Can't validate these are subsets of
                             # the original input without adding a dependency
-                            validator=validate_input_datasets,
+                            validator=validate_datasets_directory,
                         ),
                         InputSlot(
                             name="known_clusters",
@@ -124,7 +131,7 @@ NODES = [
                                     InputSlot(
                                         name="datasets",
                                         env_var="DATASETS_FILE_PATHS",
-                                        validator=validate_input_datasets,
+                                        validator=validate_datasets_directory,
                                     ),
                                     InputSlot(
                                         name="known_links",
@@ -276,7 +283,7 @@ NODES = [
             InputSlot(
                 name="input_datasets",
                 env_var="INPUT_DATASETS_FILE_PATHS",
-                validator=validate_input_datasets,
+                validator=validate_input_dataset,
             ),
             InputSlot(
                 name="clusters",

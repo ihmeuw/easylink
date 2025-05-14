@@ -105,7 +105,31 @@ def validate_input_file_dummy(filepath: str) -> None:
     _validate_required_columns(filepath, required_columns={"foo", "bar", "counter"})
 
 
-def validate_input_datasets(filepath: str) -> None:
+def validate_input_dataset(filepath: str) -> None:
+    """
+    Validates an input dataset file.
+
+    - Must be in a tabular format and contain a "Record ID" column.
+    - The "Record ID" column must have unique values.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the input dataset file.
+
+    Raises
+    ------
+    LookupError
+        If the file is missing the required "Record ID" column.
+    ValueError
+        If the "Record ID" column is not unique in the file.
+    """
+    _validate_required_columns(filepath, {"Record ID"})
+    df = _read_file(filepath)
+    _validate_unique_column(df, "Record ID", filepath)
+
+
+def validate_datasets_directory(filepath: str) -> None:
     """
     Validates a directory of input dataset files.
 
@@ -131,10 +155,9 @@ def validate_input_datasets(filepath: str) -> None:
         raise NotADirectoryError(f"The path {filepath} is not a directory.")
 
     for file in input_path.iterdir():
-        if file.is_file():
-            _validate_required_columns(file, {"Record ID"})
-            df = _read_file(file)
-            _validate_unique_column(df, "Record ID", file.name)
+        if not file.is_file():
+            raise ValueError(f"The path {file} is not a file.")
+        validate_input_dataset(file.name)
 
 
 def validate_clusters(filepath: str) -> None:
