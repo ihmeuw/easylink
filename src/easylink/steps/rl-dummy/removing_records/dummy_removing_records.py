@@ -1,4 +1,4 @@
-# STEP_NAME: eliminating_records
+# STEP_NAME: removing_records
 
 # REQUIREMENTS: pandas==2.1.2 pyarrow pyyaml
 
@@ -16,28 +16,36 @@ logging.basicConfig(
 )
 diagnostics = {}
 
+
+def load_file(file_path, file_format=None):
+    if file_format is None:
+        file_format = file_path.split(".")[-1]
+    if file_format == "parquet":
+        return pd.read_parquet(file_path)
+    raise ValueError()
+
+
 # LOAD INPUTS
 
 datasets_var = os.environ["INPUT_DATASETS_FILE_PATHS"]
 
 logging.info(f"Loading files for {datasets_var}")
 
+datasets = []
 file_paths = os.environ[datasets_var].split(",")
+for path in file_paths:
+    datasets.append(load_file(path))
 
 diagnostics[f"num_files_{datasets_var.lower()}"] = len(file_paths)
 
-# don't need to actually load inputs, just need the filepaths for the outputs
+# don't need to load ids_to_remove since its empty for dummy impl
 
 
 # SAVE OUTPUTS
 
-# save empty dataframes for datasets_ids_to_remove
-
-ids_to_remove = pd.DataFrame(columns=["record_ids"])
-
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
-for file_path in file_paths:
+for i, file_path in enumerate(file_paths):
     output_path = f"{results_dir}{os.path.basename(file_path)}.parquet"
     logging.info(f"Writing output for dataset from input {file_path} to {output_path}")
-    ids_to_remove.to_parquet(output_path)
+    datasets[i].to_parquet(output_path)
