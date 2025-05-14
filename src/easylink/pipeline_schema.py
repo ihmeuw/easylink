@@ -168,7 +168,7 @@ class PipelineSchema(HierarchicalStep):
         Parameters
         ----------
         name
-            The name of the pipeline schema to get.
+            The name of the ``PipelineSchema`` to get.
 
         Returns
         -------
