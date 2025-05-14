@@ -28,8 +28,6 @@ def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
     msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
         "Validation errors found. Please see above."
     )[0]
-    # HACK: Exclude validation errors in main schema
-    msg = msg.split("\n  main:")[0]
     msg = re.sub("\n+", " ", msg)
     msg = re.sub(" +", " ", msg).strip()
     # Remove single quotes from msg and expected b/c they're difficult to handle and not that important
