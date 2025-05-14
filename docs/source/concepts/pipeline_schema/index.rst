@@ -452,6 +452,8 @@ EasyLink pipeline schema
 
 .. image:: images/easylink_pipeline_schema.drawio.png
 
+.. _input_datasets:
+
 Input datasets
 ^^^^^^^^^^^^^^
 
