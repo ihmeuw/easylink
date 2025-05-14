@@ -25,9 +25,9 @@ from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import (
     dont_validate,
     validate_clusters,
+    validate_datasets_directory,
     validate_ids_to_remove,
     validate_input_dataset,
-    validate_datasets_directory,
     validate_links,
 )
 
