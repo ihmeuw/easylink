@@ -627,7 +627,6 @@ Analysis output
 The result of the analysis, whatever that may be.
 Could be a single statistic, a set of statistics, a whole dataset,
 or multiple datasets.
-May contain multiple draws in different files or subdirectories, or not.
 
 **Specification:**
 None. May take any form.
@@ -824,13 +823,10 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Assigning a probability to each pair is a more efficient system for
-representing uncertainty than draws,
+Assigning a probability to each pair is an efficient system for
+representing uncertainty,
 when the statistical dependence structure between the pairwise links
 is unknown.
-Draws may be used in addition to pairwise
-probabilities when (some information about) the dependence
-structure is known.
 It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
 If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
