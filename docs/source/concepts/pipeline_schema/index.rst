@@ -836,6 +836,9 @@ Here is a rough draft of the code for this default implementation:
       links_df["Probability"] = 1.0
       return links_df
 
+
+.. _links:
+
 Links
 ^^^^^
 
@@ -983,15 +986,15 @@ Pre-processing
 
 **Interpretation:**
 Performing data cleaning steps on a given dataset, such as
-standardizing abbreviations, replacing bad data with missing values,
+standardizing abbreviations, replacing "bad" data with missing values,
 etc.
 
-Note that this step is for operations that apply independently to one
+Note that this step is for operations that are applied independently to one
 dataset at a time.
-For cross-dataset operations, see *Schema alignment*.
+For cross-dataset operations, see :ref:`Schema alignment <schema_alignment>`.
 
-This step can be looped an arbitrary number of times so multiple cleaning
-steps can be performed on the same dataset.
+The loop-able section around this step allows it to be looped an arbitrary number of times,
+so that multiple cleaning steps can be performed on the same dataset.
 
 **Examples:**
 
@@ -999,6 +1002,8 @@ steps can be performed on the same dataset.
 - Adding nicknames/alternate names
 - Replacing fake names such as "DID NOT RESPOND" with NA/null
 - Renaming columns or dropping empty columns from a dataset
+
+.. _schema_alignment:
 
 Schema alignment
 ^^^^^^^^^^^^^^^^
@@ -1012,17 +1017,20 @@ the datasets to make them consistent with each other.
 If those cleaning steps are all performed in pre-processing, then
 the datasets would already have the same columns (and consistent value
 formats within those columns) before this step.
-In this situation, the default implementation described below is all
+In that situation, there is nothing difficult left to do here and
+the default implementation described below is all
 that is needed.
 
 In the computer science literature, however, there are emerging methods
 for doing this alignment automatically.
 If desired, datasets could be passed into this step still inconsistent
 with one another, and a model could run in this step to automatically
-complete the alignment.
+complete the alignment by figuring out which columns correspond to each other
+and how to standardize values.
 
 **Default implementation:**
-Pandas code that simply concatenates the datasets by column name,
+Pandas code that simply concatenates the datasets,
+matching columns by name,
 appending information about the dataset each record came from,
 and appending the dataset name to the beginning of the record ID.
 In code:
@@ -1045,6 +1053,8 @@ In code:
 
 - The `Unicorn <https://dl.acm.org/doi/abs/10.1145/3588938>`_ model contains automatic schema alignment.
 
+.. _records:
+
 Records
 ^^^^^^^
 
@@ -1056,7 +1066,7 @@ A file in a tabular format.
 The file may have any number of columns,
 but one of them must be called “Record ID” and it must have unique values.
 These values must correspond to a combination of a dataset and a Record ID
-in that input dataset.
+in that input dataset, separated by an underscore.
 
 **Example:**
 
@@ -1088,15 +1098,16 @@ Blocking and filtering
 ^^^^^^^^^^^^^^^^^^^^^^
 
 **Interpretation:**
-Break the linkage problem up into pieces that can be tackled separately,
-and select in each piece which pairs of records to consider,
+Breaking the linkage problem up into pieces that can be tackled separately,
+and selecting which pairs of records to consider in each piece,
 in order to reduce the size of the task and therefore the computation required.
 
-Traditional blocking with a blocking key will split the records into blocks (disjoint subsets)
-and enumerate all possible pairs within each block.
+Traditional blocking, where a blocking "key" is assigned to each record,
+implements this step by splitting the records into blocks (disjoint subsets)
+by their blocking key and enumerating all possible pairs within each block.
 
-More advanced techniques may not create multiple blocks, putting all records into one,
-but select only some pairs within that block rather than every possible pair.
+More advanced techniques may instead create just *one* block (with all records),
+and select only some pairs within that block rather than every possible pair.
 
 Techniques focused on or configured for linkage *between* datasets can avoid enumerating
 pairs of records within the same dataset.
@@ -1122,7 +1133,7 @@ along with the pairs of records to consider in each.
 A directory containing any number of subdirectories.
 Each subdirectory must contain two files, each in tabular format: records and pairs.
 
-Each records file must follow the specification for Records described above.
+Each records file must follow the specification for :ref:`Records`.
 
 Each pairs file must contain two columns, "Left Record ID" and "Right Record ID".
 Every value in both Record ID columns should exist in the Record ID column of the records file for the same block.
@@ -1132,6 +1143,11 @@ The Left Record ID value should be alphabetically before the Right Record ID
 value in each row.
 (This ensures each pair is truly unique, and not
 a mirror image of another.)
+
+.. note::
+
+   The specification for each pairs file is identical to the specification for :ref:`Links <links>`
+   except that there is no probability column.
 
 **Example:**
 
@@ -1147,6 +1163,32 @@ The overall directory tree structure might look like:
       ├── pairs.parquet
       └── records.parquet
 
+A records file might look like:
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Record ID
+     - First
+     - Last
+     - Address
+   * - input_file_1
+     - Vicki
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - input_file_2
+     - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St., Anytown WA 99999
+   * - reference_file_2
+     - Gerry
+     - Allen
+     - *N/A*
+
 A pairs file might look like:
 
 .. list-table::
@@ -1155,7 +1197,7 @@ A pairs file might look like:
    * - Left Record ID
      - Right Record ID
    * - input_file_2
-     - reference_file_3
+     - reference_file_2
    * - input_file_2
      - reference_file_4
    * - input_file_3
