@@ -551,7 +551,7 @@ A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
 
    In the future, we should add to this specification that each "Input Record ID"
    is a Record ID value found in an input dataset.
-   EasyLink currently doesn't support this.EasyLink currently doesn't support this.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
