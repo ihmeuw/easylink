@@ -544,9 +544,14 @@ then A and C are in the same cluster by definition.
 
 **Specification:**
 A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
-"Input Record ID" must have unique values,
-each of which is a Record ID value found in an input dataset.
+"Input Record ID" must have unique values.
 "Cluster ID" may take any value.
+
+.. note::
+
+   In the future, we should add to this specification that each "Input Record ID"
+   is a Record ID value found in an input dataset.
+   EasyLink currently doesn't support this.EasyLink currently doesn't support this.
 
 **Example:**
 
@@ -734,8 +739,14 @@ Input record IDs slated to be dropped for the purposes of this pass.
 
 **Specification:**
 A single file in tabular format, with exactly one column called "Input Record ID".
-Every value in the column should be unique and should exist in the "Record ID" column
-of one of the input datasets.
+Every value in the column should be unique.
+
+.. note::
+
+   In the future, we should add to this specification that each "Input Record ID"
+   is a Record ID value found in the input dataset corresponding to this IDs to remove --
+   that is, the one that was passed to "determining exclusions."
+   EasyLink currently doesn't support this.
 
 **Example:**
 
@@ -861,7 +872,6 @@ all probabilities to 1 (or another constant).
 
 **Specification:**
 A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
-Every value in both Record ID columns should exist in one of the input datasets.
 Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
 Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
 The Left Record ID value should be alphabetically before the Right Record ID
@@ -870,6 +880,12 @@ value in each row.
 a mirror image of another.)
 Each value in the Probability column must be between
 0 and 1 (inclusive).
+
+.. note::
+
+   In the future, we should add to this specification that every value in both Record ID columns
+   should exist in one of the input datasets.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
