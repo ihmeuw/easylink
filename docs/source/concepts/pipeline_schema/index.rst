@@ -1044,8 +1044,7 @@ and how to standardize values.
 **Default implementation:**
 Pandas code that simply concatenates the datasets,
 matching columns by name,
-appending information about the dataset each record came from,
-and appending the dataset name to the beginning of the record ID.
+and appending information about the dataset each record came from.
 In code:
 
 .. code::
@@ -1055,7 +1054,6 @@ In code:
    def schema_alignment(datasets: dict[str, pd.DataFrame]) -> pd.DataFrame:
       return pd.concat([
          df.assign(
-            record_id=lambda df: dataset + '_' + df.record_id.astype(str),
             dataset=dataset,
          )
          for dataset, df
@@ -1077,16 +1075,20 @@ The records to link (from all datasets) in one big table.
 **Specification:**
 A file in a tabular format.
 The file may have any number of columns,
-but one of them must be called “Record ID” and it must have unique values.
-These values must correspond to a combination of a dataset and a Record ID
-in that input dataset, separated by an underscore.
+but one of them must be called “Input Record ID” and it must have unique values.
+
+.. note::
+
+   In the future, we should add to this specification that every value in the Input Record ID column
+   should exist in one of the input datasets.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
 .. list-table:: 
    :header-rows: 1
 
-   * - Record ID
+   * - Input Record ID
      - First
      - Last
      - Address
@@ -1181,7 +1183,7 @@ A records file might look like:
 .. list-table:: 
    :header-rows: 1
 
-   * - Record ID
+   * - Input Record ID
      - First
      - Last
      - Address
