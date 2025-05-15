@@ -91,6 +91,11 @@ SHARED_OPTIONS = [
         default=False,
         help="Do not save the results in a timestamped sub-directory of ``--output-dir``.",
     ),
+    click.option(
+        "--schema",
+        hidden=True,
+        default="main",
+    ),
 ]
 
 VERBOSE_WITH_DEBUGGER_OPTIONS = [
@@ -165,6 +170,7 @@ def run(
     input_data: str,
     output_dir: str | None,
     no_timestamp: bool,
+    schema: str,
     computing_environment: str | None,
     verbose: int,
     with_debugger: bool,
@@ -190,6 +196,7 @@ def run(
         input_data=input_data,
         computing_environment=computing_environment,
         results_dir=results_dir,
+        schema_name=schema,
     )
     logger.info("*** FINISHED ***")
 
@@ -201,6 +208,7 @@ def generate_dag(
     input_data: str,
     output_dir: str | None,
     no_timestamp: bool,
+    schema: str,
     verbose: int,
     with_debugger: bool,
 ) -> None:
@@ -223,6 +231,7 @@ def generate_dag(
         input_data=input_data,
         computing_environment=None,
         results_dir=results_dir,
+        schema_name=schema,
     )
     logger.info("*** DAG saved to result directory ***")
 

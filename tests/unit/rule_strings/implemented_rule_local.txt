@@ -6,12 +6,12 @@ rule:
         dummy_container_main_input_file_paths=['foo'],
         dummy_container_secondary_input_file_paths=['bar'],
         validations=['bar'],
-    output: ['baz']
+    output: ['some/file.txt']
     log: "spam/foo_rule-output.log"
     container: "Multipolarity.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_OUTPUT_PATHS=baz
+        export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt
         export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=foo
         export DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS=bar

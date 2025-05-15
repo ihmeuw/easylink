@@ -1,3 +1,11 @@
+**0.1.18 - 5/14/25**
+
+ - Refactor to use a single pipeline schema rather than multiple potential schemas
+
+**0.1.17 - 5/14/25**
+
+ - Support directories as step intermediates
+
 **0.1.16 - 5/13/25**
 
  - Implement new cli command to simplify implementation creation

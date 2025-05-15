@@ -12,12 +12,28 @@ from easylink.configuration import (
     _load_computing_environment,
     _load_input_data_paths,
 )
-from easylink.pipeline_schema import PIPELINE_SCHEMAS
+from easylink.pipeline_schema import PipelineSchema
+from easylink.step import NonLeafConfigurationState
 
 
 def test__get_schema(default_config: Config) -> None:
     """Test default config gets "development schema", without errors"""
-    assert default_config.schema == PIPELINE_SCHEMAS[0]
+    # We cannot assert equality of the config's schema object and a different instance
+    # from PipelineSchema.get_schema("development"), so instead just check that
+    # some of the attrs are the same.
+    schema = default_config.schema
+    assert isinstance(schema, PipelineSchema)
+    assert schema.name == schema.step_name == "development"
+    assert schema.config_key == "substeps"
+    assert isinstance(schema.configuration_state, NonLeafConfigurationState)
+    assert [node.name for node in schema.nodes] == [
+        "input_data",
+        "step_1",
+        "step_2",
+        "step_3",
+        "choice_section",
+        "results",
+    ]
 
 
 def test_load_params_from_specification(
@@ -121,7 +137,7 @@ def test_required_attributes(mocker, default_config_params, key, value):
     if value:
         config_params["environment"][key] = value
     env_dict = {key: value} if value else {}
-    retrieved = Config(config_params).environment[key]
+    retrieved = Config(config_params, "development").environment[key]
     expected = DEFAULT_ENVIRONMENT["environment"].copy()
     expected.update(env_dict)
     assert retrieved == expected[key]
@@ -143,7 +159,7 @@ def test_implementation_resource_requests(default_config_params, resource_reques
     config_params = default_config_params
     if resource_request:
         config_params["environment"][key] = resource_request
-    config = Config(config_params)
+    config = Config(config_params, "development")
     env_dict = {key: resource_request.copy()} if resource_request else {}
     retrieved = config.environment[key].to_dict()
     expected = DEFAULT_ENVIRONMENT["environment"][key].copy()
@@ -191,7 +207,7 @@ def test_spark_requests(default_config_params, spark_request, requires_spark):
 
     if spark_request:
         config_params["environment"][key] = spark_request
-    retrieved = Config(config_params).environment[key].to_dict()
+    retrieved = Config(config_params, "development").environment[key].to_dict()
     expected_env_dict = {key: spark_request.copy()} if spark_request else {}
     expected = LayeredConfigTree(SPARK_DEFAULTS, layers=["initial_data", "user"])
     if spark_request:
@@ -206,6 +222,8 @@ def test_combined_implementations(default_config_params, is_default):
     config_params = default_config_params
     if not is_default:
         config_params["pipeline"]["combined_implementations"] = combined_dict
-    combined_implementations = Config(config_params).pipeline.combined_implementations
+    combined_implementations = Config(
+        config_params, "development"
+    ).pipeline.combined_implementations
     expected = {} if is_default else combined_dict
     assert combined_implementations.to_dict() == expected

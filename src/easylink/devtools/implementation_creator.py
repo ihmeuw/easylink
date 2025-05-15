@@ -19,7 +19,7 @@ from typing import cast
 import yaml
 from loguru import logger
 
-from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.step import (
     ChoiceStep,
     EmbarrassinglyParallelStep,
@@ -244,17 +244,17 @@ class ImplementationCreator:
     @staticmethod
     def _extract_output_slot(script_path: Path, step_name: str) -> str:
         """Extracts the name of the output slot that this script is implementing."""
-        schema = ImplementationCreator._extract_pipeline_schema(script_path)
-        implementable_steps = ImplementationCreator._extract_implementable_steps(schema)
+        schema_name = ImplementationCreator._extract_pipeline_schema_name(script_path)
+        implementable_steps = ImplementationCreator._extract_implementable_steps(schema_name)
         step_names = [step.name for step in implementable_steps]
         if step_name not in step_names:
             raise ValueError(
-                f"'{step_name}' does not exist as an implementable step in the '{schema}' pipeline schema. "
+                f"'{step_name}' does not exist as an implementable step in the '{schema_name}' pipeline schema. "
             )
         duplicates = list(set([step for step in step_names if step_names.count(step) > 1]))
         if duplicates:
             raise ValueError(
-                f"Multiple implementable steps with the same name found in the '{schema}' "
+                f"Multiple implementable steps with the same name found in the '{schema_name}' "
                 f"pipeline schema: {duplicates}."
             )
         implemented_step = [step for step in implementable_steps if step.name == step_name][0]
@@ -266,7 +266,7 @@ class ImplementationCreator:
         return list(implemented_step.output_slots)[0]
 
     @staticmethod
-    def _extract_implementable_steps(schema: str) -> list[Step]:
+    def _extract_implementable_steps(schema_name: str) -> list[Step]:
         """Extracts all implementable steps from the pipeline schema.
 
         This method recursively traverses the pipeline schema specified in the script
@@ -296,8 +296,7 @@ class ImplementationCreator:
                 implementable_steps.append(node)
                 return
 
-        schema_steps = ALLOWED_SCHEMA_PARAMS[schema][0]
-
+        schema_steps, _edges = SCHEMA_PARAMS[schema_name]
         implementable_steps: list[Step] = []
         for schema_step in schema_steps:
             _process_step(schema_step)
@@ -305,7 +304,7 @@ class ImplementationCreator:
         return implementable_steps
 
     @staticmethod
-    def _extract_pipeline_schema(script_path: Path) -> str:
+    def _extract_pipeline_schema_name(script_path: Path) -> str:
         """Extracts the relevant pipeline schema name.
 
         The expectation is that the output slot's name is specified within the script
@@ -316,8 +315,11 @@ class ImplementationCreator:
 
         If no pipeline schema is specified, "main" will be used by default.
         """
-        schema = _extract_metadata("PIPELINE_SCHEMA", script_path)
-        return "main" if len(schema) == 0 else schema[0]
+        schema_name_list: list[str] = _extract_metadata("PIPELINE_SCHEMA", script_path)
+        schema_name = "main" if len(schema_name_list) == 0 else schema_name_list[0]
+        if schema_name not in SCHEMA_PARAMS:
+            raise ValueError(f"Pipeline schema '{schema_name}' is not supported.")
+        return schema_name
 
     @staticmethod
     def _write_metadata(info: dict[str, dict[str, str]]) -> None:

@@ -49,7 +49,19 @@ def test_target_rule_build_rule():
 
 
 @pytest.mark.parametrize("computing_environment", ["local", "slurm"])
-def test_implemented_rule_build_rule(computing_environment):
+@pytest.mark.parametrize(
+    "output",
+    [
+        ["some/file.txt"],
+        ["some/file.txt", "some/other/file.txt"],
+        ["some/directory"],
+        ["some/directory", "some/other/directory"],
+        ["some/file.txt", "some/directory"],
+    ],
+)
+def test_implemented_rule_build_rule(
+    computing_environment: str, output: list[str], tmp_path: Path
+) -> None:
     if computing_environment == "slurm":
         resources = {
             "slurm_partition": "'slurmpart'",
@@ -59,6 +71,46 @@ def test_implemented_rule_build_rule(computing_environment):
         }
     else:
         resources = None
+
+    if output == ["some/directory", "some/other/directory"]:
+        pytest.xfail(
+            reason="NotImplementedError: Multiple output directories is not supported."
+        )
+    if output == ["some/file.txt", "some/directory"]:
+        pytest.xfail(
+            reason="NotImplementedError: Mixed output types (files and directories) is not supported."
+        )
+
+    # The output in the snakefile will depend on whether the output is a file or a directory.
+    file_path = (
+        Path(os.path.dirname(__file__))
+        / RULE_STRINGS[f"implemented_rule_{computing_environment}"]
+    )
+    with open(file_path) as expected_file:
+        expected_str = expected_file.read()
+
+    if output == ["some/file.txt"]:
+        pass  # the epxected file is already correct
+    elif output == ["some/file.txt", "some/other/file.txt"]:
+        expected_str = expected_str.replace("output: ['some/file.txt']", f"output: {output}")
+        expected_str = expected_str.replace(
+            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt",
+            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt,some/other/file.txt",
+        )
+    elif output == ["some/directory"]:
+        expected_str = expected_str.replace(
+            "output: ['some/file.txt']", "output: directory('some/directory')"
+        )
+        expected_str = expected_str.replace(
+            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt",
+            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/directory",
+        )
+    else:
+        raise NotImplementedError
+    # move the modified snakefile to tmpdir
+    expected_filepath = tmp_path / file_path.name
+    with open(expected_filepath, "w") as expected_file:
+        expected_file.write(expected_str)
 
     rule = ImplementedRule(
         name="foo_rule",
@@ -77,7 +129,7 @@ def test_implemented_rule_build_rule(computing_environment):
             },
         },
         validations=["bar"],
-        output=["baz"],
+        output=output,
         resources=resources,
         envvars={"eggs": "coconut"},
         diagnostics_dir="spam",
@@ -86,11 +138,7 @@ def test_implemented_rule_build_rule(computing_environment):
         requires_spark=False,
     )
 
-    file_path = (
-        Path(os.path.dirname(__file__))
-        / RULE_STRINGS[f"implemented_rule_{computing_environment}"]
-    )
-    _check_rule(rule, file_path)
+    _check_rule(rule, expected_filepath)
 
 
 def test_embarrassingly_parallel_rule_build_rule():
