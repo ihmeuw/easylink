@@ -157,6 +157,17 @@ to show the breadth of possible specifications:
   Each subdirectory must contain two files, where each is
   in a tabular format."
 
+.. _input_data_list_quirk:
+
+.. warning::
+
+   There is currently **one** exception to the "files or directories"
+   description.
+   Input data that come directly from the user (through an ``input_data.yaml``)
+   are represented and passed to implementations as *lists* of file paths.
+   We plan to change this in the future to make it consistent with other data
+   specifications.
+
 Data specifications are enforced by EasyLink;
 a pipeline will fail if any data do not follow their specification.
 
@@ -395,62 +406,6 @@ but lower levels in the hierarchy subdivide those and so on.
 The more detail in the pipeline schema that is used,
 the more interoperability and standardization the user gets.
 
-Draws
-^^^^^
-
-To facilitate the representation and propagation of uncertainty, EasyLink supports **draws**.
-This is a bit of jargon that means "samples randomly **draw**\ n from a probability distribution."
-Complicated probability distributions are often impossible to represent exactly,
-like how :math:`\pi` is impossible to represent exactly as a decimal.
-Just like we can approximate :math:`\pi` to some number of digits (e.g. 3.1415),
-we can approximate a distribution with some number of random samples/draws.
-Then, any operation we want to do to our random variable can be done on each draw,
-and any statistic about the distribution (possibly after many operations)
-can be approximated by calculating that statistic on the draws.
-
-Entity resolution involves some *very* complicated probability distributions.
-Instead of a distribution over real numbers, we might have a distribution over all the possible ways to link two files!
-Such a distribution can't feasibly be analyzed exactly, but we can still take draws from it.
-You can think of this as generating multiple plausible linkages,
-and doing the rest of our analysis with each of them to see how much our result varies.
-If you're familiar with multiple imputation methods for missing data, it's exactly the same idea!
-
-In the pipeline schema, certain steps can be marked as permitted to produce draws.
-Any implementation of such a step must indicate whether or not it is able to produce draws.
-For any step in the pipeline where the step is permitted and the implementation is able,
-the EasyLink user indicates whether or not they want this to occur.
-(This can all be resolved upfront,
-so EasyLink knows before even starting the pipeline which of its implementations *will* produce draws.)
-
-The EasyLink user also specifies how many draws they would like to produce
-(this number is global across the entire pipeline, not per-step).
-
-Implementations that will produce draws,
-but are not downstream of any *other* implementations that will produce draws,
-run normally except that they are passed a special flag so that they know to produce draws.
-Instead of saving one output (for each output slot),
-they will save :math:`N`, where :math:`N` is the user-configured number of draws.
-
-Implementations that are downstream of at least one other implementation that will produce draws are run N times.
-For run :math:`X` (:math:`X \le N`), draw :math:`X` of each input (that has draws) is used, which assumes independence between the uncertainty on each input.
-When such an implementation will also *produce* draws,
-run :math:`X` of that implementation is passed a special flag indicating to produce draw :math:`X`.
-
-The last steps in the pipeline schema (those that produce its final outputs)
-are marked as "gather" steps.
-This means that even if they are downstream of steps that produce draws,
-they are only run once and receive *all* draws of their inputs at once.
-
-Steps that are permitted to produce draws are marked in the diagrams by coloring the box purple,
-and gather steps are marked by coloring the box green.
-
-.. image:: images/17_draws.drawio.png
-   :alt: Diagram of a draws-producing and a draws-gathering step in a pipeline schema
-
-.. todo::
-
-   Add a diagram showing how the various cases described above expand.
-
 Pipelines
 ---------
 
@@ -497,6 +452,8 @@ EasyLink pipeline schema
 
 .. image:: images/easylink_pipeline_schema.drawio.png
 
+.. _input_datasets:
+
 Input datasets
 ^^^^^^^^^^^^^^
 
@@ -505,10 +462,15 @@ A set of named datasets.
 Each dataset contains observations recorded about (some) entities in the population of interest for analysis.
 
 **Specification:**
-A directory of files, where each file is in a tabular format.
+A list of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
 but one of them must be called “Record ID” and it must have unique values.
+
+.. note::
+
+   This is a **list** of files, not a directory.
+   See :ref:`this note above <input_data_list_quirk>` for context.
 
 **Example:**
 
@@ -667,7 +629,6 @@ Analysis output
 The result of the analysis, whatever that may be.
 Could be a single statistic, a set of statistics, a whole dataset,
 or multiple datasets.
-May contain multiple draws in different files or subdirectories, or not.
 
 **Specification:**
 None. May take any form.
@@ -756,6 +717,19 @@ Actually removing records slated to be dropped.
 Pandas code dropping records with matching record IDs.
 Note that if the default implementation is used,
 input and output data specifications do not need to be checked.
+
+Datasets
+^^^^^^^^
+
+**Interpretation:**
+See :ref:`input datasets <input_datasets>`.
+
+**Specification:**
+
+Exactly the same as :ref:`input datasets <input_datasets>`, but is
+a *directory* of files rather than a *list* of files.
+This is a result of the current quirk that
+:ref:`input datasets have a different kind of specification than other data dependencies <input_data_list_quirk>`.
 
 New clusters
 ^^^^^^^^^^^^
@@ -851,13 +825,10 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Assigning a probability to each pair is a more efficient system for
-representing uncertainty than draws,
+Assigning a probability to each pair is an efficient system for
+representing uncertainty,
 when the statistical dependence structure between the pairwise links
 is unknown.
-Draws may be used in addition to pairwise
-probabilities when (some information about) the dependence
-structure is known.
 It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
 If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
