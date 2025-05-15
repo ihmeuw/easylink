@@ -19,7 +19,6 @@ from snakemake.cli import main as snake_main
 
 from easylink.configuration import Config, load_params_from_specification
 from easylink.pipeline import Pipeline
-from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
 from easylink.utilities.data_utils import (
     copy_configuration_files_to_results_directory,
     create_results_directory,
@@ -35,8 +34,8 @@ def main(
     input_data: str | Path,
     computing_environment: str | Path | None,
     results_dir: str | Path,
-    debug=False,
-    potential_schemas: PipelineSchema | list[PipelineSchema] = PIPELINE_SCHEMAS,
+    schema_name: str = "main",
+    debug: bool = False,
 ) -> None:
     """Runs an EasyLink command.
 
@@ -60,17 +59,16 @@ def main(
         to run the pipeline on. If None, the pipeline will be run locally.
     results_dir
         The directory to write results and incidental files (logs, etc.) to.
+    schema_name
+        The name of the schema to validate the pipeline configuration against.
     debug
         If False (the default), will suppress some of the workflow output. This
         is intended to only be used for testing and development purposes.
-    potential_schemas
-        A list of potential schemas to validate the pipeline configuration against.
-        This is primarily used for testing purposes. Defaults to the supported schemas.
     """
     config_params = load_params_from_specification(
         pipeline_specification, input_data, computing_environment, results_dir
     )
-    config = Config(config_params, potential_schemas)
+    config = Config(config_params, schema_name)
     pipeline = Pipeline(config)
     # After validation is completed, create the results directory
     create_results_directory(Path(results_dir))

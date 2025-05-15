@@ -14,7 +14,7 @@ from typing import Any
 
 from layered_config_tree import LayeredConfigTree
 
-from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
+from easylink.pipeline_schema import PipelineSchema
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import exit_with_validation_error
 
@@ -67,9 +67,8 @@ class Config(LayeredConfigTree):
         A dictionary of all specifications required to run the pipeline. This
         includes the pipeline, input data, and computing environment specifications,
         as well as the results directory.
-    potential_schemas
-        A list of potential schemas to validate the pipeline configuration against.
-        This is primarily used for testing purposes. Defaults to the supported schemas.
+    schema_name
+        The name of the schema to validate the pipeline configuration against.
 
     Attributes
     ----------
@@ -82,22 +81,14 @@ class Config(LayeredConfigTree):
     input_data
         The input data filepaths.
     schema
-        The :class:`~easylink.pipeline_schema.PipelineSchema` that successfully
-        validated the requested pipeline.
+        The :class:`~easylink.pipeline_schema.PipelineSchema`.
 
-    Notes
-    -----
-    The requested pipeline is checked against a set of supported
-    ``PipelineSchemas``. The first schema that successfully validates is assumed
-    to be the correct one and is attached to the ``Config`` object and its
-    :meth:`~easylink.pipeline_schema.PipelineSchema.configure_pipeline`
-    method is called.
     """
 
     def __init__(
         self,
         config_params: dict[str, Any],
-        potential_schemas: PipelineSchema | list[PipelineSchema] = PIPELINE_SCHEMAS,
+        schema_name: str = "main",
     ) -> None:
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
@@ -108,9 +99,7 @@ class Config(LayeredConfigTree):
             # Set slurm defaults to empty dict instead of None so that we don't get errors
             # in slurm_resources property
             self.update({"environment": {"slurm": {}}}, layer="default")
-        if not isinstance(potential_schemas, list):
-            potential_schemas = [potential_schemas]
-        self.update({"schema": self._get_schema(potential_schemas)}, layer="initial_data")
+        self.update({"schema": self._get_schema(schema_name)}, layer="initial_data")
         self.schema.configure_pipeline(self.pipeline, self.input_data)
         self._validate()
         self.freeze()
@@ -173,22 +162,22 @@ class Config(LayeredConfigTree):
     # Setup Methods #
     #################
 
-    def _get_schema(self, potential_schemas: list[PipelineSchema]) -> PipelineSchema:
+    def _get_schema(self, schema_name: str = "main") -> PipelineSchema:
         """Returns the first :class:`~easylink.pipeline_schema.PipelineSchema` that validates the requested pipeline.
 
         Parameters
         ----------
-        potential_schemas
-            ``PipelineSchemas`` to validate the pipeline configuration against.
+        schema_name
+            The name of the specific ``PipelineSchema`` to validate the pipeline configuration against.
 
         Returns
         -------
-            The first ``PipelineSchema`` that validates the requested pipeline configuration.
+            The requested ``PipelineSchema`` if it validates the requested pipeline configuration.
 
         Raises
         ------
         SystemExit
-            If the pipeline configuration is not valid for any of the ``potential_schemas``,
+            If the pipeline configuration is not valid for the requested schema,
             the program exits with a non-zero code and all validation errors found
             are logged.
 
@@ -197,20 +186,15 @@ class Config(LayeredConfigTree):
         This acts as the pipeline configuration file's validation method since
         we can only find a matching ``PipelineSchema`` if that file is valid.
 
-        This method returns the *first* ``PipelineSchema`` that validates and does
-        not attempt to check additional ones.
         """
         errors = defaultdict(dict)
         # Try each schema until one is validated
-        for schema in potential_schemas:
-            logs = schema.validate_step(self.pipeline, self.input_data)
-            if logs:
-                errors[PIPELINE_ERRORS_KEY][schema.name] = logs
-                pass  # try the next schema
-            else:  # schema was validated
-                return schema
-        # No schemas were validated
-        exit_with_validation_error(dict(errors))
+        schema = PipelineSchema.get_schema(schema_name)
+        logs = schema.validate_step(self.pipeline, self.input_data)
+        if logs:
+            errors[PIPELINE_ERRORS_KEY][schema.name] = logs
+            exit_with_validation_error(dict(errors))
+        return schema
 
     def _validate(self) -> None:
         """Validates the ``Config``.

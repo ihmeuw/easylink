@@ -155,4 +155,4 @@ def default_config_params(default_config_paths) -> dict[str, Path]:
 @pytest.fixture()
 def default_config(default_config_params) -> Config:
     """A good/known Config object"""
-    return Config(default_config_params)
+    return Config(default_config_params, schema_name="development")

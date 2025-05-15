@@ -4,8 +4,8 @@ from re import match
 import networkx as nx
 
 from easylink.graph_components import InputSlot, OutputSlot
-from easylink.pipeline_schema import PIPELINE_SCHEMAS, PipelineSchema
-from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
+from easylink.pipeline_schema import PipelineSchema
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.step import Step
 from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.splitter_utils import split_data_by_size
@@ -13,7 +13,7 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
 def test_schema_instantiation() -> None:
-    nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
+    nodes, edges = SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
     sorted_graph = nx.topological_sort(schema.step_graph)
     """Test that the schema is correctly loaded from the pipeline.yaml"""
@@ -26,28 +26,24 @@ def test_schema_instantiation() -> None:
         "results",
     ]
     step_types = [node["step"] for node in sorted_graph]
-    expected_step_types = [type(step) for step in ALLOWED_SCHEMA_PARAMS["development"]]
+    expected_step_types = [type(step) for step in SCHEMA_PARAMS["development"]]
     for step_type, expected_step_types in zip(step_types, expected_step_types):
         assert isinstance(step_type, expected_step_types)
 
 
-def test_get_schemas() -> None:
-    supported_schemas = PIPELINE_SCHEMAS
-    assert isinstance(supported_schemas, list)
-    # Ensure list is populated
-    assert supported_schemas
-    # Check basic structure
-    for schema in supported_schemas:
-        assert schema.name
-        assert schema.step_graph.steps
-        assert isinstance(schema.step_graph.steps, list)
-        for step in schema.step_graph.steps:
-            assert isinstance(step, Step)
-            assert step.name
+def test_get_schema() -> None:
+    schema = PipelineSchema.get_schema("development")
+    assert isinstance(schema, PipelineSchema)
+    assert schema.name
+    assert schema.step_graph.steps
+    assert isinstance(schema.step_graph.steps, list)
+    for step in schema.step_graph.steps:
+        assert isinstance(step, Step)
+        assert step.name
 
 
 def test_validate_input(test_dir: str) -> None:
-    nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
+    nodes, edges = SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
     input_data = {"file1": Path(test_dir) / "input_data1/file1.csv"}
     errors = schema.validate_inputs(input_data)
@@ -63,7 +59,7 @@ def test_validate_input(test_dir: str) -> None:
 
 
 def test_pipeline_schema_get_implementation_graph(default_config) -> None:
-    nodes, edges = ALLOWED_SCHEMA_PARAMS["development"]
+    nodes, edges = SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
     schema.configure_pipeline(default_config.pipeline, default_config.input_data)
     implementation_graph = schema.get_implementation_graph()

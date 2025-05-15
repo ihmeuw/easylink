@@ -50,3 +50,9 @@ def validate_input_file_dummy(filepath: str) -> None:
         raise LookupError(
             f"Data file {filepath} is missing required column(s) {missing_columns}"
         )
+
+
+def validate_dir(filepath: str) -> None:
+    input_path = Path(filepath)
+    if not input_path.is_dir():
+        raise NotADirectoryError(f"The path {filepath} is not a directory.")

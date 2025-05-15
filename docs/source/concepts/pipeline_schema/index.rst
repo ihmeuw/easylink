@@ -157,6 +157,19 @@ to show the breadth of possible specifications:
   Each subdirectory must contain two files, where each is
   in a tabular format."
 
+.. _data_list_quirk:
+
+.. warning::
+
+   There are currently **two** exceptions to the "files or directories"
+   description.
+   Input data that come directly from the user (through an ``input_data.yaml``)
+   are represented and passed to implementations as *lists* of file paths.
+   And data dependencies that pass through the "by file" aggregator on a
+   :ref:`cloneable section <cloneable_sections>` will also be lists of file paths.
+   We plan to change these cases in the future to make them consistent with other data
+   specifications.
+
 Data specifications are enforced by EasyLink;
 a pipeline will fail if any data do not follow their specification.
 
@@ -224,6 +237,8 @@ Operators
 
    Consider replacing the examples in this section with extracts from the record linkage
    pipeline schema, as in the previous section.
+
+.. _cloneable_sections:
 
 Cloneable sections
 ^^^^^^^^^^^^^^^^^^
@@ -395,62 +410,6 @@ but lower levels in the hierarchy subdivide those and so on.
 The more detail in the pipeline schema that is used,
 the more interoperability and standardization the user gets.
 
-Draws
-^^^^^
-
-To facilitate the representation and propagation of uncertainty, EasyLink supports **draws**.
-This is a bit of jargon that means "samples randomly **draw**\ n from a probability distribution."
-Complicated probability distributions are often impossible to represent exactly,
-like how :math:`\pi` is impossible to represent exactly as a decimal.
-Just like we can approximate :math:`\pi` to some number of digits (e.g. 3.1415),
-we can approximate a distribution with some number of random samples/draws.
-Then, any operation we want to do to our random variable can be done on each draw,
-and any statistic about the distribution (possibly after many operations)
-can be approximated by calculating that statistic on the draws.
-
-Entity resolution involves some *very* complicated probability distributions.
-Instead of a distribution over real numbers, we might have a distribution over all the possible ways to link two files!
-Such a distribution can't feasibly be analyzed exactly, but we can still take draws from it.
-You can think of this as generating multiple plausible linkages,
-and doing the rest of our analysis with each of them to see how much our result varies.
-If you're familiar with multiple imputation methods for missing data, it's exactly the same idea!
-
-In the pipeline schema, certain steps can be marked as permitted to produce draws.
-Any implementation of such a step must indicate whether or not it is able to produce draws.
-For any step in the pipeline where the step is permitted and the implementation is able,
-the EasyLink user indicates whether or not they want this to occur.
-(This can all be resolved upfront,
-so EasyLink knows before even starting the pipeline which of its implementations *will* produce draws.)
-
-The EasyLink user also specifies how many draws they would like to produce
-(this number is global across the entire pipeline, not per-step).
-
-Implementations that will produce draws,
-but are not downstream of any *other* implementations that will produce draws,
-run normally except that they are passed a special flag so that they know to produce draws.
-Instead of saving one output (for each output slot),
-they will save :math:`N`, where :math:`N` is the user-configured number of draws.
-
-Implementations that are downstream of at least one other implementation that will produce draws are run N times.
-For run :math:`X` (:math:`X \le N`), draw :math:`X` of each input (that has draws) is used, which assumes independence between the uncertainty on each input.
-When such an implementation will also *produce* draws,
-run :math:`X` of that implementation is passed a special flag indicating to produce draw :math:`X`.
-
-The last steps in the pipeline schema (those that produce its final outputs)
-are marked as "gather" steps.
-This means that even if they are downstream of steps that produce draws,
-they are only run once and receive *all* draws of their inputs at once.
-
-Steps that are permitted to produce draws are marked in the diagrams by coloring the box purple,
-and gather steps are marked by coloring the box green.
-
-.. image:: images/17_draws.drawio.png
-   :alt: Diagram of a draws-producing and a draws-gathering step in a pipeline schema
-
-.. todo::
-
-   Add a diagram showing how the various cases described above expand.
-
 Pipelines
 ---------
 
@@ -497,20 +456,33 @@ EasyLink pipeline schema
 
 .. image:: images/easylink_pipeline_schema.drawio.png
 
-Input datasets
-^^^^^^^^^^^^^^
+.. _datasets_list:
+
+Datasets (list)
+^^^^^^^^^^^^^^^
 
 **Interpretation:**
 A set of named datasets.
 Each dataset contains observations recorded about (some) entities in the population of interest for analysis.
 
 **Specification:**
-A directory of files, where each file is in a tabular format.
+A list of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
-but one of them must be called “Record ID” and it must have unique values.
+but one of them must be called "Record ID".
+Values in the "Record ID" columns of each file must be unique
+**across all files**.
+
+.. note::
+
+   This is a **list** of files, not a directory.
+   See :ref:`this note above <data_list_quirk>` for context.
 
 **Example:**
+
+A list of two files, ``input_file.parquet`` and ``reference_file.parquet``.
+
+``input_file.parquet`` has contents:
 
 .. list-table:: 
    :header-rows: 1
@@ -519,12 +491,30 @@ but one of them must be called “Record ID” and it must have unique values.
      - First
      - Last
      - Address
-   * - 1
+   * - input_file_1
      - Vicki
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - 2
+   * - input_file_2
      - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+
+``reference_file.parquet`` has contents:
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Record ID
+     - First
+     - Last
+     - Address
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - reference_file_2
+     - Gerry
      - Allen
      - 456 Other Drive, Anytown WA, 99999
 
@@ -554,9 +544,14 @@ then A and C are in the same cluster by definition.
 
 **Specification:**
 A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
-"Input Record ID" must have unique values,
-each of which is the combination of a dataset name and a Record ID value found in the corresponding input dataset.
+"Input Record ID" must have unique values.
 "Cluster ID" may take any value.
+
+.. note::
+
+   In the future, we should add to this specification that each "Input Record ID"
+   is a Record ID value found in an input dataset.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
@@ -578,7 +573,7 @@ each of which is the combination of a dataset name and a Record ID value found i
    * - reference_file_2
      - 3
 
-In this example, record ID 1 from the dataset "input_file" (i.e. Input Record ID "input_file_1") has been put in its own cluster,
+In this example, record ID "input_file_1" has been put in its own cluster,
 meaning that it does not match any of the other records listed.
 input_file_2 has been put in a cluster with reference_file_1,
 indicating that they refer to the same person.
@@ -667,7 +662,6 @@ Analysis output
 The result of the analysis, whatever that may be.
 Could be a single statistic, a set of statistics, a whole dataset,
 or multiple datasets.
-May contain multiple draws in different files or subdirectories, or not.
 
 **Specification:**
 None. May take any form.
@@ -706,11 +700,21 @@ Methods that are not pairwise should implement this step directly.
 - In Splink, this step would correspond to estimating parameters, making pairwise
   predictions, and then clustering entities with connected components or similar
 
-Eliminating records
-^^^^^^^^^^^^^^^^^^^
+Dataset
+^^^^^^^
 
 **Interpretation:**
-Identify records that can be eliminated from the input datasets for the purposes of this pass
+A single dataset, see :ref:`"datasets (list)" <datasets_list>`.
+
+**Specification:**
+A single file, which follows exactly the specification of
+*each* file in the list of :ref:`"datasets (list)" <datasets_list>`.
+
+Determining exclusions
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Identify records that can be excluded from the input datasets for the purposes of this pass
 to save computational time.
 Usually these will be records that have already been clustered sufficiently well
 (whatever that means as defined by the implementation of this step)
@@ -731,18 +735,25 @@ IDs to remove
 ^^^^^^^^^^^^^
 
 **Interpretation:**
-Record IDs slated to be dropped for the purposes of this pass.
+Input record IDs slated to be dropped for the purposes of this pass.
 
 **Specification:**
-A single column called "Record ID."
-Every value in the column should be unique and should exist in one of the input datasets.
+A single file in tabular format, with exactly one column called "Input Record ID".
+Every value in the column should be unique.
+
+.. note::
+
+   In the future, we should add to this specification that each "Input Record ID"
+   is a Record ID value found in the input dataset corresponding to this IDs to remove --
+   that is, the one that was passed to "determining exclusions."
+   EasyLink currently doesn't support this.
 
 **Example:**
 
 .. list-table::
    :header-rows: 1
 
-   * - Record ID
+   * - Input Record ID
    * - input_file_2
    * - input_file_4
 
@@ -781,7 +792,7 @@ Otherwise, returns the new clusters unchanged.
 
 - In PVS, simply appending PIKs found in this module to those found in previous
   modules.
-  Because of the "eliminating records" strategy used in PVS, these are guaranteed
+  Because of the "determining exclusions" strategy used in PVS, these are guaranteed
   to not include any of the same input file records.
 - A simple approach would be to make each set of clusters into a graph of records,
   merge the graphs, and take the connected components as the updated clusters.
@@ -854,20 +865,16 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Assigning a probability to each pair is a more efficient system for
-representing uncertainty than draws,
+Assigning a probability to each pair is an efficient system for
+representing uncertainty,
 when the statistical dependence structure between the pairwise links
 is unknown.
-Draws may be used in addition to pairwise
-probabilities when (some information about) the dependence
-structure is known.
 It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
 If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
 
 **Specification:**
 A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
-Every value in both Record ID columns should exist in one of the input datasets.
 Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
 Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
 The Left Record ID value should be alphabetically before the Right Record ID
@@ -876,6 +883,12 @@ value in each row.
 a mirror image of another.)
 Each value in the Probability column must be between
 0 and 1 (inclusive).
+
+.. note::
+
+   In the future, we should add to this specification that every value in both Record ID columns
+   should exist in one of the input datasets.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
