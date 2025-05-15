@@ -157,15 +157,17 @@ to show the breadth of possible specifications:
   Each subdirectory must contain two files, where each is
   in a tabular format."
 
-.. _input_data_list_quirk:
+.. _data_list_quirk:
 
 .. warning::
 
-   There is currently **one** exception to the "files or directories"
+   There are currently **two** exceptions to the "files or directories"
    description.
    Input data that come directly from the user (through an ``input_data.yaml``)
    are represented and passed to implementations as *lists* of file paths.
-   We plan to change this in the future to make it consistent with other data
+   And data dependencies that pass through the "by file" aggregator on a
+   :ref:`cloneable section <cloneable_sections>` will also be lists of file paths.
+   We plan to change these cases in the future to make them consistent with other data
    specifications.
 
 Data specifications are enforced by EasyLink;
@@ -235,6 +237,8 @@ Operators
 
    Consider replacing the examples in this section with extracts from the record linkage
    pipeline schema, as in the previous section.
+
+.. _cloneable_sections:
 
 Cloneable sections
 ^^^^^^^^^^^^^^^^^^
@@ -452,10 +456,10 @@ EasyLink pipeline schema
 
 .. image:: images/easylink_pipeline_schema.drawio.png
 
-.. _input_datasets:
+.. _datasets_list:
 
-Input datasets
-^^^^^^^^^^^^^^
+Datasets (list)
+^^^^^^^^^^^^^^^
 
 **Interpretation:**
 A set of named datasets.
@@ -465,14 +469,20 @@ Each dataset contains observations recorded about (some) entities in the populat
 A list of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
-but one of them must be called “Record ID” and it must have unique values.
+but one of them must be called "Record ID".
+Values in the "Record ID" columns of each file must be unique
+**across all files**.
 
 .. note::
 
    This is a **list** of files, not a directory.
-   See :ref:`this note above <input_data_list_quirk>` for context.
+   See :ref:`this note above <data_list_quirk>` for context.
 
 **Example:**
+
+A list of two files, ``input_file.parquet`` and ``reference_file.parquet``.
+
+``input_file.parquet`` has contents:
 
 .. list-table:: 
    :header-rows: 1
@@ -481,12 +491,30 @@ but one of them must be called “Record ID” and it must have unique values.
      - First
      - Last
      - Address
-   * - 1
+   * - input_file_1
      - Vicki
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - 2
+   * - input_file_2
      - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+
+``reference_file.parquet`` has contents:
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Record ID
+     - First
+     - Last
+     - Address
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - reference_file_2
+     - Gerry
      - Allen
      - 456 Other Drive, Anytown WA, 99999
 
@@ -517,7 +545,7 @@ then A and C are in the same cluster by definition.
 **Specification:**
 A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
 "Input Record ID" must have unique values,
-each of which is the combination of a dataset name and a Record ID value found in the corresponding input dataset.
+each of which is a Record ID value found in an input dataset.
 "Cluster ID" may take any value.
 
 **Example:**
@@ -540,7 +568,7 @@ each of which is the combination of a dataset name and a Record ID value found i
    * - reference_file_2
      - 3
 
-In this example, record ID 1 from the dataset "input_file" (i.e. Input Record ID "input_file_1") has been put in its own cluster,
+In this example, record ID "input_file_1" has been put in its own cluster,
 meaning that it does not match any of the other records listed.
 input_file_2 has been put in a cluster with reference_file_1,
 indicating that they refer to the same person.
@@ -667,11 +695,21 @@ Methods that are not pairwise should implement this step directly.
 - In Splink, this step would correspond to estimating parameters, making pairwise
   predictions, and then clustering entities with connected components or similar
 
-Eliminating records
-^^^^^^^^^^^^^^^^^^^
+Dataset
+^^^^^^^
 
 **Interpretation:**
-Identify records that can be eliminated from the input datasets for the purposes of this pass
+A single dataset, see :ref:`"datasets (list)" <datasets_list>`.
+
+**Specification:**
+A single file, which follows exactly the specification of
+*each* file in the list of :ref:`"datasets (list)" <datasets_list>`.
+
+Determining exclusions
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Identify records that can be excluded from the input datasets for the purposes of this pass
 to save computational time.
 Usually these will be records that have already been clustered sufficiently well
 (whatever that means as defined by the implementation of this step)
@@ -692,18 +730,19 @@ IDs to remove
 ^^^^^^^^^^^^^
 
 **Interpretation:**
-Record IDs slated to be dropped for the purposes of this pass.
+Input record IDs slated to be dropped for the purposes of this pass.
 
 **Specification:**
-A single column called "Record ID."
-Every value in the column should be unique and should exist in one of the input datasets.
+A single file in tabular format, with exactly one column called "Input Record ID".
+Every value in the column should be unique and should exist in the "Record ID" column
+of one of the input datasets.
 
 **Example:**
 
 .. list-table::
    :header-rows: 1
 
-   * - Record ID
+   * - Input Record ID
    * - input_file_2
    * - input_file_4
 
@@ -717,19 +756,6 @@ Actually removing records slated to be dropped.
 Pandas code dropping records with matching record IDs.
 Note that if the default implementation is used,
 input and output data specifications do not need to be checked.
-
-Datasets
-^^^^^^^^
-
-**Interpretation:**
-See :ref:`input datasets <input_datasets>`.
-
-**Specification:**
-
-Exactly the same as :ref:`input datasets <input_datasets>`, but is
-a *directory* of files rather than a *list* of files.
-This is a result of the current quirk that
-:ref:`input datasets have a different kind of specification than other data dependencies <input_data_list_quirk>`.
 
 New clusters
 ^^^^^^^^^^^^
@@ -755,7 +781,7 @@ Otherwise, returns the new clusters unchanged.
 
 - In PVS, simply appending PIKs found in this module to those found in previous
   modules.
-  Because of the "eliminating records" strategy used in PVS, these are guaranteed
+  Because of the "determining exclusions" strategy used in PVS, these are guaranteed
   to not include any of the same input file records.
 - A simple approach would be to make each set of clusters into a graph of records,
   merge the graphs, and take the connected components as the updated clusters.
