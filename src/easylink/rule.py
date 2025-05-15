@@ -17,6 +17,7 @@ import os
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 
 class Rule(ABC):
@@ -125,6 +126,18 @@ class ImplementedRule(Rule):
     def _build_io(self) -> str:
         """Builds the input/output portion of the rule."""
         log_path_chunk_adder = "-{chunk}" if self.is_embarrassingly_parallel else ""
+        # Handle output files vs directories
+        files = [path for path in self.output if Path(path).suffix != ""]
+        if len(files) == len(self.output):
+            output = self.output
+        elif len(files) == 0:
+            if len(self.output) != 1:
+                raise NotImplementedError("Multiple output directories is not supported.")
+            output = f"directory('{self.output[0]}')"
+        else:
+            raise NotImplementedError(
+                "Mixed output types (files and directories) is not supported."
+            )
         io_str = (
             f"""
 rule:
@@ -132,7 +145,7 @@ rule:
     message: "Running {self.step_name} implementation: {self.implementation_name}" """
             + self._build_input()
             + f"""        
-    output: {self.output}
+    output: {output}
     log: "{self.diagnostics_dir}/{self.name}-output{log_path_chunk_adder}.log"
     container: "{self.image_path}" """
         )

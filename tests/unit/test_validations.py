@@ -28,8 +28,6 @@ def _check_expected_validation_exit(error, caplog, error_no, expected_msg):
     msg = caplog.text.split("Validation errors found. Please see below.")[1].split(
         "Validation errors found. Please see above."
     )[0]
-    # HACK: Exclude validation errors in main schema
-    msg = msg.split("\n  main:")[0]
     msg = re.sub("\n+", " ", msg)
     msg = re.sub(" +", " ", msg).strip()
     # Remove single quotes from msg and expected b/c they're difficult to handle and not that important
@@ -215,7 +213,7 @@ def test_pipeline_validation(
     )
 
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     _check_expected_validation_exit(
         error=e,
@@ -231,7 +229,7 @@ def test_out_of_order_steps(default_config_params, unit_test_specifications_dir)
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_out_of_order.yaml"
     )
-    Config(config_params)
+    Config(config_params, "development")
 
 
 def test_unsupported_step(
@@ -245,7 +243,7 @@ def test_unsupported_step(
     )
 
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     _check_expected_validation_exit(
         error=e,
@@ -272,7 +270,7 @@ def test_unsupported_implementation(
     )
 
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     supported_implementations = (
@@ -299,7 +297,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
     config_params = load_params_from_specification(**config_paths)
     config_params["input_data"] = {}
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     _check_expected_validation_exit(
         error=e,
@@ -316,7 +314,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
     )
     config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     _check_expected_validation_exit(
         error=e,
@@ -340,7 +338,7 @@ def test_pipeline_schema_bad_input_data(default_config_paths, test_dir, caplog):
     )
     config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     _check_expected_validation_exit(
         error=e,
@@ -361,7 +359,7 @@ def test_pipeline_schema_missing_input_file(default_config_paths, test_dir, capl
     )
     config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
 
     _check_expected_validation_exit(
         error=e,
@@ -380,7 +378,7 @@ def test_unsupported_container_engine(default_config_params, caplog):
     config_params = default_config_params
     config_params["environment"] = {"container_engine": "foo"}
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
     _check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -397,7 +395,7 @@ def test_missing_slurm_details(default_config_params, caplog):
     config_params = default_config_params
     config_params["environment"] = {"computing_environment": "slurm"}
     with pytest.raises(SystemExit) as e:
-        Config(config_params)
+        Config(config_params, "development")
     _check_expected_validation_exit(
         error=e,
         caplog=caplog,
