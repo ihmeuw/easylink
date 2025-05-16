@@ -1,0 +1,22 @@
+
+Bootstrap: docker
+From: python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899
+
+%files
+    ./splink_blocking_and_filtering.py /splink_blocking_and_filtering.py
+
+%post
+    # Create directories
+    mkdir -p /input_data
+    mkdir -p /extra_implementation_specific_input_data
+    mkdir -p /results
+    mkdir -p /diagnostics
+
+    # Install Python packages with specific versions
+    pip install pandas pyarrow splink==4.0.7
+
+%environment
+    export LC_ALL=C
+
+%runscript
+    python /splink_blocking_and_filtering.py '$@'
