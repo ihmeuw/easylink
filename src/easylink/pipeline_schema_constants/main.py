@@ -146,7 +146,7 @@ NODES = [
                                 child_slot="dataset",
                             )
                         ],
-                    )  
+                    )
                 ),
                 HierarchicalStep(
                     step_name="clustering",

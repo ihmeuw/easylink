@@ -109,6 +109,7 @@ def validate_input_dataset_or_known_clusters(filepath: str) -> None:
     else:
         validate_dataset(filepath)
 
+
 def validate_dataset(filepath: str) -> None:
     """Validates an dataset file.
 
