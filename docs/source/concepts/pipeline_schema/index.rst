@@ -700,6 +700,8 @@ Methods that are not pairwise should implement this step directly.
 - In Splink, this step would correspond to estimating parameters, making pairwise
   predictions, and then clustering entities with connected components or similar
 
+.. _dataset:
+
 Dataset
 ^^^^^^^
 
@@ -993,6 +995,12 @@ Linking sub-steps
 -----------------
 
 .. image:: images/linking_sub_steps.drawio.png
+
+Used in this diagram and defined above:
+
+* :ref:`Datasets (list) <datasets_list>`
+* :ref:`Dataset <dataset>`
+* :ref:`Links <links>`
 
 Pre-processing
 ^^^^^^^^^^^^^^
