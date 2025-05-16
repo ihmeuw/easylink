@@ -102,8 +102,15 @@ def validate_input_file_dummy(filepath: str) -> None:
     _validate_required_columns(filepath, required_columns={"foo", "bar", "counter"})
 
 
-def validate_input_dataset(filepath: str) -> None:
-    """Validates an input dataset file.
+def validate_input_dataset_or_known_clusters(filepath: str) -> None:
+    filepath = Path(filepath)
+    if filepath.stem == "known_clusters":
+        validate_clusters(filepath)
+    else:
+        validate_dataset(filepath)
+
+def validate_dataset(filepath: str) -> None:
+    """Validates an dataset file.
 
     - Must be in a tabular format and contain a "Record ID" column.
     - The "Record ID" column must have unique values.
@@ -152,7 +159,7 @@ def validate_datasets_directory(filepath: str) -> None:
     for file in input_path.iterdir():
         if not file.is_file():
             raise ValueError(f"The path {file} is not a file.")
-        validate_input_dataset(file.name)
+        validate_dataset(file.name)
 
 
 def validate_clusters(filepath: str) -> None:
@@ -251,6 +258,113 @@ def validate_ids_to_remove(filepath: str) -> None:
     _validate_required_columns(filepath, {"Record ID"})
     df = _read_file(filepath)
     _validate_unique_column(df, "Record ID", filepath)
+
+
+def validate_records(filepath: str) -> None:
+    """Validates a file containing records.
+
+    - A file in a tabular format.
+    - The file may have any number of columns.
+    - One column must be called “Input Record ID” and it must have unique values.
+    """
+    _validate_required_columns(filepath, {"Input Record ID"})
+    df = _read_file(filepath)
+    _validate_unique_column(df, "Input Record ID", filepath)
+
+
+def validate_blocks(filepath: str) -> None:
+    """
+    Validates a directory containing blocks.
+
+    Each block subdirectory must contain exactly two files: a records file and a pairs file, both in tabular format.
+
+    Validation checks include:
+    - The parent directory must exist and be a directory.
+    - Each block subdirectory must contain exactly one records file (filename contains "records") and one pairs file (filename contains "pairs").
+    - The records file must have a column "Input Record ID" with unique values.
+    - The pairs file must have columns "Left Record ID" and "Right Record ID".
+    - All values in "Left Record ID" and "Right Record ID" must exist in the "Input Record ID" column of the corresponding records file.
+    - No row in the pairs file may have "Left Record ID" equal to "Right Record ID".
+    - All rows in the pairs file must be unique with respect to ("Left Record ID", "Right Record ID").
+    - In each row, "Left Record ID" must be alphabetically less than "Right Record ID".
+    - No extra files are allowed in block subdirectories.
+
+    Parameters
+    ----------
+    filepath : str
+        Path to the directory containing block subdirectories.
+
+    Raises
+    ------
+    NotADirectoryError
+        If the provided path is not a directory.
+    FileNotFoundError
+        If a required records or pairs file is missing in any block.
+    LookupError
+        If required columns are missing in records or pairs files.
+    ValueError
+        If:
+            - "Input Record ID" is not unique in the records file.
+            - "Left Record ID" or "Right Record ID" in the pairs file do not exist in the records file.
+            - "Left Record ID" equals "Right Record ID" in any row of the pairs file.
+            - Duplicate rows exist in the pairs file.
+            - "Left Record ID" is not alphabetically before "Right Record ID" in any row.
+            - Extra files are present in a block subdirectory.
+    """
+    input_path = Path(filepath)
+
+    if not input_path.is_dir():
+        raise NotADirectoryError(f"The path {filepath} is not a directory.")
+
+    for block_dir in filter(lambda d: d.is_dir(), input_path.iterdir()):
+        files = {file.stem: file for file in block_dir.iterdir() if file.is_file()}
+        records_file = next((f for name, f in files.items() if "records" in name), None)
+        pairs_file = next((f for name, f in files.items() if "pairs" in name), None)
+
+        if len(files) > 2:
+            raise ValueError(f"Extra file(s) found in block directory {block_dir}.")
+
+        if not records_file or not pairs_file:
+            raise FileNotFoundError(
+                f"Block directory {block_dir} must contain both a records file and a pairs file."
+            )
+
+        # Validate records file
+        _validate_required_columns(records_file, {"Input Record ID"})
+        records_df = _read_file(records_file)
+        _validate_unique_column(records_df, "Input Record ID", records_file)
+        record_ids = set(records_df["Input Record ID"])
+
+        # Validate pairs file
+        _validate_required_columns(pairs_file, {"Left Record ID", "Right Record ID"})
+        pairs_df = _read_file(pairs_file)
+
+        # Check that all IDs in pairs exist in records
+        missing_left = set(pairs_df["Left Record ID"]) - record_ids
+        missing_right = set(pairs_df["Right Record ID"]) - record_ids
+        if missing_left or missing_right:
+            raise ValueError(
+                f"In block {block_dir}, pairs file {pairs_file} contains IDs not found in records file {records_file}: "
+                f"Missing Left Record IDs: {missing_left}, Missing Right Record IDs: {missing_right}"
+            )
+
+        # Check Left != Right
+        if (pairs_df["Left Record ID"] == pairs_df["Right Record ID"]).any():
+            raise ValueError(
+                f"In block {block_dir}, pairs file {pairs_file} contains rows where 'Left Record ID' equals 'Right Record ID'."
+            )
+
+        # Check for duplicate rows
+        if pairs_df.duplicated(subset=["Left Record ID", "Right Record ID"]).any():
+            raise ValueError(
+                f"In block {block_dir}, pairs file {pairs_file} contains duplicate rows."
+            )
+
+        # Check alphabetical order
+        if not (pairs_df["Left Record ID"] < pairs_df["Right Record ID"]).all():
+            raise ValueError(
+                f"In block {block_dir}, pairs file {pairs_file} contains rows where 'Left Record ID' is not alphabetically before 'Right Record ID'."
+            )
 
 
 def validate_dir(filepath: str) -> None:
