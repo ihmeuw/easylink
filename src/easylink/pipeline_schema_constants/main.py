@@ -12,7 +12,6 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
-    EmbarrassinglyParallelStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
@@ -24,73 +23,130 @@ from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import (
     dont_validate,
+    validate_blocks,
     validate_clusters,
-    validate_datasets_directory,
+    validate_dataset,
     validate_ids_to_remove,
-    validate_input_dataset,
+    validate_input_dataset_or_known_clusters,
     validate_links,
+    validate_records,
 )
 
 NODES = [
-    InputStep(output_slots=[OutputSlot("input_datasets"), OutputSlot("known_clusters")]),
+    # NOTE: In our pipeline schema as documented, there are two inputs: input datasets and known clusters
+    # However, due to limitations currently in EasyLink, we can't have multiple output slots on the InputStep.
+    # Instead we have a single undifferentiated slot and make it the *implementation's* problem to differentiate
+    # based on filename.
+    InputStep(),
     LoopStep(
         template_step=HierarchicalStep(
             step_name="entity_resolution",
             input_slots=[
                 InputSlot(
                     name="input_datasets",
-                    env_var="INPUT_DATASETS_FILE_PATHS",
+                    env_var="INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS",
                     # NOTE: Since this originates from the InputStep, it will be a *list*
                     # of files, and this validator will be called on *each*
                     # TODO: Change this when https://jira.ihme.washington.edu/browse/MIC-6070 is implemented
-                    validator=validate_input_dataset,
+                    validator=validate_input_dataset_or_known_clusters,
                 ),
                 InputSlot(
                     name="known_clusters",
-                    env_var="KNOWN_CLUSTERS_FILE_PATHS",
-                    validator=validate_clusters,
+                    env_var="KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS",
+                    validator=validate_input_dataset_or_known_clusters,
                 ),
             ],
             output_slots=[OutputSlot("clusters")],
             nodes=[
                 ParallelStep(
                     # NOTE: Splitters/aggregators on the ParallelStep are implicit!
-                    template_step=EmbarrassinglyParallelStep(
-                        slot_splitter_mapping={"input_datasets": split_data_by_size},
-                        step=Step(
-                            step_name="eliminating_records",
-                            input_slots=[
-                                InputSlot(
-                                    name="input_datasets",
-                                    env_var="INPUT_DATASETS_FILE_PATHS",
-                                    validator=validate_input_dataset,
-                                ),
-                                InputSlot(
-                                    name="clusters",
-                                    env_var="CLUSTERS_FILE_PATHS",
-                                    validator=validate_clusters,
-                                ),
-                            ],
-                            output_slots=[OutputSlot("ids_to_remove")],
-                        ),
-                        slot_aggregator_mapping={"ids_to_remove": concatenate_datasets},
+                    template_step=HierarchicalStep(
+                        step_name="cloneable_section",
+                        directly_implemented=False,
+                        input_slots=[
+                            InputSlot(
+                                name="input_datasets",
+                                env_var="INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS",
+                                validator=validate_input_dataset_or_known_clusters,
+                            ),
+                            InputSlot(
+                                name="known_clusters",
+                                env_var="KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS",
+                                validator=validate_input_dataset_or_known_clusters,
+                            ),
+                        ],
+                        output_slots=[OutputSlot("datasets")],
+                        nodes=[
+                            Step(
+                                step_name="determining_exclusions",
+                                input_slots=[
+                                    InputSlot(
+                                        name="input_datasets",
+                                        env_var="INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS",
+                                        validator=validate_input_dataset_or_known_clusters,
+                                    ),
+                                    InputSlot(
+                                        name="known_clusters",
+                                        env_var="KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS",
+                                        validator=validate_input_dataset_or_known_clusters,
+                                    ),
+                                ],
+                                output_slots=[OutputSlot("ids_to_remove")],
+                            ),
+                            Step(
+                                step_name="removing_records",
+                                input_slots=[
+                                    InputSlot(
+                                        name="input_datasets",
+                                        env_var="INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS",
+                                        validator=validate_input_dataset_or_known_clusters,
+                                    ),
+                                    InputSlot(
+                                        name="ids_to_remove",
+                                        env_var="IDS_TO_REMOVE_FILE_PATH",
+                                        validator=validate_ids_to_remove,
+                                    ),
+                                ],
+                                output_slots=[OutputSlot("dataset")],
+                            ),
+                        ],
+                        edges=[
+                            EdgeParams(
+                                source_node="determining_exclusions",
+                                target_node="removing_records",
+                                output_slot="ids_to_remove",
+                                input_slot="ids_to_remove",
+                            )
+                        ],
+                        input_slot_mappings=[
+                            # NOTE: This is the edge that would normally be split,
+                            # but it won't be here, because we don't want it to split
+                            # the known clusters to be a separate thing!
+                            InputSlotMapping(
+                                parent_slot="input_datasets",
+                                child_node="determining_exclusions",
+                                child_slot="input_datasets",
+                            ),
+                            InputSlotMapping(
+                                parent_slot="known_clusters",
+                                child_node="determining_exclusions",
+                                child_slot="known_clusters",
+                            ),
+                            InputSlotMapping(
+                                parent_slot="input_datasets",
+                                child_node="removing_records",
+                                child_slot="input_datasets",
+                            ),
+                        ],
+                        output_slot_mappings=[
+                            OutputSlotMapping(
+                                # Becomes multiple, after implicit cloneable aggregator
+                                parent_slot="datasets",
+                                child_node="removing_records",
+                                child_slot="dataset",
+                            )
+                        ],
                     )
-                ),
-                Step(
-                    step_name="removing_records",
-                    input_slots=[
-                        InputSlot(
-                            name="input_datasets",
-                            env_var="INPUT_DATASETS_FILE_PATHS",
-                            validator=validate_input_dataset,
-                        ),
-                        InputSlot(
-                            name="ids_to_remove",
-                            env_var="IDS_TO_REMOVE_FILE_PATHS",
-                            validator=validate_ids_to_remove,
-                        ),
-                    ],
-                    output_slots=[OutputSlot("datasets")],
                 ),
                 HierarchicalStep(
                     step_name="clustering",
@@ -98,17 +154,12 @@ NODES = [
                         InputSlot(
                             name="datasets",
                             env_var="DATASETS_FILE_PATHS",
-                            # NOTE: Because this comes from the output of a previous step,
-                            # it is a *directory* of datasets, not a *list* like it was
-                            # before!
-                            # TODO: Can't validate these are subsets of
-                            # the original input without adding a dependency
-                            validator=validate_datasets_directory,
+                            validator=validate_dataset,
                         ),
                         InputSlot(
                             name="known_clusters",
-                            env_var="KNOWN_CLUSTERS_FILE_PATHS",
-                            validator=validate_clusters,
+                            env_var="KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS",
+                            validator=validate_input_dataset_or_known_clusters,
                         ),
                     ],
                     output_slots=[OutputSlot("new_clusters")],
@@ -118,28 +169,135 @@ NODES = [
                             input_slots=[
                                 InputSlot(
                                     name="known_clusters",
-                                    env_var="KNOWN_CLUSTERS_FILE_PATHS",
-                                    validator=validate_clusters,
+                                    env_var="KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS",
+                                    validator=validate_input_dataset_or_known_clusters,
                                 ),
                             ],
                             output_slots=[OutputSlot("known_links")],
                         ),
                         LoopStep(
-                            template_step=Step(
+                            template_step=HierarchicalStep(
                                 step_name="linking",
                                 input_slots=[
                                     InputSlot(
                                         name="datasets",
                                         env_var="DATASETS_FILE_PATHS",
-                                        validator=validate_datasets_directory,
+                                        validator=validate_dataset,
                                     ),
                                     InputSlot(
                                         name="known_links",
-                                        env_var="KNOWN_LINKS_FILE_PATHS",
+                                        env_var="KNOWN_LINKS_FILE_PATH",
                                         validator=validate_links,
                                     ),
                                 ],
                                 output_slots=[OutputSlot("links")],
+                                nodes=[
+                                    ParallelStep(
+                                        template_step=LoopStep(
+                                            template_step=Step(
+                                                step_name="pre-processing",
+                                                input_slots=[
+                                                    InputSlot(
+                                                        # NOTE: No splitter here, because
+                                                        # not supported by EasyLink;
+                                                        # the implementation must do the splitting itself.
+                                                        name="datasets",
+                                                        env_var="DATASET_FILE_PATHS",
+                                                        validator=validate_dataset,
+                                                    ),
+                                                ],
+                                                output_slots=[OutputSlot("dataset")],
+                                            ),
+                                            self_edges=[
+                                                EdgeParams(
+                                                    source_node="pre-processing",
+                                                    target_node="pre-processing",
+                                                    output_slot="dataset",
+                                                    input_slot="dataset",
+                                                ),
+                                            ],
+                                        )
+                                    ),
+                                    Step(
+                                        step_name="schema_alignment",
+                                        input_slots=[
+                                            InputSlot(
+                                                name="datasets",
+                                                env_var="DATASETS_FILE_PATHS",
+                                                validator=validate_dataset,
+                                            ),
+                                        ],
+                                        output_slots=[OutputSlot("records")],
+                                    ),
+                                    Step(
+                                        step_name="blocking_and_filtering",
+                                        input_slots=[
+                                            InputSlot(
+                                                name="records",
+                                                env_var="RECORDS_FILE_PATH",
+                                                validator=validate_records,
+                                            ),
+                                        ],
+                                        output_slots=[OutputSlot("blocks")],
+                                    ),
+                                    Step(
+                                        step_name="evaluating_pairs",
+                                        input_slots=[
+                                            InputSlot(
+                                                name="blocks",
+                                                env_var="BLOCKS_DIR_PATH",
+                                                validator=validate_blocks,
+                                            ),
+                                        ],
+                                        output_slots=[OutputSlot("links")],
+                                    ),
+                                ],
+                                edges=[
+                                    EdgeParams(
+                                        source_node="pre-processing",
+                                        target_node="schema_alignment",
+                                        output_slot="dataset",
+                                        # NOTE: The implicit ParallelStep aggregator has
+                                        # made this multiple (a list)
+                                        input_slot="datasets",
+                                    ),
+                                    EdgeParams(
+                                        source_node="schema_alignment",
+                                        target_node="blocking_and_filtering",
+                                        output_slot="records",
+                                        input_slot="records",
+                                    ),
+                                    EdgeParams(
+                                        source_node="blocking_and_filtering",
+                                        target_node="evaluating_pairs",
+                                        output_slot="blocks",
+                                        input_slot="blocks",
+                                    ),
+                                ],
+                                input_slot_mappings=[
+                                    InputSlotMapping(
+                                        parent_slot="datasets",
+                                        child_node="pre-processing",
+                                        child_slot="datasets",
+                                    ),
+                                    InputSlotMapping(
+                                        parent_slot="known_links",
+                                        child_node="blocking_and_filtering",
+                                        child_slot="known_links",
+                                    ),
+                                    InputSlotMapping(
+                                        parent_slot="known_links",
+                                        child_node="evaluating_pairs",
+                                        child_slot="known_links",
+                                    ),
+                                ],
+                                output_slot_mappings=[
+                                    OutputSlotMapping(
+                                        parent_slot="links",
+                                        child_node="evaluating_pairs",
+                                        child_slot="links",
+                                    )
+                                ],
                             ),
                             self_edges=[
                                 EdgeParams(
@@ -155,7 +313,7 @@ NODES = [
                             input_slots=[
                                 InputSlot(
                                     name="links",
-                                    env_var="LINKS_FILE_PATHS",
+                                    env_var="LINKS_FILE_PATH",
                                     validator=validate_links,
                                 ),
                             ],
@@ -200,14 +358,14 @@ NODES = [
                     step_name="updating_clusters",
                     input_slots=[
                         InputSlot(
-                            name="known_clusters",
-                            env_var="KNOWN_CLUSTERS_FILE_PATHS",
+                            name="new_clusters",
+                            env_var="NEW_CLUSTERS_FILE_PATH",
                             validator=validate_clusters,
                         ),
                         InputSlot(
-                            name="new_clusters",
-                            env_var="NEW_CLUSTERS_FILE_PATHS",
-                            validator=validate_clusters,
+                            name="known_clusters",
+                            env_var="KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS",
+                            validator=validate_input_dataset_or_known_clusters,
                         ),
                     ],
                     output_slots=[OutputSlot("clusters")],
@@ -215,13 +373,7 @@ NODES = [
             ],
             edges=[
                 EdgeParams(
-                    source_node="eliminating_records",
-                    target_node="removing_records",
-                    output_slot="ids_to_remove",
-                    input_slot="ids_to_remove",
-                ),
-                EdgeParams(
-                    source_node="removing_records",
+                    source_node="cloneable_section",
                     target_node="clustering",
                     output_slot="datasets",
                     input_slot="datasets",
@@ -236,26 +388,21 @@ NODES = [
             input_slot_mappings=[
                 InputSlotMapping(
                     parent_slot="input_datasets",
-                    child_node="eliminating_records",
+                    child_node="cloneable_section",
                     child_slot="input_datasets",
                 ),
                 InputSlotMapping(
-                    parent_slot="clusters",
-                    child_node="eliminating_records",
-                    child_slot="clusters",
+                    parent_slot="known_clusters",
+                    child_node="cloneable_section",
+                    child_slot="known_clusters",
                 ),
                 InputSlotMapping(
-                    parent_slot="input_datasets",
-                    child_node="removing_records",
-                    child_slot="input_datasets",
-                ),
-                InputSlotMapping(
-                    parent_slot="clusters",
+                    parent_slot="known_clusters",
                     child_node="clustering",
                     child_slot="known_clusters",
                 ),
                 InputSlotMapping(
-                    parent_slot="clusters",
+                    parent_slot="known_clusters",
                     child_node="updating_clusters",
                     child_slot="known_clusters",
                 ),
@@ -282,8 +429,8 @@ NODES = [
         input_slots=[
             InputSlot(
                 name="input_datasets",
-                env_var="INPUT_DATASETS_FILE_PATHS",
-                validator=validate_input_dataset,
+                env_var="INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS",
+                validator=validate_input_dataset_or_known_clusters,
             ),
             InputSlot(
                 name="clusters",
@@ -303,13 +450,13 @@ EDGES = [
     EdgeParams(
         source_node="input_data",
         target_node="entity_resolution",
-        output_slot="input_datasets",
+        output_slot="all",
         input_slot="input_datasets",
     ),
     EdgeParams(
         source_node="input_data",
         target_node="entity_resolution",
-        output_slot="known_clusters",
+        output_slot="all",
         input_slot="known_clusters",
     ),
     EdgeParams(

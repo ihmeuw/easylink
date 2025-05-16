@@ -700,6 +700,8 @@ Methods that are not pairwise should implement this step directly.
 - In Splink, this step would correspond to estimating parameters, making pairwise
   predictions, and then clustering entities with connected components or similar
 
+.. _dataset:
+
 Dataset
 ^^^^^^^
 
@@ -847,6 +849,9 @@ Here is a rough draft of the code for this default implementation:
       links_df["Probability"] = 1.0
       return links_df
 
+
+.. _links:
+
 Links
 ^^^^^
 
@@ -983,3 +988,253 @@ We expect that these constraints will typically be enforced during this step.
    propagate the uncertainty represented by the pairwise probabilities
    through this step, e.g. by *sampling* clusters somehow.
    Further research is needed in this area. 
+
+.. _linking_sub_steps:
+
+Linking sub-steps
+-----------------
+
+.. image:: images/linking_sub_steps.drawio.png
+
+Used in this diagram and defined above:
+
+* :ref:`Datasets (list) <datasets_list>`
+* :ref:`Dataset <dataset>`
+* :ref:`Links <links>`
+
+Pre-processing
+^^^^^^^^^^^^^^
+
+**Interpretation:**
+Performing data cleaning steps on a given dataset, such as
+standardizing abbreviations, replacing "bad" data with missing values,
+etc.
+
+Note that this step is for operations that are applied independently to one
+dataset at a time.
+For cross-dataset operations, see :ref:`Schema alignment <schema_alignment>`.
+
+The loop-able section around this step allows it to be looped an arbitrary number of times,
+so that multiple cleaning steps can be performed on the same dataset.
+
+**Examples:**
+
+- An address standardizer
+- Adding nicknames/alternate names
+- Replacing fake names such as "DID NOT RESPOND" with NA/null
+- Renaming columns or dropping empty columns from a dataset
+
+.. _schema_alignment:
+
+Schema alignment
+^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Aligning data formats across all datasets to facilitate linkage.
+
+Typically, in administrative data practice, the analyst will
+manually determine what cleaning steps need to be applied to all
+the datasets to make them consistent with each other.
+If those cleaning steps are all performed in pre-processing, then
+the datasets would already have the same columns (and consistent value
+formats within those columns) before this step.
+In that situation, there is nothing difficult left to do here and
+the default implementation described below is all
+that is needed.
+
+In the computer science literature, however, there are emerging methods
+for doing this alignment automatically.
+If desired, datasets could be passed into this step still inconsistent
+with one another, and a model could run in this step to automatically
+complete the alignment by figuring out which columns correspond to each other
+and how to standardize values.
+
+**Default implementation:**
+Pandas code that simply concatenates the datasets,
+matching columns by name,
+and appending information about the dataset each record came from.
+In code:
+
+.. code::
+
+   import pandas as pd
+
+   def schema_alignment(datasets: dict[str, pd.DataFrame]) -> pd.DataFrame:
+      return pd.concat([
+         df.assign(
+            dataset=dataset,
+         )
+         for dataset, df
+         in datasets.items()
+      ], ignore_index=True, sort=False)
+
+**Examples:**
+
+- The `Unicorn <https://dl.acm.org/doi/abs/10.1145/3588938>`_ model contains automatic schema alignment.
+
+.. _records:
+
+Records
+^^^^^^^
+
+**Interpretation:**
+The records to link (from all datasets) in one big table.
+
+**Specification:**
+A file in a tabular format.
+The file may have any number of columns,
+but one of them must be called “Input Record ID” and it must have unique values.
+
+.. note::
+
+   In the future, we should add to this specification that every value in the Input Record ID column
+   should exist in one of the input datasets.
+   EasyLink currently doesn't support this.
+
+**Example:**
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Input Record ID
+     - First
+     - Last
+     - Address
+   * - input_file_1
+     - Vicki
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - input_file_2
+     - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St., Anytown WA 99999
+   * - reference_file_2
+     - Gerry
+     - Allen
+     - *N/A*
+
+Blocking and filtering
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Breaking the linkage problem up into pieces that can be tackled separately,
+and selecting which pairs of records to consider in each piece,
+in order to reduce the size of the task and therefore the computation required.
+
+Traditional blocking, where a blocking "key" is assigned to each record,
+implements this step by splitting the records into blocks (disjoint subsets)
+by their blocking key and enumerating all possible pairs within each block.
+
+More advanced techniques may instead create just *one* block (with all records),
+and select only some pairs within that block rather than every possible pair.
+
+Techniques focused on or configured for linkage *between* datasets can avoid enumerating
+pairs of records within the same dataset.
+
+This step corresponds to "indexing" in `Christen (2012) <https://link.springer.com/book/10.1007/978-3-642-31164-2>`_.
+
+**Examples:**
+
+- In Splink, using a single blocking rule would be traditional blocking as described above:
+  a separate block for each value of date of birth, for instance.
+  Multiple blocking rules in Splink are OR'd together, creating overlapping blocks.
+  In EasyLink, this could be represented as putting all records in a single block but only
+  enumerating the pairs matching at least one of the blocking rule conditions.
+
+Blocks
+^^^^^^
+
+**Interpretation:**
+Separate pieces of the linkage task that can be tackled separately,
+along with the pairs of records to consider in each.
+
+**Specification:**
+A directory containing any number of subdirectories.
+Each subdirectory must contain two files, each in tabular format: records and pairs.
+
+Each records file must follow the specification for :ref:`Records`.
+
+Each pairs file must contain two columns, "Left Record ID" and "Right Record ID".
+Every value in both Record ID columns should exist in the Record ID column of the records file for the same block.
+Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
+Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
+The Left Record ID value should be alphabetically before the Right Record ID
+value in each row.
+(This ensures each pair is truly unique, and not
+a mirror image of another.)
+
+.. note::
+
+   The specification for each pairs file is identical to the specification for :ref:`Links <links>`
+   except that there is no probability column.
+
+**Example:**
+
+The overall directory tree structure might look like:
+
+.. code::
+
+   blocks
+   ├── block_0
+   │   ├── pairs.parquet
+   │   └── records.parquet
+   └── block_1
+      ├── pairs.parquet
+      └── records.parquet
+
+A records file might look like:
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Input Record ID
+     - First
+     - Last
+     - Address
+   * - input_file_1
+     - Vicki
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - input_file_2
+     - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St., Anytown WA 99999
+   * - reference_file_2
+     - Gerry
+     - Allen
+     - *N/A*
+
+A pairs file might look like:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Left Record ID
+     - Right Record ID
+   * - input_file_2
+     - reference_file_2
+   * - input_file_2
+     - reference_file_4
+   * - input_file_3
+     - reference_file_6
+
+Evaluating pairs
+^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Determining a link probability for each pair of records based on those records' values.
+This transforms pairs (which are simply two record IDs) into the format of :ref:`Links <links>`,
+which include this probability.
+
+**Examples:**
+
+- In Splink, training the model, calculating the comparison levels, and predicting the match probability
+- fastLink's entry method, assuming the set of pairs is exhaustive (fastLink currently has no way to limit pairs)
