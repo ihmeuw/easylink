@@ -17,24 +17,26 @@ logging.basicConfig(
 
 # LOAD INPUTS
 
-# INPUT_DATASETS_FILE_PATHS is comma-separated list of filepaths
-file_paths = os.environ["INPUT_DATASETS_FILE_PATHS"].split(",")
+# INPUT_DATASETS_FILE_PATHS is list of filepaths which includes the known_clusters
+# filepath due to workaround
+dataset_paths = os.environ["INPUT_DATASETS_FILE_PATHS"].split(",")
+dataset_paths = [path for path in dataset_paths if "known_clusters.parquet" not in path]
 
-# don't need to actually load inputs, just need the filepaths to 
-# properly name the outputs when saving
+# don't need to actually this dataset or the clusters dataset,
+# we will just save an empty ids_to_remove dataframe to the same
+# filename as the dataset
 
 
 # SAVE OUTPUTS
-
-# save an empty ids_to_remove dataframe for each input dataset
-# (rather than one for all datasets, due to parallel sections)
 
 IDS_TO_REMOVE = pd.DataFrame(columns=["record_ids"])
 
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
-for file_path in file_paths:
-    output_path = f"{results_dir}{os.path.basename(file_path)}.parquet"
-    logging.info(f"Writing output for dataset from input {file_path} to {output_path}")
+for dataset_path in dataset_paths:
+    output_path = f"{results_dir}{os.path.basename(dataset_path)}.parquet"
+    logging.info(
+        f"Writing output for dataset from input {dataset_path} to {output_path}"
+    )
     IDS_TO_REMOVE.to_parquet(output_path)

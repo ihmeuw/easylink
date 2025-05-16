@@ -26,23 +26,22 @@ def load_file(file_path, file_format=None):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-# INPUT_DATASETS_FILE_PATHS is comma-separated list of filepaths
-datasets_filepaths = os.environ["INPUT_DATASETS_FILE_PATHS"].split(",")
-# IDS_TO_REMOVE_FILE_PATHS is a single path to a directory
-ids_dir = os.environ["IDS_TO_REMOVE_FILE_PATHS"]
+# INPUT_DATASETS_FILE_PATHS is list of filepaths which includes the known_clusters
+# filepath due to workaround
+dataset_paths = os.environ["INPUT_DATASETS_FILE_PATHS"].split(",")
+dataset_paths = [path for path in dataset_paths if "known_clusters.parquet" not in path]
+# IDS_TO_REMOVE_FILE_PATHS is a single filepath (Cloneable section)
+ids_filepath = os.environ["IDS_TO_REMOVE_FILE_PATHS"]
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
-logging.info(f"Loading files for {datasets_filepaths}")
+for dataset_filepath in dataset_paths:
+    dataset = load_file(dataset_filepath)
+    ids_to_remove = load_file(ids_filepath)
 
-datasets = []
-dataset_filepaths = os.environ[datasets_filepaths]
-for dataset_filepath in dataset_filepaths:
-    df_dataset = load_file(dataset_filepath)
-    df_ids = load_file()
-    df_dataset = df_dataset[~df_dataset["Record ID"].isin(ids_var)]
+    dataset = dataset[~dataset["Record ID"].isin(ids_to_remove)]
     output_path = f"{results_dir}{os.path.basename(dataset_filepath)}.parquet"
     logging.info(
         f"Writing output for dataset from input {dataset_filepath} to {output_path}"
     )
-    df_dataset.to_parquet(output_path)
+    dataset.to_parquet(output_path)

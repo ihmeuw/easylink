@@ -43,16 +43,24 @@ def clusters_to_links(clusters_df):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-clusters_var = os.environ["KNOWN_CLUSTERS_FILE_PATHS"]
+# KNOWN_CLUSTERS_FILE_PATHS is a list of filepaths with one known_clusters.parquet
+# filepath, that may include input data filepaths due to workaround
+clusters_filepaths = os.environ["KNOWN_CLUSTERS_FILE_PATHS"].split(",")
+clusters_filepath = ""
+for path in clusters_filepaths:
+    if "known_clusters.parquet" in path:
+        clusters_filepath = path
+        break
+if clusters_filepath == "":
+    raise ValueError()
+
+# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single directory
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
-logging.info(f"Loading files for {clusters_var}")
-
-datasets = []
-file_paths = os.environ[clusters_var].split(",")
-for path in file_paths:
-    clusters_df = load_file(path)
-    links_df = clusters_to_links(clusters_df)
-    output_path = f"{results_dir}{os.path.basename(path)}.parquet"
-    logging.info(f"Writing output for dataset from input {path} to {output_path}")
-    links_df.to_parquet(output_path)
+clusters_df = load_file(clusters_filepath)
+links_df = clusters_to_links(clusters_df)
+output_path = f"{results_dir}{os.path.basename(clusters_filepath)}.parquet"
+logging.info(
+    f"Writing output for dataset from input {clusters_filepath} to {output_path}"
+)
+links_df.to_parquet(output_path)
