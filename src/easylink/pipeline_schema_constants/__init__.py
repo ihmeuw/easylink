@@ -9,10 +9,10 @@ package defines the nodes and edges required to instantiate such ``PipelineSchem
 
 """
 
-from easylink.pipeline_schema_constants import development, testing
+from easylink.pipeline_schema_constants import development, main, testing
 
 SCHEMA_PARAMS = {
-    "main": "TODO",
+    "main": main.SCHEMA_PARAMS,
     # development and testing
     "development": development.SCHEMA_PARAMS,
     "integration": testing.SCHEMA_PARAMS_ONE_STEP,
