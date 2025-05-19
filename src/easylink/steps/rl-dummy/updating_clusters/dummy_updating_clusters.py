@@ -26,26 +26,16 @@ def load_file(file_path, file_format=None):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
+# for dummy we will load only the new clusters and save them as-is
+
 # NEW_CLUSTERS_FILE_PATH is a path to a single file
-links_dir = os.environ["NEW_CLUSTERS_FILE_PATH"]
-# KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS is a list of filepaths with one
-# known_clusters.parquet filepath, that may include input data filepaths due to workaround
-clusters_filepaths = os.environ[
-    "KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"
-].split(",")
-clusters_filepath = ""
-for path in clusters_filepaths:
-    if "known_clusters.parquet" in path:
-        clusters_filepath = path
-        break
-if clusters_filepath == "":
-    raise ValueError()
+new_clusters_filepath = os.environ["NEW_CLUSTERS_FILE_PATH"]
 # DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single directory
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 
-output_path = f"{results_dir}{os.path.basename(clusters_filepath)}.parquet"
+output_path = f"{results_dir}{os.path.basename(new_clusters_filepath)}.parquet"
 logging.info(
-    f"Writing output for dataset from input {clusters_filepath} to {output_path}"
+    f"Writing output for dataset from input {new_clusters_filepath} to {output_path}"
 )
-clusters_filepath.to_parquet(output_path)
+new_clusters_filepath.to_parquet(output_path)
