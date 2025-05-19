@@ -61,7 +61,7 @@ NODES = [
                 ParallelStep(
                     # NOTE: Splitters/aggregators on the ParallelStep are implicit!
                     template_step=HierarchicalStep(
-                        step_name="cloneable_section",
+                        step_name="determining_exclusions_and_removing_records",
                         directly_implemented=False,
                         input_slots=[
                             InputSlot(
