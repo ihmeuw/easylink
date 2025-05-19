@@ -205,7 +205,7 @@ dummy_removing_records:
   image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/removing_records/dummy_removing_records.sif
   script_cmd: python /dummy_removing_records.py
   outputs:
-    datasets: result.parquet
+    dataset: result.parquet
 dummy_clusters_to_links:
   steps:
   - clusters_to_links
@@ -213,3 +213,17 @@ dummy_clusters_to_links:
   script_cmd: python /dummy_clusters_to_links.py
   outputs:
     known_links: result.parquet
+dummy_determining_exclusions:
+  steps:
+  - determining_exclusions
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/determining_exclusions/dummy_determining_exclusions.sif
+  script_cmd: python /dummy_determining_exclusions.py
+  outputs:
+    ids_to_remove: result.parquet
+dummy_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/links_to_clusters/dummy_links_to_clusters.sif
+  script_cmd: python /dummy_links_to_clusters.py
+  outputs:
+    clusters: result.parquet

@@ -30,18 +30,26 @@ def load_file(file_path, file_format=None):
 # filepath due to workaround
 dataset_paths = os.environ["INPUT_DATASETS_FILE_PATHS"].split(",")
 dataset_paths = [path for path in dataset_paths if "known_clusters.parquet" not in path]
+
+# for workaround, choose path based on INPUT_DATASETS_SPLITTER_CHOICE configuration
+splitter_choice = os.environ["INPUT_DATASETS_SPLITTER_CHOICE"]
+dataset_path = ""
+for path in dataset_paths:
+    if splitter_choice == os.path.basename(path):
+        dataset_path = path
+        break
+if dataset_path == "":
+    raise ValueError()
+
 # IDS_TO_REMOVE_FILE_PATHS is a single filepath (Cloneable section)
 ids_filepath = os.environ["IDS_TO_REMOVE_FILE_PATHS"]
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
-for dataset_filepath in dataset_paths:
-    dataset = load_file(dataset_filepath)
-    ids_to_remove = load_file(ids_filepath)
+dataset = load_file(dataset_path)
+ids_to_remove = load_file(ids_filepath)
 
-    dataset = dataset[~dataset["Record ID"].isin(ids_to_remove)]
-    output_path = f"{results_dir}{os.path.basename(dataset_filepath)}.parquet"
-    logging.info(
-        f"Writing output for dataset from input {dataset_filepath} to {output_path}"
-    )
-    dataset.to_parquet(output_path)
+dataset = dataset[~dataset["Record ID"].isin(ids_to_remove)]
+output_path = f"{results_dir}{os.path.basename(dataset_path)}.parquet"
+logging.info(f"Writing output for dataset from input {dataset_path} to {output_path}")
+dataset.to_parquet(output_path)
