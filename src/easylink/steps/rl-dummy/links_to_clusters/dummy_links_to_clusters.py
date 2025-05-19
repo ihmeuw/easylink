@@ -6,7 +6,7 @@
 
 import logging
 import os
-from itertools import combinations, chain
+from itertools import chain, combinations
 
 import pandas as pd
 
