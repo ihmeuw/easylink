@@ -5,9 +5,7 @@ import os
 
 import pandas as pd
 
-records = pd.read_parquet(os.environ["RECORDS_FILE_PATH"]).rename(
-    columns={"Input Record ID": "unique_id"}
-)
+records = pd.read_parquet(os.environ["RECORDS_FILE_PATH"])
 
 output_path = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
@@ -26,7 +24,9 @@ settings = SettingsCreator(
 from splink import DuckDBAPI
 
 db_api = DuckDBAPI()
-linker = Linker(records, settings, db_api=db_api)
+linker = Linker(records.rename(
+    columns={"Input Record ID": "unique_id"}
+), settings, db_api=db_api)
 
 # Copied/adapted from https://github.com/moj-analytical-services/splink/blob/3eb1921eaff6b8471d3ebacd3238eb514f62c844/splink/internals/linker_components/inference.py#L86-L131
 from splink.internals.pipeline import CTEPipeline
