@@ -434,7 +434,7 @@ NODES = [
             ),
             InputSlot(
                 name="clusters",
-                env_var="CLUSTERS_FILE_PATHS",
+                env_var="CLUSTERS_FILE_PATH",
                 validator=validate_clusters,
             ),
         ],
