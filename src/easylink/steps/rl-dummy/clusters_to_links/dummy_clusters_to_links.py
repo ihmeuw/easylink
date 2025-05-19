@@ -43,9 +43,11 @@ def clusters_to_links(clusters_df):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-# KNOWN_CLUSTERS_FILE_PATHS is a list of filepaths with one known_clusters.parquet
-# filepath, that may include input data filepaths due to workaround
-clusters_filepaths = os.environ["KNOWN_CLUSTERS_FILE_PATHS"].split(",")
+# KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS is a list of filepaths with one 
+# known_clusters.parquet filepath, that may include input data filepaths due to workaround
+clusters_filepaths = os.environ[
+    "KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"
+].split(",")
 clusters_filepath = ""
 for path in clusters_filepaths:
     if "known_clusters.parquet" in path:
