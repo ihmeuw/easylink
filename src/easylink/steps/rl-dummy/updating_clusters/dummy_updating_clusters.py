@@ -33,9 +33,11 @@ new_clusters_filepath = os.environ["NEW_CLUSTERS_FILE_PATH"]
 # DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single directory
 results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
+clusters_df = load_file(new_clusters_filepath)
+
 
 output_path = f"{results_dir}{os.path.basename(new_clusters_filepath)}.parquet"
 logging.info(
     f"Writing output for dataset from input {new_clusters_filepath} to {output_path}"
 )
-new_clusters_filepath.to_parquet(output_path)
+clusters_df(output_path)
