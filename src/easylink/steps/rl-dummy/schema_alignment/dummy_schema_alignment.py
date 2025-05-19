@@ -26,15 +26,20 @@ def load_file(file_path, file_format=None):
 
 # DATASETS_FILE_PATHS is list of filepaths
 dataset_paths = os.environ["DATASETS_FILE_PATHS"].split(",")
-datasets = {Path(dataset_path).stem: load_file(dataset_path) for dataset_path in dataset_paths}
+datasets = {
+    Path(dataset_path).stem: load_file(dataset_path) for dataset_path in dataset_paths
+}
 
-records = pd.concat([
-    df.assign(
-        dataset=dataset,
-    )
-    for dataset, df
-    in datasets.items()
-], ignore_index=True, sort=False)
+records = pd.concat(
+    [
+        df.assign(
+            dataset=dataset,
+        )
+        for dataset, df in datasets.items()
+    ],
+    ignore_index=True,
+    sort=False,
+)
 
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single filepath
 output_path = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
