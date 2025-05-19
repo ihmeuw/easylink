@@ -373,7 +373,7 @@ NODES = [
             ],
             edges=[
                 EdgeParams(
-                    source_node="cloneable_section",
+                    source_node="determining_exclusions_and_removing_records",
                     target_node="clustering",
                     output_slot="datasets",
                     input_slot="datasets",
@@ -388,12 +388,12 @@ NODES = [
             input_slot_mappings=[
                 InputSlotMapping(
                     parent_slot="input_datasets",
-                    child_node="cloneable_section",
+                    child_node="determining_exclusions_and_removing_records",
                     child_slot="input_datasets",
                 ),
                 InputSlotMapping(
                     parent_slot="known_clusters",
-                    child_node="cloneable_section",
+                    child_node="determining_exclusions_and_removing_records",
                     child_slot="known_clusters",
                 ),
                 InputSlotMapping(
