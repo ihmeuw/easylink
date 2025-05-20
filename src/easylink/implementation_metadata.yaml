@@ -237,5 +237,38 @@ dummy_links_to_clusters:
   - links_to_clusters
   image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/links_to_clusters/dummy_links_to_clusters.sif
   script_cmd: python /dummy_links_to_clusters.py
+dummy_pre-processing:
+  steps:
+  - pre-processing
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_pre-processing.sif
+  script_cmd: python /dummy_pre-processing.py
+  outputs:
+    dataset: result.parquet
+dummy_schema_alignment:
+  steps:
+  - schema_alignment
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_schema_alignment.sif
+  script_cmd: python /dummy_schema_alignment.py
+  outputs:
+    records: result.parquet
+splink_blocking_and_filtering:
+  steps:
+  - blocking_and_filtering
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_blocking_and_filtering.sif
+  script_cmd: python /splink_blocking_and_filtering.py
+  outputs:
+    blocks: blocks/
+splink_evaluating_pairs:
+  steps:
+  - evaluating_pairs
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_evaluating_pairs.sif
+  script_cmd: python /splink_evaluating_pairs.py
+  outputs:
+    links: result.parquet
+splink_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_links_to_clusters.sif
+  script_cmd: python /splink_links_to_clusters.py
   outputs:
     clusters: result.parquet
