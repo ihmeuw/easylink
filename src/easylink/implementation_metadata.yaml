@@ -239,3 +239,17 @@ dummy_links_to_clusters:
   script_cmd: python /dummy_links_to_clusters.py
   outputs:
     clusters: result.parquet
+dummy_updating_clusters:
+  steps:
+  - updating_clusters
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/updating_clusters/dummy_updating_clusters.sif
+  script_cmd: python /dummy_updating_clusters.py
+  outputs:
+    clusters: result.parquet
+dummy_canonicalizing_and_downstream_analysis:
+  steps:
+  - canonicalizing_and_downstream_analysis
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/canonicalizing_and_downstream_analysis/dummy_canonicalizing_and_downstream_analysis.sif
+  script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
+  outputs:
+    analysis_output: result.parquet
