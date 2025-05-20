@@ -211,6 +211,20 @@ dummy_step_2_for_output_dir_example:
   script_cmd: python /dummy_step_2_for_output_dir_example.py
   outputs:
     step_2_main_output: result.parquet
+dummy_pre-processing:
+  steps:
+  - pre-processing
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_pre-processing.sif
+  script_cmd: python /dummy_pre-processing.py
+  outputs:
+    dataset: result.parquet
+dummy_schema_alignment:
+  steps:
+  - schema_alignment
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_schema_alignment.sif
+  script_cmd: python /dummy_schema_alignment.py
+  outputs:
+    records: result.parquet
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
