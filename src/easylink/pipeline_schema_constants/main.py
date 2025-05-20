@@ -237,6 +237,11 @@ NODES = [
                                                 env_var="RECORDS_FILE_PATH",
                                                 validator=validate_records,
                                             ),
+                                            InputSlot(
+                                                name="known_links",
+                                                env_var="KNOWN_LINKS_FILE_PATH",
+                                                validator=validate_links,
+                                            ),
                                         ],
                                         output_slots=[OutputSlot("blocks")],
                                     ),
@@ -247,6 +252,11 @@ NODES = [
                                                 name="blocks",
                                                 env_var="BLOCKS_DIR_PATH",
                                                 validator=validate_blocks,
+                                            ),
+                                            InputSlot(
+                                                name="known_links",
+                                                env_var="KNOWN_LINKS_FILE_PATH",
+                                                validator=validate_links,
                                             ),
                                         ],
                                         output_slots=[OutputSlot("links")],
