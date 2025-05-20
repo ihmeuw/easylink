@@ -17,7 +17,7 @@ logging.basicConfig(
 
 # LOAD INPUTS
 
-# INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS is list of filepaths which includes 
+# INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS is list of filepaths which includes
 # the known_clusters filepath due to workaround
 dataset_paths = os.environ["INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS"].split(
     ","
