@@ -267,3 +267,24 @@ dummy_schema_alignment:
   script_cmd: python /dummy_schema_alignment.py
   outputs:
     records: result.parquet
+splink_blocking_and_filtering:
+  steps:
+  - blocking_and_filtering
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_blocking_and_filtering.sif
+  script_cmd: python /splink_blocking_and_filtering.py
+  outputs:
+    blocks: blocks/
+splink_evaluating_pairs:
+  steps:
+  - evaluating_pairs
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_evaluating_pairs.sif
+  script_cmd: python /splink_evaluating_pairs.py
+  outputs:
+    links: result.parquet
+splink_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_links_to_clusters.sif
+  script_cmd: python /splink_links_to_clusters.py
+  outputs:
+    clusters: result.parquet
