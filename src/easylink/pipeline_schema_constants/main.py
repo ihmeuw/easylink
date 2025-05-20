@@ -462,7 +462,7 @@ EDGES = [
     EdgeParams(
         source_node="input_data",
         target_node="canonicalizing_and_downstream_analysis",
-        output_slot="input_datasets",
+        output_slot="all",
         input_slot="input_datasets",
     ),
     EdgeParams(

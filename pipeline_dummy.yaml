@@ -1,0 +1,60 @@
+steps:
+  entity_resolution:
+    substeps:
+      determining_exclusions_and_removing_records:
+        parallel:
+          - determining_exclusions:
+              implementation:
+                name: dummy_determining_exclusions
+                configuration:
+                  INPUT_DATASETS_SPLITTER_CHOICE: input_file_1.parquet
+            removing_records:
+              implementation:
+                name: dummy_removing_records
+                configuration:
+                  INPUT_DATASETS_SPLITTER_CHOICE: input_file_1.parquet
+          - determining_exclusions:
+              implementation:
+                name: dummy_determining_exclusions
+                configuration:
+                  INPUT_DATASETS_SPLITTER_CHOICE: input_file_2.parquet
+            removing_records:
+              implementation:
+                name: dummy_removing_records
+                configuration:
+                  INPUT_DATASETS_SPLITTER_CHOICE: input_file_2.parquet
+      clustering:
+        substeps:
+          clusters_to_links:
+            implementation:
+              name: dummy_clusters_to_links
+          linking:
+            substeps:
+              pre-processing:
+                parallel:
+                - implementation:
+                    name: dummy_pre-processing
+                    configuration: 
+                      INPUT_DATASETS_SPLITTER_CHOICE: input_file_1.parquet
+                - implementation:
+                    name: dummy_pre-processing
+                    configuration: 
+                      INPUT_DATASETS_SPLITTER_CHOICE: input_file_2.parquet
+              schema_alignment:
+                implementation:
+                  name: dummy_schema_alignment
+              blocking_and_filtering:
+                implementation:
+                  name: splink_blocking_and_filtering
+              evaluating_pairs:
+                implementation:
+                  name: splink_evaluating_pairs
+          links_to_clusters:
+            implementation:
+              name: splink_links_to_clusters
+      updating_clusters:
+        implementation:
+          name: dummy_updating_clusters
+  canonicalizing_and_downstream_analysis:
+    implementation:
+      name: dummy_canonicalizing_and_downstream_analysis
