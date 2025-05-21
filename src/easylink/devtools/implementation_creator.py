@@ -265,7 +265,7 @@ class ImplementationCreator:
         if len(has_custom_recipe) == 0:
             return False
         else:
-            return str(has_custom_recipe[-1]).strip().lower() in ["true", "yes"]
+            return str(has_custom_recipe[0]).strip().lower() in ["true", "yes"]
 
     @staticmethod
     def _extract_output_slot(script_path: Path, step_name: str) -> str:
@@ -360,7 +360,7 @@ class ImplementationCreator:
         If no pipeline schema is specified, "python" will be used by default.
         """
         base_command_list: list[str] = _extract_metadata("SCRIPT_BASE_COMMAND", script_path)
-        base_command = "python" if len(base_command_list) == 0 else base_command_list[0]
+        base_command = base_command_list[0] if base_command_list else "python"
         return base_command
 
     @staticmethod
