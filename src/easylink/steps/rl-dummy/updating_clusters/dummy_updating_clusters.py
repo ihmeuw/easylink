@@ -17,6 +17,7 @@ logging.basicConfig(
 
 
 def load_file(file_path, file_format=None):
+    logging.info(f"Loading file {file_path} with format {file_format}")
     if file_format is None:
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
@@ -30,14 +31,13 @@ def load_file(file_path, file_format=None):
 
 # NEW_CLUSTERS_FILE_PATH is a path to a single file
 new_clusters_filepath = os.environ["NEW_CLUSTERS_FILE_PATH"]
-# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single directory
-results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
+results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 clusters_df = load_file(new_clusters_filepath)
 
 
-output_path = f"{results_dir}{os.path.basename(new_clusters_filepath)}.parquet"
 logging.info(
     f"Writing output for dataset from input {new_clusters_filepath} to {output_path}"
 )
-clusters_df(output_path)
+clusters_df(results_filepath)

@@ -17,6 +17,7 @@ logging.basicConfig(
 
 
 def load_file(file_path, file_format=None):
+    logging.info(f"Loading file {file_path} with format {file_format}")
     if file_format is None:
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
@@ -28,7 +29,9 @@ def load_file(file_path, file_format=None):
 
 # INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS is list of filepaths which includes
 # the known_clusters filepath due to workaround
-dataset_paths = os.environ["INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS"].split(",")
+dataset_paths = os.environ["INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS"].split(
+    ","
+)
 dataset_paths = [path for path in dataset_paths if "known_clusters.parquet" not in path]
 
 # for workaround, choose path based on INPUT_DATASETS_SPLITTER_CHOICE configuration
@@ -43,13 +46,12 @@ if dataset_path == "":
 
 # IDS_TO_REMOVE_FILE_PATHS is a single filepath (Cloneable section)
 ids_filepath = os.environ["IDS_TO_REMOVE_FILE_PATHS"]
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory
-results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a file (results.parquet)
+results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 dataset = load_file(dataset_path)
 ids_to_remove = load_file(ids_filepath)
 
 dataset = dataset[~dataset["Record ID"].isin(ids_to_remove)]
-output_path = f"{results_dir}{os.path.basename(dataset_path)}.parquet"
-logging.info(f"Writing output for dataset from input {dataset_path} to {output_path}")
-dataset.to_parquet(output_path)
+logging.info(f"Writing output for dataset from input {dataset_path} to {results_filepath}")
+dataset.to_parquet(results_filepath)

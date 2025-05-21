@@ -15,6 +15,7 @@ logging.basicConfig(
 
 
 def load_file(file_path, file_format=None):
+    logging.info(f"Loading file {file_path} with format {file_format}")
     if file_format is None:
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
