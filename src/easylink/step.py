@@ -745,9 +745,8 @@ class HierarchicalStep(Step):
                 node_name = getattr(edge, f"{node_type}_node")
                 if node_name not in self.step_graph.nodes:
                     raise ValueError(f"Edge {edge} has non-existent {node_type} node")
-                if (
-                    getattr(edge, f"{slot_type}_slot")
-                    not in getattr(self.step_graph.nodes[node_name]["step"], f"{slot_type}_slots")
+                if getattr(edge, f"{slot_type}_slot") not in getattr(
+                    self.step_graph.nodes[node_name]["step"], f"{slot_type}_slots"
                 ):
                     raise ValueError(f"Edge {edge} has non-existent {node_type} slot")
 
@@ -762,17 +761,19 @@ class HierarchicalStep(Step):
             slots = getattr(self, f"{slot_type}_slots")
             slot_mappings = self.slot_mappings[slot_type]
 
-            if set(slots) != set(
-                sm.parent_slot for sm in slot_mappings
-            ):
-                raise ValueError(f"{self.step_name} {slot_type} slots do not match {slot_type} slot mappings")
+            if set(slots) != set(sm.parent_slot for sm in slot_mappings):
+                raise ValueError(
+                    f"{self.step_name} {slot_type} slots do not match {slot_type} slot mappings"
+                )
 
             for sm in slot_mappings:
                 if sm.child_node not in self.step_graph.nodes:
                     raise ValueError(
                         f"{self.step_name} {slot_type} slot {sm.parent_slot} maps to non-existent child node {sm.child_node}"
                     )
-                if sm.child_slot not in getattr(self.step_graph.nodes[sm.child_node]["step"], f"{slot_type}_slots"):
+                if sm.child_slot not in getattr(
+                    self.step_graph.nodes[sm.child_node]["step"], f"{slot_type}_slots"
+                ):
                     raise ValueError(
                         f"{self.step_name} {slot_type} slot {sm.parent_slot} maps to non-existent slot {sm.child_slot} on child node {sm.child_node}"
                     )
@@ -787,7 +788,9 @@ class HierarchicalStep(Step):
         # Check that input slots mapped to by our slot mappings have consistent validators
         for sm in self.slot_mappings["input"]:
             expected_validator = self.input_slots[sm.parent_slot].validator
-            child_input_slot = self.step_graph.nodes[sm.child_node]["step"].input_slots[sm.child_slot]
+            child_input_slot = self.step_graph.nodes[sm.child_node]["step"].input_slots[
+                sm.child_slot
+            ]
             if child_input_slot.validator != expected_validator:
                 raise ValueError(
                     f"{sm.child_node}'s {sm.child_slot}, which is mapped from {self.step_name}'s {sm.parent_slot}, does not have the same validator"
@@ -796,7 +799,9 @@ class HierarchicalStep(Step):
         # Check that input slots receiving the same data have consistent validators
         validators_by_child_output_slot = {}
         for edge in self.edges:
-            child_input_slot = self.step_graph.edges[(edge.source_node, edge.target_node, 0)]["input_slot"]
+            child_input_slot = self.step_graph.edges[(edge.source_node, edge.target_node, 0)][
+                "input_slot"
+            ]
             source_slot = (edge.source_node, edge.output_slot)
             if source_slot not in validators_by_child_output_slot:
                 validators_by_child_output_slot[source_slot] = child_input_slot.validator
