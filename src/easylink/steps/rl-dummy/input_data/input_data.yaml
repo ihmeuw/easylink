@@ -1,2 +1,2 @@
-input_file_1: /ihme/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/input_data/input_file_1.parquet
-input_file_2: /ihme/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/input_data/input_file_2.parquet
+input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/rl-dummy/input_file_1.parquet
+input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/rl-dummy/input_file_2.parquet
