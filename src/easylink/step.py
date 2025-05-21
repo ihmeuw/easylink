@@ -737,111 +737,73 @@ class HierarchicalStep(Step):
         return errors
 
     def _check_edges_are_valid(self):
+        """Check that edges are valid, i.e. each connect two slots that actually exist."""
         for edge in self.edges:
-            if edge.source_node not in self.step_graph.nodes:
-                raise ValueError(f"Edge {edge} has non-existent source node")
-            if (
-                edge.output_slot
-                not in self.step_graph.nodes[edge.source_node]["step"].output_slots
-            ):
-                raise ValueError(f"Edge {edge} has non-existent source slot")
-            if edge.target_node not in self.step_graph.nodes:
-                raise ValueError(f"Edge {edge} has non-existent target node")
-            if (
-                edge.input_slot
-                not in self.step_graph.nodes[edge.target_node]["step"].input_slots
-            ):
-                raise ValueError(f"Edge {edge} has non-existent target slot")
+            # Edges connect the *output* slot of a *source* node to the
+            # *input* slot of a *target* node
+            for slot_type, node_type in (("output", "source"), ("input", "target")):
+                node_name = getattr(edge, f"{node_type}_node")
+                if node_name not in self.step_graph.nodes:
+                    raise ValueError(f"Edge {edge} has non-existent {node_type} node")
+                if (
+                    getattr(edge, f"{slot_type}_slot")
+                    not in getattr(self.step_graph.nodes[node_name]["step"], f"{slot_type}_slots")
+                ):
+                    raise ValueError(f"Edge {edge} has non-existent {node_type} slot")
 
     def _check_slot_mappings_are_valid(self):
         """Check that input and output slot mappings are valid.
 
         Checks that the input and output slots on the parent step are all mapped,
-        and that all slot mappings correspond to existing slots on the parent (self)
-        and in the step graph.
+        and that all slot mappings connect a slot on self (the parent) that actually exists
+        to an slot that actually exists on a sub-step.
         """
-        if set(self.input_slots.keys()) != set(
-            sm.parent_slot for sm in self.slot_mappings["input"]
-        ):
-            raise ValueError(f"{self.step_name} input slots do not match input slot mappings")
+        for slot_type in ["input", "output"]:
+            slots = getattr(self, f"{slot_type}_slots")
+            slot_mappings = self.slot_mappings[slot_type]
 
-        for sm in self.slot_mappings["input"]:
-            if sm.child_node not in self.step_graph.nodes:
-                raise ValueError(
-                    f"{self.step_name} input slot {sm.parent_slot} maps to non-existent child node {sm.child_node}"
-                )
-            if sm.child_slot not in self.step_graph.nodes[sm.child_node]["step"].input_slots:
-                raise ValueError(
-                    f"{self.step_name} input slot {sm.parent_slot} maps to non-existent slot {sm.child_slot} on child node {sm.child_node}"
-                )
+            if set(slots) != set(
+                sm.parent_slot for sm in slot_mappings
+            ):
+                raise ValueError(f"{self.step_name} {slot_type} slots do not match {slot_type} slot mappings")
 
-        if set(self.output_slots.keys()) != set(
-            [sm.parent_slot for sm in self.slot_mappings["output"]]
-        ):
-            raise ValueError(
-                f"{self.step_name} output slots do not match output slot mappings"
-            )
-
-        for sm in self.slot_mappings["output"]:
-            if sm.child_node not in self.step_graph.nodes:
-                raise ValueError(
-                    f"{self.step_name} output slot {sm.parent_slot} maps to non-existent child node {sm.child_node}"
-                )
-            if sm.child_slot not in self.step_graph.nodes[sm.child_node]["step"].output_slots:
-                raise ValueError(
-                    f"{self.step_name} output slot {sm.parent_slot} maps to non-existent slot {sm.child_slot} on child node {sm.child_node}"
-                )
+            for sm in slot_mappings:
+                if sm.child_node not in self.step_graph.nodes:
+                    raise ValueError(
+                        f"{self.step_name} {slot_type} slot {sm.parent_slot} maps to non-existent child node {sm.child_node}"
+                    )
+                if sm.child_slot not in getattr(self.step_graph.nodes[sm.child_node]["step"], f"{slot_type}_slots"):
+                    raise ValueError(
+                        f"{self.step_name} {slot_type} slot {sm.parent_slot} maps to non-existent slot {sm.child_slot} on child node {sm.child_node}"
+                    )
 
     def _check_validators_are_consistent(self):
         """Check that if two input slots will receive the same data, they have the same validator.
 
         There are two versions of this to check: input slots that receive the same data because
-        they both are mapped from the same parent input slot, and input slots that receive the
+        one is mapped to the other by a slot mapping, and input slots that receive the
         same data because they both are at the receiving end of edges from the same output slot.
         """
-        child_input_slots_by_parent_input_slot = {}
+        # Check that input slots mapped to by our slot mappings have consistent validators
         for sm in self.slot_mappings["input"]:
-            if sm.parent_slot not in child_input_slots_by_parent_input_slot:
-                child_input_slots_by_parent_input_slot[sm.parent_slot] = []
+            expected_validator = self.input_slots[sm.parent_slot].validator
+            child_input_slot = self.step_graph.nodes[sm.child_node]["step"].input_slots[sm.child_slot]
+            if child_input_slot.validator != expected_validator:
+                raise ValueError(
+                    f"{sm.child_node}'s {sm.child_slot}, which is mapped from {self.step_name}'s {sm.parent_slot}, does not have the same validator"
+                )
 
-            child_input_slots_by_parent_input_slot[sm.parent_slot].append(
-                self.step_graph.nodes[sm.child_node]["step"].input_slots[sm.child_slot]
-            )
-
-        for (
-            parent_input_slot,
-            child_input_slots,
-        ) in child_input_slots_by_parent_input_slot.items():
-            first_validator = child_input_slots[0].validator
-            for child_input_slot in child_input_slots:
-                if child_input_slot.validator != first_validator:
-                    raise ValueError(
-                        f"Not all input slots mapped to from {self.step_name}'s {parent_input_slot} have the same validator"
-                    )
-
-        child_input_slots_by_child_output_slot = {}
+        # Check that input slots receiving the same data have consistent validators
+        validators_by_child_output_slot = {}
         for edge in self.edges:
-            if edge.output_slot not in child_input_slots_by_child_output_slot:
-                child_input_slots_by_child_output_slot[
-                    (edge.source_node, edge.output_slot)
-                ] = []
-
-            child_input_slots_by_child_output_slot[
-                (edge.source_node, edge.output_slot)
-            ].append(
-                self.step_graph.edges[(edge.source_node, edge.target_node, 0)]["input_slot"]
-            )
-
-        for (
-            child_source_node,
-            child_output_slot,
-        ), child_input_slots in child_input_slots_by_child_output_slot.items():
-            first_validator = child_input_slots[0].validator
-            for child_input_slot in child_input_slots:
-                if child_input_slot.validator != first_validator:
-                    raise ValueError(
-                        f"Not all input slots receiving edges from {child_source_node}'s {child_output_slot} have the same validator"
-                    )
+            child_input_slot = self.step_graph.edges[(edge.source_node, edge.target_node, 0)]["input_slot"]
+            source_slot = (edge.source_node, edge.output_slot)
+            if source_slot not in validators_by_child_output_slot:
+                validators_by_child_output_slot[source_slot] = child_input_slot.validator
+            elif child_input_slot.validator != validators_by_child_output_slot[source_slot]:
+                raise ValueError(
+                    f"Not all input slots receiving edges from {edge.source_node}'s {edge.output_slot} have the same validator"
+                )
 
 
 class TemplatedStep(Step, ABC):
