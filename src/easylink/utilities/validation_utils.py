@@ -24,7 +24,6 @@ def _read_file(filepath: str) -> pd.DataFrame:
 
     Returns
     -------
-    pandas.DataFrame
         The loaded DataFrame.
 
     Raises
