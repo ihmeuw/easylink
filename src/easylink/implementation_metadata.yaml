@@ -217,7 +217,7 @@ dummy_removing_records:
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/dummy_removing_records.sif
   script_cmd: python /dummy_removing_records.py
   outputs:
-    dataset: result.parquet
+    dataset: dataset
 dummy_clusters_to_links:
   steps:
   - clusters_to_links
@@ -259,7 +259,7 @@ dummy_pre-processing:
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/dummy_pre-processing.sif
   script_cmd: python /dummy_pre-processing.py
   outputs:
-    dataset: result.parquet
+    dataset: dataset
 dummy_schema_alignment:
   steps:
   - schema_alignment
@@ -270,10 +270,10 @@ dummy_schema_alignment:
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_blocking_and_filtering.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_blocking_and_filtering.sif
   script_cmd: python /splink_blocking_and_filtering.py
   outputs:
-    blocks: blocks/
+    blocks: blocks
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs

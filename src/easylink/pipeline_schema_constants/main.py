@@ -30,6 +30,7 @@ from easylink.utilities.validation_utils import (
     validate_input_dataset_or_known_clusters,
     validate_links,
     validate_records,
+    validate_dir,
 )
 
 NODES = [
@@ -203,7 +204,7 @@ NODES = [
                                                         # the implementation must do the splitting itself.
                                                         name="datasets",
                                                         env_var="DATASET_FILE_PATHS",
-                                                        validator=validate_dataset,
+                                                        validator=validate_dir,
                                                     ),
                                                 ],
                                                 output_slots=[OutputSlot("dataset")],
@@ -224,7 +225,7 @@ NODES = [
                                             InputSlot(
                                                 name="datasets",
                                                 env_var="DATASETS_FILE_PATHS",
-                                                validator=validate_dataset,
+                                                validator=validate_dir,
                                             ),
                                         ],
                                         output_slots=[OutputSlot("records")],
