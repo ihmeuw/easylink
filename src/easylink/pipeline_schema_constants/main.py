@@ -205,6 +205,7 @@ NODES = [
                                                         name="datasets",
                                                         env_var="DATASET_FILE_PATHS",
                                                         validator=validate_dir,
+                                                        # TODO: need validate_dataset_dir_list
                                                     ),
                                                 ],
                                                 output_slots=[OutputSlot("dataset")],
@@ -226,6 +227,7 @@ NODES = [
                                                 name="datasets",
                                                 env_var="DATASETS_FILE_PATHS",
                                                 validator=validate_dir,
+                                                # TODO: need validate_dataset_dir_list
                                             ),
                                         ],
                                         output_slots=[OutputSlot("records")],

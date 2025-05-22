@@ -12,10 +12,13 @@ from splink import Linker, SettingsCreator
 blocks_dir = Path(os.environ["BLOCKS_DIR_PATH"])
 diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
 output_path = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
+Path(output_path).parent.mkdir(exist_ok=True, parents=True)
 
 all_predictions = []
 
 for block_dir in blocks_dir.iterdir():
+    if "snakemake" in str(block_dir):
+        continue
     encoded_comparisons = os.environ["COMPARISONS"].split(",")
 
     comparisons = []

@@ -9,6 +9,8 @@ import os
 
 import pandas as pd
 
+from pathlib import Path
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(message)s",
@@ -33,11 +35,12 @@ def load_file(file_path, file_format=None):
 new_clusters_filepath = os.environ["NEW_CLUSTERS_FILE_PATH"]
 # DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
 results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 clusters_df = load_file(new_clusters_filepath)
 
 
 logging.info(
-    f"Writing output for dataset from input {new_clusters_filepath} to {output_path}"
+    f"Writing output for dataset from input {new_clusters_filepath} to {results_filepath}"
 )
-clusters_df(results_filepath)
+clusters_df.to_parquet(results_filepath)

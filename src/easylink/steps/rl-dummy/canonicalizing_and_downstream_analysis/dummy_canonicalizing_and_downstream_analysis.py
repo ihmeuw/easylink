@@ -10,6 +10,8 @@ from itertools import chain, combinations
 
 import pandas as pd
 
+from pathlib import Path
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(message)s",
@@ -34,6 +36,7 @@ def load_file(file_path, file_format=None):
 clusters_path = os.environ["CLUSTERS_FILE_PATH"]
 # DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
 results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 clusters_df = load_file(clusters_path)
 

@@ -46,12 +46,21 @@ steps:
               blocking_and_filtering:
                 implementation:
                   name: splink_blocking_and_filtering
+                  configuration:
+                    BLOCKING_RULES: '''l.last_name == r.last_name\'''
               evaluating_pairs:
                 implementation:
                   name: splink_evaluating_pairs
+                  configuration:
+                    BLOCKING_RULES_FOR_TRAINING: '''l.first_name == r.first_name,l.last_name == r.last_name''' 
+                    COMPARISONS: '''first_name:exact,last_name:exact'''
+                    PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
+                    THRESHOLD_MATCH_PROBABILITY: 0.1
           links_to_clusters:
             implementation:
               name: splink_links_to_clusters
+              configuration:
+                THRESHOLD_MATCH_PROBABILITY: 0.1
       updating_clusters:
         implementation:
           name: dummy_updating_clusters
