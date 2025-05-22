@@ -206,7 +206,14 @@ wildcard_constraints:
         The input files to the target rule (i.e. the result node) are the final
         output themselves.
         """
-        final_output, _ = self.pipeline_graph.get_io_filepaths("results")
+        input_slots, _ = self.pipeline_graph.get_io_slot_attributes("results")
+
+        if len(input_slots) != 1:
+            raise ValueError("Results node must have only one input slot")
+
+        input_slot_name = list(input_slots.keys())[0]
+        input_slot_attrs = input_slots[input_slot_name]
+        final_output = input_slot_attrs["filepaths"]
         validator_file = str("input_validations/final_validator")
         # Snakemake resolves the DAG based on the first rule, so we put the target
         # before the validation
@@ -217,10 +224,11 @@ wildcard_constraints:
         )
         final_validation = InputValidationRule(
             name="results",
+            # TODO: This should be input_slot_name
             input_slot_name="main_input",
             input=final_output,
             output=validator_file,
-            validator=validate_input_file_dummy,
+            validator=input_slot_attrs["validator"],
         )
         target_rule.write_to_snakefile(self.snakefile_path)
         final_validation.write_to_snakefile(self.snakefile_path)
