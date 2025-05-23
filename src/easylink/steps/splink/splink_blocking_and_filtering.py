@@ -7,7 +7,8 @@ import pandas as pd
 
 records = pd.read_parquet(os.environ["RECORDS_FILE_PATH"])
 
-output_path = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory ('dataset')
+results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 import splink
 
@@ -86,7 +87,7 @@ print(blocked_pairs)
 
 from pathlib import Path
 
-output_path = Path(output_path) / "block_0"
+output_path = Path(results_dir) / "block_0"
 output_path.mkdir(exist_ok=True, parents=True)
 
 records.to_parquet(output_path / "records.parquet", index=False)

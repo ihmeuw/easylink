@@ -10,6 +10,8 @@ from itertools import chain, combinations
 
 import pandas as pd
 
+from pathlib import Path
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(message)s",
@@ -18,6 +20,7 @@ logging.basicConfig(
 
 
 def load_file(file_path, file_format=None):
+    logging.info(f"Loading file {file_path} with format {file_format}")
     if file_format is None:
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
@@ -27,16 +30,17 @@ def load_file(file_path, file_format=None):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-# For dummy we will load the clusters and output them as-is
+# For dummy we will load the clusters and output (only) them as-is
 
 # CLUSTERS_FILE_PATH is a path to a single file
 clusters_path = os.environ["CLUSTERS_FILE_PATH"]
-# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single directory
-results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
+results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 clusters_df = load_file(clusters_path)
 
-
-output_path = f"{results_dir}{os.path.basename(clusters_path)}.parquet"
-logging.info(f"Writing output for dataset from input {clusters_path} to {output_path}")
-clusters_df.to_parquet(output_path)
+logging.info(
+    f"Writing output for dataset from input {clusters_path} to {results_filepath}"
+)
+clusters_df.to_parquet(results_filepath)
