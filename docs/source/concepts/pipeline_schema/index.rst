@@ -765,8 +765,9 @@ so that an implementation can output a dataset
 *with a name* (because, for file outputs, the name is fixed).
 
 **Specification:**
-A single file, which follows exactly the specification of
+A directory containing a single file, which follows exactly the specification of
 *each* file in the directory of :ref:`"datasets" <datasets>`.
+The name of the file is the name of the dataset.
 
 New clusters
 ^^^^^^^^^^^^
