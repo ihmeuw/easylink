@@ -116,8 +116,9 @@ Cloneable section aggregators create lists
 
 Eventually, the aggregators (funnel icons) on data dependencies passing *out* of a cloneable section
 will create directories.
-However, they currently create lists of file paths, similar to the first limitation listed on this page about user input data.
-An implementation whose input comes from such an aggregator will receive a list.
+However, they currently create lists of file paths, similar to the first limitation listed on this page about user input data
+(this is the other place where data dependencies are not files or directories).
+An implementation whose input comes from a cloneable section's aggregator will receive a list.
 
 This means that in the following diagram, where eventually the "by file" aggregator will
 aggregate a set of directories into a single flat directory, it currently will create
