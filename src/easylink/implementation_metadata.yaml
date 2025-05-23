@@ -211,6 +211,46 @@ dummy_step_2_for_output_dir_example:
   script_cmd: python /dummy_step_2_for_output_dir_example.py
   outputs:
     step_2_main_output: result.parquet
+dummy_removing_records:
+  steps:
+  - removing_records
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/removing_records/dummy_removing_records.sif
+  script_cmd: python /dummy_removing_records.py
+  outputs:
+    dataset: result.parquet
+dummy_clusters_to_links:
+  steps:
+  - clusters_to_links
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/clusters_to_links/dummy_clusters_to_links.sif
+  script_cmd: python /dummy_clusters_to_links.py
+  outputs:
+    known_links: result.parquet
+dummy_determining_exclusions:
+  steps:
+  - determining_exclusions
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/determining_exclusions/dummy_determining_exclusions.sif
+  script_cmd: python /dummy_determining_exclusions.py
+  outputs:
+    ids_to_remove: result.parquet
+dummy_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/links_to_clusters/dummy_links_to_clusters.sif
+  script_cmd: python /dummy_links_to_clusters.py
+dummy_pre-processing:
+  steps:
+  - pre-processing
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_pre-processing.sif
+  script_cmd: python /dummy_pre-processing.py
+  outputs:
+    dataset: result.parquet
+dummy_schema_alignment:
+  steps:
+  - schema_alignment
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_schema_alignment.sif
+  script_cmd: python /dummy_schema_alignment.py
+  outputs:
+    records: result.parquet
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
@@ -246,3 +286,17 @@ fastLink_links_to_clusters:
   script_cmd: Rscript /fastLink_links_to_clusters.R
   outputs:
     clusters: result.parquet
+dummy_updating_clusters:
+  steps:
+  - updating_clusters
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/updating_clusters/dummy_updating_clusters.sif
+  script_cmd: python /dummy_updating_clusters.py
+  outputs:
+    clusters: result.parquet
+dummy_canonicalizing_and_downstream_analysis:
+  steps:
+  - canonicalizing_and_downstream_analysis
+  image_path: /mnt/share/homes/tylerdy/easylink/src/easylink/steps/rl-dummy/canonicalizing_and_downstream_analysis/dummy_canonicalizing_and_downstream_analysis.sif
+  script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
+  outputs:
+    analysis_output: result.parquet

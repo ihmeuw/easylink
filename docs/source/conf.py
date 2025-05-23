@@ -221,10 +221,6 @@ autodoc_default_options = {
 }
 # Display type hints in the description instead of the signature.
 autodoc_typehints = "description"
-# Mock problematic imports
-autodoc_mock_imports = [
-    "networkx",
-]
 
 
 # -- nitpicky mode --------------------------------------------------------
