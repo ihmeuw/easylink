@@ -22,11 +22,11 @@ rule all:
         for input_path, output_path in zip(input.final_output, output):
             os.symlink(input_path, output_path)
 rule:
-    name: "results_main_input_validator"
+    name: "results_result_validator"
     input: ['intermediate/step_4_python_pandas/result.parquet']
     output: touch("input_validations/final_validator")
     localrule: True         
-    message: "Validating results input slot main_input"
+    message: "Validating results input slot result"
     run:
         for f in input:
             validation_utils.validate_input_file_dummy(f)
