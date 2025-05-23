@@ -102,6 +102,8 @@ without taking away any flexibility—
 if there is some unexpected need to use new implementations
 for these less-interesting steps, the user can do that.
 
+.. _slots:
+
 Slots
 ^^^^^
 
@@ -156,19 +158,6 @@ to show the breadth of possible specifications:
 - "A directory containing any number of subdirectories.
   Each subdirectory must contain two files, where each is
   in a tabular format."
-
-.. _data_list_quirk:
-
-.. warning::
-
-   There are currently **two** exceptions to the "files or directories"
-   description.
-   Input data that come directly from the user (through an ``input_data.yaml``)
-   are represented and passed to implementations as *lists* of file paths.
-   And data dependencies that pass through the "by file" aggregator on a
-   :ref:`cloneable section <cloneable_sections>` will also be lists of file paths.
-   We plan to change these cases in the future to make them consistent with other data
-   specifications.
 
 Data specifications are enforced by EasyLink;
 a pipeline will fail if any data do not follow their specification.
@@ -456,31 +445,26 @@ EasyLink pipeline schema
 
 .. image:: images/easylink_pipeline_schema.drawio.png
 
-.. _datasets_list:
+.. _datasets:
 
-Datasets (list)
-^^^^^^^^^^^^^^^
+Datasets
+^^^^^^^^
 
 **Interpretation:**
 A set of named datasets.
 Each dataset contains observations recorded about (some) entities in the population of interest for analysis.
 
 **Specification:**
-A list of files, where each file is in a tabular format.
+A directory of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
 but one of them must be called "Record ID".
 Values in the "Record ID" columns of each file must be unique
 **across all files**.
 
-.. note::
-
-   This is a **list** of files, not a directory.
-   See :ref:`this note above <data_list_quirk>` for context.
-
 **Example:**
 
-A list of two files, ``input_file.parquet`` and ``reference_file.parquet``.
+A directory containing two files, ``input_file.parquet`` and ``reference_file.parquet``.
 
 ``input_file.parquet`` has contents:
 
@@ -706,11 +690,11 @@ Dataset
 ^^^^^^^
 
 **Interpretation:**
-A single dataset, see :ref:`"datasets (list)" <datasets_list>`.
+A single dataset, see :ref:`"datasets" <datasets>`.
 
 **Specification:**
 A single file, which follows exactly the specification of
-*each* file in the list of :ref:`"datasets (list)" <datasets_list>`.
+*each* file in the directory of :ref:`"datasets" <datasets>`.
 
 Determining exclusions
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -769,6 +753,20 @@ Actually removing records slated to be dropped.
 Pandas code dropping records with matching record IDs.
 Note that if the default implementation is used,
 input and output data specifications do not need to be checked.
+
+Dataset (in directory)
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+A directory containing a single named dataset.
+See :ref:`"datasets" <datasets>`.
+This is only different from :ref:`"dataset" <dataset>`
+so that an implementation can output a dataset
+*with a name* (because, for file outputs, the name is fixed).
+
+**Specification:**
+A single file, which follows exactly the specification of
+*each* file in the directory of :ref:`"datasets" <datasets>`.
 
 New clusters
 ^^^^^^^^^^^^
@@ -998,7 +996,7 @@ Linking sub-steps
 
 Used in this diagram and defined above:
 
-* :ref:`Datasets (list) <datasets_list>`
+* :ref:`Datasets <datasets>`
 * :ref:`Dataset <dataset>`
 * :ref:`Links <links>`
 
@@ -1063,7 +1061,7 @@ In code:
       return pd.concat([
          df.assign(
             dataset=dataset,
-         )
+         ).rename(columns={"Record ID": "Input Record ID"})
          for dataset, df
          in datasets.items()
       ], ignore_index=True, sort=False)
