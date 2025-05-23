@@ -1,0 +1,21 @@
+
+Bootstrap: docker
+From: rocker/r2u@sha256:02311f32a3e58b73027a9f572836ed4772fc530c9678b953604d875ea58ddde4
+
+%files
+    ./fastLink_links_to_clusters.R /fastLink_links_to_clusters.R
+
+%post
+    # Create directories
+    mkdir -p /input_data
+    mkdir -p /extra_implementation_specific_input_data
+    mkdir -p /results
+    mkdir -p /diagnostics
+
+    Rscript -e 'install.packages(c("arrow", "dplyr", "stringr", "fastLink"))'
+
+%environment
+    export LC_ALL=C
+
+%runscript
+    Rscript /fastLink_links_to_clusters.R '$@'
