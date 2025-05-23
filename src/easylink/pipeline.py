@@ -224,8 +224,7 @@ wildcard_constraints:
         )
         final_validation = InputValidationRule(
             name="results",
-            # TODO: This should be input_slot_name
-            input_slot_name="main_input",
+            input_slot_name=input_slot_name,
             input=final_output,
             output=validator_file,
             validator=input_slot_attrs["validator"],
