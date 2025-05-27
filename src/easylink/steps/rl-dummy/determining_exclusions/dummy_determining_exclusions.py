@@ -19,9 +19,7 @@ logging.basicConfig(
 
 # INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS is list of filepaths which includes
 # the known_clusters filepath due to workaround
-dataset_paths = os.environ["INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS"].split(
-    ","
-)
+dataset_paths = os.environ["INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS"].split(",")
 dataset_paths = [path for path in dataset_paths if "known_clusters.parquet" not in path]
 
 # for workaround, choose path based on INPUT_DATASETS_SPLITTER_CHOICE configuration
@@ -46,7 +44,5 @@ IDS_TO_REMOVE = pd.DataFrame(columns=["Record ID"])
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a file (results.parquet)
 results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
-logging.info(
-    f"Writing output for dataset from input {dataset_path} to {results_filepath}"
-)
+logging.info(f"Writing output for dataset from input {dataset_path} to {results_filepath}")
 IDS_TO_REMOVE.to_parquet(results_filepath)

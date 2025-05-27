@@ -39,7 +39,5 @@ Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 clusters_df = load_file(clusters_path)
 
-logging.info(
-    f"Writing output for dataset from input {clusters_path} to {results_filepath}"
-)
+logging.info(f"Writing output for dataset from input {clusters_path} to {results_filepath}")
 clusters_df.to_parquet(results_filepath)
