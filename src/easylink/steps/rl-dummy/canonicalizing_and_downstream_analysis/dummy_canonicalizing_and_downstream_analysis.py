@@ -7,10 +7,9 @@
 import logging
 import os
 from itertools import chain, combinations
+from pathlib import Path
 
 import pandas as pd
-
-from pathlib import Path
 
 logging.basicConfig(
     level=logging.INFO,

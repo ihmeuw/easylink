@@ -6,10 +6,9 @@
 
 import logging
 import os
+from pathlib import Path
 
 import pandas as pd
-
-from pathlib import Path
 
 logging.basicConfig(
     level=logging.INFO,

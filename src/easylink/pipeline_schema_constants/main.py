@@ -26,11 +26,11 @@ from easylink.utilities.validation_utils import (
     validate_blocks,
     validate_clusters,
     validate_dataset,
+    validate_dir,
     validate_ids_to_remove,
     validate_input_dataset_or_known_clusters,
     validate_links,
     validate_records,
-    validate_dir,
 )
 
 NODES = [
@@ -155,7 +155,7 @@ NODES = [
                         InputSlot(
                             name="datasets",
                             env_var="DATASETS_FILE_PATHS",
-                            validator=validate_dataset,
+                            validator=validate_dir,
                         ),
                         InputSlot(
                             name="known_clusters",
@@ -183,7 +183,7 @@ NODES = [
                                     InputSlot(
                                         name="datasets",
                                         env_var="DATASETS_FILE_PATHS",
-                                        validator=validate_dataset,
+                                        validator=validate_dir,
                                     ),
                                     InputSlot(
                                         name="known_links",
