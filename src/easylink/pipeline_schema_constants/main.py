@@ -26,6 +26,7 @@ from easylink.utilities.validation_utils import (
     validate_blocks,
     validate_clusters,
     validate_dataset,
+    validate_dataset_dir,
     validate_dir,
     validate_ids_to_remove,
     validate_input_dataset_or_known_clusters,
@@ -155,7 +156,7 @@ NODES = [
                         InputSlot(
                             name="datasets",
                             env_var="DATASETS_FILE_PATHS",
-                            validator=validate_dir,
+                            validator=validate_dataset_dir,
                         ),
                         InputSlot(
                             name="known_clusters",
@@ -183,7 +184,7 @@ NODES = [
                                     InputSlot(
                                         name="datasets",
                                         env_var="DATASETS_FILE_PATHS",
-                                        validator=validate_dir,
+                                        validator=validate_dataset_dir,
                                     ),
                                     InputSlot(
                                         name="known_links",
@@ -204,8 +205,7 @@ NODES = [
                                                         # the implementation must do the splitting itself.
                                                         name="datasets",
                                                         env_var="DATASET_FILE_PATHS",
-                                                        validator=validate_dir,
-                                                        # TODO: need validate_dataset_dir_list
+                                                        validator=validate_dataset_dir,
                                                     ),
                                                 ],
                                                 output_slots=[OutputSlot("dataset")],
@@ -226,8 +226,7 @@ NODES = [
                                             InputSlot(
                                                 name="datasets",
                                                 env_var="DATASETS_FILE_PATHS",
-                                                validator=validate_dir,
-                                                # TODO: need validate_dataset_dir_list
+                                                validator=validate_dataset_dir,
                                             ),
                                         ],
                                         output_slots=[OutputSlot("records")],
