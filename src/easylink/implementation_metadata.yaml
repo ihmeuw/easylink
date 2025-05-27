@@ -272,6 +272,13 @@ splink_links_to_clusters:
   script_cmd: python /splink_links_to_clusters.py
   outputs:
     clusters: result.parquet
+fastLink_evaluating_pairs:
+  steps:
+  - evaluating_pairs
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/fastLink_evaluating_pairs.sif
+  script_cmd: Rscript /fastLink_evaluating_pairs.R
+  outputs:
+    links: result.parquet
 dummy_updating_clusters:
   steps:
   - updating_clusters
