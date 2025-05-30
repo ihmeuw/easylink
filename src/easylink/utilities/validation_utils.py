@@ -373,6 +373,23 @@ def validate_dir(filepath: str) -> None:
         raise NotADirectoryError(f"The path {filepath} is not a directory.")
 
 
+def validate_dataset_dir(filepath: str) -> None:
+    input_path = Path(filepath)
+    if not input_path.is_dir():
+        raise NotADirectoryError(f"The path {filepath} is not a directory.")
+
+    file_path = ""
+    for f in input_path.iterdir():
+        if "snakemake" in str(f):
+            continue
+        if file_path != "":
+            raise ValueError(f"The directory {input_path} contains more than one file.")
+        file_path = f
+    if file_path == "":
+        raise FileNotFoundError(f"The directory {input_path} does not contain any files.")
+    validate_dataset(file_path)
+
+
 def dont_validate(filepath: str) -> None:
     """Placeholder function that performs no validation.
 
