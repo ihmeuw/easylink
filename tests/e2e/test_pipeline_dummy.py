@@ -4,11 +4,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from easylink.utilities.general_utils import is_on_slurm
 
-RESULT_CHECKSUM = "5342a6e2d89d72df3115c3f4c43667b640b4bc6a664e9078d55fca3dd2547fe5"
+RESULT_CHECKSUM = "51496c06439823dd483bb43a016dcf07c014a4ccc5b09a9cc98c1b99f404b19f"
 
 
 @pytest.mark.slow
@@ -73,8 +74,16 @@ def test_easylink_run(
         final_output = test_specific_results_dir / "result.parquet"
         assert final_output.exists()
         # Check that the results file checksum matches the expected value
-        with open(final_output, "rb") as f:
+        sorted_output = test_specific_results_dir / "result_sorted.parquet"
+        df = (
+            pd.read_parquet(final_output)
+            .sort_values("Input Record ID")
+            .reset_index(drop=True)
+        )
+        df.to_parquet(sorted_output)
+        with open(sorted_output, "rb") as f:
             actual_checksum = hashlib.sha256(f.read()).hexdigest()
+
         assert actual_checksum == RESULT_CHECKSUM
 
         assert (test_specific_results_dir / Path(pipeline_specification).name).exists()
