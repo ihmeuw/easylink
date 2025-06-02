@@ -15,6 +15,7 @@ logging.basicConfig(
 
 
 def load_file(file_path, file_format=None):
+    logging.info(f"Loading file {file_path} with format {file_format}")
     if file_format is None:
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
@@ -24,11 +25,17 @@ def load_file(file_path, file_format=None):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-# DATASETS_FILE_PATHS is list of filepaths
-dataset_paths = os.environ["DATASETS_FILE_PATHS"].split(",")
-datasets = {
-    Path(dataset_path).stem: load_file(dataset_path) for dataset_path in dataset_paths
-}
+# DATASETS_FILE_PATHS is list of directories
+dataset_dirs = os.environ["DATASETS_FILE_PATHS"].split(",")
+
+datasets = {}
+
+for dir in dataset_dirs:
+    for root, dirs, files in os.walk(dir):
+        for file in files:
+            if file.startswith("."):
+                continue
+            datasets[Path(file).stem] = load_file(os.path.join(root, file))
 
 records = pd.concat(
     [
@@ -41,7 +48,11 @@ records = pd.concat(
     sort=False,
 )
 
+records = records.rename(columns={"Record ID": "Input Record ID"})
+
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single filepath
 output_path = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+Path(output_path).parent.mkdir(exist_ok=True, parents=True)
 
+logging.info(f"Writing output to {output_path}")
 records.to_parquet(output_path)

@@ -10,6 +10,7 @@ Here we cover several core conceptual topics related using EasyLink.
     :glob:
 
     */index
+    *
 
 .. todo::
 
