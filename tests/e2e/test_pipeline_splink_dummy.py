@@ -20,17 +20,17 @@ from easylink.utilities.general_utils import is_on_slurm
     [
         # slurm pipeline_splink_dummy.yaml
         (
-            "pipeline_splink_dummy.yaml",
-            "src/easylink/steps/rl-dummy/input_data/input_data.yaml",
+            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/specifications/e2e/pipeline_splink_dummy_results.csv",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
         # local pipeline_splink_dummy.yaml
         (
-            "pipeline_splink_dummy.yaml",
-            "src/easylink/steps/rl-dummy/input_data/input_data.yaml",
+            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
-            "tests/specifications/e2e/pipeline_splink_dummy_results.csv",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
 )
