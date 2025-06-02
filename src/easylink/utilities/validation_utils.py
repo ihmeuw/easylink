@@ -210,9 +210,7 @@ def validate_links(filepath: str) -> None:
         - "Left Record ID" is not alphabetically before "Right Record ID".
         - Values in the "Probability" column are not between 0 and 1 (inclusive).
     """
-    _validate_required_columns(
-        filepath, {"Left Record ID", "Right Record ID", "Probability"}
-    )
+    _validate_required_columns(filepath, {"Left Record ID", "Right Record ID", "Probability"})
     df = _read_file(filepath)
 
     if (df["Left Record ID"] == df["Right Record ID"]).any():
@@ -385,9 +383,7 @@ def validate_dataset_dir(filepath: str) -> None:
     if len(file_paths) > 1:
         raise ValueError(f"The directory {input_path} contains more than one file.")
     if len(file_paths) == 0:
-        raise FileNotFoundError(
-            f"The directory {input_path} does not contain any files."
-        )
+        raise FileNotFoundError(f"The directory {input_path} does not contain any files.")
 
     file_path = file_paths[0]
     validate_dataset(file_path)

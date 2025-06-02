@@ -38,7 +38,5 @@ results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
 
 clusters_df = load_file(clusters_path)
 
-logging.info(
-    f"Writing output for dataset from input {clusters_path} to {results_filepath}"
-)
+logging.info(f"Writing output for dataset from input {clusters_path} to {results_filepath}")
 clusters_df.to_parquet(results_filepath)

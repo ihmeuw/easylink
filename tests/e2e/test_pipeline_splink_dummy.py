@@ -77,9 +77,7 @@ def test_easylink_run(
         final_output = test_specific_results_dir / "result.parquet"
         assert final_output.exists()
         # Check that the results file checksum matches the expected value
-        results = (
-            pd.read_parquet(final_output).sort_values("Input Record ID").reset_index()
-        )
+        results = pd.read_parquet(final_output).sort_values("Input Record ID").reset_index()
         results["index"] = results.index
         correct_results = pd.read_csv(correct_results_csv)
         assert results.equals(correct_results)
