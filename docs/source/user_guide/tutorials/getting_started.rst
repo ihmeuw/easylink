@@ -642,8 +642,8 @@ Loop Steps
 ==========
 EasyLink supports a number of `operators` which enable flexibility in selecting and configuring
 implementations for various record linkage pipeline steps. In this section we will discuss the 
-``LoopStep`` operator, but other operators include ``ParallelStep``, ``ChoiceStep``, and 
-``HierarchicalStep``. A ``LoopStep`` allows the user to loop a step multiple times such that 
+loop-able section operator, but other operators include clonable sections, splitters, auto-parallel 
+sections and choice sections. A loop-able section allows the user to loop a step multiple times such that 
 each iteration depends on the previous. An implementation is specified for each iteration -- each iteration 
 can have different implementations, or all can have the same one.
 
@@ -653,11 +653,7 @@ can have different implementations, or all can have the same one.
    the user to create pipeline sections with parallelized processing, one of several branching paths, and 
    substeps respectively.
 
-.. todo::
-   This page references the ``LoopStep`` class in the EasyLink code rather than the operators described in 
-   the Pipeline Schema doc page eg "loop-able sections".
-
-To demonstrate the use of a ``LoopStep`` we will use a new pipeline configuration YAML, 
+To demonstrate the use of a loop-able section we will use a new pipeline configuration YAML, 
 :download:`loop-pipeline.yaml <loop-pipeline.yaml>`::
 
    steps:
@@ -679,7 +675,7 @@ To demonstrate the use of a ``LoopStep`` we will use a new pipeline configuratio
             implementation:
             name: step_4_python_pandas
       
-As shown in the YAML, to unroll a ``LoopStep`` (step 3 is defined as one by ``development.py``), 
+As shown in the YAML, to unroll a loop-able section, 
 we use the ``iterate`` keyword followed by a list of implementations to iterate through. The sequence of 
 implementations must be known in advance. In this case, we will iterate on ``step_3_python_pandas`` twice. 
 Let's see what happens when we run the pipeline::
