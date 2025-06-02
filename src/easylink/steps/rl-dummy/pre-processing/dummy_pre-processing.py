@@ -27,10 +27,10 @@ def load_file(file_path, file_format=None):
 
 # DATASET_FILE_PATHS is list of filepaths
 dataset_paths = os.environ["DATASET_FILE_PATHS"].split(",")
-logging.info(f"dataset_paths={dataset_paths}")
+logging.info(f"{dataset_paths=}")
 
-# for workaround, choose path based on INPUT_DATASETS_SPLITTER_CHOICE configuration
-splitter_choice = os.environ["INPUT_DATASETS_SPLITTER_CHOICE"]
+# for workaround, choose path based on INPUT_DATASET configuration
+splitter_choice = os.environ["INPUT_DATASET"]
 logging.info(f"splitter_choice={splitter_choice}")
 dataset_path = ""
 for path in dataset_paths:

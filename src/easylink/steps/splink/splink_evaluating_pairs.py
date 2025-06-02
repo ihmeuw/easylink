@@ -17,7 +17,7 @@ Path(output_path).parent.mkdir(exist_ok=True, parents=True)
 all_predictions = []
 
 for block_dir in blocks_dir.iterdir():
-    if "snakemake" in str(block_dir):
+    if str(block_dir.stem).startswith("."):
         continue
     encoded_comparisons = os.environ["COMPARISONS"].split(",")
 

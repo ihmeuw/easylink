@@ -232,13 +232,6 @@ dummy_determining_exclusions:
   script_cmd: python /dummy_determining_exclusions.py
   outputs:
     ids_to_remove: result.parquet
-dummy_links_to_clusters:
-  steps:
-  - links_to_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/dummy_links_to_clusters.sif
-  script_cmd: python /dummy_links_to_clusters.py
-  outputs:
-    clusters: result.parquet
 dummy_updating_clusters:
   steps:
   - updating_clusters

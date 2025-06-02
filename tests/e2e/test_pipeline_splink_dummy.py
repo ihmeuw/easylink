@@ -18,19 +18,21 @@ RESULT_CHECKSUM = "51496c06439823dd483bb43a016dcf07c014a4ccc5b09a9cc98c1b99f404b
     reason="Must be on slurm to run this test.",
 )
 @pytest.mark.parametrize(
-    "pipeline_specification, input_data, computing_environment",
+    "pipeline_specification, input_data, computing_environment, correct_results_csv",
     [
-        # slurm
+        # slurm pipeline_splink_dummy.yaml
         (
-            "pipeline_dummy.yaml",
+            "pipeline_splink_dummy.yaml",
             "src/easylink/steps/rl-dummy/input_data/input_data.yaml",
             "tests/specifications/e2e/environment_slurm.yaml",
+            "tests/specifications/e2e/pipeline_splink_dummy_results.csv",
         ),
-        # local
+        # local pipeline_splink_dummy.yaml
         (
-            "pipeline_dummy.yaml",
+            "pipeline_splink_dummy.yaml",
             "src/easylink/steps/rl-dummy/input_data/input_data.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/specifications/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
 )
@@ -38,6 +40,7 @@ def test_easylink_run(
     pipeline_specification,
     input_data,
     computing_environment,
+    correct_results_csv,
     test_specific_results_dir,
     capsys,
 ):
@@ -74,17 +77,12 @@ def test_easylink_run(
         final_output = test_specific_results_dir / "result.parquet"
         assert final_output.exists()
         # Check that the results file checksum matches the expected value
-        sorted_output = test_specific_results_dir / "result_sorted.parquet"
-        df = (
-            pd.read_parquet(final_output)
-            .sort_values("Input Record ID")
-            .reset_index(drop=True)
+        results = (
+            pd.read_parquet(final_output).sort_values("Input Record ID").reset_index()
         )
-        df.to_parquet(sorted_output)
-        with open(sorted_output, "rb") as f:
-            actual_checksum = hashlib.sha256(f.read()).hexdigest()
-
-        assert actual_checksum == RESULT_CHECKSUM
+        results["index"] = results.index
+        correct_results = pd.read_csv(correct_results_csv)
+        assert results.equals(correct_results)
 
         assert (test_specific_results_dir / Path(pipeline_specification).name).exists()
         assert (test_specific_results_dir / Path(input_data).name).exists()

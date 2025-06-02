@@ -33,7 +33,7 @@ datasets = {}
 for dir in dataset_dirs:
     for root, dirs, files in os.walk(dir):
         for file in files:
-            if file == ".snakemake_timestamp":
+            if file.startswith("."):
                 continue
             datasets[Path(file).stem] = load_file(os.path.join(root, file))
 
