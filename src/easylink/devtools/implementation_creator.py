@@ -19,7 +19,7 @@ from typing import cast
 import yaml
 from loguru import logger
 
-from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.step import (
     ChoiceStep,
     EmbarrassinglyParallelStep,
@@ -93,20 +93,30 @@ class ImplementationCreator:
         for the container."""
         self.implementation_name = script_path.stem
         """The name of the implementation. It is by definition the name of the script."""
-        self.requirements = self._extract_requirements(script_path)
-        """The install requirements for the implementation (if any)."""
         self.step = self._extract_implemented_step(script_path)
         """The name of the step that this implementation implements."""
+        self.has_custom_recipe = self._extract_has_custom_recipe(script_path)
+        """Whether the user has already written the recipe for this implementation."""
+        self.script_base_command = self._extract_script_base_command(script_path)
+        """The base command to use to run the script in this implementation."""
         self.output_slot = self._extract_output_slot(script_path, self.step)
         """The name of the output slot that this implementation sends results to."""
 
     def create_recipe(self) -> None:
         """Builds the singularity recipe and writes it to disk."""
+        if self.has_custom_recipe:
+            if not self.recipe_path.exists():
+                raise ValueError(f"Could not find a custom recipe at {self.recipe_path}.")
+            return
 
-        recipe = PythonRecipe(self.script_path, self.recipe_path, self.requirements)
+        recipe = PythonRecipe(
+            self.script_path,
+            self.recipe_path,
+            ImplementationCreator._extract_requirements(self.script_path),
+            self.script_base_command,
+        )
         recipe.build()
         recipe.write()
-        pass
 
     def build_container(self) -> None:
         """Builds the container from the recipe.
@@ -190,7 +200,7 @@ class ImplementationCreator:
         info[self.implementation_name] = {
             "steps": [self.step],
             "image_path": str(self.hosted_container_path),
-            "script_cmd": f"python /{self.script_path.name}",
+            "script_cmd": f"{self.script_base_command} /{self.script_path.name}",
             "outputs": {
                 self.output_slot: "result.parquet",
             },
@@ -242,19 +252,35 @@ class ImplementationCreator:
         return steps[0]
 
     @staticmethod
+    def _extract_has_custom_recipe(script_path: Path) -> str:
+        """Extracts whether the user has already written the recipe for this implementation.
+
+        The expectation is that this flag is specified within the script
+        as a comment of the format:
+
+        .. code-block:: python
+            # HAS_CUSTOM_RECIPE: true
+        """
+        has_custom_recipe = _extract_metadata("HAS_CUSTOM_RECIPE", script_path)
+        if len(has_custom_recipe) == 0:
+            return False
+        else:
+            return str(has_custom_recipe[0]).strip().lower() in ["true", "yes"]
+
+    @staticmethod
     def _extract_output_slot(script_path: Path, step_name: str) -> str:
         """Extracts the name of the output slot that this script is implementing."""
-        schema = ImplementationCreator._extract_pipeline_schema(script_path)
-        implementable_steps = ImplementationCreator._extract_implementable_steps(schema)
+        schema_name = ImplementationCreator._extract_pipeline_schema_name(script_path)
+        implementable_steps = ImplementationCreator._extract_implementable_steps(schema_name)
         step_names = [step.name for step in implementable_steps]
         if step_name not in step_names:
             raise ValueError(
-                f"'{step_name}' does not exist as an implementable step in the '{schema}' pipeline schema. "
+                f"'{step_name}' does not exist as an implementable step in the '{schema_name}' pipeline schema. "
             )
         duplicates = list(set([step for step in step_names if step_names.count(step) > 1]))
         if duplicates:
             raise ValueError(
-                f"Multiple implementable steps with the same name found in the '{schema}' "
+                f"Multiple implementable steps with the same name found in the '{schema_name}' "
                 f"pipeline schema: {duplicates}."
             )
         implemented_step = [step for step in implementable_steps if step.name == step_name][0]
@@ -266,7 +292,7 @@ class ImplementationCreator:
         return list(implemented_step.output_slots)[0]
 
     @staticmethod
-    def _extract_implementable_steps(schema: str) -> list[Step]:
+    def _extract_implementable_steps(schema_name: str) -> list[Step]:
         """Extracts all implementable steps from the pipeline schema.
 
         This method recursively traverses the pipeline schema specified in the script
@@ -296,8 +322,7 @@ class ImplementationCreator:
                 implementable_steps.append(node)
                 return
 
-        schema_steps = ALLOWED_SCHEMA_PARAMS[schema][0]
-
+        schema_steps, _edges = SCHEMA_PARAMS[schema_name]
         implementable_steps: list[Step] = []
         for schema_step in schema_steps:
             _process_step(schema_step)
@@ -305,10 +330,10 @@ class ImplementationCreator:
         return implementable_steps
 
     @staticmethod
-    def _extract_pipeline_schema(script_path: Path) -> str:
+    def _extract_pipeline_schema_name(script_path: Path) -> str:
         """Extracts the relevant pipeline schema name.
 
-        The expectation is that the output slot's name is specified within the script
+        The expectation is that the pipeline schema's name is specified within the script
         as a comment of the format:
 
         .. code-block:: python
@@ -316,8 +341,27 @@ class ImplementationCreator:
 
         If no pipeline schema is specified, "main" will be used by default.
         """
-        schema = _extract_metadata("PIPELINE_SCHEMA", script_path)
-        return "main" if len(schema) == 0 else schema[0]
+        schema_name_list: list[str] = _extract_metadata("PIPELINE_SCHEMA", script_path)
+        schema_name = "main" if len(schema_name_list) == 0 else schema_name_list[0]
+        if schema_name not in SCHEMA_PARAMS:
+            raise ValueError(f"Pipeline schema '{schema_name}' is not supported.")
+        return schema_name
+
+    @staticmethod
+    def _extract_script_base_command(script_path: Path) -> str:
+        """Extracts the base command to be used to run the script.
+
+        The expectation is that the base command is specified within the script
+        as a comment of the format:
+
+        .. code-block:: python
+            # SCRIPT_BASE_COMMAND: python
+
+        If no pipeline schema is specified, "python" will be used by default.
+        """
+        base_command_list: list[str] = _extract_metadata("SCRIPT_BASE_COMMAND", script_path)
+        base_command = base_command_list[0] if base_command_list else "python"
+        return base_command
 
     @staticmethod
     def _write_metadata(info: dict[str, dict[str, str]]) -> None:
@@ -339,10 +383,17 @@ class PythonRecipe:
         "python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899"
     )
 
-    def __init__(self, script_path: Path, recipe_path: Path, requirements: str) -> None:
+    def __init__(
+        self,
+        script_path: Path,
+        recipe_path: Path,
+        requirements: str,
+        script_base_command: str,
+    ) -> None:
         self.script_path = script_path
         self.recipe_path = recipe_path
         self.requirements = requirements
+        self.script_base_command = script_base_command
         self.text: str | None = None
 
     def build(self) -> None:
@@ -371,7 +422,7 @@ From: {self.BASE_IMAGE}
     export LC_ALL=C
 
 %runscript
-    python /{script_name} '$@'"""
+    {self.script_base_command} /{script_name} '$@'"""
 
     def write(self) -> None:
         """Writes the recipe to disk.

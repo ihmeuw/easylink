@@ -14,7 +14,7 @@ from pathlib import Path
 from layered_config_tree import LayeredConfigTree
 
 from easylink.graph_components import EdgeParams, ImplementationGraph
-from easylink.pipeline_schema_constants import ALLOWED_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.step import HierarchicalStep, NonLeafConfigurationState, Step
 
 
@@ -39,7 +39,7 @@ class PipelineSchema(HierarchicalStep):
 
     Notes
     -----
-    All ``PipelineSchema`` instances are intended to be created by the :meth:`_get_schemas`
+    A ``PipelineSchema`` is intended to be constructed by the :meth:`get_schema`
     class method.
 
     The ``PipelineSchema`` is a high-level abstraction; it represents the desired
@@ -159,22 +159,21 @@ class PipelineSchema(HierarchicalStep):
         )
 
     @classmethod
-    def _get_schemas(cls) -> list["PipelineSchema"]:
+    def get_schema(cls, name: str = "main") -> list["PipelineSchema"]:
         """Gets all allowable ``PipelineSchemas``.
 
         These ``PipelineSchemas`` represent the fully supported pipelines and are
         used to validate the user-requested pipeline.
 
+        Parameters
+        ----------
+        name
+            The name of the ``PipelineSchema`` to get.
+
         Returns
         -------
-            All allowable ``PipelineSchemas``.
+            The requested ``PipelineSchema``.
         """
-        return [
-            cls(name, nodes=nodes, edges=edges)
-            for name, (nodes, edges) in ALLOWED_SCHEMA_PARAMS.items()
-        ]
-
-
-PIPELINE_SCHEMAS = PipelineSchema._get_schemas()
-"""All allowable :class:`PipelineSchemas<PipelineSchema>` to validate the requested
-pipeline against."""
+        if name not in SCHEMA_PARAMS:
+            raise ValueError(f"Pipeline schema '{name}' is not supported.")
+        return cls(name, *SCHEMA_PARAMS[name])

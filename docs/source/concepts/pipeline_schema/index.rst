@@ -102,6 +102,8 @@ without taking away any flexibility—
 if there is some unexpected need to use new implementations
 for these less-interesting steps, the user can do that.
 
+.. _slots:
+
 Slots
 ^^^^^
 
@@ -224,6 +226,8 @@ Operators
 
    Consider replacing the examples in this section with extracts from the record linkage
    pipeline schema, as in the previous section.
+
+.. _cloneable_sections:
 
 Cloneable sections
 ^^^^^^^^^^^^^^^^^^
@@ -395,62 +399,6 @@ but lower levels in the hierarchy subdivide those and so on.
 The more detail in the pipeline schema that is used,
 the more interoperability and standardization the user gets.
 
-Draws
-^^^^^
-
-To facilitate the representation and propagation of uncertainty, EasyLink supports **draws**.
-This is a bit of jargon that means "samples randomly **draw**\ n from a probability distribution."
-Complicated probability distributions are often impossible to represent exactly,
-like how :math:`\pi` is impossible to represent exactly as a decimal.
-Just like we can approximate :math:`\pi` to some number of digits (e.g. 3.1415),
-we can approximate a distribution with some number of random samples/draws.
-Then, any operation we want to do to our random variable can be done on each draw,
-and any statistic about the distribution (possibly after many operations)
-can be approximated by calculating that statistic on the draws.
-
-Entity resolution involves some *very* complicated probability distributions.
-Instead of a distribution over real numbers, we might have a distribution over all the possible ways to link two files!
-Such a distribution can't feasibly be analyzed exactly, but we can still take draws from it.
-You can think of this as generating multiple plausible linkages,
-and doing the rest of our analysis with each of them to see how much our result varies.
-If you're familiar with multiple imputation methods for missing data, it's exactly the same idea!
-
-In the pipeline schema, certain steps can be marked as permitted to produce draws.
-Any implementation of such a step must indicate whether or not it is able to produce draws.
-For any step in the pipeline where the step is permitted and the implementation is able,
-the EasyLink user indicates whether or not they want this to occur.
-(This can all be resolved upfront,
-so EasyLink knows before even starting the pipeline which of its implementations *will* produce draws.)
-
-The EasyLink user also specifies how many draws they would like to produce
-(this number is global across the entire pipeline, not per-step).
-
-Implementations that will produce draws,
-but are not downstream of any *other* implementations that will produce draws,
-run normally except that they are passed a special flag so that they know to produce draws.
-Instead of saving one output (for each output slot),
-they will save :math:`N`, where :math:`N` is the user-configured number of draws.
-
-Implementations that are downstream of at least one other implementation that will produce draws are run N times.
-For run :math:`X` (:math:`X \le N`), draw :math:`X` of each input (that has draws) is used, which assumes independence between the uncertainty on each input.
-When such an implementation will also *produce* draws,
-run :math:`X` of that implementation is passed a special flag indicating to produce draw :math:`X`.
-
-The last steps in the pipeline schema (those that produce its final outputs)
-are marked as "gather" steps.
-This means that even if they are downstream of steps that produce draws,
-they are only run once and receive *all* draws of their inputs at once.
-
-Steps that are permitted to produce draws are marked in the diagrams by coloring the box purple,
-and gather steps are marked by coloring the box green.
-
-.. image:: images/17_draws.drawio.png
-   :alt: Diagram of a draws-producing and a draws-gathering step in a pipeline schema
-
-.. todo::
-
-   Add a diagram showing how the various cases described above expand.
-
 Pipelines
 ---------
 
@@ -497,8 +445,10 @@ EasyLink pipeline schema
 
 .. image:: images/easylink_pipeline_schema.drawio.png
 
-Input datasets
-^^^^^^^^^^^^^^
+.. _datasets:
+
+Datasets
+^^^^^^^^
 
 **Interpretation:**
 A set of named datasets.
@@ -508,9 +458,15 @@ Each dataset contains observations recorded about (some) entities in the populat
 A directory of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
-but one of them must be called “Record ID” and it must have unique values.
+but one of them must be called "Record ID".
+Values in the "Record ID" columns of each file must be unique
+**across all files**.
 
 **Example:**
+
+A directory containing two files, ``input_file.parquet`` and ``reference_file.parquet``.
+
+``input_file.parquet`` has contents:
 
 .. list-table:: 
    :header-rows: 1
@@ -519,12 +475,30 @@ but one of them must be called “Record ID” and it must have unique values.
      - First
      - Last
      - Address
-   * - 1
+   * - input_file_1
      - Vicki
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - 2
+   * - input_file_2
      - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+
+``reference_file.parquet`` has contents:
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Record ID
+     - First
+     - Last
+     - Address
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - reference_file_2
+     - Gerry
      - Allen
      - 456 Other Drive, Anytown WA, 99999
 
@@ -554,9 +528,14 @@ then A and C are in the same cluster by definition.
 
 **Specification:**
 A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
-"Input Record ID" must have unique values,
-each of which is the combination of a dataset name and a Record ID value found in the corresponding input dataset.
+"Input Record ID" must have unique values.
 "Cluster ID" may take any value.
+
+.. note::
+
+   In the future, we should add to this specification that each "Input Record ID"
+   is a Record ID value found in an input dataset.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
@@ -578,7 +557,7 @@ each of which is the combination of a dataset name and a Record ID value found i
    * - reference_file_2
      - 3
 
-In this example, record ID 1 from the dataset "input_file" (i.e. Input Record ID "input_file_1") has been put in its own cluster,
+In this example, record ID "input_file_1" has been put in its own cluster,
 meaning that it does not match any of the other records listed.
 input_file_2 has been put in a cluster with reference_file_1,
 indicating that they refer to the same person.
@@ -667,7 +646,6 @@ Analysis output
 The result of the analysis, whatever that may be.
 Could be a single statistic, a set of statistics, a whole dataset,
 or multiple datasets.
-May contain multiple draws in different files or subdirectories, or not.
 
 **Specification:**
 None. May take any form.
@@ -706,11 +684,23 @@ Methods that are not pairwise should implement this step directly.
 - In Splink, this step would correspond to estimating parameters, making pairwise
   predictions, and then clustering entities with connected components or similar
 
-Eliminating records
-^^^^^^^^^^^^^^^^^^^
+.. _dataset:
+
+Dataset
+^^^^^^^
 
 **Interpretation:**
-Identify records that can be eliminated from the input datasets for the purposes of this pass
+A single dataset, see :ref:`"datasets" <datasets>`.
+
+**Specification:**
+A single file, which follows exactly the specification of
+*each* file in the directory of :ref:`"datasets" <datasets>`.
+
+Determining exclusions
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Identify records that can be excluded from the input datasets for the purposes of this pass
 to save computational time.
 Usually these will be records that have already been clustered sufficiently well
 (whatever that means as defined by the implementation of this step)
@@ -731,18 +721,25 @@ IDs to remove
 ^^^^^^^^^^^^^
 
 **Interpretation:**
-Record IDs slated to be dropped for the purposes of this pass.
+Input record IDs slated to be dropped for the purposes of this pass.
 
 **Specification:**
-A single column called "Record ID."
-Every value in the column should be unique and should exist in one of the input datasets.
+A single file in tabular format, with exactly one column called "Input Record ID".
+Every value in the column should be unique.
+
+.. note::
+
+   In the future, we should add to this specification that each "Input Record ID"
+   is a Record ID value found in the input dataset corresponding to this IDs to remove --
+   that is, the one that was passed to "determining exclusions."
+   EasyLink currently doesn't support this.
 
 **Example:**
 
 .. list-table::
    :header-rows: 1
 
-   * - Record ID
+   * - Input Record ID
    * - input_file_2
    * - input_file_4
 
@@ -756,6 +753,21 @@ Actually removing records slated to be dropped.
 Pandas code dropping records with matching record IDs.
 Note that if the default implementation is used,
 input and output data specifications do not need to be checked.
+
+Dataset (in directory)
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+A directory containing a single named dataset.
+See :ref:`"datasets" <datasets>`.
+This is only different from :ref:`"dataset" <dataset>`
+so that an implementation can output a dataset
+*with a name* (because, for file outputs, the name is fixed).
+
+**Specification:**
+A directory containing a single file, which follows exactly the specification of
+*each* file in the directory of :ref:`"datasets" <datasets>`.
+The name of the file is the name of the dataset.
 
 New clusters
 ^^^^^^^^^^^^
@@ -781,7 +793,7 @@ Otherwise, returns the new clusters unchanged.
 
 - In PVS, simply appending PIKs found in this module to those found in previous
   modules.
-  Because of the "eliminating records" strategy used in PVS, these are guaranteed
+  Because of the "determining exclusions" strategy used in PVS, these are guaranteed
   to not include any of the same input file records.
 - A simple approach would be to make each set of clusters into a graph of records,
   merge the graphs, and take the connected components as the updated clusters.
@@ -836,6 +848,9 @@ Here is a rough draft of the code for this default implementation:
       links_df["Probability"] = 1.0
       return links_df
 
+
+.. _links:
+
 Links
 ^^^^^
 
@@ -851,20 +866,16 @@ This lack of structural awareness is inherent to pairwise methods,
 and the loss of information this represents is a tradeoff with the
 benefits of the simplicity of the pairwise approach to entity resolution.
 
-Assigning a probability to each pair is a more efficient system for
-representing uncertainty than draws,
+Assigning a probability to each pair is an efficient system for
+representing uncertainty,
 when the statistical dependence structure between the pairwise links
 is unknown.
-Draws may be used in addition to pairwise
-probabilities when (some information about) the dependence
-structure is known.
 It is up to downstream steps to interpret/assume the dependence structure between pairwise probabilities.
 If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
 
 **Specification:**
 A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
-Every value in both Record ID columns should exist in one of the input datasets.
 Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
 Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
 The Left Record ID value should be alphabetically before the Right Record ID
@@ -873,6 +884,12 @@ value in each row.
 a mirror image of another.)
 Each value in the Probability column must be between
 0 and 1 (inclusive).
+
+.. note::
+
+   In the future, we should add to this specification that every value in both Record ID columns
+   should exist in one of the input datasets.
+   EasyLink currently doesn't support this.
 
 **Example:**
 
@@ -970,3 +987,253 @@ We expect that these constraints will typically be enforced during this step.
    propagate the uncertainty represented by the pairwise probabilities
    through this step, e.g. by *sampling* clusters somehow.
    Further research is needed in this area. 
+
+.. _linking_sub_steps:
+
+Linking sub-steps
+-----------------
+
+.. image:: images/linking_sub_steps.drawio.png
+
+Used in this diagram and defined above:
+
+* :ref:`Datasets <datasets>`
+* :ref:`Dataset <dataset>`
+* :ref:`Links <links>`
+
+Pre-processing
+^^^^^^^^^^^^^^
+
+**Interpretation:**
+Performing data cleaning steps on a given dataset, such as
+standardizing abbreviations, replacing "bad" data with missing values,
+etc.
+
+Note that this step is for operations that are applied independently to one
+dataset at a time.
+For cross-dataset operations, see :ref:`Schema alignment <schema_alignment>`.
+
+The loop-able section around this step allows it to be looped an arbitrary number of times,
+so that multiple cleaning steps can be performed on the same dataset.
+
+**Examples:**
+
+- An address standardizer
+- Adding nicknames/alternate names
+- Replacing fake names such as "DID NOT RESPOND" with NA/null
+- Renaming columns or dropping empty columns from a dataset
+
+.. _schema_alignment:
+
+Schema alignment
+^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Aligning data formats across all datasets to facilitate linkage.
+
+Typically, in administrative data practice, the analyst will
+manually determine what cleaning steps need to be applied to all
+the datasets to make them consistent with each other.
+If those cleaning steps are all performed in pre-processing, then
+the datasets would already have the same columns (and consistent value
+formats within those columns) before this step.
+In that situation, there is nothing difficult left to do here and
+the default implementation described below is all
+that is needed.
+
+In the computer science literature, however, there are emerging methods
+for doing this alignment automatically.
+If desired, datasets could be passed into this step still inconsistent
+with one another, and a model could run in this step to automatically
+complete the alignment by figuring out which columns correspond to each other
+and how to standardize values.
+
+**Default implementation:**
+Pandas code that simply concatenates the datasets,
+matching columns by name,
+and appending information about the dataset each record came from.
+In code:
+
+.. code::
+
+   import pandas as pd
+
+   def schema_alignment(datasets: dict[str, pd.DataFrame]) -> pd.DataFrame:
+      return pd.concat([
+         df.assign(
+            dataset=dataset,
+         ).rename(columns={"Record ID": "Input Record ID"})
+         for dataset, df
+         in datasets.items()
+      ], ignore_index=True, sort=False)
+
+**Examples:**
+
+- The `Unicorn <https://dl.acm.org/doi/abs/10.1145/3588938>`_ model contains automatic schema alignment.
+
+.. _records:
+
+Records
+^^^^^^^
+
+**Interpretation:**
+The records to link (from all datasets) in one big table.
+
+**Specification:**
+A file in a tabular format.
+The file may have any number of columns,
+but one of them must be called “Input Record ID” and it must have unique values.
+
+.. note::
+
+   In the future, we should add to this specification that every value in the Input Record ID column
+   should exist in one of the input datasets.
+   EasyLink currently doesn't support this.
+
+**Example:**
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Input Record ID
+     - First
+     - Last
+     - Address
+   * - input_file_1
+     - Vicki
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - input_file_2
+     - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St., Anytown WA 99999
+   * - reference_file_2
+     - Gerry
+     - Allen
+     - *N/A*
+
+Blocking and filtering
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Breaking the linkage problem up into pieces that can be tackled separately,
+and selecting which pairs of records to consider in each piece,
+in order to reduce the size of the task and therefore the computation required.
+
+Traditional blocking, where a blocking "key" is assigned to each record,
+implements this step by splitting the records into blocks (disjoint subsets)
+by their blocking key and enumerating all possible pairs within each block.
+
+More advanced techniques may instead create just *one* block (with all records),
+and select only some pairs within that block rather than every possible pair.
+
+Techniques focused on or configured for linkage *between* datasets can avoid enumerating
+pairs of records within the same dataset.
+
+This step corresponds to "indexing" in `Christen (2012) <https://link.springer.com/book/10.1007/978-3-642-31164-2>`_.
+
+**Examples:**
+
+- In Splink, using a single blocking rule would be traditional blocking as described above:
+  a separate block for each value of date of birth, for instance.
+  Multiple blocking rules in Splink are OR'd together, creating overlapping blocks.
+  In EasyLink, this could be represented as putting all records in a single block but only
+  enumerating the pairs matching at least one of the blocking rule conditions.
+
+Blocks
+^^^^^^
+
+**Interpretation:**
+Separate pieces of the linkage task that can be tackled separately,
+along with the pairs of records to consider in each.
+
+**Specification:**
+A directory containing any number of subdirectories.
+Each subdirectory must contain two files, each in tabular format: records and pairs.
+
+Each records file must follow the specification for :ref:`Records`.
+
+Each pairs file must contain two columns, "Left Record ID" and "Right Record ID".
+Every value in both Record ID columns should exist in the Record ID column of the records file for the same block.
+Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
+Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
+The Left Record ID value should be alphabetically before the Right Record ID
+value in each row.
+(This ensures each pair is truly unique, and not
+a mirror image of another.)
+
+.. note::
+
+   The specification for each pairs file is identical to the specification for :ref:`Links <links>`
+   except that there is no probability column.
+
+**Example:**
+
+The overall directory tree structure might look like:
+
+.. code::
+
+   blocks
+   ├── block_0
+   │   ├── pairs.parquet
+   │   └── records.parquet
+   └── block_1
+      ├── pairs.parquet
+      └── records.parquet
+
+A records file might look like:
+
+.. list-table:: 
+   :header-rows: 1
+
+   * - Input Record ID
+     - First
+     - Last
+     - Address
+   * - input_file_1
+     - Vicki
+     - Simmons
+     - 123 Main St. Apt C, Anytown WA 99999
+   * - input_file_2
+     - Gerald
+     - Allen
+     - 456 Other Drive, Anytown WA, 99999
+   * - reference_file_1
+     - Victoria
+     - Simmons
+     - 123 Main St., Anytown WA 99999
+   * - reference_file_2
+     - Gerry
+     - Allen
+     - *N/A*
+
+A pairs file might look like:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Left Record ID
+     - Right Record ID
+   * - input_file_2
+     - reference_file_2
+   * - input_file_2
+     - reference_file_4
+   * - input_file_3
+     - reference_file_6
+
+Evaluating pairs
+^^^^^^^^^^^^^^^^
+
+**Interpretation:**
+Determining a link probability for each pair of records based on those records' values.
+This transforms pairs (which are simply two record IDs) into the format of :ref:`Links <links>`,
+which include this probability.
+
+**Examples:**
+
+- In Splink, training the model, calculating the comparison levels, and predicting the match probability
+- fastLink's entry method, assuming the set of pairs is exhaustive (fastLink currently has no way to limit pairs)

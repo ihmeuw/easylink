@@ -6,7 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from easylink.pipeline_schema import PipelineSchema
-from easylink.pipeline_schema_constants import TESTING_SCHEMA_PARAMS
+from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.runner import main
 from easylink.utilities.general_utils import is_on_slurm
 from tests.conftest import SPECIFICATIONS_DIR
@@ -21,8 +21,7 @@ def test_slurm(
     test_specific_results_dir: Path, mocker: MockerFixture, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Test that the pipeline runs on SLURM with appropriate resources."""
-    nodes, edges = TESTING_SCHEMA_PARAMS["integration"]
-    mocker.patch("easylink.pipeline_schema.ALLOWED_SCHEMA_PARAMS", TESTING_SCHEMA_PARAMS)
+    nodes, edges = SCHEMA_PARAMS["integration"]
     mocker.patch(
         "easylink.configuration.Config._get_schema",
         return_value=PipelineSchema("integration", nodes=nodes, edges=edges),
