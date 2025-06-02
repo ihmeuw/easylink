@@ -9,8 +9,6 @@ import pytest
 
 from easylink.utilities.general_utils import is_on_slurm
 
-RESULT_CHECKSUM = "51496c06439823dd483bb43a016dcf07c014a4ccc5b09a9cc98c1b99f404b19f"
-
 
 @pytest.mark.slow
 @pytest.mark.skipif(
@@ -76,7 +74,7 @@ def test_easylink_run(
         )
         final_output = test_specific_results_dir / "result.parquet"
         assert final_output.exists()
-        # Check that the results file checksum matches the expected value
+        # Check that the results file matches the expected value
         results = pd.read_parquet(final_output).sort_values("Input Record ID").reset_index()
         results["index"] = results.index
         correct_results = pd.read_csv(correct_results_csv)
