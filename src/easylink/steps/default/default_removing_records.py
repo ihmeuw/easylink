@@ -23,7 +23,7 @@ def load_file(file_path, file_format=None):
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
         return pd.read_parquet(file_path)
-    raise ValueError()
+    raise ValueError(f"Unknown file format {file_format}")
 
 
 # LOAD INPUTS and SAVE OUTPUTS
@@ -31,17 +31,17 @@ def load_file(file_path, file_format=None):
 # INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS is list of filepaths which includes
 # the known_clusters filepath due to workaround
 dataset_paths = os.environ["INPUT_DATASETS_AND_INPUT_KNOWN_CLUSTERS_FILE_PATHS"].split(",")
-dataset_paths = [path for path in dataset_paths if "known_clusters.parquet" not in path]
+dataset_paths = [path for path in dataset_paths if "clusters.parquet" not in Path(path).stem]
 
 # for workaround, choose path based on INPUT_DATASET configuration
 splitter_choice = os.environ["INPUT_DATASET"]
-dataset_path = ""
+dataset_path = None
 for path in dataset_paths:
-    if splitter_choice == os.path.basename(path):
+    if splitter_choice == Path(path).stem:
         dataset_path = path
         break
-if dataset_path == "":
-    raise ValueError()
+if dataset_path is None:
+    raise ValueError(f"No dataset matching {splitter_choice} found")
 
 # IDS_TO_REMOVE_FILE_PATH is a single filepath (Cloneable section)
 ids_filepath = os.environ["IDS_TO_REMOVE_FILE_PATH"]
@@ -54,6 +54,6 @@ ids_to_remove = load_file(ids_filepath)
 
 dataset = dataset[~dataset["Record ID"].isin(ids_to_remove)]
 
-output_path = results_dir / Path(os.path.basename(dataset_path))
+output_path = results_dir / Path(dataset_path).name
 logging.info(f"Writing output for dataset from input {dataset_path} to {output_path}")
 dataset.to_parquet(output_path)

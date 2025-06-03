@@ -103,7 +103,7 @@ def validate_input_file_dummy(filepath: str) -> None:
 
 def validate_input_dataset_or_known_clusters(filepath: str) -> None:
     filepath = Path(filepath)
-    if filepath.stem == "known_clusters":
+    if "clusters" in filepath.stem:
         validate_clusters(filepath)
     else:
         validate_dataset(filepath)
@@ -379,7 +379,6 @@ def validate_dataset_dir(filepath: str) -> None:
         raise NotADirectoryError(f"The path {filepath} is not a directory.")
 
     file_paths = [f for f in input_path.iterdir() if not str(f.stem).startswith(".")]
-    print(file_paths)
     if len(file_paths) > 1:
         raise ValueError(f"The directory {input_path} contains more than one file.")
     if len(file_paths) == 0:

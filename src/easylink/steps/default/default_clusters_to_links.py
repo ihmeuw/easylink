@@ -7,6 +7,7 @@
 import logging
 import os
 from itertools import combinations
+from pathlib import Path
 
 import pandas as pd
 
@@ -23,7 +24,7 @@ def load_file(file_path, file_format=None):
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
         return pd.read_parquet(file_path)
-    raise ValueError()
+    raise ValueError(f"Unknown file format {file_format}")
 
 
 # code example from pipeline schema docs
@@ -44,18 +45,25 @@ def clusters_to_links(clusters_df):
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-# KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS is a list of filepaths with one
-# known_clusters.parquet filepath, that may include input data filepaths due to workaround
-clusters_filepaths = os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(
-    ","
-)
-clusters_filepath = ""
-for path in clusters_filepaths:
-    if "known_clusters.parquet" in path:
-        clusters_filepath = path
-        break
-if clusters_filepath == "":
-    raise ValueError()
+# KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS is a list of file paths.
+# There is one item in it that is a file with "clusters" in the filename.
+# That's the only item we're interested in here.
+# The other items may be there if this is coming from the user's input,
+# due to our workaround for only having one slot of user input.
+clusters_filepaths = [
+    path
+    for path in
+    os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(
+        ","
+    )
+    if "clusters" in Path(path).stem
+]
+if len(clusters_filepaths) > 1:
+    raise ValueError("Multiple known clusters files found")
+if len(clusters_filepaths) == 0:
+    raise ValueError("No known clusters file found")
+
+clusters_filepath = clusters_filepaths[0]
 
 # DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
 results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]

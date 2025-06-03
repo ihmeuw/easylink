@@ -46,7 +46,7 @@ it is a list of all the input datasets *and* the known clusters file.
 Slots that receive a data dependency from either of these types of user input actually
 receive the entire list, including the files not meant for that slot.
 The implementation internally must select the relevant file(s) to use.
-The rule about how to do this is that the file called ``known_clusters.parquet`` is the known clusters,
+The rule about how to do this is that the file with a name containing ``clusters`` is the known clusters,
 and all other files in the list are input datasets.
 
 Cloneable sections do not have splitters
@@ -77,24 +77,24 @@ The ``pipeline.yaml`` section for the cloneable section diagrammed above might l
      parallel:
        - determining_exclusions:
            implementation:
-             name: dummy_determining_exclusions
+             name: default_determining_exclusions
              configuration:
-               INPUT_DATASETS_SPLITTER_CHOICE: input_file_1.parquet
+               INPUT_DATASET: input_file_1
          removing_records:
            implementation:
-             name: dummy_removing_records
+             name: default_removing_records
              configuration:
-               INPUT_DATASETS_SPLITTER_CHOICE: input_file_1.parquet
+               INPUT_DATASET: input_file_1
        - determining_exclusions:
            implementation:
-             name: dummy_determining_exclusions
+             name: default_determining_exclusions
              configuration:
-               INPUT_DATASETS_SPLITTER_CHOICE: input_file_2.parquet
+               INPUT_DATASET: input_file_2
          removing_records:
            implementation:
-             name: dummy_removing_records
+             name: default_removing_records
              configuration:
-               INPUT_DATASETS_SPLITTER_CHOICE: input_file_2.parquet
+               INPUT_DATASET: input_file_2
 
 The highlighted lines are where the environment variable is passed which tells the implementation
 how to select the relevant file.

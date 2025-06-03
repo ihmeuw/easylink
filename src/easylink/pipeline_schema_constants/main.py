@@ -25,7 +25,6 @@ from easylink.utilities.validation_utils import (
     dont_validate,
     validate_blocks,
     validate_clusters,
-    validate_dataset,
     validate_dataset_dir,
     validate_ids_to_remove,
     validate_input_dataset_or_known_clusters,
@@ -202,8 +201,8 @@ NODES = [
                                                         # NOTE: No splitter here, because
                                                         # not supported by EasyLink;
                                                         # the implementation must do the splitting itself.
-                                                        name="datasets",
-                                                        env_var="DATASET_FILE_PATHS",
+                                                        name="dataset",
+                                                        env_var="DATASET_DIR_PATHS",
                                                         validator=validate_dataset_dir,
                                                     ),
                                                 ],
@@ -224,7 +223,7 @@ NODES = [
                                         input_slots=[
                                             InputSlot(
                                                 name="datasets",
-                                                env_var="DATASETS_FILE_PATHS",
+                                                env_var="DATASETS_DIR_PATHS",
                                                 validator=validate_dataset_dir,
                                             ),
                                         ],
@@ -289,7 +288,7 @@ NODES = [
                                     InputSlotMapping(
                                         parent_slot="datasets",
                                         child_node="pre-processing",
-                                        child_slot="datasets",
+                                        child_slot="dataset",
                                     ),
                                     InputSlotMapping(
                                         parent_slot="known_links",
