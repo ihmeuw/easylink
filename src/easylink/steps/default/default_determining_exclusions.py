@@ -16,6 +16,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 
+
 def load_file(file_path, file_format=None):
     logging.info(f"Loading file {file_path} with format {file_format}")
     if file_format is None:
@@ -23,6 +24,7 @@ def load_file(file_path, file_format=None):
     if file_format == "parquet":
         return pd.read_parquet(file_path)
     raise ValueError(f"Unknown file format {file_format}")
+
 
 # LOAD INPUTS
 
@@ -48,10 +50,7 @@ if dataset_path is None:
 # due to our workaround for only having one slot of user input.
 clusters_filepaths = [
     path
-    for path in
-    os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(
-        ","
-    )
+    for path in os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(",")
     if "clusters" in Path(path).stem
 ]
 if len(clusters_filepaths) > 1:
@@ -64,7 +63,9 @@ clusters_filepath = clusters_filepaths[0]
 clusters_df = load_file(clusters_filepath)
 
 if len(clusters_df) > 0:
-    raise ValueError("Default implementation of determining_exclusions passed a non-empty set of known clusters")
+    raise ValueError(
+        "Default implementation of determining_exclusions passed a non-empty set of known clusters"
+    )
 
 # don't need to actually load the dataset,
 # since we will just save an empty ids_to_remove

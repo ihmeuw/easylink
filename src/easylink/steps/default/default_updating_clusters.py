@@ -38,10 +38,7 @@ new_clusters_filepath = os.environ["NEW_CLUSTERS_FILE_PATH"]
 # due to our workaround for only having one slot of user input.
 known_clusters_filepaths = [
     path
-    for path in
-    os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(
-        ","
-    )
+    for path in os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(",")
     if "clusters" in Path(path).stem
 ]
 if len(known_clusters_filepaths) > 1:
@@ -53,7 +50,9 @@ known_clusters_filepath = known_clusters_filepaths[0]
 known_clusters_df = load_file(known_clusters_filepath)
 
 if len(known_clusters_df) > 0:
-    raise ValueError("Default implementation of updating_clusters passed a non-empty set of known clusters")
+    raise ValueError(
+        "Default implementation of updating_clusters passed a non-empty set of known clusters"
+    )
 
 # DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (clusters.parquet)
 results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]

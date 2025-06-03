@@ -52,10 +52,7 @@ def clusters_to_links(clusters_df):
 # due to our workaround for only having one slot of user input.
 clusters_filepaths = [
     path
-    for path in
-    os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(
-        ","
-    )
+    for path in os.environ["KNOWN_CLUSTERS_AND_MAYBE_INPUT_DATASETS_FILE_PATHS"].split(",")
     if "clusters" in Path(path).stem
 ]
 if len(clusters_filepaths) > 1:
