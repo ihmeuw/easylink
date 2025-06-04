@@ -3,7 +3,7 @@ Bootstrap: docker
 From: python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899
 
 %files
-    ./dummy_updating_clusters.py /dummy_updating_clusters.py
+    ./default_determining_exclusions.py /default_determining_exclusions.py
 
 %post
     # Create directories
@@ -19,4 +19,4 @@ From: python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a72
     export LC_ALL=C
 
 %runscript
-    python /dummy_updating_clusters.py '$@'
+    python /default_determining_exclusions.py '$@'

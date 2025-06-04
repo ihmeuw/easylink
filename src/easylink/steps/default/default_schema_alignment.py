@@ -20,13 +20,13 @@ def load_file(file_path, file_format=None):
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
         return pd.read_parquet(file_path)
-    raise ValueError()
+    raise ValueError(f"Unknown file format {file_format}")
 
 
 # LOAD INPUTS and SAVE OUTPUTS
 
-# DATASETS_FILE_PATHS is list of directories
-dataset_dirs = os.environ["DATASETS_FILE_PATHS"].split(",")
+# DATASETS_DIR_PATHS is list of directories
+dataset_dirs = os.environ["DATASETS_DIR_PATHS"].split(",")
 
 datasets = {}
 

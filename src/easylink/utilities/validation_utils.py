@@ -103,7 +103,7 @@ def validate_input_file_dummy(filepath: str) -> None:
 
 def validate_input_dataset_or_known_clusters(filepath: str) -> None:
     filepath = Path(filepath)
-    if filepath.stem == "known_clusters":
+    if "clusters" in filepath.stem:
         validate_clusters(filepath)
     else:
         validate_dataset(filepath)

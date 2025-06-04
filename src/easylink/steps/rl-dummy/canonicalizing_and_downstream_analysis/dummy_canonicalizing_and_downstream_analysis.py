@@ -24,7 +24,7 @@ def load_file(file_path, file_format=None):
         file_format = file_path.split(".")[-1]
     if file_format == "parquet":
         return pd.read_parquet(file_path)
-    raise ValueError()
+    raise ValueError(f"Unknown file format {file_format}")
 
 
 # LOAD INPUTS and SAVE OUTPUTS
