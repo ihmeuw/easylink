@@ -288,3 +288,10 @@ fastLink_evaluating_pairs:
   script_cmd: Rscript /fastLink_evaluating_pairs.R
   outputs:
     links: result.parquet
+fastLink_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/fastLink_links_to_clusters.sif
+  script_cmd: Rscript /fastLink_links_to_clusters.R
+  outputs:
+    clusters: result.parquet

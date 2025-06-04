@@ -379,7 +379,6 @@ def validate_dataset_dir(filepath: str) -> None:
         raise NotADirectoryError(f"The path {filepath} is not a directory.")
 
     file_paths = [f for f in input_path.iterdir() if not str(f.stem).startswith(".")]
-    print(file_paths)
     if len(file_paths) > 1:
         raise ValueError(f"The directory {input_path} contains more than one file.")
     if len(file_paths) == 0:
