@@ -74,7 +74,7 @@ class Implementation:
     def __repr__(self) -> str:
         return f"Implementation.{self.name}"
 
-    def validate(self) -> list[str]:
+    def validate(self, skip_image_validation: bool, images_dir: str | Path) -> list[str]:
         """Validates individual ``Implementation`` instances.
 
         Returns
@@ -89,7 +89,8 @@ class Implementation:
         """
         logs = []
         logs = self._validate_expected_steps(logs)
-        logs = self._validate_container_exists(logs)
+        if not skip_image_validation:
+            logs = self._validate_container_exists(logs, images_dir)
         return logs
 
     ##################
@@ -110,10 +111,13 @@ class Implementation:
             )
         return logs
 
-    def _validate_container_exists(self, logs: list[str]) -> list[str]:
+    def _validate_container_exists(
+        self, logs: list[str], images_dir: str | Path
+    ) -> list[str]:
         """Validates that the container to run exists."""
-        err_str = f"Container '{self.singularity_image_path}' does not exist."
-        if not Path(self.singularity_image_path).exists():
+        image_path = Path(images_dir) / self.singularity_image_name
+        err_str = f"Container '{str(image_path)}' does not exist."
+        if not image_path.exists():
             logs.append(err_str)
         return logs
 
@@ -124,9 +128,9 @@ class Implementation:
         return env_vars
 
     @property
-    def singularity_image_path(self) -> str:
+    def singularity_image_name(self) -> str:
         """The path to the required Singularity image."""
-        return self._metadata["image_path"]
+        return self._metadata["image_name"]
 
     @property
     def script_cmd(self) -> str:
