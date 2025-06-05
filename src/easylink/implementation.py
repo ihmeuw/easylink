@@ -115,6 +115,8 @@ class Implementation:
         self, logs: list[str], images_dir: str | Path
     ) -> list[str]:
         """Validates that the container to run exists."""
+        # HACK: We manually create the image path here as well as later when writing
+        # each implementations Snakefile rule.
         image_path = Path(images_dir) / self.singularity_image_name
         err_str = f"Container '{str(image_path)}' does not exist."
         if not image_path.exists():
