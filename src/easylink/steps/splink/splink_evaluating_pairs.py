@@ -41,6 +41,7 @@ for block_dir in blocks_dir.iterdir():
         probability_two_random_records_match=float(
             os.environ["PROBABILITY_TWO_RANDOM_RECORDS_MATCH"]
         ),
+        retain_intermediate_calculation_columns=True,
     )
 
     records = pd.read_parquet(block_dir / "records.parquet").rename(
@@ -125,6 +126,12 @@ for block_dir in blocks_dir.iterdir():
     linker._predict_warning()
 
     all_predictions.append(predictions.as_pandas_dataframe())
+
+comparisons_path = diagnostics_dir / f"comparisons_chart_{block_dir}.html"
+comparisons_path.parent.mkdir(exist_ok=True, parents=True)
+linker.visualisations.comparison_viewer_dashboard(
+    predictions, comparisons_path, overwrite=True
+)
 
 all_predictions = pd.concat(all_predictions, ignore_index=True)[
     ["unique_id_l", "unique_id_r", "match_probability"]
