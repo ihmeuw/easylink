@@ -5,10 +5,9 @@ import pandas as pd
 import pyarrow.parquet as pq
 import pytest
 
-from easylink.pipeline_schema import PipelineSchema
-from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.runner import main
 from easylink.utilities.data_utils import load_yaml
+from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 COMMON_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "common"
@@ -193,6 +192,7 @@ def _run_pipeline_and_confirm_finished(
             input_data=input_data,
             computing_environment=computing_environment,
             results_dir=results_dir,
+            images_dir=DEV_IMAGES_DIR,
             schema_name=schema_name,
         )
     assert pytest_wrapped_e.value.code == 0

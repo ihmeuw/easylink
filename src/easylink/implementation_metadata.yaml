@@ -1,14 +1,14 @@
 step_1_python_pandas:
   steps:
   - step_1
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
 step_1a_python_pandas:
   steps:
   - step_1a
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -17,7 +17,7 @@ step_1a_python_pandas:
 step_1b_python_pandas:
   steps:
   - step_1b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -26,21 +26,21 @@ step_1b_python_pandas:
 step_2_python_pandas:
   steps:
   - step_2
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   outputs:
     step_2_main_output: result.parquet
 step_3_python_pandas:
   steps:
   - step_3
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   outputs:
     step_3_main_output: result.parquet
 step_4_python_pandas:
   steps:
   - step_4
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -49,7 +49,7 @@ step_4_python_pandas:
 step_5_python_pandas:
   steps:
   - step_5
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -58,7 +58,7 @@ step_5_python_pandas:
 step_6_python_pandas:
   steps:
   - step_6
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -67,7 +67,7 @@ step_6_python_pandas:
 step_4a_python_pandas:
   steps:
   - step_4a
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -76,7 +76,7 @@ step_4a_python_pandas:
 step_4b_python_pandas:
   steps:
   - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -85,7 +85,7 @@ step_4b_python_pandas:
 step_4b_r:
   steps:
   - step_4b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  image_name: r-image.sif
   script_cmd: Rscript /dummy_step.R
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -94,7 +94,7 @@ step_4b_r:
 step_1_python_pyspark:
   steps:
   - step_1
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
+  image_name: python_pyspark.sif
   script_cmd: python3 /code/dummy_step.py
   outputs:
     step_1_main_output: result.parquet
@@ -102,7 +102,7 @@ step_1_python_pyspark:
 step_2_python_pyspark:
   steps:
   - step_2
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
+  image_name: python_pyspark.sif
   script_cmd: python3 /code/dummy_step.py
   outputs:
     step_2_main_output: result.parquet
@@ -110,7 +110,7 @@ step_2_python_pyspark:
 step_3_python_pyspark:
   steps:
   - step_3
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
+  image_name: python_pyspark.sif
   script_cmd: python3 /code/dummy_step.py
   outputs:
     step_3_main_output: result.parquet
@@ -118,7 +118,7 @@ step_3_python_pyspark:
 step_4_python_pyspark:
   steps:
   - step_4
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pyspark.sif
+  image_name: python_pyspark.sif
   script_cmd: python3 /code/dummy_step.py
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -127,7 +127,7 @@ step_4_python_pyspark:
 step_1_r:
   steps:
   - step_1
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  image_name: r-image.sif
   script_cmd: Rscript /dummy_step.R
   outputs:
     step_1_main_output: result.parquet
@@ -135,7 +135,7 @@ step_1_r:
 step_2_r:
   steps:
   - step_2
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  image_name: r-image.sif
   script_cmd: Rscript /dummy_step.R
   outputs:
     step_2_main_output: result.parquet
@@ -143,7 +143,7 @@ step_2_r:
 step_3_r:
   steps:
   - step_3
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  image_name: r-image.sif
   script_cmd: Rscript /dummy_step.R
   outputs:
     step_3_main_output: result.parquet
@@ -151,7 +151,7 @@ step_3_r:
 step_4_r:
   steps:
   - step_4
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/r-image.sif
+  image_name: r-image.sif
   script_cmd: Rscript /dummy_step.R
   env:
     INPUT_ENV_VARS: DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS
@@ -162,7 +162,7 @@ step_1_and_step_2_combined_python_pandas:
   steps:
   - step_1
   - step_2
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   outputs:
     step_2_main_output: result.parquet
@@ -170,7 +170,7 @@ step_1_and_step_2_parallel_python_pandas:
   steps:
   - step_1
   - step_2
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   env:
     INPUT_ENV_VARS: STEP_1_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS
@@ -180,7 +180,7 @@ step_3_and_step_4_combined_python_pandas:
   steps:
   - step_3
   - step_4
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   outputs:
     step_4_main_output: result.parquet
@@ -188,114 +188,113 @@ step_1a_and_step_1b_combined_python_pandas:
   steps:
   - step_1a
   - step_1b
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/python_pandas.sif
+  image_name: python_pandas.sif
   script_cmd: python /dummy_step.py
   outputs:
     step_1_main_output: result.parquet
 dummy_step_1_for_output_dir_example:
   steps:
   - step_1_for_output_dir_example
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_step_1_for_output_dir_example.sif
+  image_name: main/dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
   outputs:
     step_1_main_output_directory: output_dir/
 dummy_step_1_for_output_dir_example_default:
   steps:
   - step_1_for_output_dir_example
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_step_1_for_output_dir_example.sif
+  image_name: main/dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
 dummy_step_2_for_output_dir_example:
   steps:
   - step_2_for_output_dir_example
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_step_2_for_output_dir_example.sif
+  image_name: main/dummy_step_2_for_output_dir_example.sif
   script_cmd: python /dummy_step_2_for_output_dir_example.py
   outputs:
     step_2_main_output: result.parquet
 default_removing_records:
   steps:
   - removing_records
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_removing_records.sif
+  image_name: main/default_removing_records.sif
   script_cmd: python /default_removing_records.py
   outputs:
     dataset: dataset
 default_clusters_to_links:
   steps:
   - clusters_to_links
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_clusters_to_links.sif
+  image_name: main/default_clusters_to_links.sif
   script_cmd: python /default_clusters_to_links.py
   outputs:
     known_links: result.parquet
 default_determining_exclusions:
   steps:
   - determining_exclusions
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_determining_exclusions.sif
+  image_name: main/default_determining_exclusions.sif
   script_cmd: python /default_determining_exclusions.py
   outputs:
     ids_to_remove: result.parquet
 default_updating_clusters:
   steps:
   - updating_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_updating_clusters.sif
+  image_name: main/default_updating_clusters.sif
   script_cmd: python /default_updating_clusters.py
   outputs:
     clusters: clusters.parquet
 dummy_canonicalizing_and_downstream_analysis:
   steps:
   - canonicalizing_and_downstream_analysis
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_canonicalizing_and_downstream_analysis.sif
+  image_name: main/dummy_canonicalizing_and_downstream_analysis.sif
   script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
   outputs:
     analysis_output: result.parquet
 dummy_pre-processing:
   steps:
   - pre-processing
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_pre-processing.sif
+  image_name: main/dummy_pre-processing.sif
   script_cmd: python /dummy_pre-processing.py
   outputs:
     dataset: dataset
 default_schema_alignment:
   steps:
   - schema_alignment
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_schema_alignment.sif
+  image_name: main/default_schema_alignment.sif
   script_cmd: python /default_schema_alignment.py
   outputs:
     records: result.parquet
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/splink_blocking_and_filtering.sif
+  image_name: main/splink_blocking_and_filtering.sif
   script_cmd: python /splink_blocking_and_filtering.py
   outputs:
     blocks: blocks
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/splink_evaluating_pairs.sif
+  image_name: main/splink_evaluating_pairs.sif
   script_cmd: python /splink_evaluating_pairs.py
   outputs:
     links: result.parquet
 splink_links_to_clusters:
   steps:
   - links_to_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/splink_links_to_clusters.sif
+  image_name: main/splink_links_to_clusters.sif
   script_cmd: python /splink_links_to_clusters.py
   outputs:
     clusters: result.parquet
 fastLink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/fastLink_evaluating_pairs.sif
+  image_name: main/fastLink_evaluating_pairs.sif
   script_cmd: Rscript /fastLink_evaluating_pairs.R
   outputs:
     links: result.parquet
 fastLink_links_to_clusters:
   steps:
   - links_to_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/fastLink_links_to_clusters.sif
+  image_name: main/fastLink_links_to_clusters.sif
   script_cmd: Rscript /fastLink_links_to_clusters.R
   outputs:
-    clusters: result.parquet
-exclude_clustered:
+    clusters: result.parquetexclude_clustered:
   steps:
   - determining_exclusions
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/exclude_clustered.sif
