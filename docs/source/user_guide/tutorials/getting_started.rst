@@ -4,6 +4,16 @@
 Getting Started
 ===============
 
+Naive demo notes
+================
+
+.. code-block:: console
+
+   $ cd docs/source/user_guide/tutorials/
+   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo_naive.yaml -e /ihme/homes/tylerdy/easylink/tests/specifications/common/environment_local.yaml
+
+
+
 First Pipeline
 ==============
 
