@@ -66,7 +66,7 @@ class Config(LayeredConfigTree):
     config_params
         A dictionary of all specifications required to run the pipeline. This
         includes the pipeline, input data, and computing environment specifications,
-        as well as the results directory.
+        as well as the results directory and images directory.
     schema_name
         The name of the schema to validate the pipeline configuration against.
 
@@ -89,6 +89,8 @@ class Config(LayeredConfigTree):
         self,
         config_params: dict[str, Any],
         schema_name: str = "main",
+        images_dir: str | Path | None = None,
+        command: str = "run",
     ) -> None:
         super().__init__(layers=["initial_data", "default", "user_configured"])
         self.update(DEFAULT_ENVIRONMENT, layer="default")
@@ -101,6 +103,16 @@ class Config(LayeredConfigTree):
             self.update({"environment": {"slurm": {}}}, layer="default")
         self.update({"schema": self._get_schema(schema_name)}, layer="initial_data")
         self.schema.configure_pipeline(self.pipeline, self.input_data)
+        # use the images_dir if provided, otherwise default to ~/.easylink_images
+        self.update(
+            {
+                "images_dir": Path(images_dir)
+                if images_dir
+                else Path.home() / ".easylink_images"
+            },
+            layer="user_configured",
+        )
+        self.update({"command": command}, layer="user_configured")
         self._validate()
         self.freeze()
 
