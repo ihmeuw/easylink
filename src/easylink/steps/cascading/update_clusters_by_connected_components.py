@@ -8,8 +8,8 @@ import logging
 import os
 from pathlib import Path
 
-import pandas as pd
 import networkx as nx
+import pandas as pd
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,15 +56,16 @@ Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 new_clusters_df = load_file(new_clusters_filepath)
 
+
 def merge_clusters(known_clusters_df, new_clusters_df):
     # Combine both dataframes
     combined_df = pd.concat([known_clusters_df, new_clusters_df], ignore_index=True)
 
     # Drop records with missing cluster IDs
-    combined_df = combined_df.dropna(subset=['Cluster ID'])
+    combined_df = combined_df.dropna(subset=["Cluster ID"])
 
     # Group by Cluster ID to get connected records
-    cluster_groups = combined_df.groupby('Cluster ID')['Input Record ID'].apply(list)
+    cluster_groups = combined_df.groupby("Cluster ID")["Input Record ID"].apply(list)
 
     # Build a graph of all connections implied by cluster IDs
     G = nx.Graph()
@@ -74,7 +75,7 @@ def merge_clusters(known_clusters_df, new_clusters_df):
                 G.add_edge(group[i], group[j])
 
     # Add isolated nodes (records with unique clusters)
-    all_ids = set(combined_df['Input Record ID'])
+    all_ids = set(combined_df["Input Record ID"])
     G.add_nodes_from(all_ids)
 
     # Compute connected components
@@ -87,9 +88,10 @@ def merge_clusters(known_clusters_df, new_clusters_df):
             merged_data.append((record_id, cluster_id))
 
     # Build the final DataFrame
-    merged_df = pd.DataFrame(merged_data, columns=['Input Record ID', 'Cluster ID'])
+    merged_df = pd.DataFrame(merged_data, columns=["Input Record ID", "Cluster ID"])
 
     return merged_df
+
 
 output_df = merge_clusters(known_clusters_df, new_clusters_df)
 

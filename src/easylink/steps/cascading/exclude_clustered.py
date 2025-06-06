@@ -63,11 +63,11 @@ clusters_filepath = clusters_filepaths[0]
 # Exclude records that have been clustered
 clusters_df = load_file(clusters_filepath)
 dataset_df = load_file(dataset_path)
-clustered_record_ids = set(dataset_df["Record ID"].unique()) & set(clusters_df["Input Record ID"].unique())
+clustered_record_ids = set(dataset_df["Record ID"].unique()) & set(
+    clusters_df["Input Record ID"].unique()
+)
 
-IDS_TO_REMOVE = pd.DataFrame({
-    "Record ID": list(clustered_record_ids)
-})
+IDS_TO_REMOVE = pd.DataFrame({"Record ID": list(clustered_record_ids)})
 
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a file (results.parquet)
 results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
