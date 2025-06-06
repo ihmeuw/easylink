@@ -1,0 +1,134 @@
+steps:
+  entity_resolution:
+    iterate:
+      - substeps:
+          determining_exclusions_and_removing_records:
+            parallel:
+              - determining_exclusions:
+                  implementation:
+                    name: default_determining_exclusions
+                    configuration:
+                      INPUT_DATASET: input_file_1
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_1
+              - determining_exclusions:
+                  implementation:
+                    name: default_determining_exclusions
+                    configuration:
+                      INPUT_DATASET: input_file_2
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_2
+          clustering:
+            substeps:
+              clusters_to_links:
+                implementation:
+                  name: default_clusters_to_links
+              linking:
+                substeps:
+                  pre-processing:
+                    parallel:
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_1
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_2
+                  schema_alignment:
+                    implementation:
+                      name: default_schema_alignment
+                  blocking_and_filtering:
+                    implementation:
+                      name: splink_blocking_and_filtering
+                      configuration:
+                        BLOCKING_RULES: "'l.last_name == r.last_name'"
+                  evaluating_pairs:
+                    implementation:
+                      name: splink_evaluating_pairs
+                      configuration:
+                        BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                        COMPARISONS: "'first_name:exact,last_name:exact'"
+                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
+                        THRESHOLD_MATCH_PROBABILITY: 0.1
+              links_to_clusters:
+                implementation:
+                  name: splink_links_to_clusters
+                  configuration:
+                    THRESHOLD_MATCH_PROBABILITY: 0.1
+          updating_clusters:
+            implementation:
+              name: default_updating_clusters
+      - substeps:
+          determining_exclusions_and_removing_records:
+            parallel:
+              - determining_exclusions:
+                  implementation:
+                    name: exclude_clustered
+                    configuration:
+                      INPUT_DATASET: input_file_1
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_1
+              - determining_exclusions:
+                  implementation:
+                    name: exclude_none
+                    configuration:
+                      INPUT_DATASET: input_file_2
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_2
+          clustering:
+            substeps:
+              clusters_to_links:
+                implementation:
+                  name: default_clusters_to_links
+              linking:
+                substeps:
+                  pre-processing:
+                    parallel:
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_1
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_2
+                  schema_alignment:
+                    implementation:
+                      name: default_schema_alignment
+                  blocking_and_filtering:
+                    implementation:
+                      name: splink_blocking_and_filtering
+                      configuration:
+                        BLOCKING_RULES: "'l.first_name == r.first_name'"
+                  evaluating_pairs:
+                    implementation:
+                      name: splink_evaluating_pairs
+                      configuration:
+                        BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                        COMPARISONS: "'first_name:exact,last_name:exact'"
+                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
+                        THRESHOLD_MATCH_PROBABILITY: 0.1
+              links_to_clusters:
+                implementation:
+                  name: splink_links_to_clusters
+                  configuration:
+                    THRESHOLD_MATCH_PROBABILITY: 0.1
+          updating_clusters:
+            implementation:
+              name: update_clusters_by_connected_components
+  canonicalizing_and_downstream_analysis:
+    implementation:
+      name: dummy_canonicalizing_and_downstream_analysis
