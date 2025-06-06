@@ -8,12 +8,14 @@ This module contains utility functions for handling data files and directories.
 
 """
 
+import hashlib
 import os
 import shutil
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
+import requests
 import yaml
 
 
@@ -157,10 +159,26 @@ def load_yaml(filepath: str | Path) -> dict:
 def download_image(
     images_dir: str | Path, record_id: int, filename: str, md5_checksum: str
 ) -> None:
-    """Downloads an image from zenodo."""
-    import hashlib
+    """Downloads an image from zenodo.
 
-    import requests
+    Parameters
+    ----------
+    images_dir
+        The directory to download the image to.
+    record_id
+        The zenodo record ID that the image is a part of.
+    filename
+        The name of the image file to download.
+    md5_checksum
+        The expected MD5 checksum of the image file.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the image file was not downloaded.
+    ValueError
+        If the MD5 checksum of the downloaded file does not match the expected checksum.
+    """
 
     url = f"https://zenodo.org/record/{record_id}/files/{filename}?download=1"
 
