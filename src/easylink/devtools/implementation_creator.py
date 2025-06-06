@@ -69,8 +69,6 @@ class ImplementationCreator:
         for the container.
     implementation_name
         The name of the implementation. It is by definition the name of the script.
-    requirements
-        The install requirements for the implementation (if any).
     step
         The name of the step that this implementation implements.
     output_slot
@@ -252,7 +250,7 @@ class ImplementationCreator:
         return steps[0]
 
     @staticmethod
-    def _extract_has_custom_recipe(script_path: Path) -> str:
+    def _extract_has_custom_recipe(script_path: Path) -> bool:
         """Extracts whether the user has already written the recipe for this implementation.
 
         The expectation is that this flag is specified within the script

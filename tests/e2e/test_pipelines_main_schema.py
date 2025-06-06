@@ -1,5 +1,4 @@
 # mypy: ignore-errors
-import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -8,6 +7,7 @@ import pandas as pd
 import pytest
 
 from easylink.utilities.general_utils import is_on_slurm
+from easylink.utilities.paths import DEV_IMAGES_DIR
 
 
 @pytest.mark.slow
@@ -62,6 +62,7 @@ def test_pipeline_splink_dummy(
             f"-i {input_data} "
             f"-e {computing_environment} "
             f"-o {str(test_specific_results_dir)} "
+            f"-I {DEV_IMAGES_DIR} "
             "--no-timestamp "
             "--schema main "
         )
@@ -145,6 +146,7 @@ def test_pipeline_with_fastLink(
             f"-i {input_data} "
             f"-e {computing_environment} "
             f"-o {str(test_specific_results_dir)} "
+            f"-I {DEV_IMAGES_DIR} "
             "--no-timestamp "
             "--schema main "
         )
