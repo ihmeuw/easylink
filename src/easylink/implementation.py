@@ -118,9 +118,8 @@ class Implementation:
         # HACK: We manually create the image path here as well as later when writing
         # each implementations Snakefile rule.
         image_path = Path(images_dir) / self.singularity_image_name
-        err_str = f"Container '{str(image_path)}' does not exist."
         if not image_path.exists():
-            logs.append(err_str)
+            logs.append(f"Container '{str(image_path)}' does not exist.")
         return logs
 
     def _get_env_vars(self, implementation_config: LayeredConfigTree) -> dict[str, str]:
