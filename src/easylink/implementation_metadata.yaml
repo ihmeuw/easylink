@@ -295,3 +295,24 @@ fastLink_links_to_clusters:
   script_cmd: Rscript /fastLink_links_to_clusters.R
   outputs:
     clusters: result.parquet
+exclude_clustered:
+  steps:
+  - determining_exclusions
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/exclude_clustered.sif
+  script_cmd: python /exclude_clustered.py
+  outputs:
+    ids_to_remove: result.parquet
+exclude_none:
+  steps:
+  - determining_exclusions
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/exclude_none.sif
+  script_cmd: python /exclude_none.py
+  outputs:
+    ids_to_remove: result.parquet
+update_clusters_by_connected_components:
+  steps:
+  - updating_clusters
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/update_clusters_by_connected_components.sif
+  script_cmd: python /update_clusters_by_connected_components.py
+  outputs:
+    clusters: result.parquet
