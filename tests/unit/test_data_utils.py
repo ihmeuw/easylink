@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 from easylink.utilities.data_utils import (
-    copy_configuration_files_to_results_directory,
     create_results_directory,
     create_results_intermediates,
     get_results_directory,

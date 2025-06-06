@@ -52,6 +52,7 @@ if __name__ == "__main__":
         "pandas",
         "pyyaml",
         "pyarrow",
+        "requests",
         "snakemake>=8.0.0",
         # TODO MIC-4963: Resolve quoting issue and remove pin
         "snakemake-interface-executor-plugins<9.0.0",
