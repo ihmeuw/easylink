@@ -459,8 +459,7 @@ A directory of files, where each file is in a tabular format.
 Each file's name identifies the name of that input dataset.
 Each file may have any number of columns,
 but one of them must be called "Record ID".
-Values in the "Record ID" columns of each file must be unique
-**across all files**.
+Values in the "Record ID" columns of each file must be unique integers.
 
 **Example:**
 
@@ -475,11 +474,11 @@ A directory containing two files, ``input_file.parquet`` and ``reference_file.pa
      - First
      - Last
      - Address
-   * - input_file_1
+   * - 1
      - Vicki
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - input_file_2
+   * - 2
      - Gerald
      - Allen
      - 456 Other Drive, Anytown WA, 99999
@@ -493,11 +492,11 @@ A directory containing two files, ``input_file.parquet`` and ``reference_file.pa
      - First
      - Last
      - Address
-   * - reference_file_1
+   * - 1
      - Victoria
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - reference_file_2
+   * - 2
      - Gerry
      - Allen
      - 456 Other Drive, Anytown WA, 99999
@@ -527,14 +526,14 @@ if A and B are in the same cluster, and B and C are in the same cluster,
 then A and C are in the same cluster by definition.
 
 **Specification:**
-A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
-"Input Record ID" must have unique values.
+A file in a tabular format with three columns: "Input Dataset", "Input Record ID", and "Cluster ID".
+Combinations of values in the "Input Dataset" and "Input Record ID" columns must be unique.
 "Cluster ID" may take any value.
 
 .. note::
 
    In the future, we should add to this specification that each "Input Record ID"
-   is a Record ID value found in an input dataset.
+   is a Record ID value found in the input dataset indicated by the "Input Dataset" column.
    EasyLink currently doesn't support this.
 
 **Example:**
@@ -542,29 +541,36 @@ A file in a tabular format with two columns: "Input Record ID" and "Cluster ID".
 .. list-table:: 
    :header-rows: 1
 
-   * - Input Record ID
+   * - Input Dataset
+     - Input Record ID
      - Cluster ID
-   * - input_file_1
+   * - input_file
      - 1
-   * - input_file_2
+     - 1
+   * - input_file
      - 2
-   * - reference_file_1
      - 2
-   * - input_file_4
+   * - reference_file
+     - 1
+     - 2
+   * - input_file
+     - 4
      - 3
-   * - input_file_5
+   * - input_file
+     - 5
      - 3
-   * - reference_file_2
+   * - reference_file
+     - 2
      - 3
 
-In this example, record ID "input_file_1" has been put in its own cluster,
+In this example, record ID 1 in dataset "input_file" has been put in its own cluster,
 meaning that it does not match any of the other records listed.
-input_file_2 has been put in a cluster with reference_file_1,
+input_file record 2 has been put in a cluster with reference_file record 1,
 indicating that they refer to the same person.
-input_file_3 doesn't appear in the table at all, meaning that its cluster is unknown.
-Lastly, input_file_4 and input_file_5 are considered duplicates
+input_file record 3 doesn't appear in the table at all, meaning that its cluster is unknown.
+Lastly, input_file record 4 and input_file record 5 are considered duplicates
 (records, from the same data source, referring to the same entity)
-and are also a match to reference_file_2.
+and are also a match to reference_file record 2.
 
 .. _entity_resolution_step:
 
@@ -721,7 +727,7 @@ IDs to remove
 ^^^^^^^^^^^^^
 
 **Interpretation:**
-Input record IDs slated to be dropped for the purposes of this pass.
+Input record IDs slated to be dropped from a given dataset for the purposes of this pass.
 
 **Specification:**
 A single file in tabular format, with exactly one column called "Input Record ID".
@@ -740,8 +746,8 @@ Every value in the column should be unique.
    :header-rows: 1
 
    * - Input Record ID
-   * - input_file_2
-   * - input_file_4
+   * - 2
+   * - 4
 
 Removing records
 ^^^^^^^^^^^^^^^^
@@ -875,12 +881,15 @@ If a method doesn't represent uncertainty, it can set
 all probabilities to 1 (or another constant).
 
 **Specification:**
-A table with three columns, "Left Record ID", "Right Record ID", and "Probability".
-Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
-Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
-The Left Record ID value should be alphabetically before the Right Record ID
-value in each row.
-(This ensures each pair is truly unique, and not
+A table with five columns: "Left Record Dataset", "Left Record ID", "Right Record Dataset", "Right Record ID", and "Probability".
+It is not permitted for Left Record ID to equal Right Record ID *and* Left Dataset to equal Right Dataset in any given row.
+The combination of the four columns besides Probability should be unique
+(i.e. multiple rows with the same Left Record Dataset, Left Record ID, Right Record Dataset, and Right Record ID would not be permitted).
+The Left Record Dataset value should be alphabetically before (or equal to) the Right Record Dataset value in each row.
+In rows where Left Record Dataset and Right Record Dataset are equal,
+the Left Record ID value should be less than the Right Record ID
+value.
+(These two rules ensure each pair is truly unique, and not
 a mirror image of another.)
 Each value in the Probability column must be between
 0 and 1 (inclusive).
@@ -888,7 +897,7 @@ Each value in the Probability column must be between
 .. note::
 
    In the future, we should add to this specification that every value in both Record ID columns
-   should exist in one of the input datasets.
+   should exist in the corresponding input datasets.
    EasyLink currently doesn't support this.
 
 **Example:**
@@ -896,17 +905,25 @@ Each value in the Probability column must be between
 .. list-table::
    :header-rows: 1
 
-   * - Left Record ID
+   * - Left Record Dataset
+     - Left Record ID
+     - Right Record Dataset
      - Right Record ID
      - Probability
-   * - input_file_2
-     - reference_file_3
+   * - input_file
+     - 2
+     - reference_file
+     - 3
      - 0.9
-   * - input_file_2
-     - reference_file_4
+   * - input_file
+     - 2
+     - reference_file
+     - 4
      - 0.8
-   * - input_file_3
-     - reference_file_6
+   * - input_file
+     - 3
+     - reference_file
+     - 6
      - 0.4
 
 Linking
@@ -1082,12 +1099,13 @@ The records to link (from all datasets) in one big table.
 **Specification:**
 A file in a tabular format.
 The file may have any number of columns,
-but one of them must be called “Input Record ID” and it must have unique values.
+but they must include "Input Record Dataset" and "Input Record ID"
+and the combination of those two columns must have unique values.
 
 .. note::
 
    In the future, we should add to this specification that every value in the Input Record ID column
-   should exist in one of the input datasets.
+   should exist in the corresponding input dataset.
    EasyLink currently doesn't support this.
 
 **Example:**
@@ -1095,23 +1113,28 @@ but one of them must be called “Input Record ID” and it must have unique val
 .. list-table:: 
    :header-rows: 1
 
-   * - Input Record ID
+   * - Input Record Dataset
+     - Input Record ID
      - First
      - Last
      - Address
-   * - input_file_1
+   * - input_file
+     - 1
      - Vicki
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - input_file_2
+   * - input_file
+     - 2
      - Gerald
      - Allen
      - 456 Other Drive, Anytown WA, 99999
-   * - reference_file_1
+   * - reference_file
+     - 1
      - Victoria
      - Simmons
      - 123 Main St., Anytown WA 99999
-   * - reference_file_2
+   * - reference_file
+     - 2
      - Gerry
      - Allen
      - *N/A*
@@ -1157,13 +1180,16 @@ Each subdirectory must contain two files, each in tabular format: records and pa
 
 Each records file must follow the specification for :ref:`Records`.
 
-Each pairs file must contain two columns, "Left Record ID" and "Right Record ID".
-Every value in both Record ID columns should exist in the Record ID column of the records file for the same block.
-Left Record ID and Right Record ID are not permitted to be equal to one another in any given row.
-Rows should be unique (i.e. multiple rows with the same Left Record ID *and* Right Record ID would not be permitted).
-The Left Record ID value should be alphabetically before the Right Record ID
-value in each row.
-(This ensures each pair is truly unique, and not
+Each pairs file must contain four columns: "Left Record Dataset", "Left Record ID", "Right Record Dataset", and "Right Record ID".
+Every combination of values in Record Dataset and Record ID columns (left or right) should exist in the records file for the same block.
+It is not permitted for Left Record ID to equal Right Record ID *and* Left Dataset to equal Right Dataset in any given row.
+Rows should be unique
+(i.e. multiple rows with the same Left Record Dataset, Left Record ID, Right Record Dataset, and Right Record ID would not be permitted).
+The Left Record Dataset value should be alphabetically before (or equal to) the Right Record Dataset value in each row.
+In rows where Left Record Dataset and Right Record Dataset are equal,
+the Left Record ID value should be less than the Right Record ID
+value.
+(These two rules ensure each pair is truly unique, and not
 a mirror image of another.)
 
 .. note::
@@ -1190,23 +1216,28 @@ A records file might look like:
 .. list-table:: 
    :header-rows: 1
 
-   * - Input Record ID
+   * - Input Record Dataset
+     - Input Record ID
      - First
      - Last
      - Address
-   * - input_file_1
+   * - input_file
+     - 1
      - Vicki
      - Simmons
      - 123 Main St. Apt C, Anytown WA 99999
-   * - input_file_2
+   * - input_file
+     - 2
      - Gerald
      - Allen
      - 456 Other Drive, Anytown WA, 99999
-   * - reference_file_1
+   * - reference_file
+     - 1
      - Victoria
      - Simmons
      - 123 Main St., Anytown WA 99999
-   * - reference_file_2
+   * - reference_file
+     - 2
      - Gerry
      - Allen
      - *N/A*
@@ -1216,14 +1247,22 @@ A pairs file might look like:
 .. list-table::
    :header-rows: 1
 
-   * - Left Record ID
+   * - Left Record Dataset
+     - Left Record ID
+     - Right Record Dataset
      - Right Record ID
-   * - input_file_2
-     - reference_file_2
-   * - input_file_2
-     - reference_file_4
-   * - input_file_3
-     - reference_file_6
+   * - input_file
+     - 2
+     - reference_file
+     - 2
+   * - input_file
+     - 2
+     - reference_file
+     - 4
+   * - input_file
+     - 3
+     - reference_file
+     - 6
 
 Evaluating pairs
 ^^^^^^^^^^^^^^^^
