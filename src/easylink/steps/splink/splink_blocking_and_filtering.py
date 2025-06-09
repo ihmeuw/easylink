@@ -14,20 +14,33 @@ import splink
 
 blocking_rules = os.environ["BLOCKING_RULES"].split(",")
 
-from splink import Linker, SettingsCreator
+link_only = os.getenv("LINK_ONLY", "false").lower() in ("true", "yes", "1")
+
+from splink import Linker, SettingsCreator, DuckDBAPI
 
 # Create the Splink linker in dedupe mode
 settings = SettingsCreator(
-    link_type="dedupe_only",
+    link_type="link_only" if link_only else "dedupe_only",
     blocking_rules_to_generate_predictions=blocking_rules,
     comparisons=[],
 )
 from splink import DuckDBAPI
+from splink.blocking_analysis import (
+    cumulative_comparisons_to_be_scored_from_blocking_rules_chart,
+)
+
+if link_only:
+    df_list = [
+        df
+        for _, df in records.rename(columns={"Input Record ID": "unique_id"}).groupby(
+            "dataset"
+        )
+    ]
+else:
+    df_list = [records.rename(columns={"Input Record ID": "unique_id"})]
 
 db_api = DuckDBAPI()
-linker = Linker(
-    records.rename(columns={"Input Record ID": "unique_id"}), settings, db_api=db_api
-)
+linker = Linker(df_list, settings, db_api=db_api)
 
 # Copied/adapted from https://github.com/moj-analytical-services/splink/blob/3eb1921eaff6b8471d3ebacd3238eb514f62c844/splink/internals/linker_components/inference.py#L86-L131
 from splink.internals.pipeline import CTEPipeline
@@ -44,6 +57,7 @@ blocking_input_tablename_l = "__splink__df_concat_with_tf"
 blocking_input_tablename_r = "__splink__df_concat_with_tf"
 
 link_type = linker._settings_obj._link_type
+
 
 # If exploded blocking rules exist, we need to materialise
 # the tables of ID pairs
@@ -92,3 +106,13 @@ output_path.mkdir(exist_ok=True, parents=True)
 
 records.to_parquet(output_path / "records.parquet", index=False)
 blocked_pairs.to_parquet(output_path / "pairs.parquet", index=False)
+
+db_api = DuckDBAPI()
+cumulative_comparisons_to_be_scored_from_blocking_rules_chart(
+    table_or_tables=records,
+    blocking_rules=blocking_rules,
+    db_api=db_api,
+    link_type="link_only",
+    unique_id_column_name="Input Record ID",
+    source_dataset_column_name="source_dataset",  # TBD change to dataset column when that's ready
+)

@@ -4,6 +4,9 @@ import pdb
 import argparse
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 def load_file(file_path, file_format=None):
     print(f"Loading file {file_path} with format {file_format}")
@@ -75,5 +78,39 @@ nonlinks = predictions_df[
     predictions_df["simulant_id_l"] != predictions_df["simulant_id_r"]
 ].sort_values("Probability", ascending=False)
 
-print(links)
-print(nonlinks)
+THRESHOLD = 0.9
+
+false_positives = len(nonlinks["Probability"] >= THRESHOLD)
+false_negatives = len(links["Probability"] < THRESHOLD)
+print(f"For threshold {THRESHOLD}, {false_positives=}; {false_negatives=}")
+
+print(links[0:false_positives])
+print(nonlinks[0:false_negatives])
+
+
+clusters_df = load_file(str(Path(results_dir / "result.parquet")))
+print(clusters_df["Cluster ID"].value_counts())
+
+data = []
+for prob in np.sort(predictions_df["Probability"].unique()):
+    matches = len(predictions_df[predictions_df["Probability"] >= prob])
+    # change when separate dataset column is ready
+    w2_to_ssa_records = predictions_df[
+        (
+            ("w2" in predictions_df["Left Record ID"])
+            and "w2" not in predictions_df["Right Record ID"]
+        )
+        or (
+            ("w2" in predictions_df["Right Record ID"])
+            and "w2" not in predictions_df["Left Record ID"]
+        )
+    ]
+    w2_records_matched = (
+        predictions_df["Left Record ID"]
+        if "w2" in predictions_df["Left Record ID"]
+        else predictions_df["Right Record ID"]
+    )
+    duplicates = len(
+        w2_records_matched.value_counts()[w2_records_matched.value_counts() > 1]
+    )
+    data.append([prob, matches, duplicates])

@@ -13,6 +13,7 @@ blocks_dir = Path(os.environ["BLOCKS_DIR_PATH"])
 diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
 output_path = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
 Path(output_path).parent.mkdir(exist_ok=True, parents=True)
+link_only = os.getenv("LINK_ONLY", "false").lower() in ("true", "yes", "1")
 
 all_predictions = []
 
@@ -35,7 +36,7 @@ for block_dir in blocks_dir.iterdir():
 
     # Create the Splink linker in dedupe mode
     settings = SettingsCreator(
-        link_type="dedupe_only",
+        link_type="link_only" if link_only else "dedupe_only",
         blocking_rules_to_generate_predictions=[],
         comparisons=comparisons,
         probability_two_random_records_match=float(
@@ -50,8 +51,13 @@ for block_dir in blocks_dir.iterdir():
 
     from splink import DuckDBAPI
 
+    if link_only:
+        df_list = [df for _, df in records.groupby("dataset")]
+    else:
+        df_list = [records]
+
     db_api = DuckDBAPI()
-    linker = Linker(records, settings, db_api=db_api)
+    linker = Linker(df_list, settings, db_api=db_api)
 
     linker.training.estimate_u_using_random_sampling(max_pairs=5e6)
 

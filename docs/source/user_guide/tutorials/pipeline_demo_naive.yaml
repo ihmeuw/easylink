@@ -48,6 +48,7 @@ steps:
                   name: splink_blocking_and_filtering
                   configuration:
                     BLOCKING_RULES: "'l.last_name == r.last_name'"
+                    LINK_ONLY: true
               evaluating_pairs:
                 implementation:
                   name: splink_evaluating_pairs
@@ -56,6 +57,7 @@ steps:
                     COMPARISONS: "'first_name:exact,last_name:exact'"
                     PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
                     THRESHOLD_MATCH_PROBABILITY: 0.5
+                    LINK_ONLY: true
           links_to_clusters:
             implementation:
               name: splink_links_to_clusters
