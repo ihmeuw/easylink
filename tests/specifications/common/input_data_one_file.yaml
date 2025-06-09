@@ -1,1 +1,2 @@
+# NOTE: filepaths must be absolute paths to the shared filesystem for tests launched by Jenkins to work
 input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet

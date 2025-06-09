@@ -1,3 +1,4 @@
+# NOTE: filepaths must be absolute paths to the shared filesystem for tests launched by Jenkins to work
 input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_1.parquet
 input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_2.parquet
 known_clusters: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/known_clusters.parquet
