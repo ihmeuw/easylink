@@ -11,6 +11,7 @@ function(s) for processed data being passed out of one pipeline step and into th
 from pathlib import Path
 
 import pandas as pd
+from pandas.api.types import is_integer_dtype
 from pyarrow import parquet as pq
 
 
@@ -42,7 +43,24 @@ def _read_file(filepath: str) -> pd.DataFrame:
         )
 
 
-def _validate_required_columns(filepath: str, required_columns: set) -> None:
+def _validate_required_columns(filepath: str, required_columns: set[str]) -> None:
+    """
+    Validates that the file at `filepath` contains all columns in `required_columns`.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the file to validate.
+    required_columns : set[str]
+        The set of required column names.
+
+    Raises
+    ------
+    NotImplementedError
+        If the file type is not supported.
+    LookupError
+        If any required columns are missing.
+    """
     extension = Path(filepath).suffix
     if extension == ".parquet":
         output_columns = set(pq.ParquetFile(filepath).schema.names)
@@ -65,7 +83,7 @@ def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -
 
     Parameters
     ----------
-    df : pandas.DataFrame
+    df : pd.DataFrame
         The DataFrame to validate.
     column_name : str
         The name of the column to check.
@@ -80,6 +98,30 @@ def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -
     if not df[column_name].is_unique:
         raise ValueError(
             f"Data file {filepath} contains duplicate values in the '{column_name}' column."
+        )
+
+
+def _validate_unique_column_set(df: pd.DataFrame, columns: set[str], filepath: str) -> None:
+    """
+    Validates that the combination of columns in `columns` is unique in the DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to validate.
+    columns : set[str]
+        The set of column names to check for uniqueness as a group.
+    filepath : str
+        The path to the file being validated.
+
+    Raises
+    ------
+    ValueError
+        If duplicate rows exist for the given columns.
+    """
+    if len(df[list(columns)].drop_duplicates()) < len(df):
+        raise ValueError(
+            f"Data file {filepath} contains duplicate rows with the same values for {columns}."
         )
 
 
@@ -102,6 +144,19 @@ def validate_input_file_dummy(filepath: str) -> None:
 
 
 def validate_input_dataset_or_known_clusters(filepath: str) -> None:
+    """
+    Validates a dataset or clusters file based on its filename.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the input file.
+
+    Raises
+    ------
+    LookupError, ValueError
+        If the file fails validation as a dataset or clusters file.
+    """
     filepath = Path(filepath)
     if "clusters" in filepath.stem:
         validate_clusters(filepath)
@@ -110,10 +165,10 @@ def validate_input_dataset_or_known_clusters(filepath: str) -> None:
 
 
 def validate_dataset(filepath: str) -> None:
-    """Validates an dataset file.
+    """Validates a dataset file.
 
     - Must be in a tabular format and contain a "Record ID" column.
-    - The "Record ID" column must have unique values.
+    - The "Record ID" column must have unique integer values.
 
     Parameters
     ----------
@@ -125,11 +180,16 @@ def validate_dataset(filepath: str) -> None:
     LookupError
         If the file is missing the required "Record ID" column.
     ValueError
-        If the "Record ID" column is not unique in the file.
+        If the "Record ID" column is not unique or not integer dtype.
     """
     _validate_required_columns(filepath, {"Record ID"})
     df = _read_file(filepath)
     _validate_unique_column(df, "Record ID", filepath)
+
+    if not is_integer_dtype(df["Record ID"]):
+        raise ValueError(
+            f"Data file {filepath} contains non-integer values in the 'Record ID' column."
+        )
 
 
 def validate_datasets_directory(filepath: str) -> None:
@@ -150,7 +210,7 @@ def validate_datasets_directory(filepath: str) -> None:
     LookupError
         If any file is missing the required "Record ID" column.
     ValueError
-        If the "Record ID" column is not unique in any file.
+        If the "Record ID" column is not unique in any file or if a non-file is present.
     """
     input_path = Path(filepath)
     if not input_path.is_dir():
@@ -165,8 +225,8 @@ def validate_datasets_directory(filepath: str) -> None:
 def validate_clusters(filepath: str) -> None:
     """Validates a file containing cluster information.
 
-    - The file must contain two columns: "Input Record ID" and "Cluster ID".
-    - "Input Record ID" must have unique values.
+    - The file must contain three columns: "Input Record Dataset", "Input Record ID", and "Cluster ID".
+    - "Input Record Dataset" and "Input Record ID", considered as a pair, must have unique values.
 
     Parameters
     ----------
@@ -178,20 +238,23 @@ def validate_clusters(filepath: str) -> None:
     LookupError
         If the file is missing required columns.
     ValueError
-        If the "Input Record ID" column is not unique.
+        If the ("Input Record Dataset", "Input Record ID") pair is not unique.
     """
-    _validate_required_columns(filepath, {"Input Record ID", "Cluster ID"})
+    _validate_required_columns(
+        filepath, {"Input Record Dataset", "Input Record ID", "Cluster ID"}
+    )
     df = _read_file(filepath)
-    _validate_unique_column(df, "Input Record ID", filepath)
+    _validate_unique_column_set(df, {"Input Record Dataset", "Input Record ID"}, filepath)
 
 
 def validate_links(filepath: str) -> None:
     """Validates a file containing link information.
 
-    - The file must contain three columns: "Left Record ID", "Right Record ID", and "Probability".
-    - "Left Record ID" and "Right Record ID" must not be equal in any row.
-    - Rows must be unique.
-    - "Left Record ID" must be alphabetically before "Right Record ID".
+    - The file must contain five columns: "Left Record Dataset", "Left Record ID", "Right Record Dataset", "Right Record ID", and "Probability".
+    - "Left Record ID" and "Right Record ID" cannot be equal in a row where "Left Record Dataset" also equals "Right Record Dataset".
+    - Rows must be unique, ignoring the Probability column.
+    - "Left Record Dataset" must be alphabetically before (or equal to) "Right Record Dataset."
+    - "Left Record ID" must be less than "Right Record ID" if "Left Record Dataset" equals "Right Record Dataset".
     - "Probability" values must be between 0 and 1 (inclusive).
 
     Parameters
@@ -205,35 +268,73 @@ def validate_links(filepath: str) -> None:
         If the file is missing required columns.
     ValueError
         If:
-        - "Left Record ID" equals "Right Record ID" in any row.
-        - Duplicate rows exist with the same "Left Record ID" and "Right Record ID".
-        - "Left Record ID" is not alphabetically before "Right Record ID".
+        - "Left Record ID" equals "Right Record ID" in any row where datasets match.
+        - Duplicate rows exist with the same "Left Record Dataset", "Left Record ID", "Right Record Dataset", and "Right Record ID".
+        - "Left Record Dataset" is not alphabetically before or equal to "Right Record Dataset".
+        - "Left Record ID" is not less than "Right Record ID" when datasets match.
         - Values in the "Probability" column are not between 0 and 1 (inclusive).
     """
-    _validate_required_columns(filepath, {"Left Record ID", "Right Record ID", "Probability"})
+    _validate_required_columns(
+        filepath,
+        {
+            "Left Record Dataset",
+            "Left Record ID",
+            "Right Record Dataset",
+            "Right Record ID",
+            "Probability",
+        },
+    )
     df = _read_file(filepath)
 
-    if (df["Left Record ID"] == df["Right Record ID"]).any():
-        raise ValueError(
-            f"Data file {filepath} contains rows where 'Left Record ID' is equal to 'Right Record ID'."
-        )
-
-    if (
-        not df[["Left Record ID", "Right Record ID"]].drop_duplicates().shape[0]
-        == df.shape[0]
-    ):
-        raise ValueError(
-            f"Data file {filepath} contains duplicate rows with the same 'Left Record ID' and 'Right Record ID'."
-        )
-
-    if not all(df["Left Record ID"] < df["Right Record ID"]):
-        raise ValueError(
-            f"Data file {filepath} contains rows where 'Left Record ID' is not alphabetically before 'Right Record ID'."
-        )
+    _validate_pairs(df, filepath)
 
     if not df["Probability"].between(0, 1).all():
         raise ValueError(
             f"Data file {filepath} contains values in the 'Probability' column that are not between 0 and 1 (inclusive)."
+        )
+
+
+def _validate_pairs(df: pd.DataFrame, filepath: str) -> None:
+    """
+    Validates pairs in a DataFrame for link or pairs files.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame to validate.
+    filepath : str
+        The path to the file being validated.
+
+    Raises
+    ------
+    ValueError
+        If any validation rule for pairs is violated.
+    """
+    if (
+        (df["Left Record Dataset"] == df["Right Record Dataset"])
+        & (df["Left Record ID"] == df["Right Record ID"])
+    ).any():
+        raise ValueError(
+            f"Data file {filepath} contains rows where 'Left Record ID' is equal to 'Right Record ID' and 'Left Record Dataset' is equal to 'Right Record Dataset'."
+        )
+
+    _validate_unique_column_set(
+        df,
+        {"Left Record Dataset", "Left Record ID", "Right Record Dataset", "Right Record ID"},
+        filepath,
+    )
+
+    if not all(df["Left Record Dataset"] <= df["Right Record Dataset"]):
+        raise ValueError(
+            f"Data file {filepath} contains rows where 'Left Record Dataset' is not alphabetically before or equal to 'Right Record Dataset'."
+        )
+
+    if not all(
+        (df["Left Record ID"] < df["Right Record ID"])
+        | (df["Left Record Dataset"] != df["Right Record Dataset"])
+    ):
+        raise ValueError(
+            f"Data file {filepath} contains rows where 'Left Record ID' is not less than 'Right Record ID', though the records are from the same dataset."
         )
 
 
@@ -265,11 +366,23 @@ def validate_records(filepath: str) -> None:
 
     - A file in a tabular format.
     - The file may have any number of columns.
-    - One column must be called “Input Record ID” and it must have unique values.
+    - Two columns must be called "Input Record Dataset" and "Input Record ID" and they must have unique values as a pair.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the file containing records.
+
+    Raises
+    ------
+    LookupError
+        If required columns are missing.
+    ValueError
+        If the ("Input Record Dataset", "Input Record ID") pair is not unique.
     """
-    _validate_required_columns(filepath, {"Input Record ID"})
+    _validate_required_columns(filepath, {"Input Record Dataset", "Input Record ID"})
     df = _read_file(filepath)
-    _validate_unique_column(df, "Input Record ID", filepath)
+    _validate_unique_column_set(df, {"Input Record Dataset", "Input Record ID"}, filepath)
 
 
 def validate_blocks(filepath: str) -> None:
@@ -281,12 +394,13 @@ def validate_blocks(filepath: str) -> None:
     Validation checks include:
     - The parent directory must exist and be a directory.
     - Each block subdirectory must contain exactly one records file (filename contains "records") and one pairs file (filename contains "pairs").
-    - The records file must have a column "Input Record ID" with unique values.
-    - The pairs file must have columns "Left Record ID" and "Right Record ID".
-    - All values in "Left Record ID" and "Right Record ID" must exist in the "Input Record ID" column of the corresponding records file.
-    - No row in the pairs file may have "Left Record ID" equal to "Right Record ID".
-    - All rows in the pairs file must be unique with respect to ("Left Record ID", "Right Record ID").
-    - In each row, "Left Record ID" must be alphabetically less than "Right Record ID".
+    - The records file must have columns "Input Record Dataset" and "Input Record ID" with unique pairs.
+    - The pairs file must have columns "Left Record Dataset", "Left Record ID", "Right Record Dataset", and "Right Record ID".
+    - All values in ("Left Record Dataset", "Left Record ID") and ("Right Record Dataset", "Right Record ID") must exist in the records file.
+    - No row in the pairs file may have "Left Record Dataset" == "Right Record Dataset" and "Left Record ID" == "Right Record ID".
+    - All rows in the pairs file must be unique with respect to ("Left Record Dataset", "Left Record ID", "Right Record Dataset", "Right Record ID").
+    - "Left Record Dataset" must be alphabetically before or equal to "Right Record Dataset".
+    - "Left Record ID" must be less than "Right Record ID" if datasets match.
     - No extra files are allowed in block subdirectories.
 
     Parameters
@@ -304,11 +418,12 @@ def validate_blocks(filepath: str) -> None:
         If required columns are missing in records or pairs files.
     ValueError
         If:
-            - "Input Record ID" is not unique in the records file.
-            - "Left Record ID" or "Right Record ID" in the pairs file do not exist in the records file.
-            - "Left Record ID" equals "Right Record ID" in any row of the pairs file.
+            - ("Input Record Dataset", "Input Record ID") is not unique in the records file.
+            - ("Left Record Dataset", "Left Record ID") or ("Right Record Dataset", "Right Record ID") in the pairs file do not exist in the records file.
+            - "Left Record Dataset" == "Right Record Dataset" and "Left Record ID" == "Right Record ID" in any row of the pairs file.
             - Duplicate rows exist in the pairs file.
-            - "Left Record ID" is not alphabetically before "Right Record ID" in any row.
+            - "Left Record Dataset" is not alphabetically before or equal to "Right Record Dataset" in any row.
+            - "Left Record ID" is not less than "Right Record ID" when datasets match.
             - Extra files are present in a block subdirectory.
     """
     input_path = Path(filepath)
@@ -330,50 +445,92 @@ def validate_blocks(filepath: str) -> None:
             )
 
         # Validate records file
-        _validate_required_columns(records_file, {"Input Record ID"})
+        _validate_required_columns(records_file, {"Input Record Dataset", "Input Record ID"})
         records_df = _read_file(records_file)
-        _validate_unique_column(records_df, "Input Record ID", records_file)
-        record_ids = set(records_df["Input Record ID"])
+        _validate_unique_column_set(
+            records_df, {"Input Record Dataset", "Input Record ID"}, records_file
+        )
 
         # Validate pairs file
-        _validate_required_columns(pairs_file, {"Left Record ID", "Right Record ID"})
+        _validate_required_columns(
+            pairs_file,
+            {
+                "Left Record Dataset",
+                "Left Record ID",
+                "Right Record Dataset",
+                "Right Record ID",
+            },
+        )
         pairs_df = _read_file(pairs_file)
 
-        # Check that all IDs in pairs exist in records
-        missing_left = set(pairs_df["Left Record ID"]) - record_ids
-        missing_right = set(pairs_df["Right Record ID"]) - record_ids
+        # Check that all (dataset, ID) tuples in pairs exist in records
+        record_tuples = set(
+            records_df[["Input Record Dataset", "Input Record ID"]].itertuples(
+                index=False, name=None
+            )
+        )
+        missing_left = (
+            set(
+                pairs_df[["Left Record Dataset", "Left Record ID"]].itertuples(
+                    index=False, name=None
+                )
+            )
+            - record_tuples
+        )
+        missing_right = (
+            set(
+                pairs_df[["Right Record Dataset", "Right Record ID"]].itertuples(
+                    index=False, name=None
+                )
+            )
+            - record_tuples
+        )
         if missing_left or missing_right:
             raise ValueError(
-                f"In block {block_dir}, pairs file {pairs_file} contains IDs not found in records file {records_file}: "
-                f"Missing Left Record IDs: {missing_left}, Missing Right Record IDs: {missing_right}"
+                f"In block {block_dir}, pairs file {pairs_file} contains records not found in records file {records_file}. "
+                f"Missing left records: {missing_left}, missing right records: {missing_right}"
             )
 
-        # Check Left != Right
-        if (pairs_df["Left Record ID"] == pairs_df["Right Record ID"]).any():
-            raise ValueError(
-                f"In block {block_dir}, pairs file {pairs_file} contains rows where 'Left Record ID' equals 'Right Record ID'."
-            )
-
-        # Check for duplicate rows
-        if pairs_df.duplicated(subset=["Left Record ID", "Right Record ID"]).any():
-            raise ValueError(
-                f"In block {block_dir}, pairs file {pairs_file} contains duplicate rows."
-            )
-
-        # Check alphabetical order
-        if not (pairs_df["Left Record ID"] < pairs_df["Right Record ID"]).all():
-            raise ValueError(
-                f"In block {block_dir}, pairs file {pairs_file} contains rows where 'Left Record ID' is not alphabetically before 'Right Record ID'."
-            )
+        _validate_pairs(pairs_df, pairs_file)
 
 
 def validate_dir(filepath: str) -> None:
+    """
+    Validates that the given path is a directory.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to check.
+
+    Raises
+    ------
+    NotADirectoryError
+        If the path is not a directory.
+    """
     input_path = Path(filepath)
     if not input_path.is_dir():
         raise NotADirectoryError(f"The path {filepath} is not a directory.")
 
 
 def validate_dataset_dir(filepath: str) -> None:
+    """
+    Validates a directory containing a single dataset file.
+
+    Parameters
+    ----------
+    filepath : str
+        The path to the directory.
+
+    Raises
+    ------
+    NotADirectoryError
+        If the path is not a directory.
+    ValueError
+        If the directory contains more than one file.
+    FileNotFoundError
+        If the directory does not contain any files.
+    """
     input_path = Path(filepath)
     if not input_path.is_dir():
         raise NotADirectoryError(f"The path {filepath} is not a directory.")
