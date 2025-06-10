@@ -206,15 +206,20 @@ def download_image(
         raise FileNotFoundError(f"Failed to download the image: {filename}")
 
     # Verify MD5 checksum
-    md5_hash = hashlib.md5()
-    with open(output_path, "rb") as file:
-        while chunk := file.read(8192):
-            md5_hash.update(chunk)
-
-    calculated_md5_checksum = md5_hash.hexdigest()
+    calculated_md5_checksum = calculate_md5_checksum(output_path)
     if calculated_md5_checksum != md5_checksum:
         raise ValueError(
             f"MD5 checksum does not match for {filename}.\n"
             f"Try manually downloading the image and then moving it to the {images_dir} directory.\n"
             f"Download the image by visiting this link: {url}"
         )
+
+
+def calculate_md5_checksum(output_path: Path) -> str:
+    md5_hash = hashlib.md5()
+    with open(output_path, "rb") as file:
+        while chunk := file.read(8192):
+            md5_hash.update(chunk)
+
+    calculated_md5_checksum = md5_hash.hexdigest()
+    return calculated_md5_checksum

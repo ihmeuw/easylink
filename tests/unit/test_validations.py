@@ -460,6 +460,9 @@ def test_missing_zenodo_info(default_config_params, caplog, mocker):
     metadata["step_4_python_pandas"].pop("zenodo_record_id")
     metadata["step_4_python_pandas"].pop("md5_checksum")
 
+    # HACK: I couldn't figure out how to mock the underlying Implementation._metadata
+    # attr itself, so I just mock the load_yaml() method. This only works b/c
+    # that's the only place this function is called here.
     mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     with pytest.raises(SystemExit) as e:
         Pipeline(
@@ -494,7 +497,7 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
     metadata["step_2_python_pandas"]["steps"] = ["not-the-step-2-name"]
     mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     mocker.patch(
-        "easylink.implementation.Implementation._validate_image_exists",
+        "easylink.implementation.Implementation._download_and_validate_image",
         side_effect=lambda x, y: x,
     )
 
