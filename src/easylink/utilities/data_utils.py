@@ -17,6 +17,8 @@ from pathlib import Path
 
 import requests
 import yaml
+from loguru import logger
+from tqdm import tqdm
 
 
 def modify_umask(func: Callable) -> Callable:
@@ -180,16 +182,25 @@ def download_image(
         If the MD5 checksum of the downloaded file does not match the expected checksum.
     """
 
+    images_dir = Path(images_dir).resolve()
+    if not images_dir.exists():
+        images_dir.mkdir(parents=True, exist_ok=True)
+
     url = f"https://zenodo.org/record/{record_id}/files/{filename}?download=1"
 
     response = requests.get(url, stream=True)
     response.raise_for_status()
 
-    output_path = Path(images_dir) / filename
-    with open(output_path, "wb") as file:
+    total_size = int(response.headers.get("Content-Length", 0))
+    output_path = images_dir / filename
+    logger.info(f"Downloading {filename} to {output_path}...")
+    with open(output_path, "wb") as file, tqdm(
+        total=total_size, unit="B", unit_scale=True, desc=filename
+    ) as progress_bar:
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
                 file.write(chunk)
+                progress_bar.update(len(chunk))
 
     if not output_path.exists():
         raise FileNotFoundError(f"Failed to download the image: {filename}")

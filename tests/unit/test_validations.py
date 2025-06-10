@@ -416,15 +416,24 @@ def test_missing_slurm_details(default_config_params, caplog):
 ############
 
 
-def test_no_container(default_config_params, caplog):
+def test_missing_image(default_config_params, caplog, mocker):
+
+    # We mock the download_image function to simulate some probably-impossible
+    # scenario where the image is not downloaded but the function itself didn't
+    # actually raise.
+    mocker.patch("easylink.implementation.download_image")
     with pytest.raises(SystemExit) as e:
         Pipeline(
             Config(
                 default_config_params,
                 schema_name="development",
-                images_dir="some/path/with/no/containers/",
+                images_dir="some/path/",
             )
         )
+
+    msg_str = (
+        "Image 'some/path/python_pandas.sif' does not exist and could not be downloaded."
+    )
 
     _check_expected_validation_exit(
         error=e,
@@ -432,18 +441,48 @@ def test_no_container(default_config_params, caplog):
         error_no=errno.EINVAL,
         expected_msg={
             IMPLEMENTATION_ERRORS_KEY: {
-                "step_1_python_pandas": [
-                    "Container 'some/path/with/no/containers/python_pandas.sif' does not exist.",
-                ],
-                "step_2_python_pandas": [
-                    "Container 'some/path/with/no/containers/python_pandas.sif' does not exist.",
-                ],
-                "step_3_python_pandas": [
-                    "Container 'some/path/with/no/containers/python_pandas.sif' does not exist.",
-                ],
-                "step_4_python_pandas": [
-                    "Container 'some/path/with/no/containers/python_pandas.sif' does not exist.",
-                ],
+                "step_1_python_pandas": [msg_str],
+                "step_2_python_pandas": [msg_str],
+                "step_3_python_pandas": [msg_str],
+                "step_4_python_pandas": [msg_str],
+            },
+        },
+    )
+
+
+def test_missing_zenodo_info(default_config_params, caplog, mocker):
+
+    # Mock the metadata to remove the zenodo information
+    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+    metadata["step_1_python_pandas"].pop("zenodo_record_id")
+    metadata["step_2_python_pandas"].pop("zenodo_record_id")
+    metadata["step_3_python_pandas"].pop("md5_checksum")
+    metadata["step_4_python_pandas"].pop("zenodo_record_id")
+    metadata["step_4_python_pandas"].pop("md5_checksum")
+
+    mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
+    with pytest.raises(SystemExit) as e:
+        Pipeline(
+            Config(
+                default_config_params,
+                schema_name="development",
+                images_dir="some/path/",
+            )
+        )
+
+    missing_record_id = "Image 'some/path/python_pandas.sif' does not exist and no Zenodo record ID is provided to download it."
+    missing_md5 = "Image 'some/path/python_pandas.sif' does not exist and no MD5 checksum is provided to verify from the host."
+
+    _check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            IMPLEMENTATION_ERRORS_KEY: {
+                "step_1_python_pandas": [missing_record_id],
+                "step_2_python_pandas": [missing_record_id],
+                "step_3_python_pandas": [missing_md5],
+                "step_4_python_pandas": [missing_record_id, missing_md5],
             },
         },
     )
@@ -455,7 +494,7 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
     metadata["step_2_python_pandas"]["steps"] = ["not-the-step-2-name"]
     mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     mocker.patch(
-        "easylink.implementation.Implementation._validate_container_exists",
+        "easylink.implementation.Implementation._validate_image_exists",
         side_effect=lambda x, y: x,
     )
 

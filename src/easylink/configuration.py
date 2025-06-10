@@ -69,6 +69,11 @@ class Config(LayeredConfigTree):
         as well as the results directory and images directory.
     schema_name
         The name of the schema to validate the pipeline configuration against.
+    images_dir
+        The directory containing the images or to download the images to if they
+        don't exist. If None, will default to ~/.easylink_images.
+    command
+        The EasyLink command being run.
 
     Attributes
     ----------
@@ -82,6 +87,11 @@ class Config(LayeredConfigTree):
         The input data filepaths.
     schema
         The :class:`~easylink.pipeline_schema.PipelineSchema`.
+    images_dir
+        The directory containing the images or to download the images to if they
+        don't exist. If None, will default to ~/.easylink_images.
+    command
+        The EasyLink command being run.
 
     """
 

@@ -54,6 +54,7 @@ if __name__ == "__main__":
         "pyarrow",
         "requests",
         "snakemake>=8.0.0",
+        "tqdm",
         # TODO MIC-4963: Resolve quoting issue and remove pin
         "snakemake-interface-executor-plugins<9.0.0",
         "snakemake-executor-plugin-slurm",
