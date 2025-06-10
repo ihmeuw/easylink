@@ -526,14 +526,14 @@ if A and B are in the same cluster, and B and C are in the same cluster,
 then A and C are in the same cluster by definition.
 
 **Specification:**
-A file in a tabular format with three columns: "Input Dataset", "Input Record ID", and "Cluster ID".
-Combinations of values in the "Input Dataset" and "Input Record ID" columns must be unique.
+A file in a tabular format with three columns: "Input Record Dataset", "Input Record ID", and "Cluster ID".
+Combinations of values in the "Input Record Dataset" and "Input Record ID" columns must be unique.
 "Cluster ID" may take any value.
 
 .. note::
 
    In the future, we should add to this specification that each "Input Record ID"
-   is a Record ID value found in the input dataset indicated by the "Input Dataset" column.
+   is a Record ID value found in the input dataset indicated by the "Input Record Dataset" column.
    EasyLink currently doesn't support this.
 
 **Example:**
@@ -541,7 +541,7 @@ Combinations of values in the "Input Dataset" and "Input Record ID" columns must
 .. list-table:: 
    :header-rows: 1
 
-   * - Input Dataset
+   * - Input Record Dataset
      - Input Record ID
      - Cluster ID
    * - input_file
@@ -829,30 +829,8 @@ Converting *clusters* (sets of records that are all mutually linked)
 to *links* (pairs of records that are linked).
 
 **Default implementation:**
-Pandas code that gets of list of Record IDs for each Cluster ID,
-then generates all the unique (unordered) pairs of records,
+Pandas code that generates all the unique (unordered) pairs of records within each Cluster ID group,
 and pairs them with probability 1.
-
-Here is a rough draft of the code for this default implementation:
-
-.. code::
-
-   import pandas as pd
-   from itertools import combinations
-
-   def clusters_to_links(clusters_df):
-      # Group by Cluster ID and collect Record IDs for each cluster
-      grouped = clusters_df.groupby("Cluster ID")["Input Record ID"].apply(list)
-
-      # Generate all unique pairs of Record IDs within each cluster
-      links = []
-      for record_ids in grouped:
-         links.extend(combinations(sorted(record_ids), 2))
-
-      # Create a DataFrame for the links
-      links_df = pd.DataFrame(links, columns=["Left Record ID", "Right Record ID"])
-      links_df["Probability"] = 1.0
-      return links_df
 
 
 .. _links:
