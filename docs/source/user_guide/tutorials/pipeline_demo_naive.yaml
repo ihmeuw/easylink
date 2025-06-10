@@ -47,14 +47,14 @@ steps:
                 implementation:
                   name: splink_blocking_and_filtering
                   configuration:
-                    BLOCKING_RULES: "'l.last_name == r.last_name'"
+                    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'" # TODO remember to update input data to remove death records
                     LINK_ONLY: true
               evaluating_pairs:
                 implementation:
                   name: splink_evaluating_pairs
                   configuration:
                     BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-                    COMPARISONS: "'first_name:exact,last_name:exact'"
+                    COMPARISONS: "'ssn:exact,first_name:exact,middle_name:exact,last_name:exact,date_of_birth:exact,sex:exact'"
                     PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
                     THRESHOLD_MATCH_PROBABILITY: 0.5
                     LINK_ONLY: true

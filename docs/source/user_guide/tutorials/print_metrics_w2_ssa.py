@@ -92,25 +92,45 @@ clusters_df = load_file(str(Path(results_dir / "result.parquet")))
 print(clusters_df["Cluster ID"].value_counts())
 
 data = []
+num_w2s = records[records["Record ID"].str.contains("w2")]["Record ID"].nunique()
 for prob in np.sort(predictions_df["Probability"].unique()):
-    matches = len(predictions_df[predictions_df["Probability"] >= prob])
     # change when separate dataset column is ready
-    w2_to_ssa_records = predictions_df[
-        (
-            ("w2" in predictions_df["Left Record ID"])
-            and "w2" not in predictions_df["Right Record ID"]
-        )
-        or (
-            ("w2" in predictions_df["Right Record ID"])
-            and "w2" not in predictions_df["Left Record ID"]
+    matches_w2_to_ssa = predictions_df[
+        (predictions_df["Probability"] >= prob)
+        & (
+            (
+                predictions_df["Left Record ID"].str.contains("w2")
+                & ~predictions_df["Right Record ID"].str.contains("w2")
+            )
+            | (
+                predictions_df["Right Record ID"].str.contains("w2")
+                & ~predictions_df["Left Record ID"].str.contains("w2")
+            )
         )
     ]
-    w2_records_matched = (
-        predictions_df["Left Record ID"]
-        if "w2" in predictions_df["Left Record ID"]
-        else predictions_df["Right Record ID"]
+    num_w2s_matched = len(
+        (
+            matches_w2_to_ssa["Left Record ID"]
+            if "w2" in matches_w2_to_ssa["Left Record ID"]
+            else matches_w2_to_ssa["Right Record ID"]
+        ).unique()
     )
-    duplicates = len(
-        w2_records_matched.value_counts()[w2_records_matched.value_counts() > 1]
+    prop_w2_ssa_matches_with_duplicate_w2s = (
+        len(matches_w2_to_ssa) - num_w2s_matched
+    ) / len(matches_w2_to_ssa)
+    data.append(
+        [
+            prob,
+            num_w2s_matched / num_w2s,
+            prop_w2_ssa_matches_with_duplicate_w2s,
+        ]
     )
-    data.append([prob, matches, duplicates])
+
+df = pd.DataFrame(
+    data,
+    columns=["Probability", "W2 Match Rate", "Duplicate W2 Rate among Matches"],
+)
+_, ax = plt.subplots()
+df.plot(x="Probability", y="W2 Match Rate", kind="line", ax=ax)
+df.plot(x="Probability", y="Duplicate W2 Rate among Matches", kind="line", ax=ax)
+plt.savefig(str(Path(results_dir / "matches_and_duplicates_by_prob.png")))
