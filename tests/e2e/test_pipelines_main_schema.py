@@ -102,6 +102,7 @@ def test_pipeline_splink_dummy(
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
         )
 
+
 @pytest.mark.slow
 @pytest.mark.skipif(
     not is_on_slurm(),
