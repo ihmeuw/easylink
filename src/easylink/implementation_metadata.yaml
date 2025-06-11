@@ -266,7 +266,7 @@ splink_blocking_and_filtering:
   image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_blocking_and_filtering.sif
   script_cmd: python /splink_blocking_and_filtering.py
   outputs:
-    blocks: result.parquet
+    blocks: blocks
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs

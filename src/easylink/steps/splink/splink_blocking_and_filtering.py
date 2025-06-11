@@ -1,5 +1,5 @@
 # STEP_NAME: blocking_and_filtering
-# REQUIREMENTS: pandas pyarrow splink==4.0.7
+# REQUIREMENTS: pandas pyarrow splink==4.0.7 vl-convert-python
 
 import os
 
