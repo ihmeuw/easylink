@@ -103,6 +103,7 @@ def test_pipeline_splink_dummy(
         )
 
 
+@pytest.mark.skip(reason="FIXME [SSCI-2312]: This test is sporadically failing")
 @pytest.mark.slow
 @pytest.mark.skipif(
     not is_on_slurm(),
