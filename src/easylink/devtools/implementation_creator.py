@@ -43,9 +43,9 @@ def main(script_path: Path, host: Path) -> None:
         The host directory to move the container to.
     """
     creator = ImplementationCreator(script_path, host)
-    creator.create_recipe()
-    creator.build_container()
-    creator.move_container()
+    # creator.create_recipe()
+    # creator.build_container()
+    # creator.move_container()
     creator.register()
 
 
@@ -195,9 +195,17 @@ class ImplementationCreator:
                 f"Implementation '{self.implementation_name}' already exists in the registry. "
                 "Overwriting it with the latest data."
             )
+
+        # Handle the fact that developers might be saving to username subdirs
+        image_name = (
+            self.hosted_container_path.name
+            if not self.hosted_container_path.is_relative_to(DEV_IMAGES_DIR)
+            else str(self.hosted_container_path.relative_to(DEV_IMAGES_DIR))
+        )
+
         info[self.implementation_name] = {
             "steps": [self.step],
-            "image_name": str(self.hosted_container_path.relative_to(DEV_IMAGES_DIR)),
+            "image_name": str(image_name),
             "script_cmd": f"{self.script_base_command} /{self.script_path.name}",
             "outputs": {
                 self.output_slot: "result.parquet",

@@ -8,7 +8,7 @@ from pytest_mock import MockerFixture
 
 from easylink.devtools.implementation_creator import ImplementationCreator
 from easylink.utilities.data_utils import load_yaml
-from easylink.utilities.paths import IMPLEMENTATION_METADATA
+from easylink.utilities.paths import DEV_IMAGES_DIR, IMPLEMENTATION_METADATA
 
 GOOD_METADATA = """
 # STEP_NAME: step_1
@@ -181,31 +181,35 @@ def test_register(tmp_path: Path, mocker: MockerFixture) -> None:
     # copy the real implementation metadata file to the test directory
     shutil.copy(IMPLEMENTATION_METADATA, implementation_metadata)
 
+    # Don't accidentally write to the real implementation metadata file
     def _write_test_metadata(info: dict[str, str | dict[str, str]]) -> None:
-        # Don't accidentally write to the real implementation metadata file
         if implementation_metadata.resolve() == IMPLEMENTATION_METADATA.resolve():
             raise ValueError("Attempting to write to the real implementation metadata file")
         with open(str(implementation_metadata), "w") as f:
             yaml.dump(info, f, sort_keys=False)
+
+    mocker.patch(
+        "easylink.devtools.implementation_creator.ImplementationCreator._write_metadata",
+        side_effect=_write_test_metadata,
+    )
+    mocker.patch(
+        "easylink.devtools.implementation_creator.load_yaml",
+        return_value=load_yaml(implementation_metadata),
+    )
 
     # write the script to be used for the test
     with open(script_path, "w") as file:
         file.write(GOOD_METADATA)
 
     creator = ImplementationCreator(script_path, Path("some-host"))
-
     assert "test_implementation" not in load_yaml(implementation_metadata)
-    mocker.patch(
-        "easylink.devtools.implementation_creator.ImplementationCreator._write_metadata",
-        side_effect=_write_test_metadata,
-    )
     creator.register()
 
     # load the new metadata and check it
     details = load_yaml(implementation_metadata)["test_implementation"]
     assert details == {
         "steps": ["step_1"],
-        "image_path": "some-host/test_implementation.sif",
+        "image_name": "test_implementation.sif",
         "script_cmd": "python /test_implementation.py",
         "outputs": {"step_1_main_output": "result.parquet"},
     }
@@ -221,14 +225,55 @@ def test_register(tmp_path: Path, mocker: MockerFixture) -> None:
     md = load_yaml(implementation_metadata)
     assert "test_implementation" in md
     assert "test_new_implementation" not in md
-
     new_creator.register()
 
-    new_details = load_yaml(implementation_metadata)["test_new_implementation"]
-    assert new_details == {
+    md = load_yaml(implementation_metadata)
+    assert "test_implementation" in md
+    assert md["test_new_implementation"] == {
         "steps": ["step_1"],
-        "image_path": "some-other-host/test_new_implementation.sif",
+        "image_name": "test_new_implementation.sif",
         "script_cmd": "python /test_new_implementation.py",
+        "outputs": {"step_1_main_output": "result.parquet"},
+    }
+
+
+def test_register_to_dev_folder_subdir(tmp_path: Path, mocker: MockerFixture) -> None:
+
+    implementation_metadata = tmp_path / "test_implementation_metadata.yaml"
+    # copy the real implementation metadata file to the test directory
+    shutil.copy(IMPLEMENTATION_METADATA, implementation_metadata)
+
+    # Don't accidentally write to the real implementation metadata file
+    def _write_test_metadata(info: dict[str, str | dict[str, str]]) -> None:
+        if implementation_metadata.resolve() == IMPLEMENTATION_METADATA.resolve():
+            raise ValueError("Attempting to write to the real implementation metadata file")
+        with open(str(implementation_metadata), "w") as f:
+            yaml.dump(info, f, sort_keys=False)
+
+    mocker.patch(
+        "easylink.devtools.implementation_creator.ImplementationCreator._write_metadata",
+        side_effect=_write_test_metadata,
+    )
+    mocker.patch(
+        "easylink.devtools.implementation_creator.load_yaml",
+        return_value=load_yaml(implementation_metadata),
+    )
+
+    dev_script = tmp_path / "some_fancy_new_implementation.py"
+    with open(dev_script, "w") as file:
+        file.write(GOOD_METADATA)
+
+    dev_creator = ImplementationCreator(dev_script, Path(DEV_IMAGES_DIR) / "some-subdir")
+
+    md = load_yaml(implementation_metadata)
+    assert "some_fancy_new_implementation" not in md
+    dev_creator.register()
+
+    md = load_yaml(implementation_metadata)
+    assert md["some_fancy_new_implementation"] == {
+        "steps": ["step_1"],
+        "image_name": "some-subdir/some_fancy_new_implementation.sif",
+        "script_cmd": "python /some_fancy_new_implementation.py",
         "outputs": {"step_1_main_output": "result.parquet"},
     }
 
