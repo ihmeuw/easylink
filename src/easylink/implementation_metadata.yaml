@@ -369,3 +369,17 @@ middle_name_to_initial:
   script_cmd: python /middle_name_to_initial.py
   outputs:
     dataset: dataset
+one_to_many_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_name: zmbc/one_to_many_links_to_clusters.sif
+  script_cmd: python /one_to_many_links_to_clusters.py
+  outputs:
+    clusters: result.parquet
+accept_all_pairs:
+  steps:
+  - evaluating_pairs
+  image_name: zmbc/accept_all_pairs.sif
+  script_cmd: python /accept_all_pairs.py
+  outputs:
+    links: result.parquet

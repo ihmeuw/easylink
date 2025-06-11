@@ -1,0 +1,134 @@
+steps:
+  entity_resolution:
+    iterate:
+      - substeps:
+          determining_exclusions_and_removing_records:
+            clones:
+              - determining_exclusions:
+                  implementation:
+                    name: default_determining_exclusions
+                    configuration:
+                      INPUT_DATASET: input_file_ssa
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_ssa
+              - determining_exclusions:
+                  implementation:
+                    name: default_determining_exclusions
+                    configuration:
+                      INPUT_DATASET: input_file_w2
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_w2
+          clustering:
+            substeps:
+              clusters_to_links:
+                implementation:
+                  name: default_clusters_to_links
+              linking:
+                substeps:
+                  pre-processing:
+                    clones:
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_ssa
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_w2
+                  schema_alignment:
+                    implementation:
+                      name: default_schema_alignment
+                  blocking_and_filtering:
+                    implementation:
+                      name: splink_blocking_and_filtering
+                      configuration:
+                        BLOCKING_RULES: "'l.ssn == r.ssn'"
+                        LINK_ONLY: true
+                  evaluating_pairs:
+                    implementation:
+                      name: accept_all_pairs
+              links_to_clusters:
+                implementation:
+                  name: one_to_many_links_to_clusters
+                  configuration:
+                    NO_DUPLICATES_DATASET: input_file_ssa
+                    # All come with certainty from accept_all_pairs anyway, so this doesn't matter
+                    THRESHOLD_MATCH_PROBABILITY: 0.9
+          updating_clusters:
+            implementation:
+              name: default_updating_clusters
+      - substeps:
+          determining_exclusions_and_removing_records:
+            clones:
+              - determining_exclusions:
+                  implementation:
+                    name: exclude_none
+                    configuration:
+                      INPUT_DATASET: input_file_ssa
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_ssa
+              - determining_exclusions:
+                  implementation:
+                    name: exclude_clustered
+                    configuration:
+                      INPUT_DATASET: input_file_w2
+                removing_records:
+                  implementation:
+                    name: default_removing_records
+                    configuration:
+                      INPUT_DATASET: input_file_w2
+          clustering:
+            substeps:
+              clusters_to_links:
+                implementation:
+                  name: default_clusters_to_links
+              linking:
+                substeps:
+                  pre-processing:
+                    clones:
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_ssa
+                    - implementation:
+                        name: dummy_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_w2
+                  schema_alignment:
+                    implementation:
+                      name: default_schema_alignment
+                  blocking_and_filtering:
+                    implementation:
+                      name: splink_blocking_and_filtering
+                      configuration:
+                        BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                        LINK_ONLY: true
+                  evaluating_pairs:
+                    implementation:
+                      name: splink_evaluating_pairs
+                      configuration:
+                        BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                        COMPARISONS: "'ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name'"
+                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0000625  # == 1 / len(ssa)
+                        THRESHOLD_MATCH_PROBABILITY: 0
+                        LINK_ONLY: true
+              links_to_clusters:
+                implementation:
+                  name: splink_links_to_clusters
+                  configuration:
+                    THRESHOLD_MATCH_PROBABILITY: 0.25
+          updating_clusters:
+            implementation:
+              name: update_clusters_by_connected_components
+  canonicalizing_and_downstream_analysis:
+    implementation:
+      name: dummy_canonicalizing_and_downstream_analysis
