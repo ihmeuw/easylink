@@ -158,6 +158,7 @@ def load_yaml(filepath: str | Path) -> dict:
     return data
 
 
+@modify_umask
 def download_image(
     images_dir: str | Path, record_id: int, filename: str, md5_checksum: str
 ) -> None:
