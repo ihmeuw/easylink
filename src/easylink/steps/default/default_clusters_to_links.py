@@ -6,7 +6,6 @@
 
 import logging
 import os
-from itertools import combinations
 from pathlib import Path
 
 import pandas as pd
@@ -29,16 +28,35 @@ def load_file(file_path, file_format=None):
 
 # code example from pipeline schema docs
 def clusters_to_links(clusters_df):
-    # Group by Cluster ID and collect Record IDs for each cluster
-    grouped = clusters_df.groupby("Cluster ID")["Input Record ID"].apply(list)
+    # Merge the dataframe with itself on Cluster ID to get all pairs within each cluster
+    merged = clusters_df.merge(
+        clusters_df,
+        on="Cluster ID",
+        suffixes=("_left", "_right"),
+    )
 
-    # Generate all unique pairs of Record IDs within each cluster
-    links = []
-    for record_ids in grouped:
-        links.extend(combinations(sorted(record_ids), 2))
+    # Compare tuples row-wise to keep only unique pairs (left < right)
+    mask = (merged["Input Record Dataset_left"] < merged["Input Record Dataset_right"]) | (
+        (merged["Input Record Dataset_left"] == merged["Input Record Dataset_right"])
+        & (merged["Input Record ID_left"] < merged["Input Record ID_right"])
+    )
+    filtered = merged[mask]
 
-    # Create a DataFrame for the links
-    links_df = pd.DataFrame(links, columns=["Left Record ID", "Right Record ID"])
+    # Build the output DataFrame
+    links_df = filtered[
+        [
+            "Input Record Dataset_left",
+            "Input Record ID_left",
+            "Input Record Dataset_right",
+            "Input Record ID_right",
+        ]
+    ].copy()
+    links_df.columns = [
+        "Left Record Dataset",
+        "Left Record ID",
+        "Right Record Dataset",
+        "Right Record ID",
+    ]
     links_df["Probability"] = 1.0
     return links_df
 

@@ -38,7 +38,11 @@ links <- links %>%
     filter(Probability >= threshold)
 
 if (nrow(links) == 0) {
-    clusters <- data.frame(`Input Record ID` = character(), `Cluster ID` = integer())
+    clusters <- data.frame(
+        `Input Record Dataset` = character(),
+        `Input Record ID` = character(),
+        `Cluster ID` = integer()
+    )
 } else {
     # NOTE: fastLink's dedupeMatches function is quite tightly coupled with other parts
     # of the fastLink pipeline.
@@ -48,12 +52,20 @@ if (nrow(links) == 0) {
     # use the linear sum assignment algorithm in isolation (potentially with links not
     # from fastLink).
     # ChatGPT helped me write the below code.
+    
+    # Combine dataset and record ID for unique keys
+    links <- links %>%
+        mutate(
+            Left_Record_Key = paste0(`Left Record Dataset`, "::", `Left Record ID`),
+            Right_Record_Key = paste0(`Right Record Dataset`, "::", `Right Record ID`)
+        )
+
     n <- nrow(links)
 
-    # 1) Build matchesA / matchesB without touching `links`
+    # 1) Build matchesA / matchesB using the combined keys without touching `links`
     matchesA <- data.frame(
-        idA = links[["Left Record ID"]],
-        idB = links[["Right Record ID"]],
+        idA = links[["Left_Record_Key"]],
+        idB = links[["Right_Record_Key"]],
         prob = links[["Probability"]],
         stringsAsFactors = FALSE
     )
@@ -77,10 +89,10 @@ if (nrow(links) == 0) {
         zeta.j = log(matchesA$prob / (1 - matchesA$prob))
     )
 
-    # 4) Map each row back to its original record IDs
+    # 4) Map each row back to its original record keys
     matchesLink <- data.frame(
-        inds.a = links[["Left Record ID"]],
-        inds.b = links[["Right Record ID"]],
+        inds.a = links[["Left_Record_Key"]],
+        inds.b = links[["Right_Record_Key"]],
         stringsAsFactors = FALSE
     )
 
@@ -94,17 +106,20 @@ if (nrow(links) == 0) {
         linprog = TRUE
     )
 
+    # Parse out dataset and record ID from keys for both sides, then bind
     clusters <- deduped$matchesLink %>%
         transmute(
-            `Input Record ID` = inds.a,
+            `Input Record Dataset` = str_split_fixed(inds.a, "::", 2)[,1],
+            `Input Record ID` = as.integer(str_split_fixed(inds.a, "::", 2)[,2]),
             `Cluster ID` = paste0("cluster_", inds.a, "_", inds.b)
         ) %>%
         bind_rows(
             deduped$matchesLink %>%
-            transmute(
-                `Input Record ID` = inds.b,
-                `Cluster ID` = paste0("cluster_", inds.a, "_", inds.b)
-            )
+                transmute(
+                    `Input Record Dataset` = str_split_fixed(inds.b, "::", 2)[,1],
+                    `Input Record ID` = as.integer(str_split_fixed(inds.b, "::", 2)[,2]),
+                    `Cluster ID` = paste0("cluster_", inds.a, "_", inds.b)
+                )
         )
 }
 

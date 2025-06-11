@@ -81,7 +81,16 @@ def test_pipeline_splink_dummy(
             .reset_index(drop=True)
         )
         correct_results = pd.read_csv(correct_results_csv)
-        assert results.equals(correct_results)
+        # Equal, except for inconsequential differences in order
+        assert (
+            results.sort_values(["Input Record Dataset", "Input Record ID"])
+            .reset_index(drop=True)
+            .equals(
+                correct_results.sort_values(
+                    ["Input Record Dataset", "Input Record ID"]
+                ).reset_index(drop=True)
+            )
+        )
 
         assert (test_specific_results_dir / Path(pipeline_specification).name).exists()
         assert (test_specific_results_dir / Path(input_data).name).exists()

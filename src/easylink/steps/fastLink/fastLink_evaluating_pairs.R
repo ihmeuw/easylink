@@ -43,9 +43,14 @@ for (block_dir in block_dirs) {
   }
 
   records <- read_parquet(records_path) %>%
-    rename(unique_id = `Input Record ID`)
+    mutate(
+      unique_id = paste0(`Input Record Dataset`, "::", `Input Record ID`)
+    )
   pairs <- read_parquet(pairs_path) %>%
-    rename(join_key_l = `Left Record ID`, join_key_r = `Right Record ID`)
+    mutate(
+      join_key_l = paste0(`Left Record Dataset`, "::", `Left Record ID`),
+      join_key_r = paste0(`Right Record Dataset`, "::", `Right Record ID`)
+    )
 
   # Subset records to only those that appear in pairs (left and right separately)
   left_ids <- unique(pairs$join_key_l)
@@ -107,10 +112,13 @@ for (block_dir in block_dirs) {
   matches <- matches %>%
     semi_join(pairs, by = c("join_key_l", "join_key_r"))
 
+  # Parse out dataset and record ID from join keys
   predictions <- matches %>%
     transmute(
-      `Left Record ID` = join_key_l,
-      `Right Record ID` = join_key_r,
+      `Left Record Dataset` = str_split_fixed(join_key_l, "::", 2)[,1],
+      `Left Record ID` = as.integer(str_split_fixed(join_key_l, "::", 2)[,2]),
+      `Right Record Dataset` = str_split_fixed(join_key_r, "::", 2)[,1],
+      `Right Record ID` = as.integer(str_split_fixed(join_key_r, "::", 2)[,2]),
       Probability
     )
 

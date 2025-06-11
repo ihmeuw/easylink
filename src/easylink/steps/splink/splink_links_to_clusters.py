@@ -16,10 +16,19 @@ links = pd.read_parquet(os.environ["LINKS_FILE_PATH"]).rename(
         "Probability": "match_probability",
     }
 )
+
+# Create unique record keys by concatenating Input Record Dataset and Record ID for both left and right
+links["Left Record Key"] = (
+    links["Left Record Dataset"].astype(str) + "-__-" + links["Left Record ID"].astype(str)
+)
+links["Right Record Key"] = (
+    links["Right Record Dataset"].astype(str) + "-__-" + links["Right Record ID"].astype(str)
+)
+
 dummy_records_df = pd.DataFrame(
     {
-        "Input Record ID": np.unique(
-            list(links["Left Record ID"]) + list(links["Right Record ID"])
+        "Record Key": np.unique(
+            list(links["Left Record Key"]) + list(links["Right Record Key"])
         )
     }
 )
@@ -31,15 +40,23 @@ cc = (
     cluster_pairwise_predictions_at_threshold(
         dummy_records_df,
         links,
-        node_id_column_name='"Input Record ID"',
-        edge_id_column_name_left='"Left Record ID"',
-        edge_id_column_name_right='"Right Record ID"',
+        node_id_column_name='"Record Key"',
+        edge_id_column_name_left='"Left Record Key"',
+        edge_id_column_name_right='"Right Record Key"',
         db_api=db_api,
         threshold_match_probability=float(os.environ["THRESHOLD_MATCH_PROBABILITY"]),
     )
     .as_pandas_dataframe()
     .rename(columns={"cluster_id": "Cluster ID"})
 )
+
+# Split "Record Key" back into "Input Record Dataset" and "Input Record ID"
+cc[["Input Record Dataset", "Input Record ID"]] = (
+    cc["Record Key"].astype(str).str.split("-__-", n=1, expand=True)
+)
+cc = cc.drop(columns=["Record Key"])
+cc["Input Record ID"] = cc["Input Record ID"].astype(int)
+cc = cc[["Input Record Dataset", "Input Record ID", "Cluster ID"]]
 
 print(cc)
 
