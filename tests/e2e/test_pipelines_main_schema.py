@@ -124,9 +124,23 @@ def test_pipeline_splink_dummy(
             "tests/specifications/common/environment_local.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
+        # slurm pipeline_cascade.yaml
+        (
+            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # local pipeline_cascade.yaml
+        (
+            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
     ],
 )
-def test_pipeline_with_fastLink(
+def test_pipelines_same_output_relabeled(
     pipeline_specification,
     input_data,
     computing_environment,
