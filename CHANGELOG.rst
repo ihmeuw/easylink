@@ -1,4 +1,4 @@
-**0.1.18 - 6/11/25**
+**0.1.19 - 6/11/25**
 
  - Implement support for images hosted on zenodo
 
