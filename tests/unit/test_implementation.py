@@ -113,7 +113,7 @@ def test__handle_conflicting_checksums(mocker: MockerFixture, caplog):
         record_id=metadata["step_1_python_pandas"]["zenodo_record_id"],
     )
     assert (
-        "Image '/ihme/homes/sbachmei/.easylink_images/python_pandas.sif' exists but has a different MD5 checksum (ducks-go-quack) than expected (cows-go-moo). Re-downloading the image."
+        "/.easylink_images/python_pandas.sif' exists but has a different MD5 checksum (ducks-go-quack) than expected (cows-go-moo). Re-downloading the image."
         in caplog.text
     )
     assert download_image_mock.call_count == 1
