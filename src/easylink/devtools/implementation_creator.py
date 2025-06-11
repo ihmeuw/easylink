@@ -204,7 +204,9 @@ class ImplementationCreator:
         # when running a pipeline, all images are expected to be in a single directory.
         image_name = (
             self.hosted_container_path.name
+            # Use just the image name if the hosted path is not a part of DEV_IMAGES_DIR
             if not self.hosted_container_path.is_relative_to(DEV_IMAGES_DIR)
+            # Use the path relative to DEV_IMAGES_DIR as the image name
             else str(self.hosted_container_path.relative_to(DEV_IMAGES_DIR))
         )
 
