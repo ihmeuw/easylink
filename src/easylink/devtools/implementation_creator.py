@@ -197,6 +197,11 @@ class ImplementationCreator:
             )
 
         # Handle the fact that developers might be saving to username subdirs
+        # If the host folder is a subdirectory of DEV_IMAGES_DIR (e.g., the default
+        # host directory when calling `easylink devtools create-implementation`
+        # is DEV_IMAGES_DIR/<username>), we want to include the relative path
+        # to the DEV_IMAGES_DIR in the image name. This is required because ultimately
+        # when running a pipeline, all images are expected to be in a single directory.
         image_name = (
             self.hosted_container_path.name
             if not self.hosted_container_path.is_relative_to(DEV_IMAGES_DIR)
