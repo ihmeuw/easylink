@@ -76,7 +76,7 @@ We can view the contents of these Parquet files using Python:
    $ pip install pandas pyarrow
    $ python
    >>> import pandas as pd
-   >>> pd.read_parquet("/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet")
+   >>> pd.read_parquet("/mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet")
           foo bar  counter
    0        0   a        0
    1        1   b        0
@@ -310,9 +310,9 @@ When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed
 ``tests/specifications/common/input_data.yaml`` 
 as this YAML file, shown below::
 
-   input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet
-   input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_2.parquet
-   input_file_3: /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_3.parquet
+   input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet
+   input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_2.parquet
+   input_file_3: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_3.parquet
 
 Let's try passing a different input data specification YAML file, 
 :download:`input_data.yaml <input_data.yaml>`, which looks like this::
@@ -328,10 +328,10 @@ I downloaded them to the root ``easylink`` directory.
 
 These input files look a little different than the three input files we used in the pipelines we ran above, 
 where all three input files listed in the YAML specification were identical. Let's compare one of those, 
-``/mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet``, to 
+``/mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet``, to 
 the three files we will use here::
 
-   $ pqprint /mnt/team/simulation_science/priv/engineering/er_ecosystem/sample_data/dummy/input_file_1.parquet
+   $ pqprint /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet
          foo bar  counter
    0        0   a        0
    1        1   b        0

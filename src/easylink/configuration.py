@@ -303,7 +303,9 @@ def _load_input_data_paths(
             f"Input was: '{input_data_paths}'"
         )
     filepath_dict = {
-        filename: Path(filepath).resolve() for filename, filepath in input_data_paths.items()
+        # Resolve paths relative to location of the YAML file
+        filename: (Path(input_data_specification_path).parent / Path(filepath)).resolve()
+        for filename, filepath in input_data_paths.items()
     }
     return filepath_dict
 
