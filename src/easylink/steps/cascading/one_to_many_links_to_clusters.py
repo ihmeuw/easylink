@@ -63,12 +63,13 @@ links_to_accept = (
 
 if break_ties_method == "drop":
     num_tied = (
-        links_to_accept
-            .merge(links, on=["Right Record ID", "Left Record Dataset", "Probability"])
-            .groupby(["Right Record ID", "Left Record Dataset"])
-            .size()
+        links_to_accept.merge(
+            links, on=["Right Record ID", "Left Record Dataset", "Probability"]
+        )
+        .groupby(["Right Record ID", "Left Record Dataset"])
+        .size()
     )
-    print('Ties:')
+    print("Ties:")
     print(num_tied)
     print(num_tied.describe())
     links_to_accept = links_to_accept[num_tied == 1]
