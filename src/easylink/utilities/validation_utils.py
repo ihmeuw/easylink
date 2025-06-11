@@ -83,7 +83,7 @@ def _validate_unique_column(df: pd.DataFrame, column_name: str, filepath: str) -
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df : pandas.DataFrame
         The DataFrame to validate.
     column_name : str
         The name of the column to check.
@@ -107,7 +107,7 @@ def _validate_unique_column_set(df: pd.DataFrame, columns: set[str], filepath: s
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df : pandas.DataFrame
         The DataFrame to validate.
     columns : set[str]
         The set of column names to check for uniqueness as a group.
@@ -300,7 +300,7 @@ def _validate_pairs(df: pd.DataFrame, filepath: str) -> None:
 
     Parameters
     ----------
-    df : pd.DataFrame
+    df : pandas.DataFrame
         The DataFrame to validate.
     filepath : str
         The path to the file being validated.
