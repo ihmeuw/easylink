@@ -55,7 +55,7 @@ from easylink.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
 )
-from easylink.utilities.paths import DEV_IMAGES_DIR
+from easylink.utilities.paths import DEFAULT_IMAGES_DIR, DEV_IMAGES_DIR
 
 SHARED_OPTIONS = [
     click.option(
@@ -157,10 +157,11 @@ def easylink():
 @click.option(
     "-I",
     "--images",
+    hidden=True,
     type=click.Path(exists=False, file_okay=False, resolve_path=True),
     help=(
         "The directory containing the images to run. If no value is passed, a new "
-        "directory will be created at the home directory: ~/.easylink_images/"
+        f"directory will be created at the home directory: {DEFAULT_IMAGES_DIR}."
     ),
 )
 @click.option(

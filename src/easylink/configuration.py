@@ -17,6 +17,7 @@ from layered_config_tree import LayeredConfigTree
 from easylink.pipeline_schema import PipelineSchema
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import exit_with_validation_error
+from easylink.utilities.paths import DEFAULT_IMAGES_DIR
 
 PIPELINE_ERRORS_KEY = "PIPELINE ERRORS"
 INPUT_DATA_ERRORS_KEY = "INPUT DATA ERRORS"
@@ -69,6 +70,11 @@ class Config(LayeredConfigTree):
         as well as the results directory and images directory.
     schema_name
         The name of the schema to validate the pipeline configuration against.
+    images_dir
+        The directory containing the images or to download the images to if they
+        don't exist. If None, will default to the :data:`~easylink.utilities.paths.DEFAULT_IMAGES_DIR`.
+    command
+        The EasyLink command being run.
 
     Attributes
     ----------
@@ -82,6 +88,11 @@ class Config(LayeredConfigTree):
         The input data filepaths.
     schema
         The :class:`~easylink.pipeline_schema.PipelineSchema`.
+    images_dir
+        The directory containing the images or to download the images to if they
+        don't exist. If None, will default to ~/.easylink_images.
+    command
+        The EasyLink command being run.
 
     """
 
@@ -103,12 +114,10 @@ class Config(LayeredConfigTree):
             self.update({"environment": {"slurm": {}}}, layer="default")
         self.update({"schema": self._get_schema(schema_name)}, layer="initial_data")
         self.schema.configure_pipeline(self.pipeline, self.input_data)
-        # use the images_dir if provided, otherwise default to ~/.easylink_images
+        # use the images_dir if provided, otherwise use default
         self.update(
             {
-                "images_dir": Path(images_dir)
-                if images_dir
-                else Path.home() / ".easylink_images"
+                "images_dir": Path(images_dir) if images_dir else DEFAULT_IMAGES_DIR,
             },
             layer="user_configured",
         )

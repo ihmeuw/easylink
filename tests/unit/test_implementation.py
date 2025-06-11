@@ -5,6 +5,8 @@ from pytest_mock import MockerFixture
 
 from easylink.graph_components import OutputSlot
 from easylink.implementation import Implementation
+from easylink.utilities.data_utils import load_yaml
+from easylink.utilities.paths import DEFAULT_IMAGES_DIR, IMPLEMENTATION_METADATA
 
 
 def test__get_env_vars(mocker):
@@ -90,3 +92,28 @@ def test_outputs(
         output_slots=[OutputSlot(slot) for slot in output_slots],
     )
     assert implementation.outputs == expected_outputs
+
+
+def test__handle_conflicting_checksums(mocker: MockerFixture, caplog):
+    """Test that this will re-download an image appropriately."""
+    # Mock so we don't accidentally download an image
+    download_image_mock = mocker.patch("easylink.implementation.download_image")
+    assert download_image_mock.call_count == 0
+    # Mock the checksum calculation to return a different value than expected
+    mocker.patch(
+        "easylink.implementation.calculate_md5_checksum", return_value="ducks-go-quack"
+    )
+    expected_md5_checksum = "cows-go-moo"
+    logs = []
+    metadata = load_yaml(IMPLEMENTATION_METADATA)
+    Implementation._handle_conflicting_checksums(
+        logs=logs,
+        image_path=(DEFAULT_IMAGES_DIR / "python_pandas.sif"),
+        expected_md5_checksum=expected_md5_checksum,
+        record_id=metadata["step_1_python_pandas"]["zenodo_record_id"],
+    )
+    assert (
+        "/.easylink_images/python_pandas.sif' exists but has a different MD5 checksum (ducks-go-quack) than expected (cows-go-moo). Re-downloading the image."
+        in caplog.text
+    )
+    assert download_image_mock.call_count == 1
