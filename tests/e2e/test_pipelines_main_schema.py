@@ -102,8 +102,6 @@ def test_pipeline_splink_dummy(
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
         )
 
-
-@pytest.mark.skip(reason="FIXME [SSCI-2312]: This test is sporadically failing")
 @pytest.mark.slow
 @pytest.mark.skipif(
     not is_on_slurm(),
@@ -157,6 +155,9 @@ def test_pipelines_same_output_relabeled(
     We use various print statements in this test because they show up in the
     Jenkins logs.
     """
+
+    if "fastLink" in pipeline_specification:
+        pytest.skip(reason="FIXME [SSCI-2312]: This test is sporadically failing")
 
     with capsys.disabled():  # disabled so we can monitor job submissions
         print(
