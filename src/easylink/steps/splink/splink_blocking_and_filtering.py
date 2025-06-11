@@ -31,16 +31,6 @@ from splink.blocking_analysis import (
     cumulative_comparisons_to_be_scored_from_blocking_rules_chart,
 )
 
-if link_only:
-    df_list = [
-        df
-        for _, df in records.rename(columns={"Input Record ID": "unique_id"}).groupby(
-            "dataset"
-        )
-    ]
-else:
-    df_list = [records.rename(columns={"Input Record ID": "unique_id"})]
-
 grouped = records.rename(columns={"Input Record ID": "unique_id"}).groupby(
     "Input Record Dataset"
 )

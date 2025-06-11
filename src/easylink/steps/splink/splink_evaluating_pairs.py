@@ -53,11 +53,6 @@ for block_dir in blocks_dir.iterdir():
 
     from splink import DuckDBAPI
 
-    if link_only:
-        df_list = [df for _, df in grouped.groupby("dataset")]
-    else:
-        df_list = [grouped]
-
     db_api = DuckDBAPI()
     linker = Linker(
         [df for _, df in grouped],

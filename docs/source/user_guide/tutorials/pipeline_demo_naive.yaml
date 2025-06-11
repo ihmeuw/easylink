@@ -56,7 +56,7 @@ steps:
                     BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
                     COMPARISONS: "'ssn:exact,first_name:exact,middle_name:exact,last_name:exact'"
                     PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
-                    THRESHOLD_MATCH_PROBABILITY: 0.5
+                    THRESHOLD_MATCH_PROBABILITY: 0
                     LINK_ONLY: true
           links_to_clusters:
             implementation:
