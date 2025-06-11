@@ -29,7 +29,7 @@ from easylink.step import (
     TemplatedStep,
 )
 from easylink.utilities.data_utils import load_yaml
-from easylink.utilities.paths import IMPLEMENTATION_METADATA
+from easylink.utilities.paths import DEV_IMAGES_DIR, IMPLEMENTATION_METADATA
 
 
 def main(script_path: Path, host: Path) -> None:
@@ -195,9 +195,24 @@ class ImplementationCreator:
                 f"Implementation '{self.implementation_name}' already exists in the registry. "
                 "Overwriting it with the latest data."
             )
+
+        # Handle the fact that developers might be saving to username subdirs
+        # If the host folder is a subdirectory of DEV_IMAGES_DIR (e.g., the default
+        # host directory when calling `easylink devtools create-implementation`
+        # is DEV_IMAGES_DIR/<username>), we want to include the relative path
+        # to the DEV_IMAGES_DIR in the image name. This is required because ultimately
+        # when running a pipeline, all images are expected to be in a single directory.
+        image_name = (
+            self.hosted_container_path.name
+            # Use just the image name if the hosted path is not a part of DEV_IMAGES_DIR
+            if not self.hosted_container_path.is_relative_to(DEV_IMAGES_DIR)
+            # Use the path relative to DEV_IMAGES_DIR as the image name
+            else str(self.hosted_container_path.relative_to(DEV_IMAGES_DIR))
+        )
+
         info[self.implementation_name] = {
             "steps": [self.step],
-            "image_path": str(self.hosted_container_path),
+            "image_name": str(image_name),
             "script_cmd": f"{self.script_base_command} /{self.script_path.name}",
             "outputs": {
                 self.output_slot: "result.parquet",
