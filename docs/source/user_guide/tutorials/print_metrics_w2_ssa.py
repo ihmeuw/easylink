@@ -92,6 +92,7 @@ clusters_df = load_file(str(Path(results_dir / "result.parquet")))
 print(clusters_df["Cluster ID"].value_counts())
 
 data = []
+pdb.set_trace()
 num_w2s = records[records["Record ID"].str.contains("w2")]["Record ID"].nunique()
 for prob in np.sort(predictions_df["Probability"].unique()):
     # change when separate dataset column is ready

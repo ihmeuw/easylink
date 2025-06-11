@@ -116,7 +116,12 @@ blocked_pairs[["Left Record ID", "Right Record ID"]] = blocked_pairs[
 wrong_order_dataset = (
     blocked_pairs["Left Record Dataset"] > blocked_pairs["Right Record Dataset"]
 )
-id_cols = ["Left Record Dataset", "Left Record ID", "Right Record Dataset", "Right Record ID"]
+id_cols = [
+    "Left Record Dataset",
+    "Left Record ID",
+    "Right Record Dataset",
+    "Right Record ID",
+]
 switched_id_cols = [
     "Right Record Dataset",
     "Right Record ID",
@@ -148,18 +153,17 @@ records.to_parquet(output_path / "records.parquet", index=False)
 blocked_pairs.to_parquet(output_path / "pairs.parquet", index=False)
 
 # workaround until dataset column is ready - only works for specific dataset names
-if all(str(id).count("_") >= 3 for id in records["Input Record ID"]):
-    records["source_dataset"] = records["Input Record ID"].str.rsplit(
-        "_", n=1, expand=True
-    )[0]
-    db_api = DuckDBAPI()
-    diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
-    chart_path = diagnostics_dir / f"blocking_cumulative_comparisons_chart_block_0.png"
-    cumulative_comparisons_to_be_scored_from_blocking_rules_chart(
-        table_or_tables=records,
-        blocking_rules=blocking_rules,
-        db_api=db_api,
-        link_type="link_only",
-        unique_id_column_name="Input Record ID",
-        source_dataset_column_name="source_dataset",  # TBD change to dataset column when that's ready
-    ).save(chart_path)
+records["unique_id"] = (
+    str(records["Input Record Dataset"]) + "_" + str(records["Input Record ID"])
+)
+db_api = DuckDBAPI()
+diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
+chart_path = diagnostics_dir / f"blocking_cumulative_comparisons_chart_block_0.png"
+cumulative_comparisons_to_be_scored_from_blocking_rules_chart(
+    table_or_tables=records,
+    blocking_rules=blocking_rules,
+    db_api=db_api,
+    link_type="link_only",
+    unique_id_column_name="unique_id",
+    source_dataset_column_name="Input Record Dataset",  # TBD change to dataset column when that's ready
+).save(chart_path)
