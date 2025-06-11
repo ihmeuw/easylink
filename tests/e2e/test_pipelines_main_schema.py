@@ -18,18 +18,18 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment, correct_results_csv",
     [
-        # slurm pipeline_splink_dummy.yaml
-        (
-            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
-            "tests/specifications/e2e/input_data_dummy.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/e2e/pipeline_splink_dummy_results.csv",
-        ),
         # local pipeline_splink_dummy.yaml
         (
             "tests/specifications/e2e/pipeline_splink_dummy.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # slurm pipeline_splink_dummy.yaml
+        (
+            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
@@ -103,7 +103,6 @@ def test_pipeline_splink_dummy(
         )
 
 
-@pytest.mark.skip(reason="FIXME [SSCI-2312]: This test is sporadically failing")
 @pytest.mark.slow
 @pytest.mark.skipif(
     not is_on_slurm(),
@@ -112,13 +111,6 @@ def test_pipeline_splink_dummy(
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment, splink_results_csv",
     [
-        # slurm pipeline_with_fastLink.yaml
-        (
-            "tests/specifications/e2e/pipeline_with_fastLink.yaml",
-            "tests/specifications/e2e/input_data_dummy.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/e2e/pipeline_splink_dummy_results.csv",
-        ),
         # local pipeline_with_fastLink.yaml
         (
             "tests/specifications/e2e/pipeline_with_fastLink.yaml",
@@ -126,9 +118,9 @@ def test_pipeline_splink_dummy(
             "tests/specifications/common/environment_local.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
-        # slurm pipeline_cascade.yaml
+        # slurm pipeline_with_fastLink.yaml
         (
-            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/pipeline_with_fastLink.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
@@ -138,6 +130,13 @@ def test_pipeline_splink_dummy(
             "tests/specifications/e2e/pipeline_cascade.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # slurm pipeline_cascade.yaml
+        (
+            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
@@ -157,6 +156,9 @@ def test_pipelines_same_output_relabeled(
     We use various print statements in this test because they show up in the
     Jenkins logs.
     """
+
+    if "fastLink" in pipeline_specification:
+        pytest.skip(reason="FIXME [SSCI-2312]: This test is sporadically failing")
 
     with capsys.disabled():  # disabled so we can monitor job submissions
         print(
