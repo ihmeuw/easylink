@@ -340,24 +340,25 @@ fastLink_links_to_clusters:
   image_name: main/fastLink_links_to_clusters.sif
   script_cmd: Rscript /fastLink_links_to_clusters.R
   outputs:
-    clusters: result.parquetexclude_clustered:
+    clusters: result.parquet
+exclude_clustered:
   steps:
   - determining_exclusions
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/exclude_clustered.sif
+  image_name: main/exclude_clustered.sif
   script_cmd: python /exclude_clustered.py
   outputs:
     ids_to_remove: result.parquet
 exclude_none:
   steps:
   - determining_exclusions
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/exclude_none.sif
+  image_name: main/exclude_none.sif
   script_cmd: python /exclude_none.py
   outputs:
     ids_to_remove: result.parquet
 update_clusters_by_connected_components:
   steps:
   - updating_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/update_clusters_by_connected_components.sif
+  image_name: main/update_clusters_by_connected_components.sif
   script_cmd: python /update_clusters_by_connected_components.py
   outputs:
     clusters: result.parquet
