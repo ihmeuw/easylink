@@ -43,9 +43,9 @@ def main(script_path: Path, host: Path) -> None:
         The host directory to move the container to.
     """
     creator = ImplementationCreator(script_path, host)
-    # creator.create_recipe()
-    # creator.build_container()
-    # creator.move_container()
+    creator.create_recipe()
+    creator.build_container()
+    creator.move_container()
     creator.register()
 
 
