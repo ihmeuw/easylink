@@ -67,7 +67,7 @@ clustered_record_ids = set(dataset_df["Record ID"].unique()) & set(
     clusters_df["Input Record ID"].unique()
 )
 
-IDS_TO_REMOVE = pd.DataFrame({"Record ID": list(clustered_record_ids)})
+IDS_TO_REMOVE = pd.DataFrame({"Input Record ID": list(clustered_record_ids)})
 
 # OUTPUT_PATHS is a single path to a file (results.parquet)
 results_filepath = os.environ["OUTPUT_PATHS"]

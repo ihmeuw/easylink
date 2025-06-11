@@ -274,7 +274,7 @@ default_clusters_to_links:
 default_determining_exclusions:
   steps:
   - determining_exclusions
-  image_name: main/default_determining_exclusions.sif
+  image_name: zmbc/default_determining_exclusions.sif
   script_cmd: python /default_determining_exclusions.py
   outputs:
     ids_to_remove: result.parquet
@@ -344,14 +344,14 @@ fastLink_links_to_clusters:
 exclude_clustered:
   steps:
   - determining_exclusions
-  image_name: main/exclude_clustered.sif
+  image_name: zmbc/exclude_clustered.sif
   script_cmd: python /exclude_clustered.py
   outputs:
     ids_to_remove: result.parquet
 exclude_none:
   steps:
   - determining_exclusions
-  image_name: main/exclude_none.sif
+  image_name: zmbc/exclude_none.sif
   script_cmd: python /exclude_none.py
   outputs:
     ids_to_remove: result.parquet
