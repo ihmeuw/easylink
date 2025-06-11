@@ -312,7 +312,21 @@ exclude_none:
 update_clusters_by_connected_components:
   steps:
   - updating_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/update_clusters_by_connected_components.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/update_clusters_by_connected_components.sif
   script_cmd: python /update_clusters_by_connected_components.py
   outputs:
     clusters: result.parquet
+one_to_many_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/one_to_many_links_to_clusters.sif
+  script_cmd: python /one_to_many_links_to_clusters.py
+  outputs:
+    clusters: result.parquet
+accept_all_pairs:
+  steps:
+  - evaluating_pairs
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/accept_all_pairs.sif
+  script_cmd: python /accept_all_pairs.py
+  outputs:
+    links: result.parquet
