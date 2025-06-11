@@ -22,7 +22,7 @@ from splink import Linker, SettingsCreator, DuckDBAPI
 
 # Create the Splink linker in dedupe mode
 settings = SettingsCreator(
-    link_type="link_only" if link_only else "dedupe_only",
+    link_type="link_only" if link_only else "link_and_dedupe",
     blocking_rules_to_generate_predictions=blocking_rules,
     comparisons=[],
 )
@@ -41,8 +41,17 @@ if link_only:
 else:
     df_list = [records.rename(columns={"Input Record ID": "unique_id"})]
 
+grouped = records.rename(columns={"Input Record ID": "unique_id"}).groupby(
+    "Input Record Dataset"
+)
+
 db_api = DuckDBAPI()
-linker = Linker(df_list, settings, db_api=db_api)
+linker = Linker(
+    [df for _, df in grouped],
+    settings,
+    db_api=db_api,
+    input_table_aliases=[name for name, _ in grouped],
+)
 
 # Copied/adapted from https://github.com/moj-analytical-services/splink/blob/3eb1921eaff6b8471d3ebacd3238eb514f62c844/splink/internals/linker_components/inference.py#L86-L131
 from splink.internals.pipeline import CTEPipeline
@@ -90,14 +99,43 @@ pipeline.enqueue_list_of_sqls(sqls)
 blocked_pairs = (
     linker._db_api.sql_pipeline_to_splink_dataframe(pipeline)
     .as_pandas_dataframe()
-    .rename(
-        columns={
-            "join_key_l": "Left Record ID",
-            "join_key_r": "Right Record ID",
-        }
-    )
     .drop(columns=["match_key"])
 )
+
+blocked_pairs[["Left Record Dataset", "Left Record ID"]] = blocked_pairs.pop(
+    "join_key_l"
+).str.split("-__-", n=1, expand=True)
+blocked_pairs[["Right Record Dataset", "Right Record ID"]] = blocked_pairs.pop(
+    "join_key_r"
+).str.split("-__-", n=1, expand=True)
+blocked_pairs[["Left Record ID", "Right Record ID"]] = blocked_pairs[
+    ["Left Record ID", "Right Record ID"]
+].astype(int)
+
+# Now ensure correct ordering
+wrong_order_dataset = (
+    blocked_pairs["Left Record Dataset"] > blocked_pairs["Right Record Dataset"]
+)
+id_cols = ["Left Record Dataset", "Left Record ID", "Right Record Dataset", "Right Record ID"]
+switched_id_cols = [
+    "Right Record Dataset",
+    "Right Record ID",
+    "Left Record Dataset",
+    "Left Record ID",
+]
+blocked_pairs.loc[wrong_order_dataset, id_cols] = blocked_pairs.loc[
+    wrong_order_dataset, switched_id_cols
+].values
+
+wrong_order_ids = (
+    blocked_pairs["Left Record Dataset"] == blocked_pairs["Right Record Dataset"]
+) & (blocked_pairs["Left Record ID"] > blocked_pairs["Right Record ID"])
+blocked_pairs.loc[wrong_order_ids, id_cols] = blocked_pairs.loc[
+    wrong_order_ids, switched_id_cols
+].values
+blocked_pairs[["Left Record ID", "Right Record ID"]] = blocked_pairs[
+    ["Left Record ID", "Right Record ID"]
+].astype(int)
 
 print(blocked_pairs)
 

@@ -1,3 +1,4 @@
-input_file_1: src/easylink/steps/rl-dummy/input_data/input_file_1.parquet
-input_file_2: src/easylink/steps/rl-dummy/input_data/input_file_2.parquet
-known_clusters: src/easylink/steps/rl-dummy/input_data/known_clusters.parquet
+# NOTE: filepaths must be absolute paths to the shared filesystem for tests launched by Jenkins to work
+input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/zmbc/input_file_1.parquet
+input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/zmbc/input_file_2.parquet
+known_clusters: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/zmbc/known_clusters.parquet

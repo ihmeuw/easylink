@@ -195,26 +195,26 @@ step_1a_and_step_1b_combined_python_pandas:
 dummy_step_1_for_output_dir_example:
   steps:
   - step_1_for_output_dir_example
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_1_for_output_dir_example.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
   outputs:
     step_1_main_output_directory: output_dir/
 dummy_step_1_for_output_dir_example_default:
   steps:
   - step_1_for_output_dir_example
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_1_for_output_dir_example.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
 dummy_step_2_for_output_dir_example:
   steps:
   - step_2_for_output_dir_example
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_step_2_for_output_dir_example.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_step_2_for_output_dir_example.sif
   script_cmd: python /dummy_step_2_for_output_dir_example.py
   outputs:
     step_2_main_output: result.parquet
 default_removing_records:
   steps:
   - removing_records
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/default_removing_records.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_removing_records.sif
   script_cmd: python /default_removing_records.py
   outputs:
     dataset: dataset
@@ -228,28 +228,28 @@ default_clusters_to_links:
 default_determining_exclusions:
   steps:
   - determining_exclusions
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/default_determining_exclusions.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_determining_exclusions.sif
   script_cmd: python /default_determining_exclusions.py
   outputs:
     ids_to_remove: result.parquet
 default_updating_clusters:
   steps:
   - updating_clusters
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/default_updating_clusters.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/default_updating_clusters.sif
   script_cmd: python /default_updating_clusters.py
   outputs:
     clusters: clusters.parquet
 dummy_canonicalizing_and_downstream_analysis:
   steps:
   - canonicalizing_and_downstream_analysis
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/dummy_canonicalizing_and_downstream_analysis.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_canonicalizing_and_downstream_analysis.sif
   script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
   outputs:
     analysis_output: result.parquet
 dummy_pre-processing:
   steps:
   - pre-processing
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/dummy_pre-processing.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/main/dummy_pre-processing.sif
   script_cmd: python /dummy_pre-processing.py
   outputs:
     dataset: dataset
@@ -263,14 +263,14 @@ default_schema_alignment:
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_blocking_and_filtering.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_blocking_and_filtering.sif
   script_cmd: python /splink_blocking_and_filtering.py
   outputs:
     blocks: blocks
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_evaluating_pairs.sif
+  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/zmbc/splink_evaluating_pairs.sif
   script_cmd: python /splink_evaluating_pairs.py
   outputs:
     links: result.parquet

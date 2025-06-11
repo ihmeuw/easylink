@@ -36,7 +36,7 @@ for block_dir in blocks_dir.iterdir():
 
     # Create the Splink linker in dedupe mode
     settings = SettingsCreator(
-        link_type="link_only" if link_only else "dedupe_only",
+        link_type="link_only" if link_only else "link_and_dedupe",
         blocking_rules_to_generate_predictions=[],
         comparisons=comparisons,
         probability_two_random_records_match=float(
@@ -45,8 +45,10 @@ for block_dir in blocks_dir.iterdir():
         retain_intermediate_calculation_columns=True,
     )
 
-    records = pd.read_parquet(block_dir / "records.parquet").rename(
-        columns={"Input Record ID": "unique_id"}
+    grouped = (
+        pd.read_parquet(block_dir / "records.parquet")
+        .rename(columns={"Input Record ID": "unique_id"})
+        .groupby("Input Record Dataset")
     )
 
     from splink import DuckDBAPI
@@ -57,7 +59,12 @@ for block_dir in blocks_dir.iterdir():
         df_list = [records]
 
     db_api = DuckDBAPI()
-    linker = Linker(df_list, settings, db_api=db_api)
+    linker = Linker(
+        [df for _, df in grouped],
+        settings,
+        db_api=db_api,
+        input_table_aliases=[name for name, _ in grouped],
+    )
 
     linker.training.estimate_u_using_random_sampling(max_pairs=5e6)
 
@@ -82,11 +89,21 @@ for block_dir in blocks_dir.iterdir():
     # https://gist.github.com/RobinL/d329e7004998503ce91b68479aa41139
     pairs = (
         pd.read_parquet(block_dir / "pairs.parquet")
-        .rename(
-            columns={
-                "Left Record ID": "join_key_l",
-                "Right Record ID": "join_key_r",
-            }
+        .assign(
+            join_key_l=lambda df: df["Left Record Dataset"]
+            + "-__-"
+            + df["Left Record ID"].astype(int).astype(str),
+            join_key_r=lambda df: df["Right Record Dataset"]
+            + "-__-"
+            + df["Right Record ID"].astype(int).astype(str),
+        )
+        .drop(
+            columns=[
+                "Left Record Dataset",
+                "Left Record ID",
+                "Right Record Dataset",
+                "Right Record ID",
+            ]
         )
         .assign(match_key=0)
     )  # What is this?
@@ -140,10 +157,18 @@ linker.visualisations.comparison_viewer_dashboard(
 )
 
 all_predictions = pd.concat(all_predictions, ignore_index=True)[
-    ["unique_id_l", "unique_id_r", "match_probability"]
+    [
+        "source_dataset_l",
+        "unique_id_l",
+        "source_dataset_r",
+        "unique_id_r",
+        "match_probability",
+    ]
 ].rename(
     columns={
+        "source_dataset_l": "Left Record Dataset",
         "unique_id_l": "Left Record ID",
+        "source_dataset_r": "Right Record Dataset",
         "unique_id_r": "Right Record ID",
         "match_probability": "Probability",
     }
