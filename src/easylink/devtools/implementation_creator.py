@@ -29,7 +29,7 @@ from easylink.step import (
     TemplatedStep,
 )
 from easylink.utilities.data_utils import load_yaml
-from easylink.utilities.paths import IMPLEMENTATION_METADATA
+from easylink.utilities.paths import DEV_IMAGES_DIR, IMPLEMENTATION_METADATA
 
 
 def main(script_path: Path, host: Path) -> None:
@@ -43,9 +43,9 @@ def main(script_path: Path, host: Path) -> None:
         The host directory to move the container to.
     """
     creator = ImplementationCreator(script_path, host)
-    creator.create_recipe()
-    creator.build_container()
-    creator.move_container()
+    # creator.create_recipe()
+    # creator.build_container()
+    # creator.move_container()
     creator.register()
 
 
@@ -197,7 +197,7 @@ class ImplementationCreator:
             )
         info[self.implementation_name] = {
             "steps": [self.step],
-            "image_path": str(self.hosted_container_path),
+            "image_name": str(self.hosted_container_path.relative_to(DEV_IMAGES_DIR)),
             "script_cmd": f"{self.script_base_command} /{self.script_path.name}",
             "outputs": {
                 self.output_slot: "result.parquet",
