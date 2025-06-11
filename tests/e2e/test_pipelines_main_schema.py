@@ -18,18 +18,18 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment, correct_results_csv",
     [
-        # slurm pipeline_splink_dummy.yaml
-        (
-            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
-            "tests/specifications/e2e/input_data_dummy.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/e2e/pipeline_splink_dummy_results.csv",
-        ),
         # local pipeline_splink_dummy.yaml
         (
             "tests/specifications/e2e/pipeline_splink_dummy.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # slurm pipeline_splink_dummy.yaml
+        (
+            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
@@ -111,13 +111,6 @@ def test_pipeline_splink_dummy(
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment, splink_results_csv",
     [
-        # slurm pipeline_with_fastLink.yaml
-        (
-            "tests/specifications/e2e/pipeline_with_fastLink.yaml",
-            "tests/specifications/e2e/input_data_dummy.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/e2e/pipeline_splink_dummy_results.csv",
-        ),
         # local pipeline_with_fastLink.yaml
         (
             "tests/specifications/e2e/pipeline_with_fastLink.yaml",
@@ -125,9 +118,9 @@ def test_pipeline_splink_dummy(
             "tests/specifications/common/environment_local.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
-        # slurm pipeline_cascade.yaml
+        # slurm pipeline_with_fastLink.yaml
         (
-            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/pipeline_with_fastLink.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
@@ -137,6 +130,13 @@ def test_pipeline_splink_dummy(
             "tests/specifications/e2e/pipeline_cascade.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # slurm pipeline_cascade.yaml
+        (
+            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
