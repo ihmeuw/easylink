@@ -5,8 +5,6 @@ import os
 
 import pandas as pd
 
-import pdb
-
 records = pd.read_parquet(os.environ["RECORDS_FILE_PATH"])
 
 # DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory ('dataset')
@@ -18,7 +16,7 @@ blocking_rules = os.environ["BLOCKING_RULES"].split(",")
 
 link_only = os.getenv("LINK_ONLY", "false").lower() in ("true", "yes", "1")
 
-from splink import Linker, SettingsCreator, DuckDBAPI
+from splink import DuckDBAPI, Linker, SettingsCreator
 
 # Create the Splink linker in dedupe mode
 settings = SettingsCreator(
