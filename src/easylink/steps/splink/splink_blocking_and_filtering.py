@@ -146,7 +146,6 @@ output_path.mkdir(exist_ok=True, parents=True)
 records.to_parquet(output_path / "records.parquet", index=False)
 blocked_pairs.to_parquet(output_path / "pairs.parquet", index=False)
 
-# workaround until dataset column is ready - only works for specific dataset names
 records["unique_id"] = (
     str(records["Input Record Dataset"]) + "_" + str(records["Input Record ID"])
 )
