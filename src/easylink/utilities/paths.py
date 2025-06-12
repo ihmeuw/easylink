@@ -9,9 +9,10 @@ This module contains commonly-used filepaths and directories.
 
 from pathlib import Path
 
-# TODO: We'll need to update this to be more generic for external users and have a way of configuring this
-CONTAINER_DIR = "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images"
-"""Path to the directory where the container images are stored."""
+DEV_IMAGES_DIR = "/mnt/team/simulation_science/priv/engineering/er_ecosystem/images"
+"""Path to the directory where the development/dummy pipeline images are stored."""
+DEFAULT_IMAGES_DIR = Path.home() / ".easylink_images"
+"""Default subdirectory for storing downloaded images."""
 IMPLEMENTATION_METADATA = Path(__file__).parent.parent / "implementation_metadata.yaml"
 """Path to the implementation metadata file."""
 EASYLINK_TEMP = {"local": Path("/tmp/easylink"), "slurm": Path("/tmp")}

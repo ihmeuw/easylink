@@ -9,6 +9,7 @@ import pytest
 
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
+from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 RESULT_CHECKSUM = "d56f3d12c0c9ca89b6ce0f42810bb79cd16772535f73807722e5430819b6bc08"
@@ -22,17 +23,17 @@ RESULT_CHECKSUM = "d56f3d12c0c9ca89b6ce0f42810bb79cd16772535f73807722e5430819b6b
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment",
     [
-        # slurm
-        (
-            "e2e/pipeline.yaml",
-            "common/input_data.yaml",
-            "e2e/environment_slurm.yaml",
-        ),
         # local
         (
             "e2e/pipeline.yaml",
             "common/input_data.yaml",
             "common/environment_local.yaml",
+        ),
+        # slurm
+        (
+            "e2e/pipeline.yaml",
+            "common/input_data.yaml",
+            "e2e/environment_slurm.yaml",
         ),
     ],
 )
@@ -63,6 +64,7 @@ def test_easylink_run(
             f"-i {SPECIFICATIONS_DIR / input_data} "
             f"-e {SPECIFICATIONS_DIR / computing_environment} "
             f"-o {str(test_specific_results_dir)} "
+            f"-I {DEV_IMAGES_DIR} "
             "--no-timestamp "
             "--schema development "
         )

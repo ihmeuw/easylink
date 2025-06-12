@@ -55,7 +55,7 @@ from easylink.utilities.general_utils import (
     configure_logging_to_terminal,
     handle_exceptions,
 )
-from easylink.utilities.paths import CONTAINER_DIR
+from easylink.utilities.paths import DEFAULT_IMAGES_DIR, DEV_IMAGES_DIR
 
 SHARED_OPTIONS = [
     click.option(
@@ -155,6 +155,16 @@ def easylink():
 @easylink.command()
 @_pass_shared_options
 @click.option(
+    "-I",
+    "--images",
+    hidden=True,
+    type=click.Path(exists=False, file_okay=False, resolve_path=True),
+    help=(
+        "The directory containing the images to run. If no value is passed, a new "
+        f"directory will be created at the home directory: {DEFAULT_IMAGES_DIR}."
+    ),
+)
+@click.option(
     "-e",
     "--computing-environment",
     default=None,
@@ -171,6 +181,7 @@ def run(
     output_dir: str | None,
     no_timestamp: bool,
     schema: str,
+    images: str,
     computing_environment: str | None,
     verbose: int,
     with_debugger: bool,
@@ -196,6 +207,7 @@ def run(
         input_data=input_data,
         computing_environment=computing_environment,
         results_dir=results_dir,
+        images_dir=images,
         schema_name=schema,
     )
     logger.info("*** FINISHED ***")
@@ -263,7 +275,7 @@ easylink.add_command(devtools)
     type=click.Path(exists=False, dir_okay=True, file_okay=False, resolve_path=True),
     help=(
         "The directory to move the container to. If no value is passed, it will "
-        f"be moved to {CONTAINER_DIR} in a sub-directory named with the username."
+        f"be moved to {DEV_IMAGES_DIR} in a sub-directory named with the username."
     ),
 )
 def create_implementation(
@@ -300,7 +312,7 @@ def create_implementation(
     if not scripts:
         logger.error("No scripts provided.")
         return
-    output_dir = Path(output_dir) if output_dir else Path(f"{CONTAINER_DIR}/{os.getlogin()}")
+    output_dir = Path(output_dir) if output_dir else Path(f"{DEV_IMAGES_DIR}/{os.getlogin()}")
     if not output_dir.exists():
         # make the directory with rwxrwxr-x permissions
         output_dir.mkdir(parents=True, mode=0o775)

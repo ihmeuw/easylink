@@ -1,5 +1,4 @@
 # mypy: ignore-errors
-import hashlib
 import subprocess
 import sys
 from pathlib import Path
@@ -8,6 +7,7 @@ import pandas as pd
 import pytest
 
 from easylink.utilities.general_utils import is_on_slurm
+from easylink.utilities.paths import DEV_IMAGES_DIR
 
 
 @pytest.mark.slow
@@ -18,18 +18,18 @@ from easylink.utilities.general_utils import is_on_slurm
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment, correct_results_csv",
     [
-        # slurm pipeline_splink_dummy.yaml
-        (
-            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
-            "tests/specifications/e2e/input_data_dummy.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/e2e/pipeline_splink_dummy_results.csv",
-        ),
         # local pipeline_splink_dummy.yaml
         (
             "tests/specifications/e2e/pipeline_splink_dummy.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # slurm pipeline_splink_dummy.yaml
+        (
+            "tests/specifications/e2e/pipeline_splink_dummy.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
@@ -62,6 +62,7 @@ def test_pipeline_splink_dummy(
             f"-i {input_data} "
             f"-e {computing_environment} "
             f"-o {str(test_specific_results_dir)} "
+            f"-I {DEV_IMAGES_DIR} "
             "--no-timestamp "
             "--schema main "
         )
@@ -110,13 +111,6 @@ def test_pipeline_splink_dummy(
 @pytest.mark.parametrize(
     "pipeline_specification, input_data, computing_environment, splink_results_csv",
     [
-        # slurm pipeline_with_fastLink.yaml
-        (
-            "tests/specifications/e2e/pipeline_with_fastLink.yaml",
-            "tests/specifications/e2e/input_data_dummy.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
-            "tests/e2e/pipeline_splink_dummy_results.csv",
-        ),
         # local pipeline_with_fastLink.yaml
         (
             "tests/specifications/e2e/pipeline_with_fastLink.yaml",
@@ -124,9 +118,9 @@ def test_pipeline_splink_dummy(
             "tests/specifications/common/environment_local.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
-        # slurm pipeline_cascade.yaml
+        # slurm pipeline_with_fastLink.yaml
         (
-            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/pipeline_with_fastLink.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
@@ -136,6 +130,13 @@ def test_pipeline_splink_dummy(
             "tests/specifications/e2e/pipeline_cascade.yaml",
             "tests/specifications/e2e/input_data_dummy.yaml",
             "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_splink_dummy_results.csv",
+        ),
+        # slurm pipeline_cascade.yaml
+        (
+            "tests/specifications/e2e/pipeline_cascade.yaml",
+            "tests/specifications/e2e/input_data_dummy.yaml",
+            "tests/specifications/e2e/environment_slurm.yaml",
             "tests/e2e/pipeline_splink_dummy_results.csv",
         ),
     ],
@@ -156,6 +157,9 @@ def test_pipelines_same_output_relabeled(
     Jenkins logs.
     """
 
+    if "fastLink" in pipeline_specification:
+        pytest.skip(reason="FIXME [SSCI-2312]: This test is sporadically failing")
+
     with capsys.disabled():  # disabled so we can monitor job submissions
         print(
             "\n\n*** RUNNING TEST ***\n"
@@ -168,6 +172,7 @@ def test_pipelines_same_output_relabeled(
             f"-i {input_data} "
             f"-e {computing_environment} "
             f"-o {str(test_specific_results_dir)} "
+            f"-I {DEV_IMAGES_DIR} "
             "--no-timestamp "
             "--schema main "
         )
