@@ -309,14 +309,14 @@ default_schema_alignment:
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_blocking_and_filtering.sif
+  image_name: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_blocking_and_filtering.sif
   script_cmd: python /splink_blocking_and_filtering.py
   outputs:
     blocks: blocks
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_path: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_evaluating_pairs.sif
+  image_name: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_evaluating_pairs.sif
   script_cmd: python /splink_evaluating_pairs.py
   outputs:
     links: result.parquet
