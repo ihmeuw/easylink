@@ -13,6 +13,7 @@ blocks_dir = Path(os.environ["BLOCKS_DIR_PATH"])
 diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
 output_path = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
 Path(output_path).parent.mkdir(exist_ok=True, parents=True)
+link_only = os.getenv("LINK_ONLY", "false").lower() in ("true", "yes", "1")
 
 all_predictions = []
 
@@ -32,15 +33,17 @@ for block_dir in blocks_dir.iterdir():
             comparisons.append(cl.DateOfBirthComparison(column))
         else:
             raise ValueError(f"Unknown comparison method {method}")
+    # TODO: check both datasets contain all the columns
 
     # Create the Splink linker in dedupe mode
     settings = SettingsCreator(
-        link_type="link_and_dedupe",
+        link_type="link_only" if link_only else "link_and_dedupe",
         blocking_rules_to_generate_predictions=[],
         comparisons=comparisons,
         probability_two_random_records_match=float(
             os.environ["PROBABILITY_TWO_RANDOM_RECORDS_MATCH"]
         ),
+        retain_intermediate_calculation_columns=True,
     )
 
     grouped = (
@@ -142,6 +145,12 @@ for block_dir in blocks_dir.iterdir():
     linker._predict_warning()
 
     all_predictions.append(predictions.as_pandas_dataframe())
+
+comparisons_path = diagnostics_dir / f"comparisons_chart_{block_dir}.html"
+comparisons_path.parent.mkdir(exist_ok=True, parents=True)
+linker.visualisations.comparison_viewer_dashboard(
+    predictions, comparisons_path, overwrite=True
+)
 
 all_predictions = pd.concat(all_predictions, ignore_index=True)[
     [
