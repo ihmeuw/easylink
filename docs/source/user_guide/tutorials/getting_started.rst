@@ -139,7 +139,7 @@ configures the pipeline for this run, by specifying configuration details for ea
 defined by the pipeline schema. The schema steps, and the edges between them, are defined in 
 ``pipeline_schema_constants/development.py``. The schema steps, or nodes, define input and output slots for 
 data used or produced by the schema steps, as well as any logical or behavioral structure of the step,
-such as defining a step as a ``LoopStep``, ``ParallelStep``, ``ChoiceStep``, or ``HierarchicalStep``. The edges 
+such as defining a step as a ``LoopStep``, ``CloneableStep``, ``ChoiceStep``, or ``HierarchicalStep``. The edges 
 define how data moves between steps' input and output slots.
 
 ``pipeline_schema_constants/development.py`` defines that the pipeline schema requires four steps, that the 

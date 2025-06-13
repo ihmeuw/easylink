@@ -816,7 +816,7 @@ class TemplatedStep(Step, ABC):
 
     A ``TemplatedStep`` is used to represents a ``Step`` that contains a specified
     amount of multiplicity, such as one that is looped or run in parallel; it is
-    inherited by concrete :class:`LoopStep` and :class:`ParallelStep` instances.
+    inherited by concrete :class:`LoopStep` and :class:`CloneableStep` instances.
 
     See :class:`Step` for inherited attributes.
 
@@ -1206,7 +1206,7 @@ class LoopStep(TemplatedStep):
         return {"input": input_mappings, "output": output_mappings}
 
 
-class ParallelStep(TemplatedStep):
+class CloneableStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that creates multiple copies in parallel
     with no dependencies between them.
 
@@ -1216,12 +1216,12 @@ class ParallelStep(TemplatedStep):
 
     @property
     def config_key(self):
-        """The pipeline specification key required for a ``ParallelStep``."""
+        """The pipeline specification key required for a ``CloneableStep``."""
         return "parallel"
 
     @property
     def node_prefix(self):
-        """The prefix to be used in the ``ParallelStep`` node name."""
+        """The prefix to be used in the ``CloneableStep`` node name."""
         return "parallel_split"
 
     def _update_step_graph(self, num_repeats: int) -> StepGraph:
@@ -1279,7 +1279,7 @@ class ParallelStep(TemplatedStep):
 class EmbarrassinglyParallelStep(Step):
     """A :class:`Step` that is run in parallel on the backend.
 
-    An ``EmbarrassinglyParallelStep`` is different than a :class:`ParallelStep`
+    An ``EmbarrassinglyParallelStep`` is different than a :class:`CloneableStep`
     in that it is not configured by the user to be run in parallel - it completely
     happens on the back end for performance reasons.
 
@@ -1985,7 +1985,7 @@ class LeafConfigurationState(ConfigurationState):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
-                # FIXME [MIC-5771]: Fix ParallelSteps
+                # FIXME [MIC-5771]: Fix CloneableSteps
                 if (
                     "input_data_file" in self.step_config
                     and edge.source_node == "pipeline_graph_input_data"

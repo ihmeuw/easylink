@@ -147,5 +147,5 @@ src/easylink/_version.py
 
 # Local specification files
 .specifications/
-
 .snakemake/
+*/copilot-instructions.md

@@ -55,8 +55,8 @@ def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -
 
 
 EP_SECTION_MAPPING = {
-    "parallel_step": {
-        "pipeline_spec": "pipeline_parallel_step.yaml",
+    "cloneable_step": {
+        "pipeline_spec": "pipeline_cloneable_step.yaml",
         "schema_name": "ep_parallel_step",
         "implementation_names": [
             "step_1_parallel_split_1_step_1_python_pandas",
@@ -89,14 +89,14 @@ EP_SECTION_MAPPING = {
             1,
         ),
         (
-            "parallel_step",
+            "cloneable_step",
             # We have two mutually exclusive and collectively exhaustive subsets of
             # input data from the EmbarrassinglyParallelStep, each of which
-            # is duplicated twice (from the ParallelStep). The step_1 container
+            # is duplicated twice (from the CloneableStep). The step_1 container
             # is then run exactly one time on each of these four datasets.
             1,
             # The embarrassingly parallel splitting shouldn't increase the number of rows
-            # in and of itself, but the underlying parallel step does. We have two
+            # in and of itself, but the underlying cloneable step does. We have two
             # splits and so expect there to be twice as many rows in the final result.
             2,
         ),

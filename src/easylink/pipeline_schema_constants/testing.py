@@ -16,12 +16,12 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
+    CloneableStep,
     EmbarrassinglyParallelStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
     OutputStep,
-    ParallelStep,
     Step,
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
@@ -215,7 +215,7 @@ SCHEMA_PARAMS_BAD_COMBINED_TOPOLOGY = (NODES_BAD_COMBINED_TOPOLOGY, EDGES_ONE_ST
 NODES_NESTED_TEMPLATED_STEPS = [
     InputStep(),
     LoopStep(
-        template_step=ParallelStep(
+        template_step=CloneableStep(
             template_step=HierarchicalStep(
                 step_name="step_1",
                 input_slots=[
@@ -398,7 +398,7 @@ SCHEMA_PARAMS_LOOPING_EP_STEP = (NODES_LOOPING_EP_STEP, EDGES_ONE_STEP)
 NODES_EP_PARALLEL_STEP = [
     InputStep(),
     EmbarrassinglyParallelStep(
-        step=ParallelStep(
+        step=CloneableStep(
             template_step=Step(
                 step_name="step_1",
                 input_slots=[

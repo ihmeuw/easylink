@@ -28,11 +28,11 @@ from easylink.graph_components import (
 from easylink.pipeline_schema_constants.development import NODES
 from easylink.step import (
     ChoiceStep,
+    CloneableStep,
     EmbarrassinglyParallelStep,
     HierarchicalStep,
     IOStep,
     LoopStep,
-    ParallelStep,
     Step,
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
@@ -443,7 +443,7 @@ def test_loop_implementation_graph(
 
 
 @pytest.fixture
-def parallel_step_params() -> dict[str, Any]:
+def cloneable_step_params() -> dict[str, Any]:
     return {
         "template_step": HierarchicalStep(
             "step_1",
@@ -530,8 +530,8 @@ def parallel_step_params() -> dict[str, Any]:
     }
 
 
-def test_parallel_step_slots(parallel_step_params: dict[str, Any]) -> None:
-    step = ParallelStep(**parallel_step_params)
+def test_cloneable_step_slots(cloneable_step_params: dict[str, Any]) -> None:
+    step = CloneableStep(**cloneable_step_params)
     assert step.name == "step_1"
     assert step.input_slots == {
         "step_1_main_input": InputSlot(
@@ -548,12 +548,12 @@ def test_parallel_step_slots(parallel_step_params: dict[str, Any]) -> None:
     assert step.output_slots == {"step_1_main_output": OutputSlot("step_1_main_output")}
 
 
-def test_parallel_step_implementation_graph(
-    mocker: MockerFixture, parallel_step_params: dict[str, Any]
+def test_cloneable_step_implementation_graph(
+    mocker: MockerFixture, cloneable_step_params: dict[str, Any]
 ) -> None:
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    step = ParallelStep(**parallel_step_params)
+    step = CloneableStep(**cloneable_step_params)
     step_config = LayeredConfigTree(
         {
             "parallel": [
@@ -659,18 +659,18 @@ def test_parallel_step_implementation_graph(
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
 
 
-@pytest.mark.parametrize("step_type", ["parallel", "loop"])
+@pytest.mark.parametrize("step_type", ["cloneable", "loop"])
 def test_templated_implementation_graph_no_multiplicity(
     step_type,
-    parallel_step_params: dict[str, Any],
+    cloneable_step_params: dict[str, Any],
     loop_step_params: dict[str, Any],
     mocker: MockerFixture,
 ) -> None:
     """Tests that we can handle TemplatedStep but with no multiplicity."""
     mocker.patch("easylink.implementation.Implementation._load_metadata")
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
-    if step_type == "parallel":
-        step = ParallelStep(**parallel_step_params)
+    if step_type == "cloneable":
+        step = CloneableStep(**cloneable_step_params)
     else:  # loop
         step = LoopStep(**loop_step_params)
     step_config = LayeredConfigTree(
@@ -715,10 +715,10 @@ def test_templated_implementation_graph_no_multiplicity(
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
 
 
-@pytest.mark.parametrize("step_type", ["loop", "parallel"])
+@pytest.mark.parametrize("step_type", ["loop", "cloneable"])
 @pytest.mark.parametrize("single_repeat", [True, False])
 def test__duplicate_template_step(
-    step_type, single_repeat, loop_step_params, parallel_step_params, mocker: MockerFixture
+    step_type, single_repeat, loop_step_params, cloneable_step_params, mocker: MockerFixture
 ):
     """Test against _duplicate_template_step.
 
@@ -733,8 +733,8 @@ def test__duplicate_template_step(
     if step_type == "loop":
         step = LoopStep(**loop_step_params)
         config_key = "iterate"
-    else:  # parallel
-        step = ParallelStep(**parallel_step_params)
+    else:  # cloneable
+        step = CloneableStep(**cloneable_step_params)
         config_key = "parallel"
     implementation_config = [
         {
@@ -1650,28 +1650,28 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
 
 
 @pytest.fixture
-def embarrassingly_parallel_parallel_step_params(
-    parallel_step_params: dict[str, Any]
+def embarrassingly_parallel_cloneable_step_params(
+    cloneable_step_params: dict[str, Any]
 ) -> dict[str, Any]:
     return {
-        "step": ParallelStep(**parallel_step_params),
+        "step": CloneableStep(**cloneable_step_params),
         "slot_splitter_mapping": {"step_1_main_input": split_data_by_size},
         "slot_aggregator_mapping": {"step_1_main_output": concatenate_datasets},
     }
 
 
-def test_embarrassingly_parallel_parallel_step_implementation_graph(
-    embarrassingly_parallel_parallel_step_params,
+def test_embarrassingly_parallel_cloneable_step_implementation_graph(
+    embarrassingly_parallel_cloneable_step_params,
     mocker: MockerFixture,
 ) -> None:
-    """Tests an embarrassingly parallel ParallelStep.
+    """Tests an embarrassingly parallel CloneableStep.
 
-    The ParallelStep consists of three copies, each of which are a HierarchicalStep
+    The CloneableStep consists of three copies, each of which are a HierarchicalStep
     consisting of step_1a and step_1b. We thus expect the splitter to be applied
     to each copy's input slot for 1a and the aggregator to be applied to the output
     slots of each copy.
     """
-    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_parallel_step_params)
+    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_cloneable_step_params)
     step_config = LayeredConfigTree(
         {
             "parallel": [
