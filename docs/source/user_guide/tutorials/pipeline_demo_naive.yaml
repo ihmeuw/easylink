@@ -39,7 +39,7 @@ steps:
                 - implementation:
                     name: dummy_pre-processing
                     configuration: 
-                      INPUT_DATASET: input_file_w2
+                      INPUT_DATASET: input_file_w2_2020
               schema_alignment:
                 implementation:
                   name: default_schema_alignment
