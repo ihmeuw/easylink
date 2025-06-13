@@ -11,11 +11,11 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 COMMON_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "common"
-EP_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "integration" / "embarrassingly_parallel"
+EP_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "integration" / "auto_parallel"
 
 
 @pytest.mark.slow
-def test_looping_embarrassingly_parallel_step(test_specific_results_dir: Path) -> None:
+def test_looping_auto_parallel_step(test_specific_results_dir: Path) -> None:
     pipeline_specification = EP_SPECIFICATIONS_DIR / "pipeline_loop_step.yaml"
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
@@ -91,11 +91,11 @@ EP_SECTION_MAPPING = {
         (
             "cloneable_step",
             # We have two mutually exclusive and collectively exhaustive subsets of
-            # input data from the EmbarrassinglyParallelStep, each of which
+            # input data from the AutoParallelStep, each of which
             # is duplicated twice (from the CloneableStep). The step_1 container
             # is then run exactly one time on each of these four datasets.
             1,
-            # The embarrassingly parallel splitting shouldn't increase the number of rows
+            # The auto parallel splitting shouldn't increase the number of rows
             # in and of itself, but the underlying cloneable step does. We have two
             # splits and so expect there to be twice as many rows in the final result.
             2,
@@ -104,10 +104,10 @@ EP_SECTION_MAPPING = {
             "hierarchical_step",
             2,
             # The particular schema used here has two input slots, where the main
-            # one gets split into two for embarrassingly parallel processing.
+            # one gets split into two for auto parallel processing.
             # The total number of rows in the entire set of input data (which gets
             # fed into both the main and the secondary input slots) is ROWS.
-            # The first substep (in each branch of the embarrassingly parallel split)
+            # The first substep (in each branch of the auto parallel split)
             # gets 0.5xROWS (due to the splitting) in the main input slot plus 1xROWS
             # in the secondary input slot for a total of 1.5xROWS.
             # The second substep then gets the processed 1.5xROWS from the first
@@ -118,7 +118,7 @@ EP_SECTION_MAPPING = {
         ),
     ],
 )
-def test_embarrassingly_parallel_sections(
+def test_auto_parallel_sections(
     step_type: str,
     expected_counter: int,
     num_rows_multiplier: int,

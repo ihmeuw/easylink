@@ -27,9 +27,9 @@ from easylink.graph_components import (
 )
 from easylink.pipeline_schema_constants.development import NODES
 from easylink.step import (
+    AutoParallelStep,
     ChoiceStep,
     CloneableStep,
-    EmbarrassinglyParallelStep,
     HierarchicalStep,
     IOStep,
     LoopStep,
@@ -1140,7 +1140,7 @@ def test_complex_choice_step_implementation_graph(choice_step_params: dict[str, 
 
 
 @pytest.fixture
-def embarrassingly_parallel_step_params() -> dict[str, Any]:
+def auto_parallel_step_params() -> dict[str, Any]:
     return {
         "step": Step(
             step_name="step_3",
@@ -1158,10 +1158,8 @@ def embarrassingly_parallel_step_params() -> dict[str, Any]:
     }
 
 
-def test_embarrassingly_parallel_step_slots(
-    embarrassingly_parallel_step_params: dict[str, Any]
-) -> None:
-    step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
+def test_auto_parallel_step_slots(auto_parallel_step_params: dict[str, Any]) -> None:
+    step = AutoParallelStep(**auto_parallel_step_params)
     assert step.name == "step_3"
     assert step.input_slots == {
         "step_3_main_input": InputSlot(
@@ -1175,10 +1173,10 @@ def test_embarrassingly_parallel_step_slots(
     }
 
 
-def test_embarrassingly_parallel_step_implementation_graph(
-    embarrassingly_parallel_step_params: dict[str, Any]
+def test_auto_parallel_step_implementation_graph(
+    auto_parallel_step_params: dict[str, Any]
 ) -> None:
-    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_step_params)
+    ep_step = AutoParallelStep(**auto_parallel_step_params)
     step_config = LayeredConfigTree({"implementation": {"name": "step_3_python_pandas"}})
     ep_step.set_configuration_state(step_config, {}, {})
     implementation_graph = _create_implementation_graph(ep_step)
@@ -1216,7 +1214,7 @@ def test_embarrassingly_parallel_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, ep_step)
 
 
 @pytest.mark.parametrize(
@@ -1321,7 +1319,7 @@ def test_embarrassingly_parallel_step_implementation_graph(
         "multiple_splitters_missing_aggregators",
     ],
 )
-def test_embarrassingly_parallel_step__validation(
+def test_auto_parallel_step__validation(
     input_slots: list[InputSlot],
     output_slots: list[OutputSlot],
     slot_splitter_mapping: dict[str, Callable],
@@ -1338,7 +1336,7 @@ def test_embarrassingly_parallel_step__validation(
         "slot_aggregator_mapping": slot_aggregator_mapping,
     }
     with pytest.raises(ValueError) as error:
-        EmbarrassinglyParallelStep(**step_params)
+        AutoParallelStep(**step_params)
 
     error_msg = str(error.value)
 
@@ -1350,7 +1348,7 @@ def test_embarrassingly_parallel_step__validation(
 
 
 @pytest.fixture
-def embarrassingly_parallel_hierarchical_step_params() -> dict[str, Any]:
+def auto_parallel_hierarchical_step_params() -> dict[str, Any]:
     return {
         "step": HierarchicalStep(
             step_name="steps_1_2_3",
@@ -1446,10 +1444,10 @@ def embarrassingly_parallel_hierarchical_step_params() -> dict[str, Any]:
     }
 
 
-def test_embarrassingly_parallel_hierarchical_step_implementation_graph(
-    embarrassingly_parallel_hierarchical_step_params,
+def test_auto_parallel_hierarchical_step_implementation_graph(
+    auto_parallel_hierarchical_step_params,
 ) -> None:
-    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_hierarchical_step_params)
+    ep_step = AutoParallelStep(**auto_parallel_hierarchical_step_params)
     step_config = LayeredConfigTree(
         {
             "substeps": {
@@ -1525,13 +1523,11 @@ def test_embarrassingly_parallel_hierarchical_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, ep_step)
 
 
 @pytest.fixture
-def embarrassingly_parallel_loop_step_params(
-    loop_step_params: dict[str, Any]
-) -> dict[str, Any]:
+def auto_parallel_loop_step_params(loop_step_params: dict[str, Any]) -> dict[str, Any]:
     return {
         "step": LoopStep(**loop_step_params),
         "slot_splitter_mapping": {"step_3_main_input": split_data_by_size},
@@ -1539,18 +1535,18 @@ def embarrassingly_parallel_loop_step_params(
     }
 
 
-def test_embarrassingly_parallel_loop_step_implementation_graph(
-    embarrassingly_parallel_loop_step_params,
+def test_auto_parallel_loop_step_implementation_graph(
+    auto_parallel_loop_step_params,
     mocker: MockerFixture,
 ) -> None:
-    """Tests an embarrassingly parallel LoopStep.
+    """Tests an auto parallel LoopStep.
 
     The LoopsStep consists of three iterations. The first is a HierarchicalStep
     (step_3a and step_3b) and the remaining two are basic Steps (step_3). We thus expect
     the splitter to be applied to the input slot of loop 1, step_3a and the aggregator
     to be applied to the output slot of loop 3, step 3.
     """
-    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_loop_step_params)
+    ep_step = AutoParallelStep(**auto_parallel_loop_step_params)
     step_config = LayeredConfigTree(
         {
             "iterate": [
@@ -1646,11 +1642,11 @@ def test_embarrassingly_parallel_loop_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, ep_step)
 
 
 @pytest.fixture
-def embarrassingly_parallel_cloneable_step_params(
+def auto_parallel_cloneable_step_params(
     cloneable_step_params: dict[str, Any]
 ) -> dict[str, Any]:
     return {
@@ -1660,18 +1656,18 @@ def embarrassingly_parallel_cloneable_step_params(
     }
 
 
-def test_embarrassingly_parallel_cloneable_step_implementation_graph(
-    embarrassingly_parallel_cloneable_step_params,
+def test_auto_parallel_cloneable_step_implementation_graph(
+    auto_parallel_cloneable_step_params,
     mocker: MockerFixture,
 ) -> None:
-    """Tests an embarrassingly parallel CloneableStep.
+    """Tests an auto parallel CloneableStep.
 
     The CloneableStep consists of three copies, each of which are a HierarchicalStep
     consisting of step_1a and step_1b. We thus expect the splitter to be applied
     to each copy's input slot for 1a and the aggregator to be applied to the output
     slots of each copy.
     """
-    ep_step = EmbarrassinglyParallelStep(**embarrassingly_parallel_cloneable_step_params)
+    ep_step = AutoParallelStep(**auto_parallel_cloneable_step_params)
     step_config = LayeredConfigTree(
         {
             "parallel": [
@@ -1797,7 +1793,7 @@ def test_embarrassingly_parallel_cloneable_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_embarrassingly_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, ep_step)
 
 
 ####################
@@ -1823,9 +1819,9 @@ def _check_nodes_and_edges(
         assert edge in implementation_graph.edges(data=True)
 
 
-def _check_embarrassingly_parallel_details(
+def _check_auto_parallel_details(
     implementation_graph: ImplementationGraph,
-    ep_step: EmbarrassinglyParallelStep,
+    ep_step: AutoParallelStep,
 ) -> None:
     nodes = implementation_graph.nodes
     splitter_node_name = list(nodes)[0]
@@ -1848,6 +1844,6 @@ def _check_embarrassingly_parallel_details(
     assert (
         nodes[aggregator_node_name]["implementation"].splitter_node_name == splitter_node_name
     )
-    # check the rest are embarrassingly parallel
+    # check the rest are auto parallel
     for node in implemented_node_names:
-        assert nodes[node]["implementation"].is_embarrassingly_parallel
+        assert nodes[node]["implementation"].is_auto_parallel

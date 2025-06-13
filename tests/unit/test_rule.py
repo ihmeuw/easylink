@@ -19,7 +19,7 @@ RULE_STRINGS = {
     "implemented_rule_local": "rule_strings/implemented_rule_local.txt",
     "implemented_rule_slurm": "rule_strings/implemented_rule_slurm.txt",
     "validation_rule": "rule_strings/validation_rule.txt",
-    "embarrassingly_parallel_rule": "rule_strings/embarrassingly_parallel_rule.txt",
+    "auto_parallel_rule": "rule_strings/auto_parallel_rule.txt",
     "checkpoint_rule": "rule_strings/checkpoint_rule.txt",
     "aggregation_rule": "rule_strings/aggregation_rule.txt",
 }
@@ -141,7 +141,7 @@ def test_implemented_rule_build_rule(
     _check_rule(rule, expected_filepath)
 
 
-def test_embarrassingly_parallel_rule_build_rule():
+def test_auto_parallel_rule_build_rule():
     rule = ImplementedRule(
         name="foo_rule",
         step_name="foo_step",
@@ -168,15 +168,15 @@ def test_embarrassingly_parallel_rule_build_rule():
         image_path="Multipolarity.sif",
         script_cmd="echo hello world",
         requires_spark=False,
-        is_embarrassingly_parallel=True,
+        is_auto_parallel=True,
     )
 
-    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["embarrassingly_parallel_rule"]
+    file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["auto_parallel_rule"]
     _check_rule(rule, file_path)
 
 
-def test_embarrassingly_parallel_rule_build_rule_multiple_outputs_raises():
-    """Temporary test against raising if an embarrassingly parallel step has multiple outputs."""
+def test_auto_parallel_rule_build_rule_multiple_outputs_raises():
+    """Temporary test against raising if an auto parallel step has multiple outputs."""
     rule = ImplementedRule(
         name="foo_rule",
         step_name="foo_step",
@@ -197,12 +197,12 @@ def test_embarrassingly_parallel_rule_build_rule_multiple_outputs_raises():
         image_path="Multipolarity.sif",
         script_cmd="echo hello world",
         requires_spark=False,
-        is_embarrassingly_parallel=True,
+        is_auto_parallel=True,
     )
 
     with pytest.raises(
         NotImplementedError,
-        match="Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported",
+        match="Multiple output slots/files of AutoParallelSteps not yet supported",
     ):
         rule.build_rule()
 

@@ -45,9 +45,9 @@ class Pipeline:
         The :class:`~easylink.pipeline_graph.PipelineGraph` object.
     spark_is_required
         A boolean indicating whether the pipeline requires Spark.
-    any_embarrassingly_parallel
+    any_auto_parallel
         A boolean indicating whether any implementation in the pipeline is to be
-        run in an embarrassingly parallel manner.
+        run in an auto parallel manner.
 
     """
 
@@ -55,7 +55,7 @@ class Pipeline:
         self.config = config
         self.pipeline_graph = PipelineGraph(config)
         self.spark_is_required = self.pipeline_graph.spark_is_required
-        self.any_embarrassingly_parallel = self.pipeline_graph.any_embarrassingly_parallel
+        self.any_auto_parallel = self.pipeline_graph.any_auto_parallel
 
         # TODO [MIC-4880]: refactor into validation object
         self._validate()
@@ -179,7 +179,7 @@ class Pipeline:
     #################################
 
     def _write_imports(self) -> None:
-        if not self.any_embarrassingly_parallel:
+        if not self.any_auto_parallel:
             imports = "from easylink.utilities import validation_utils\n"
         else:
             imports = """import glob
@@ -193,7 +193,7 @@ from easylink.utilities import aggregator_utils, splitter_utils, validation_util
             f.write(imports)
 
     def _write_wildcard_constraints(self) -> None:
-        if self.any_embarrassingly_parallel:
+        if self.any_auto_parallel:
             with open(self.snakefile_path, "a") as f:
                 f.write(
                     """
@@ -301,12 +301,10 @@ use rule start_spark_worker from spark_cluster with:
             The name of the ``Implementation`` to write the rule(s) for.
         """
 
-        is_embarrassingly_parallel = self.pipeline_graph.get_whether_embarrassingly_parallel(
-            node_name
-        )
+        is_auto_parallel = self.pipeline_graph.get_whether_auto_parallel(node_name)
         input_slots, _output_slots = self.pipeline_graph.get_io_slot_attributes(node_name)
         validation_files, validation_rules = self._get_validations(
-            node_name, input_slots, is_embarrassingly_parallel
+            node_name, input_slots, is_auto_parallel
         )
         for validation_rule in validation_rules:
             validation_rule.write_to_snakefile(self.snakefile_path)
@@ -334,7 +332,7 @@ use rule start_spark_worker from spark_cluster with:
             image_path=self.config.images_dir / implementation.singularity_image_name,
             script_cmd=implementation.script_cmd,
             requires_spark=implementation.requires_spark,
-            is_embarrassingly_parallel=is_embarrassingly_parallel,
+            is_auto_parallel=is_auto_parallel,
         ).write_to_snakefile(self.snakefile_path)
 
     def _write_checkpoint_rule(self, node_name: str, checkpoint_filepath: str) -> None:
@@ -377,7 +375,7 @@ use rule start_spark_worker from spark_cluster with:
         input_files, output_files = self.pipeline_graph.get_io_filepaths(node_name)
         if len(output_slots) > 1:
             raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+                "FIXME [MIC-5883] Multiple output slots/files of AutoParallelSteps not yet supported"
             )
         if len(output_files) > 1:
             raise ValueError(
@@ -388,7 +386,7 @@ use rule start_spark_worker from spark_cluster with:
         output_slot_attrs = list(output_slots.values())[0]
         if len(output_slot_attrs["filepaths"]) > 1:
             raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+                "FIXME [MIC-5883] Multiple output slots/files of AutoParallelSteps not yet supported"
             )
         checkpoint_rule_name = f"checkpoints.{implementation.splitter_node_name}"
         AggregationRule(
@@ -404,7 +402,7 @@ use rule start_spark_worker from spark_cluster with:
     def _get_validations(
         node_name: str,
         input_slots: dict[str, dict[str, str | list[str]]],
-        is_embarrassingly_parallel: bool,
+        is_auto_parallel: bool,
     ) -> tuple[list[str], list[InputValidationRule]]:
         """Gets the validation rule and its output filepath for each slot for a given node.
 
@@ -423,10 +421,10 @@ use rule start_spark_worker from spark_cluster with:
         validation_rules = []
 
         for input_slot_name, input_slot_attrs in input_slots.items():
-            # embarrassingly parallel implementations rely on snakemake wildcards
+            # auto parallel implementations rely on snakemake wildcards
             # TODO: [MIC-5787] - need to support multiple wildcards at once
             validation_file = f"input_validations/{node_name}/{input_slot_name}_validator" + (
-                "-{chunk}" if is_embarrassingly_parallel else ""
+                "-{chunk}" if is_auto_parallel else ""
             )
             validation_files.append(validation_file)
             validation_rules.append(

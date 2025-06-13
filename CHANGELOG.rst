@@ -1,3 +1,8 @@
+**0.1.21 - 6/16/25**
+
+ - Update ...
+ - Update ParallelStep and EmbarrassinglyParallelStep classes to CloneableStep and AutoParallelStep, respectively
+
 **0.1.20 - 6/11/25**
 
  - Update implementation creator tool for new implementation_metadata.yaml format

@@ -18,9 +18,9 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
+    AutoParallelStep,
     ChoiceStep,
     CloneableStep,
-    EmbarrassinglyParallelStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
@@ -58,7 +58,7 @@ NODES = [
         output_slots=[OutputSlot("step_2_main_output")],
     ),
     LoopStep(
-        template_step=EmbarrassinglyParallelStep(
+        template_step=AutoParallelStep(
             step=Step(
                 step_name="step_3",
                 input_slots=[

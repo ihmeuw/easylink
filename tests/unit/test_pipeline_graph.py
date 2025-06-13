@@ -526,24 +526,24 @@ def test_spark_is_required(default_config_params, requires_spark):
     assert pipeline_graph.spark_is_required == requires_spark
 
 
-def test_get_whether_embarrassingly_parallel(default_config_params):
+def test_get_whether_auto_parallel(default_config_params):
     config_params = default_config_params
     config = Config(config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config)
     for node in pipeline_graph.implementation_nodes:
         if node == "step_3_python_pandas":
-            assert pipeline_graph.get_whether_embarrassingly_parallel(node)
+            assert pipeline_graph.get_whether_auto_parallel(node)
         else:
-            assert not pipeline_graph.get_whether_embarrassingly_parallel(node)
+            assert not pipeline_graph.get_whether_auto_parallel(node)
 
 
-@pytest.mark.parametrize("any_embarrassingly_parallel", [True, False])
-def test_any_embarrassingly_parallel(default_config_params, any_embarrassingly_parallel):
+@pytest.mark.parametrize("any_auto_parallel", [True, False])
+def test_any_auto_parallel(default_config_params, any_auto_parallel):
     config = Config(default_config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config, freeze=False)
-    if not any_embarrassingly_parallel:
+    if not any_auto_parallel:
         pipeline_graph.remove_node("step_3_python_pandas")
-    assert pipeline_graph.any_embarrassingly_parallel == any_embarrassingly_parallel
+    assert pipeline_graph.any_auto_parallel == any_auto_parallel
 
 
 def test_merge_combined_implementations(
