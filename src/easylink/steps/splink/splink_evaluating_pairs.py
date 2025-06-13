@@ -31,6 +31,8 @@ for block_dir in blocks_dir.iterdir():
             comparisons.append(cl.NameComparison(column))
         elif method == "dob":
             comparisons.append(cl.DateOfBirthComparison(column))
+        elif method == "levenshtein":
+            comparisons.append(cl.LevenshteinAtThresholds(column))
         else:
             raise ValueError(f"Unknown comparison method {method}")
     # TODO: check both datasets contain all the columns
