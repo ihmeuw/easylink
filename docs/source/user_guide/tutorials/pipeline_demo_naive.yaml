@@ -62,7 +62,7 @@ steps:
             implementation:
               name: splink_links_to_clusters
               configuration:
-                THRESHOLD_MATCH_PROBABILITY: 0.5
+                THRESHOLD_MATCH_PROBABILITY: 0.997
       updating_clusters:
         implementation:
           name: default_updating_clusters
