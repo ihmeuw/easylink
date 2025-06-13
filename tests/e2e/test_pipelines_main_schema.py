@@ -43,7 +43,7 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
         (
             "docs/source/user_guide/tutorials/pipeline_demo_naive.yaml",
             "docs/source/user_guide/tutorials/input_data_demo_naive.yaml",
-            "tests/specifications/e2e/environment_slurm.yaml",
+            "tests/specifications/e2e/environment_slurm_4GB.yaml",
             "tests/e2e/pipeline_naive_results.csv",
         ),
     ],
