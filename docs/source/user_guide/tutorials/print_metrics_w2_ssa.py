@@ -86,7 +86,7 @@ nonlinks = predictions_df[
     predictions_df["simulant_id_l"] != predictions_df["simulant_id_r"]
 ].sort_values("Probability", ascending=False)
 
-THRESHOLD = 0.997
+THRESHOLD = 0.25
 
 cols_to_print = [
     "ssn_l",
@@ -108,15 +108,27 @@ print(false_positives[cols_to_print])
 print("\n---------False Negatives----------")
 print(false_negatives[cols_to_print])
 
+print("\n False Positives with same ssn:")
+print(
+    false_positives[false_positives["ssn_l"] == false_positives["ssn_r"]][cols_to_print]
+)
+
 
 clusters_df = load_file(str(Path(results_dir / "result.parquet")))
-print(clusters_df["Cluster ID"].value_counts())
+counts = clusters_df["Cluster ID"].value_counts()
+print("Clusters of size > 2:")
+print(counts[counts > 2])
+print(
+    f"{len(counts[counts == 2])} clusters of size 2; {len(counts[counts == 1])} clusters of size 1"
+)
+
 
 data = []
 num_w2s = records[records["Input Record Dataset"].str.contains("w2")][
     "unique_id"
 ].nunique()
-for prob in np.sort(predictions_df["Probability"].unique()):
+probabilities = np.sort(np.round(predictions_df["Probability"], decimals=3).unique())
+for prob in probabilities[probabilities < 1]:  # drop probability==1 if it exists
     # change when separate dataset column is ready
     matches_w2_to_ssa = predictions_df[
         (predictions_df["Probability"] >= prob)

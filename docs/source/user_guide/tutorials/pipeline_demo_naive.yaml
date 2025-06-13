@@ -39,7 +39,7 @@ steps:
                 - implementation:
                     name: dummy_pre-processing
                     configuration: 
-                      INPUT_DATASET: input_file_w2_2020
+                      INPUT_DATASET: input_file_w2
               schema_alignment:
                 implementation:
                   name: default_schema_alignment
@@ -62,7 +62,7 @@ steps:
             implementation:
               name: splink_links_to_clusters
               configuration:
-                THRESHOLD_MATCH_PROBABILITY: 0.9
+                THRESHOLD_MATCH_PROBABILITY: 0.997
       updating_clusters:
         implementation:
           name: default_updating_clusters
