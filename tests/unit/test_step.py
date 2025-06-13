@@ -556,7 +556,7 @@ def test_cloneable_step_implementation_graph(
     step = CloneableStep(**cloneable_step_params)
     step_config = LayeredConfigTree(
         {
-            "parallel": [
+            "clones": [
                 {
                     "substeps": {
                         "step_1a": {
@@ -608,17 +608,17 @@ def test_cloneable_step_implementation_graph(
     step.set_configuration_state(step_config, {}, {})
     implementation_graph = _create_implementation_graph(step)
     expected_nodes = {
-        "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
-        "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
-        "step_1_parallel_split_2_step_1a_step_1a_python_pandas",
-        "step_1_parallel_split_2_step_1b_step_1b_python_pandas",
-        "step_1_parallel_split_3_step_1a_step_1a_python_pandas",
-        "step_1_parallel_split_3_step_1b_step_1b_python_pandas",
+        "step_1_clone_1_step_1a_step_1a_python_pandas",
+        "step_1_clone_1_step_1b_step_1b_python_pandas",
+        "step_1_clone_2_step_1a_step_1a_python_pandas",
+        "step_1_clone_2_step_1b_step_1b_python_pandas",
+        "step_1_clone_3_step_1a_step_1a_python_pandas",
+        "step_1_clone_3_step_1b_step_1b_python_pandas",
     }
     expected_edges = [
         (
-            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
-            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+            "step_1_clone_1_step_1a_step_1a_python_pandas",
+            "step_1_clone_1_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -630,8 +630,8 @@ def test_cloneable_step_implementation_graph(
             },
         ),
         (
-            "step_1_parallel_split_2_step_1a_step_1a_python_pandas",
-            "step_1_parallel_split_2_step_1b_step_1b_python_pandas",
+            "step_1_clone_2_step_1a_step_1a_python_pandas",
+            "step_1_clone_2_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -643,8 +643,8 @@ def test_cloneable_step_implementation_graph(
             },
         ),
         (
-            "step_1_parallel_split_3_step_1a_step_1a_python_pandas",
-            "step_1_parallel_split_3_step_1b_step_1b_python_pandas",
+            "step_1_clone_3_step_1a_step_1a_python_pandas",
+            "step_1_clone_3_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -1670,7 +1670,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
     ep_step = AutoParallelStep(**auto_parallel_cloneable_step_params)
     step_config = LayeredConfigTree(
         {
-            "parallel": [
+            "clones": [
                 {
                     "substeps": {
                         "step_1a": {"implementation": {"name": "step_1a_python_pandas"}},
@@ -1687,10 +1687,10 @@ def test_auto_parallel_cloneable_step_implementation_graph(
     implementation_graph = _create_implementation_graph(ep_step)
     expected_nodes = [
         "step_1_step_1_main_input_split",
-        "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
-        "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
-        "step_1_parallel_split_2_step_1_python_pandas",
-        "step_1_parallel_split_3_step_1_python_pandas",
+        "step_1_clone_1_step_1a_step_1a_python_pandas",
+        "step_1_clone_1_step_1b_step_1b_python_pandas",
+        "step_1_clone_2_step_1_python_pandas",
+        "step_1_clone_3_step_1_python_pandas",
         "step_1_aggregate",
     ]
     # Map the internal edges of the graph
@@ -1700,7 +1700,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
         # SplitterStep -> Step edges
         (
             "step_1_step_1_main_input_split",
-            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
+            "step_1_clone_1_step_1a_step_1a_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1a_main_input",
@@ -1713,7 +1713,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
         ),
         (
             "step_1_step_1_main_input_split",
-            "step_1_parallel_split_2_step_1_python_pandas",
+            "step_1_clone_2_step_1_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1_main_input",
@@ -1726,7 +1726,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
         ),
         (
             "step_1_step_1_main_input_split",
-            "step_1_parallel_split_3_step_1_python_pandas",
+            "step_1_clone_3_step_1_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1_main_input",
@@ -1739,8 +1739,8 @@ def test_auto_parallel_cloneable_step_implementation_graph(
         ),
         # Step -> Step edges
         (
-            "step_1_parallel_split_1_step_1a_step_1a_python_pandas",
-            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+            "step_1_clone_1_step_1a_step_1a_python_pandas",
+            "step_1_clone_1_step_1b_step_1b_python_pandas",
             {
                 "input_slot": InputSlot(
                     "step_1b_main_input",
@@ -1753,7 +1753,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
         ),
         # Step -> AggregatorStep edges
         (
-            "step_1_parallel_split_1_step_1b_step_1b_python_pandas",
+            "step_1_clone_1_step_1b_step_1b_python_pandas",
             "step_1_aggregate",
             {
                 "input_slot": InputSlot(
@@ -1766,7 +1766,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
             },
         ),
         (
-            "step_1_parallel_split_2_step_1_python_pandas",
+            "step_1_clone_2_step_1_python_pandas",
             "step_1_aggregate",
             {
                 "input_slot": InputSlot(
@@ -1779,7 +1779,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
             },
         ),
         (
-            "step_1_parallel_split_3_step_1_python_pandas",
+            "step_1_clone_3_step_1_python_pandas",
             "step_1_aggregate",
             {
                 "input_slot": InputSlot(

@@ -22,13 +22,13 @@ from tests.conftest import SPECIFICATIONS_DIR
                 "step_4_python_pandas",
             ],
         ),
-        # Expanded pipeline with loops, parallel splits, hierarchy
+        # Expanded pipeline with loops, clones, hierarchy
         (
             "e2e/pipeline_expanded.yaml",
             [
-                "step_1_parallel_split_1_step_1_python_pandas",
-                "step_1_parallel_split_2_step_1_python_pandas",
-                "step_1_parallel_split_3_step_1_python_pandas",
+                "step_1_clone_1_step_1_python_pandas",
+                "step_1_clone_2_step_1_python_pandas",
+                "step_1_clone_3_step_1_python_pandas",
                 "step_2_python_pandas",
                 "step_3_loop_1_step_3_python_pandas",
                 "step_3_loop_2_step_3_python_pandas",

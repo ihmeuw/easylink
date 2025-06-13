@@ -1,18 +1,18 @@
 steps:
   step_1:
     iterate:
-    - parallel:  # loop 1: parallel with multiplicity
+    - clones:  # loop 1: clones with multiplicity
       - implementation:
           name: step_1_python_pandas
         input_data_file: file1
       - implementation:
           name: step_1_python_pandas
         input_data_file: file2
-    - parallel:  # loop 2: parallel with no multiplicity
+    - clones:  # loop 2: clones with no multiplicity
       - implementation:
           name: step_1_python_pandas
         input_data_file: file1
-    - substeps:  # loop 3: missing 'parallel' key, uses hierarchical step
+    - substeps:  # loop 3: missing 'clones' key, uses hierarchical step
         step_1a:
           implementation:
             name: step_1a_python_pandas

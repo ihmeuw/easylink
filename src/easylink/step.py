@@ -1217,12 +1217,12 @@ class CloneableStep(TemplatedStep):
     @property
     def config_key(self):
         """The pipeline specification key required for a ``CloneableStep``."""
-        return "parallel"
+        return "clones"
 
     @property
     def node_prefix(self):
         """The prefix to be used in the ``CloneableStep`` node name."""
-        return "parallel_split"
+        return "clone"
 
     def _update_step_graph(self, num_repeats: int) -> StepGraph:
         """Updates the :class:`~easylink.graph_components.StepGraph` to include parallelization.

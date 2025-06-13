@@ -57,10 +57,10 @@ def test_looping_auto_parallel_step(test_specific_results_dir: Path) -> None:
 EP_SECTION_MAPPING = {
     "cloneable_step": {
         "pipeline_spec": "pipeline_cloneable_step.yaml",
-        "schema_name": "ep_parallel_step",
+        "schema_name": "ep_clone_step",
         "implementation_names": [
-            "step_1_parallel_split_1_step_1_python_pandas",
-            "step_1_parallel_split_2_step_1_python_pandas",
+            "step_1_clone_1_step_1_python_pandas",
+            "step_1_clone_2_step_1_python_pandas",
         ],
     },
     "loop_step": {

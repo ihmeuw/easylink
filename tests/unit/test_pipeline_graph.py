@@ -683,8 +683,8 @@ def test_merge_combined_implementations_parallel(
     pipeline_graph = PipelineGraph(Config(config_params, schema_name="development"))
     expected_nodes = {
         "input_data",
-        "step_1_parallel_split_1_step_1_python_pandas",
-        "step_1_parallel_split_2_step_1_python_pandas",
+        "step_1_clone_1_step_1_python_pandas",
+        "step_1_clone_2_step_1_python_pandas",
         "steps_1_and_2_combined",
         "step_3_step_3_main_input_split",
         "step_3_python_pandas",
@@ -693,7 +693,7 @@ def test_merge_combined_implementations_parallel(
         "results",
     }
     expected_edges = {
-        ("input_data", "step_1_parallel_split_1_step_1_python_pandas"): {
+        ("input_data", "step_1_clone_1_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -703,7 +703,7 @@ def test_merge_combined_implementations_parallel(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("input_data", "step_1_parallel_split_2_step_1_python_pandas"): {
+        ("input_data", "step_1_clone_2_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -733,26 +733,22 @@ def test_merge_combined_implementations_parallel(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("step_1_parallel_split_1_step_1_python_pandas", "steps_1_and_2_combined"): {
+        ("step_1_clone_1_step_1_python_pandas", "steps_1_and_2_combined"): {
             "input_slot_name": "step_2_step_2_main_input",
             "output_slot_name": "step_1_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
-                Path(
-                    "intermediate/step_1_parallel_split_1_step_1_python_pandas/result.parquet"
-                ),
+                Path("intermediate/step_1_clone_1_step_1_python_pandas/result.parquet"),
             ),
         },
-        ("step_1_parallel_split_2_step_1_python_pandas", "steps_1_and_2_combined"): {
+        ("step_1_clone_2_step_1_python_pandas", "steps_1_and_2_combined"): {
             "input_slot_name": "step_2_step_2_main_input",
             "output_slot_name": "step_1_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
-                Path(
-                    "intermediate/step_1_parallel_split_2_step_1_python_pandas/result.parquet"
-                ),
+                Path("intermediate/step_1_clone_2_step_1_python_pandas/result.parquet"),
             ),
         },
         ("steps_1_and_2_combined", "step_3_step_3_main_input_split"): {
@@ -856,15 +852,15 @@ def test_nested_templated_steps(
     pipeline_graph = PipelineGraph(Config(config_params, "nested_templated_steps"))
     expected_nodes = {
         "input_data",
-        "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas",
-        "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas",
-        "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+        "step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas",
+        "step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas",
+        "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
         "step_1_loop_3_step_1_loop_3_step_1a_step_1a_python_pandas",
         "step_1_loop_3_step_1_loop_3_step_1b_step_1b_python_pandas",
         "results",
     }
     expected_edges = {
-        ("input_data", "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas"): {
+        ("input_data", "step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -874,7 +870,7 @@ def test_nested_templated_steps(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("input_data", "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas"): {
+        ("input_data", "step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -885,8 +881,8 @@ def test_nested_templated_steps(
             ),
         },
         (
-            "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas",
-            "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
         ): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "step_1_main_output",
@@ -894,13 +890,13 @@ def test_nested_templated_steps(
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
                 Path(
-                    "intermediate/step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas/result.parquet"
+                    "intermediate/step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas/result.parquet"
                 ),
             ),
         },
         (
-            "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas",
-            "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
         ): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "step_1_main_output",
@@ -908,12 +904,12 @@ def test_nested_templated_steps(
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
                 Path(
-                    "intermediate/step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas/result.parquet"
+                    "intermediate/step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas/result.parquet"
                 ),
             ),
         },
         (
-            "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
             "step_1_loop_3_step_1_loop_3_step_1a_step_1a_python_pandas",
         ): {
             "input_slot_name": "step_1a_main_input",
@@ -922,7 +918,7 @@ def test_nested_templated_steps(
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
                 Path(
-                    "intermediate/step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas/result.parquet"
+                    "intermediate/step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas/result.parquet"
                 ),
             ),
         },
