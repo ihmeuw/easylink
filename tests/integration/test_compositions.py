@@ -11,16 +11,19 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 COMMON_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "common"
-EP_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "integration" / "auto_parallel"
+AUTO_PARALLEL_SPECIFICATIONS_DIR = SPECIFICATIONS_DIR / "integration" / "auto_parallel"
 
 
 @pytest.mark.slow
 def test_looping_auto_parallel_step(test_specific_results_dir: Path) -> None:
-    pipeline_specification = EP_SPECIFICATIONS_DIR / "pipeline_loop_step.yaml"
+    pipeline_specification = AUTO_PARALLEL_SPECIFICATIONS_DIR / "pipeline_loop_step.yaml"
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
     _run_pipeline_and_confirm_finished(
-        "looping_ep_step", test_specific_results_dir, pipeline_specification, input_data
+        "looping_auto_parallel_step",
+        test_specific_results_dir,
+        pipeline_specification,
+        input_data,
     )
 
     intermediate_results_dir = test_specific_results_dir / "intermediate"
@@ -54,10 +57,10 @@ def test_looping_auto_parallel_step(test_specific_results_dir: Path) -> None:
         ).exists()
 
 
-EP_SECTION_MAPPING = {
+AUTO_PARALLEL_SECTION_MAPPING = {
     "cloneable_step": {
         "pipeline_spec": "pipeline_cloneable_step.yaml",
-        "schema_name": "ep_clone_step",
+        "schema_name": "auto_parallel_cloneable_step",
         "implementation_names": [
             "step_1_clone_1_step_1_python_pandas",
             "step_1_clone_2_step_1_python_pandas",
@@ -65,7 +68,7 @@ EP_SECTION_MAPPING = {
     },
     "loop_step": {
         "pipeline_spec": "pipeline_loop_step.yaml",
-        "schema_name": "ep_loop_step",
+        "schema_name": "auto_parallel_loop_step",
         "implementation_names": [
             "step_1_loop_1_step_1_python_pandas",
             "step_1_loop_2_step_1_python_pandas",
@@ -73,7 +76,7 @@ EP_SECTION_MAPPING = {
     },
     "hierarchical_step": {
         "pipeline_spec": "pipeline_hierarchical_step.yaml",
-        "schema_name": "ep_hierarchical_step",
+        "schema_name": "auto_parallel_hierarchical_step",
         "implementation_names": ["step_1a_python_pandas", "step_1b_python_pandas"],
     },
 }
@@ -125,12 +128,12 @@ def test_auto_parallel_sections(
     test_specific_results_dir: Path,
 ) -> None:
     # unpack the mapping
-    step_mapping = EP_SECTION_MAPPING[step_type]
+    step_mapping = AUTO_PARALLEL_SECTION_MAPPING[step_type]
     pipeline_spec = cast(str, step_mapping["pipeline_spec"])
     schema_name = cast(str, step_mapping["schema_name"])
     implementation_names = cast(list[str], step_mapping["implementation_names"])
 
-    pipeline_specification = EP_SPECIFICATIONS_DIR / pipeline_spec
+    pipeline_specification = AUTO_PARALLEL_SPECIFICATIONS_DIR / pipeline_spec
     input_data = COMMON_SPECIFICATIONS_DIR / "input_data.yaml"
 
     _run_pipeline_and_confirm_finished(

@@ -1176,10 +1176,10 @@ def test_auto_parallel_step_slots(auto_parallel_step_params: dict[str, Any]) -> 
 def test_auto_parallel_step_implementation_graph(
     auto_parallel_step_params: dict[str, Any]
 ) -> None:
-    ep_step = AutoParallelStep(**auto_parallel_step_params)
+    auto_parallel_step = AutoParallelStep(**auto_parallel_step_params)
     step_config = LayeredConfigTree({"implementation": {"name": "step_3_python_pandas"}})
-    ep_step.set_configuration_state(step_config, {}, {})
-    implementation_graph = _create_implementation_graph(ep_step)
+    auto_parallel_step.set_configuration_state(step_config, {}, {})
+    implementation_graph = _create_implementation_graph(auto_parallel_step)
     expected_nodes = [
         "step_3_step_3_main_input_split",
         "step_3_python_pandas",
@@ -1214,7 +1214,7 @@ def test_auto_parallel_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_auto_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, auto_parallel_step)
 
 
 @pytest.mark.parametrize(
@@ -1447,7 +1447,7 @@ def auto_parallel_hierarchical_step_params() -> dict[str, Any]:
 def test_auto_parallel_hierarchical_step_implementation_graph(
     auto_parallel_hierarchical_step_params,
 ) -> None:
-    ep_step = AutoParallelStep(**auto_parallel_hierarchical_step_params)
+    auto_parallel_step = AutoParallelStep(**auto_parallel_hierarchical_step_params)
     step_config = LayeredConfigTree(
         {
             "substeps": {
@@ -1457,8 +1457,8 @@ def test_auto_parallel_hierarchical_step_implementation_graph(
             },
         }
     )
-    ep_step.set_configuration_state(step_config, {}, {})
-    implementation_graph = _create_implementation_graph(ep_step)
+    auto_parallel_step.set_configuration_state(step_config, {}, {})
+    implementation_graph = _create_implementation_graph(auto_parallel_step)
     expected_nodes = [
         "steps_1_2_3_steps_1_2_3_main_input_split",
         "step_1_python_pandas",
@@ -1523,7 +1523,7 @@ def test_auto_parallel_hierarchical_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_auto_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, auto_parallel_step)
 
 
 @pytest.fixture
@@ -1546,7 +1546,7 @@ def test_auto_parallel_loop_step_implementation_graph(
     the splitter to be applied to the input slot of loop 1, step_3a and the aggregator
     to be applied to the output slot of loop 3, step 3.
     """
-    ep_step = AutoParallelStep(**auto_parallel_loop_step_params)
+    auto_parallel_step = AutoParallelStep(**auto_parallel_loop_step_params)
     step_config = LayeredConfigTree(
         {
             "iterate": [
@@ -1561,9 +1561,9 @@ def test_auto_parallel_loop_step_implementation_graph(
             ],
         },
     )
-    ep_step.set_configuration_state(step_config, {}, {})
+    auto_parallel_step.set_configuration_state(step_config, {}, {})
     mocker.patch("easylink.implementation.Implementation._load_metadata")
-    implementation_graph = _create_implementation_graph(ep_step)
+    implementation_graph = _create_implementation_graph(auto_parallel_step)
     expected_nodes = [
         "step_3_step_3_main_input_split",
         "step_3_loop_1_step_3a_step_3a_python_pandas",
@@ -1642,7 +1642,7 @@ def test_auto_parallel_loop_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_auto_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, auto_parallel_step)
 
 
 @pytest.fixture
@@ -1667,7 +1667,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
     to each copy's input slot for 1a and the aggregator to be applied to the output
     slots of each copy.
     """
-    ep_step = AutoParallelStep(**auto_parallel_cloneable_step_params)
+    auto_parallel_step = AutoParallelStep(**auto_parallel_cloneable_step_params)
     step_config = LayeredConfigTree(
         {
             "clones": [
@@ -1682,9 +1682,9 @@ def test_auto_parallel_cloneable_step_implementation_graph(
             ],
         },
     )
-    ep_step.set_configuration_state(step_config, {}, {})
+    auto_parallel_step.set_configuration_state(step_config, {}, {})
     mocker.patch("easylink.implementation.Implementation._load_metadata")
-    implementation_graph = _create_implementation_graph(ep_step)
+    implementation_graph = _create_implementation_graph(auto_parallel_step)
     expected_nodes = [
         "step_1_step_1_main_input_split",
         "step_1_clone_1_step_1a_step_1a_python_pandas",
@@ -1793,7 +1793,7 @@ def test_auto_parallel_cloneable_step_implementation_graph(
         ),
     ]
     _check_nodes_and_edges(implementation_graph, expected_nodes, expected_edges)
-    _check_auto_parallel_details(implementation_graph, ep_step)
+    _check_auto_parallel_details(implementation_graph, auto_parallel_step)
 
 
 ####################
@@ -1821,7 +1821,7 @@ def _check_nodes_and_edges(
 
 def _check_auto_parallel_details(
     implementation_graph: ImplementationGraph,
-    ep_step: AutoParallelStep,
+    auto_parallel_step: AutoParallelStep,
 ) -> None:
     nodes = implementation_graph.nodes
     splitter_node_name = list(nodes)[0]
@@ -1832,14 +1832,14 @@ def _check_auto_parallel_details(
     # check splitter node has function defined
     assert (
         nodes[splitter_node_name]["implementation"].splitter_func_name
-        == list(ep_step.slot_splitter_mapping.values())[0].__name__
+        == list(auto_parallel_step.slot_splitter_mapping.values())[0].__name__
     )
     # check aggregator node has aggregator mappings and also points to splitter
     implementation = nodes[aggregator_node_name]["implementation"]
     output_slot_name = list(implementation.output_slots.keys())[0]
     assert (
         implementation.aggregator_func_name
-        == ep_step.slot_aggregator_mapping[output_slot_name].__name__
+        == auto_parallel_step.slot_aggregator_mapping[output_slot_name].__name__
     )
     assert (
         nodes[aggregator_node_name]["implementation"].splitter_node_name == splitter_node_name

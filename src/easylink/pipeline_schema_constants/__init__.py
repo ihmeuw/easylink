@@ -23,8 +23,8 @@ SCHEMA_PARAMS = {
     "combine_with_iteration": testing.SCHEMA_PARAMS_COMBINE_WITH_ITERATION,
     "combine_with_iteration_cycle": testing.SCHEMA_PARAMS_COMBINE_WITH_ITERATION,
     "combine_with_extra_node": testing.SCHEMA_PARAMS_THREE_STEPS,
-    "looping_ep_step": testing.SCHEMA_PARAMS_LOOPING_EP_STEP,
-    "ep_parallel_step": testing.SCHEMA_PARAMS_EP_PARALLEL_STEP,
-    "ep_loop_step": testing.SCHEMA_PARAMS_EP_LOOP_STEP,
-    "ep_hierarchical_step": testing.SCHEMA_PARAMS_EP_HIERARCHICAL_STEP,
+    "looping_auto_parallel_step": testing.SCHEMA_PARAMS_LOOPING_AUTO_PARALLEL_STEP,
+    "auto_parallel_cloneable_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_CLONEABLE_STEP,
+    "auto_parallel_loop_step": testing.SCHEMA_PARAMS_EP_LOOP_STEP,
+    "auto_parallel_hierarchical_step": testing.SCHEMA_PARAMS_EP_HIERARCHICAL_STEP,
 }
