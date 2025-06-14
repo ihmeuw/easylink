@@ -5,7 +5,7 @@ Data Aggregating Utilities
 
 This module contains utility functions for aggregating datasets. One primary use 
 case for this is combine the results of running sections of the pipeline in an
-embarrassingly parallel manner.
+auto parallel manner.
 
 Note that it is critical that all data aggregating utility functions are definied
 in this module; easylink will not be able to find them otherwise.

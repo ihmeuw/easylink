@@ -6,11 +6,7 @@ import pytest
 from easylink.configuration import Config
 from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_graph import PipelineGraph
-from easylink.pipeline_schema import PipelineSchema
-from easylink.pipeline_schema_constants import SCHEMA_PARAMS
-from easylink.utilities.aggregator_utils import concatenate_datasets
 from easylink.utilities.data_utils import load_yaml
-from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -526,24 +522,24 @@ def test_spark_is_required(default_config_params, requires_spark):
     assert pipeline_graph.spark_is_required == requires_spark
 
 
-def test_get_whether_embarrassingly_parallel(default_config_params):
+def test_get_whether_auto_parallel(default_config_params):
     config_params = default_config_params
     config = Config(config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config)
     for node in pipeline_graph.implementation_nodes:
         if node == "step_3_python_pandas":
-            assert pipeline_graph.get_whether_embarrassingly_parallel(node)
+            assert pipeline_graph.get_whether_auto_parallel(node)
         else:
-            assert not pipeline_graph.get_whether_embarrassingly_parallel(node)
+            assert not pipeline_graph.get_whether_auto_parallel(node)
 
 
-@pytest.mark.parametrize("any_embarrassingly_parallel", [True, False])
-def test_any_embarrassingly_parallel(default_config_params, any_embarrassingly_parallel):
+@pytest.mark.parametrize("any_auto_parallel", [True, False])
+def test_any_auto_parallel(default_config_params, any_auto_parallel):
     config = Config(default_config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config, freeze=False)
-    if not any_embarrassingly_parallel:
+    if not any_auto_parallel:
         pipeline_graph.remove_node("step_3_python_pandas")
-    assert pipeline_graph.any_embarrassingly_parallel == any_embarrassingly_parallel
+    assert pipeline_graph.any_auto_parallel == any_auto_parallel
 
 
 def test_merge_combined_implementations(
@@ -683,8 +679,8 @@ def test_merge_combined_implementations_parallel(
     pipeline_graph = PipelineGraph(Config(config_params, schema_name="development"))
     expected_nodes = {
         "input_data",
-        "step_1_parallel_split_1_step_1_python_pandas",
-        "step_1_parallel_split_2_step_1_python_pandas",
+        "step_1_clone_1_step_1_python_pandas",
+        "step_1_clone_2_step_1_python_pandas",
         "steps_1_and_2_combined",
         "step_3_step_3_main_input_split",
         "step_3_python_pandas",
@@ -693,7 +689,7 @@ def test_merge_combined_implementations_parallel(
         "results",
     }
     expected_edges = {
-        ("input_data", "step_1_parallel_split_1_step_1_python_pandas"): {
+        ("input_data", "step_1_clone_1_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -703,7 +699,7 @@ def test_merge_combined_implementations_parallel(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("input_data", "step_1_parallel_split_2_step_1_python_pandas"): {
+        ("input_data", "step_1_clone_2_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -733,26 +729,22 @@ def test_merge_combined_implementations_parallel(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("step_1_parallel_split_1_step_1_python_pandas", "steps_1_and_2_combined"): {
+        ("step_1_clone_1_step_1_python_pandas", "steps_1_and_2_combined"): {
             "input_slot_name": "step_2_step_2_main_input",
             "output_slot_name": "step_1_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
-                Path(
-                    "intermediate/step_1_parallel_split_1_step_1_python_pandas/result.parquet"
-                ),
+                Path("intermediate/step_1_clone_1_step_1_python_pandas/result.parquet"),
             ),
         },
-        ("step_1_parallel_split_2_step_1_python_pandas", "steps_1_and_2_combined"): {
+        ("step_1_clone_2_step_1_python_pandas", "steps_1_and_2_combined"): {
             "input_slot_name": "step_2_step_2_main_input",
             "output_slot_name": "step_1_main_output",
             "validator": validate_input_file_dummy,
             "env_var": "STEP_2_DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
-                Path(
-                    "intermediate/step_1_parallel_split_2_step_1_python_pandas/result.parquet"
-                ),
+                Path("intermediate/step_1_clone_2_step_1_python_pandas/result.parquet"),
             ),
         },
         ("steps_1_and_2_combined", "step_3_step_3_main_input_split"): {
@@ -856,15 +848,15 @@ def test_nested_templated_steps(
     pipeline_graph = PipelineGraph(Config(config_params, "nested_templated_steps"))
     expected_nodes = {
         "input_data",
-        "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas",
-        "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas",
-        "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+        "step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas",
+        "step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas",
+        "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
         "step_1_loop_3_step_1_loop_3_step_1a_step_1a_python_pandas",
         "step_1_loop_3_step_1_loop_3_step_1b_step_1b_python_pandas",
         "results",
     }
     expected_edges = {
-        ("input_data", "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas"): {
+        ("input_data", "step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -874,7 +866,7 @@ def test_nested_templated_steps(
                 Path(f"{test_dir}/input_data2/file2.csv"),
             ),
         },
-        ("input_data", "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas"): {
+        ("input_data", "step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas"): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "all",
             "validator": validate_input_file_dummy,
@@ -885,8 +877,8 @@ def test_nested_templated_steps(
             ),
         },
         (
-            "step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas",
-            "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
         ): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "step_1_main_output",
@@ -894,13 +886,13 @@ def test_nested_templated_steps(
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
                 Path(
-                    "intermediate/step_1_loop_1_step_1_loop_1_parallel_split_1_step_1_python_pandas/result.parquet"
+                    "intermediate/step_1_loop_1_step_1_loop_1_clone_1_step_1_python_pandas/result.parquet"
                 ),
             ),
         },
         (
-            "step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas",
-            "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
         ): {
             "input_slot_name": "step_1_main_input",
             "output_slot_name": "step_1_main_output",
@@ -908,12 +900,12 @@ def test_nested_templated_steps(
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
                 Path(
-                    "intermediate/step_1_loop_1_step_1_loop_1_parallel_split_2_step_1_python_pandas/result.parquet"
+                    "intermediate/step_1_loop_1_step_1_loop_1_clone_2_step_1_python_pandas/result.parquet"
                 ),
             ),
         },
         (
-            "step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas",
+            "step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas",
             "step_1_loop_3_step_1_loop_3_step_1a_step_1a_python_pandas",
         ): {
             "input_slot_name": "step_1a_main_input",
@@ -922,7 +914,7 @@ def test_nested_templated_steps(
             "env_var": "DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
             "filepaths": (
                 Path(
-                    "intermediate/step_1_loop_2_step_1_loop_2_parallel_split_1_step_1_python_pandas/result.parquet"
+                    "intermediate/step_1_loop_2_step_1_loop_2_clone_1_step_1_python_pandas/result.parquet"
                 ),
             ),
         },

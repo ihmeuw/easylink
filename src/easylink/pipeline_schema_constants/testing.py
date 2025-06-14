@@ -16,12 +16,12 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
-    EmbarrassinglyParallelStep,
+    AutoParallelStep,
+    CloneableStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
     OutputStep,
-    ParallelStep,
     Step,
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
@@ -215,7 +215,7 @@ SCHEMA_PARAMS_BAD_COMBINED_TOPOLOGY = (NODES_BAD_COMBINED_TOPOLOGY, EDGES_ONE_ST
 NODES_NESTED_TEMPLATED_STEPS = [
     InputStep(),
     LoopStep(
-        template_step=ParallelStep(
+        template_step=CloneableStep(
             template_step=HierarchicalStep(
                 step_name="step_1",
                 input_slots=[
@@ -358,7 +358,7 @@ SCHEMA_PARAMS_COMBINE_WITH_ITERATION = (NODES_COMBINE_WITH_ITERATION, EDGES_TWO_
 NODES_LOOPING_EP_STEP = [
     InputStep(),
     LoopStep(
-        template_step=EmbarrassinglyParallelStep(
+        template_step=AutoParallelStep(
             step=Step(
                 step_name="step_1",
                 input_slots=[
@@ -392,13 +392,13 @@ NODES_LOOPING_EP_STEP = [
         ]
     ),
 ]
-SCHEMA_PARAMS_LOOPING_EP_STEP = (NODES_LOOPING_EP_STEP, EDGES_ONE_STEP)
+SCHEMA_PARAMS_LOOPING_AUTO_PARALLEL_STEP = (NODES_LOOPING_EP_STEP, EDGES_ONE_STEP)
 
 
 NODES_EP_PARALLEL_STEP = [
     InputStep(),
-    EmbarrassinglyParallelStep(
-        step=ParallelStep(
+    AutoParallelStep(
+        step=CloneableStep(
             template_step=Step(
                 step_name="step_1",
                 input_slots=[
@@ -424,12 +424,12 @@ NODES_EP_PARALLEL_STEP = [
         ]
     ),
 ]
-SCHEMA_PARAMS_EP_PARALLEL_STEP = (NODES_EP_PARALLEL_STEP, EDGES_ONE_STEP)
+SCHEMA_PARAMS_AUTO_PARALLEL_CLONEABLE_STEP = (NODES_EP_PARALLEL_STEP, EDGES_ONE_STEP)
 
 
 NODES_EP_LOOP_STEP = [
     InputStep(),
-    EmbarrassinglyParallelStep(
+    AutoParallelStep(
         step=LoopStep(
             template_step=Step(
                 step_name="step_1",
@@ -469,7 +469,7 @@ SCHEMA_PARAMS_EP_LOOP_STEP = (NODES_EP_LOOP_STEP, EDGES_ONE_STEP)
 
 NODES_EP_HIERARCHICAL_STEP = [
     InputStep(),
-    EmbarrassinglyParallelStep(
+    AutoParallelStep(
         step=HierarchicalStep(
             step_name="step_1",
             input_slots=[

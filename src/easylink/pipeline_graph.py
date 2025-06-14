@@ -72,31 +72,28 @@ class PipelineGraph(ImplementationGraph):
         return any([implementation.requires_spark for implementation in self.implementations])
 
     @property
-    def any_embarrassingly_parallel(self) -> bool:
+    def any_auto_parallel(self) -> bool:
         """Whether or not any :class:`~easylink.implementation.Implementation` is
-        to be run in an embarrassingly parallel way."""
+        to be run in an auto parallel way."""
         return any(
-            [
-                self.get_whether_embarrassingly_parallel(node)
-                for node in self.implementation_nodes
-            ]
+            [self.get_whether_auto_parallel(node) for node in self.implementation_nodes]
         )
 
-    def get_whether_embarrassingly_parallel(self, node: str) -> dict[str, bool]:
-        """Determines whether a node is to be run in an embarrassingly parallel way.
+    def get_whether_auto_parallel(self, node: str) -> dict[str, bool]:
+        """Determines whether a node is to be run in an auto parallel way.
 
         Parameters
         ----------
         node
             The node name to determine whether or not it is to be run in an
-            embarrassingly parallel way.
+            auto parallel way.
 
         Returns
         -------
-            A boolean indicating whether the node is to be run in an embarrassingly
+            A boolean indicating whether the node is to be run in an auto
             parallel way.
         """
-        return self.nodes[node]["implementation"].is_embarrassingly_parallel
+        return self.nodes[node]["implementation"].is_auto_parallel
 
     def get_io_filepaths(self, node: str) -> tuple[list[str], list[str]]:
         """Gets all of a node's input and output filepaths from its edges.
@@ -482,9 +479,9 @@ class PipelineGraph(ImplementationGraph):
                         str(
                             Path("intermediate")
                             / node
-                            # embarrassingly parallel implementations rely on snakemake wildcards
+                            # auto parallel implementations rely on snakemake wildcards
                             # TODO: [MIC-5787] - need to support multiple wildcards at once
-                            / ("{chunk}" if implementation.is_embarrassingly_parallel else "")
+                            / ("{chunk}" if implementation.is_auto_parallel else "")
                             / imp_outputs[edge_attrs["output_slot"].name]
                         ),
                     )

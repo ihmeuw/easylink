@@ -3,7 +3,7 @@ steps:
     iterate:
       - substeps:
           determining_exclusions_and_removing_records:
-            parallel:
+            clones:
               - determining_exclusions:
                   implementation:
                     name: default_determining_exclusions
@@ -32,7 +32,7 @@ steps:
               linking:
                 substeps:
                   pre-processing:
-                    parallel:
+                    clones:
                     - implementation:
                         name: dummy_pre-processing
                         configuration: 
@@ -67,7 +67,7 @@ steps:
               name: default_updating_clusters
       - substeps:
           determining_exclusions_and_removing_records:
-            parallel:
+            clones:
               - determining_exclusions:
                   implementation:
                     name: exclude_clustered
@@ -96,7 +96,7 @@ steps:
               linking:
                 substeps:
                   pre-processing:
-                    parallel:
+                    clones:
                     - implementation:
                         name: dummy_pre-processing
                         configuration: 
