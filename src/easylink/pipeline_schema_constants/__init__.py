@@ -25,6 +25,6 @@ SCHEMA_PARAMS = {
     "combine_with_extra_node": testing.SCHEMA_PARAMS_THREE_STEPS,
     "looping_auto_parallel_step": testing.SCHEMA_PARAMS_LOOPING_AUTO_PARALLEL_STEP,
     "auto_parallel_cloneable_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_CLONEABLE_STEP,
-    "auto_parallel_loop_step": testing.SCHEMA_PARAMS_EP_LOOP_STEP,
-    "auto_parallel_hierarchical_step": testing.SCHEMA_PARAMS_EP_HIERARCHICAL_STEP,
+    "auto_parallel_loop_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_LOOP_STEP,
+    "auto_parallel_hierarchical_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_HIERARCHICAL_STEP,
 }
