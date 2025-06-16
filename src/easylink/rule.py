@@ -112,7 +112,7 @@ class ImplementedRule(Rule):
     requires_spark: bool
     """Whether or not this ``Implementation`` requires a Spark environment."""
     is_auto_parallel: bool = False
-    """Whether or not this ``Implementation`` is to be run in an auto parallel way."""
+    """Whether or not this ``Implementation`` is to be automatically run in parallel."""
 
     def build_rule(self) -> str:
         """Builds the Snakemake rule for this ``Implementation``."""

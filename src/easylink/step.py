@@ -72,7 +72,7 @@ class Step:
     output_slot_mappings
         The :class:`OutputSlotMapping<easylink.graph_components.OutputSlotMapping>` of this ``Step``.
     is_auto_parallel
-        Whether or not this ``Step`` is to be run in an auto parallel manner.
+        Whether or not this ``Step`` is to automatically run in parallel.
 
     Notes
     -----
@@ -126,7 +126,7 @@ class Step:
         """A combined dictionary containing both the ``InputSlotMappings`` and
         ``OutputSlotMappings`` of this ``Step``."""
         self.is_auto_parallel = is_auto_parallel
-        """Whether or not this ``Step`` is to be run in an auto parallel manner."""
+        """Whether or not this ``Step`` is to be automatically run in parallel."""
         self.parent_step = None
         """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
@@ -1288,8 +1288,8 @@ class AutoParallelStep(Step):
     Parameters
     ----------
     step
-        The ``Step`` to be run in an auto parallel manner. To run multiple
-        steps in parallel, use a :class:`HierarchicalStep`.
+        The ``Step`` to be automatically run in parallel. To run multiple steps in
+        parallel, use a :class:`HierarchicalStep`.
     slot_splitter_mapping
         A mapping of the :class:`~easylink.graph_components.InputSlot` name to split
         to the actual splitter function to be used.
@@ -1920,7 +1920,7 @@ class LeafConfigurationState(ConfigurationState):
         if self.is_combined:
             if step.is_auto_parallel:
                 raise NotImplementedError(
-                    "Combining implementations with auto parallel steps " "is not supported."
+                    "Combining implementations with auto-parallel steps is not supported."
                 )
             implementation = PartialImplementation(
                 combined_name=self.step_config[COMBINED_IMPLEMENTATION_KEY],

@@ -76,7 +76,7 @@ def test_step_types(
     # Check that we get directories for particular implementations
     for implementation in implementations:
         assert (test_specific_results_dir / "diagnostics" / implementation).exists()
-        # step_3 is auto parallel so the final results land in _aggregate/
+        # step_3 is auto-parallel so the final results land in _aggregate/
         aggregate_mapping = {
             "step_3_python_pandas": "step_3_aggregate",
             "step_3_loop_1_step_3_python_pandas": "step_3_loop_1_aggregate",

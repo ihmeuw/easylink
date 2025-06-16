@@ -74,24 +74,22 @@ class PipelineGraph(ImplementationGraph):
     @property
     def any_auto_parallel(self) -> bool:
         """Whether or not any :class:`~easylink.implementation.Implementation` is
-        to be run in an auto parallel way."""
+        to be automatically run in parallel."""
         return any(
             [self.get_whether_auto_parallel(node) for node in self.implementation_nodes]
         )
 
     def get_whether_auto_parallel(self, node: str) -> dict[str, bool]:
-        """Determines whether a node is to be run in an auto parallel way.
+        """Determines whether a node is to be automatically run in parallel.
 
         Parameters
         ----------
         node
-            The node name to determine whether or not it is to be run in an
-            auto parallel way.
+            The node name to determine whether or not it is to be automatically run in parallel.
 
         Returns
         -------
-            A boolean indicating whether the node is to be run in an auto
-            parallel way.
+            A boolean indicating whether the node is to be automatically run in parallel.
         """
         return self.nodes[node]["implementation"].is_auto_parallel
 
@@ -479,7 +477,7 @@ class PipelineGraph(ImplementationGraph):
                         str(
                             Path("intermediate")
                             / node
-                            # auto parallel implementations rely on snakemake wildcards
+                            # auto-parallel implementations rely on snakemake wildcards
                             # TODO: [MIC-5787] - need to support multiple wildcards at once
                             / ("{chunk}" if implementation.is_auto_parallel else "")
                             / imp_outputs[edge_attrs["output_slot"].name]

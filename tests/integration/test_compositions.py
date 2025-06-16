@@ -98,7 +98,7 @@ AUTO_PARALLEL_SECTION_MAPPING = {
             # is duplicated twice (from the CloneableStep). The step_1 container
             # is then run exactly one time on each of these four datasets.
             1,
-            # The auto parallel splitting shouldn't increase the number of rows
+            # The auto-parallel splitting shouldn't increase the number of rows
             # in and of itself, but the underlying cloneable step does. We have two
             # splits and so expect there to be twice as many rows in the final result.
             2,
@@ -107,10 +107,10 @@ AUTO_PARALLEL_SECTION_MAPPING = {
             "hierarchical_step",
             2,
             # The particular schema used here has two input slots, where the main
-            # one gets split into two for auto parallel processing.
+            # one gets split into two for auto-parallel processing.
             # The total number of rows in the entire set of input data (which gets
             # fed into both the main and the secondary input slots) is ROWS.
-            # The first substep (in each branch of the auto parallel split)
+            # The first substep (in each branch of the auto-parallel split)
             # gets 0.5xROWS (due to the splitting) in the main input slot plus 1xROWS
             # in the secondary input slot for a total of 1.5xROWS.
             # The second substep then gets the processed 1.5xROWS from the first

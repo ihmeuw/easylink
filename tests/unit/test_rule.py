@@ -176,7 +176,7 @@ def test_auto_parallel_rule_build_rule():
 
 
 def test_auto_parallel_rule_build_rule_multiple_outputs_raises():
-    """Temporary test against raising if an auto parallel step has multiple outputs."""
+    """Temporary test against raising if an auto-parallel step has multiple outputs."""
     rule = ImplementedRule(
         name="foo_rule",
         step_name="foo_step",

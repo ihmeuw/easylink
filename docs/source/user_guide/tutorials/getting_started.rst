@@ -196,7 +196,7 @@ except that ``step_4`` has two inputs, as defined in
 
 .. warning::
    Note that this diagram doesn't show the dependencies on original (user-provided) input data, and 
-   displays validations, and doesn't show Step 3 because it is auto parallel. See 
+   displays validations, and doesn't show Step 3 because it is an auto-parallel step. See 
    `this ticket <https://jira.ihme.washington.edu/browse/MIC-5767>`_ where we plan to fix these issues.
 
 Now we can understand why the final output has 60k rows. For the current dummy implementation, when there are multiple input data files, the rows 

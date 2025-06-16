@@ -47,7 +47,7 @@ class Pipeline:
         A boolean indicating whether the pipeline requires Spark.
     any_auto_parallel
         A boolean indicating whether any implementation in the pipeline is to be
-        run in an auto parallel manner.
+        automatically run in parallel.
 
     """
 
@@ -421,7 +421,7 @@ use rule start_spark_worker from spark_cluster with:
         validation_rules = []
 
         for input_slot_name, input_slot_attrs in input_slots.items():
-            # auto parallel implementations rely on snakemake wildcards
+            # auto-parallel implementations rely on snakemake wildcards
             # TODO: [MIC-5787] - need to support multiple wildcards at once
             validation_file = f"input_validations/{node_name}/{input_slot_name}_validator" + (
                 "-{chunk}" if is_auto_parallel else ""
