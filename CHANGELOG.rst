@@ -1,7 +1,7 @@
 **0.1.21 - 6/16/25**
 
  - Update the "parallel" pipeline configuration key to "clones"
- - Update ParallelStep and EmbarrassinglyParallelStep classes to CloneableStep and AutoParallelStep, respectively
+ - Update "ParallelStep" and "EmbarrassinglyParallelStep" class names to "CloneableStep" and "AutoParallelStep", respectively
 
 **0.1.20 - 6/11/25**
 
