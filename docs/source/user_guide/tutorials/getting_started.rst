@@ -10,7 +10,7 @@ Naive demo notes
 .. code-block:: console
 
    $ cd docs/source/user_guide/tutorials/
-   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo_naive.yaml -e ../../../../tests/specifications/common/environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/image
+   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo_naive.yaml -e ../../../../tests/specifications/common/environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
 
 
 

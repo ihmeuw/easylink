@@ -86,7 +86,7 @@ nonlinks = predictions_df[
     predictions_df["simulant_id_l"] != predictions_df["simulant_id_r"]
 ].sort_values("Probability", ascending=False)
 
-THRESHOLD = 0.25
+THRESHOLD = 0.85
 
 cols_to_print = [
     "ssn_l",
@@ -148,26 +148,30 @@ for prob in probabilities[probabilities < 1]:  # drop probability==1 if it exist
         if "w2" in matches_w2_to_ssa["Left Record ID"]
         else matches_w2_to_ssa["Right Record ID"]
     ).nunique()
-    prop_w2_ssa_matches_with_duplicate_w2s = (
-        len(matches_w2_to_ssa) - num_w2s_matched
-    ) / len(matches_w2_to_ssa)
+    prop_w2_ssa_matches_with_unique_w2s = num_w2s_matched / len(matches_w2_to_ssa)
     data.append(
         [
             prob,
             num_w2s_matched / num_w2s,
-            prop_w2_ssa_matches_with_duplicate_w2s,
+            prop_w2_ssa_matches_with_unique_w2s,
         ]
     )
 
 df = pd.DataFrame(
     data,
-    columns=["Probability", "W2 Match Rate", "Duplicate W2 Rate among Matches"],
+    columns=["Probability Threshold", "W2 Match Rate", "Unique W2 Rate among Matches"],
 )
 _, ax = plt.subplots()
-df.plot(x="Probability", y="W2 Match Rate", kind="line", ax=ax, marker="x")
+ax.set_ylim(0.75, 1)
+df.plot(x="Probability Threshold", y="W2 Match Rate", kind="line", ax=ax, marker="x")
 df.plot(
-    x="Probability", y="Duplicate W2 Rate among Matches", kind="line", ax=ax, marker="x"
+    x="Probability Threshold",
+    y="Unique W2 Rate among Matches",
+    kind="line",
+    ax=ax,
+    marker="x",
 )
 plt.savefig(str(Path(results_dir / "matches_and_duplicates_by_prob.png")))
 print("Plot data:")
 print(df)
+print(df["Probability"] > 0.95)

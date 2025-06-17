@@ -35,16 +35,44 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
         # local pipeline_demo_naive.yaml
         (
             "docs/source/user_guide/tutorials/pipeline_demo_naive.yaml",
-            "docs/source/user_guide/tutorials/input_data_demo_naive.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
             "tests/specifications/common/environment_local.yaml",
             "tests/e2e/pipeline_naive_results.csv",
         ),
         # slurm pipeline_demo_naive.yaml
         (
             "docs/source/user_guide/tutorials/pipeline_demo_naive.yaml",
-            "docs/source/user_guide/tutorials/input_data_demo_naive.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
             "tests/specifications/e2e/environment_slurm_4GB.yaml",
             "tests/e2e/pipeline_naive_results.csv",
+        ),
+        # local pipeline_demo_improved.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
+            "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_improved_results.csv",
+        ),
+        # slurm pipeline_demo_improved.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
+            "tests/specifications/e2e/environment_slurm_4GB.yaml",
+            "tests/e2e/pipeline_improved_results.csv",
+        ),
+        # local pipeline_demo_improved_2030.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved_2030.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo_2030.yaml",
+            "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_improved_results_2030.csv",
+        ),
+        # slurm pipeline_demo_improved_2030.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved_2030.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo_2030.yaml",
+            "tests/specifications/e2e/environment_slurm_4GB.yaml",
+            "tests/e2e/pipeline_improved_results_2030.csv",
         ),
     ],
 )
