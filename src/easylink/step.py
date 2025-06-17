@@ -71,8 +71,8 @@ class Step:
         The :class:`InputSlotMapping<easylink.graph_components.InputSlotMapping>` of this ``Step``.
     output_slot_mappings
         The :class:`OutputSlotMapping<easylink.graph_components.OutputSlotMapping>` of this ``Step``.
-    is_embarrassingly_parallel
-        Whether or not this ``Step`` is to be run in an embarrassingly parallel manner.
+    is_auto_parallel
+        Whether or not this ``Step`` is to automatically run in parallel.
 
     Notes
     -----
@@ -91,7 +91,7 @@ class Step:
         output_slots: Iterable[OutputSlot] = (),
         input_slot_mappings: Iterable[InputSlotMapping] = (),
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
-        is_embarrassingly_parallel: bool = False,
+        is_auto_parallel: bool = False,
     ) -> None:
         if not step_name and not name:
             raise ValueError("All Steps must contain a step_name, name, or both.")
@@ -125,8 +125,8 @@ class Step:
         }
         """A combined dictionary containing both the ``InputSlotMappings`` and
         ``OutputSlotMappings`` of this ``Step``."""
-        self.is_embarrassingly_parallel = is_embarrassingly_parallel
-        """Whether or not this ``Step`` is to be run in an embarrassingly parallel manner."""
+        self.is_auto_parallel = is_auto_parallel
+        """Whether or not this ``Step`` is to be automatically run in parallel."""
         self.parent_step = None
         """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
@@ -816,7 +816,7 @@ class TemplatedStep(Step, ABC):
 
     A ``TemplatedStep`` is used to represents a ``Step`` that contains a specified
     amount of multiplicity, such as one that is looped or run in parallel; it is
-    inherited by concrete :class:`LoopStep` and :class:`ParallelStep` instances.
+    inherited by concrete :class:`LoopStep` and :class:`CloneableStep` instances.
 
     See :class:`Step` for inherited attributes.
 
@@ -1206,7 +1206,7 @@ class LoopStep(TemplatedStep):
         return {"input": input_mappings, "output": output_mappings}
 
 
-class ParallelStep(TemplatedStep):
+class CloneableStep(TemplatedStep):
     """A type of :class:`TemplatedStep` that creates multiple copies in parallel
     with no dependencies between them.
 
@@ -1216,13 +1216,13 @@ class ParallelStep(TemplatedStep):
 
     @property
     def config_key(self):
-        """The pipeline specification key required for a ``ParallelStep``."""
-        return "parallel"
+        """The pipeline specification key required for a ``CloneableStep``."""
+        return "clones"
 
     @property
     def node_prefix(self):
-        """The prefix to be used in the ``ParallelStep`` node name."""
-        return "parallel_split"
+        """The prefix to be used in the ``CloneableStep`` node name."""
+        return "clone"
 
     def _update_step_graph(self, num_repeats: int) -> StepGraph:
         """Updates the :class:`~easylink.graph_components.StepGraph` to include parallelization.
@@ -1276,10 +1276,10 @@ class ParallelStep(TemplatedStep):
         return {"input": input_mappings, "output": output_mappings}
 
 
-class EmbarrassinglyParallelStep(Step):
+class AutoParallelStep(Step):
     """A :class:`Step` that is run in parallel on the backend.
 
-    An ``EmbarrassinglyParallelStep`` is different than a :class:`ParallelStep`
+    An ``AutoParallelStep`` is different than a :class:`CloneableStep`
     in that it is not configured by the user to be run in parallel - it completely
     happens on the back end for performance reasons.
 
@@ -1288,8 +1288,8 @@ class EmbarrassinglyParallelStep(Step):
     Parameters
     ----------
     step
-        The ``Step`` to be run in an embarrassingly parallel manner. To run multiple
-        steps in parallel, use a :class:`HierarchicalStep`.
+        The ``Step`` to be automatically run in parallel. To run multiple steps in
+        parallel, use a :class:`HierarchicalStep`.
     slot_splitter_mapping
         A mapping of the :class:`~easylink.graph_components.InputSlot` name to split
         to the actual splitter function to be used.
@@ -1308,7 +1308,7 @@ class EmbarrassinglyParallelStep(Step):
         super().__init__(
             step_name=None,
             name=step.name,
-            is_embarrassingly_parallel=True,
+            is_auto_parallel=True,
         )
         self.slot_splitter_mapping = slot_splitter_mapping
         """A mapping of the :class:`~easylink.graph_components.InputSlot` name to split
@@ -1328,14 +1328,14 @@ class EmbarrassinglyParallelStep(Step):
 
     @Step.name.setter
     def name(self, value: str) -> None:
-        """Changes the name of the ``EmbarrassinglyParallelStep`` and the underlying :class:`Step` to the given value."""
+        """Changes the name of the ``AutoParallelStep`` and the underlying :class:`Step` to the given value."""
         self._name = value
         self.step._name = value
 
     def _validate(self) -> None:
-        """Validates the ``EmbarrassinglyParallelStep``.
+        """Validates the ``AutoParallelStep``.
 
-        ``EmbarrassinglyParallelSteps`` are not configured by the user to be run
+        ``AutoParallelSteps`` are not configured by the user to be run
         in parallel. Since it happens on the back end, we need to do somewhat unique
         validations during construction. Specifically,
         - one and only one :class:`~easylink.graph_components.InputSlot` *must*
@@ -1348,17 +1348,17 @@ class EmbarrassinglyParallelStep(Step):
         # check that only one input slot has a splitter assigned
         if len(self.slot_splitter_mapping) != 1:
             errors.append(
-                f"EmbarrassinglyParallelStep '{self.step_name}' is attempting to define "
+                f"AutoParallelStep '{self.step_name}' is attempting to define "
                 f"{len(self.slot_splitter_mapping)} splitters when only one should be defined."
             )
         if len(self.slot_splitter_mapping) == 0:
             errors.append(
-                f"EmbarrassinglyParallelStep '{self.step_name}' does not have any input slots with a "
+                f"AutoParallelStep '{self.step_name}' does not have any input slots with a "
                 "splitter method assigned; one and only one input slot must have a splitter."
             )
         if len(self.slot_splitter_mapping) > 1:
             errors.append(
-                f"EmbarrassinglyParallelStep '{self.step_name}' has multiple input slots with "
+                f"AutoParallelStep '{self.step_name}' has multiple input slots with "
                 "splitter methods assigned; one and only one input slot must have a splitter.\n"
                 f"Input slots with splitters: {list(self.slot_splitter_mapping)}"
             )
@@ -1371,7 +1371,7 @@ class EmbarrassinglyParallelStep(Step):
         ]
         if len(missing_aggregators) != 0:
             errors.append(
-                f"EmbarrassinglyParallelStep '{self.step_name}' has output slots without "
+                f"AutoParallelStep '{self.step_name}' has output slots without "
                 f"aggregator methods assigned: {missing_aggregators}"
             )
         if errors:
@@ -1451,7 +1451,7 @@ class EmbarrassinglyParallelStep(Step):
         aggregator_node_name = f"{self.name}_aggregate"
         if len(self.output_slots) > 1:
             raise NotImplementedError(
-                "FIXME [MIC-5883] Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+                "FIXME [MIC-5883] Multiple output slots/files of AutoParallelSteps not yet supported"
             )
         output_slot = list(self.output_slots.values())[0]
         aggregator_step = AggregatorStep(
@@ -1464,7 +1464,7 @@ class EmbarrassinglyParallelStep(Step):
         self._update_slot_mappings(splitter_step, aggregator_step)
         # Add the key back to the expanded config
         expanded_config = LayeredConfigTree({self.step.name: step_config})
-        # EmbarrassinglyParallelSteps are by definition non-leaf steps
+        # AutoParallelSteps are by definition non-leaf steps
         self._configuration_state = NonLeafConfigurationState(
             self, expanded_config, combined_implementations, input_data_config
         )
@@ -1513,7 +1513,7 @@ class EmbarrassinglyParallelStep(Step):
         # Add the Step -> AggregatorStep edge
         if len(self.step.output_slots) > 1:
             raise NotImplementedError(
-                "EmbarrassinglyParallelStep does not support multiple output slots."
+                "AutoParallelStep does not support multiple output slots."
             )
         self.step_graph.add_edge_from_params(
             EdgeParams(
@@ -1562,7 +1562,7 @@ class SplitterStep(StandaloneStep):
     """A :class:`StandaloneStep` that splits an :class:`~easylink.graph_components.InputSlot` for parallel processing.
 
     A ``SplitterStep`` is intended to be used in conjunction with a corresponding
-    :class:`AggregatorStep` and only during construction of an :class:`EmbarrassinglyParallelStep`.
+    :class:`AggregatorStep` and only during construction of an :class:`AutoParallelStep`.
 
     See :class:`Step` for inherited attributes.
 
@@ -1613,7 +1613,7 @@ class AggregatorStep(StandaloneStep):
         """A :class:`StandaloneStep` that aggregates :class:`OutputSlots<easylink.graph_components.Outputslot>` after parallel processing.
 
         An ``AggregatorStep`` is intended to be used in conjunction with a corresponding
-        :class:`SplitterStep` and only during construction of an :class:`EmbarrassinglyParallelStep`.
+        :class:`SplitterStep` and only during construction of an :class:`AutoParallelStep`.
 
         See :class:`Step` for inherited attributes.
 
@@ -1918,10 +1918,9 @@ class LeafConfigurationState(ConfigurationState):
         """
         step = self._step
         if self.is_combined:
-            if step.is_embarrassingly_parallel:
+            if step.is_auto_parallel:
                 raise NotImplementedError(
-                    "Combining implementations with embarrassingly parallel steps "
-                    "is not supported."
+                    "Combining implementations with auto-parallel steps is not supported."
                 )
             implementation = PartialImplementation(
                 combined_name=self.step_config[COMBINED_IMPLEMENTATION_KEY],
@@ -1935,7 +1934,7 @@ class LeafConfigurationState(ConfigurationState):
                 implementation_config=self.implementation_config,
                 input_slots=step.input_slots.values(),
                 output_slots=step.output_slots.values(),
-                is_embarrassingly_parallel=step.is_embarrassingly_parallel,
+                is_auto_parallel=step.is_auto_parallel,
             )
         implementation_graph.add_node_from_implementation(
             step.implementation_node_name,
@@ -1985,7 +1984,7 @@ class LeafConfigurationState(ConfigurationState):
                 if mapping.parent_slot == edge.input_slot
             ]
             for mapping in mappings:
-                # FIXME [MIC-5771]: Fix ParallelSteps
+                # FIXME [MIC-5771]: Fix CloneableSteps
                 if (
                     "input_data_file" in self.step_config
                     and edge.source_node == "pipeline_graph_input_data"
@@ -2070,8 +2069,8 @@ class NonLeafConfigurationState(ConfigurationState):
         """
         for node in self._step.step_graph.nodes:
             substep = self._step.step_graph.nodes[node]["step"]
-            if self._step.is_embarrassingly_parallel:
-                substep.is_embarrassingly_parallel = True
+            if self._step.is_auto_parallel:
+                substep.is_auto_parallel = True
             substep.add_nodes_to_implementation_graph(implementation_graph)
 
     def add_edges_to_implementation_graph(

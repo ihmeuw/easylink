@@ -111,21 +111,20 @@ class ImplementedRule(Rule):
     """Command to execute."""
     requires_spark: bool
     """Whether or not this ``Implementation`` requires a Spark environment."""
-    is_embarrassingly_parallel: bool = False
-    """Whether or not this ``Implementation`` is to be run in an embarrassingly 
-    parallel way."""
+    is_auto_parallel: bool = False
+    """Whether or not this ``Implementation`` is to be automatically run in parallel."""
 
     def build_rule(self) -> str:
         """Builds the Snakemake rule for this ``Implementation``."""
-        if self.is_embarrassingly_parallel and len(self.output) > 1:
+        if self.is_auto_parallel and len(self.output) > 1:
             raise NotImplementedError(
-                "Multiple output slots/files of EmbarrassinglyParallelSteps not yet supported"
+                "Multiple output slots/files of AutoParallelSteps not yet supported"
             )
         return self._build_io() + self._build_resources() + self._build_shell_cmd()
 
     def _build_io(self) -> str:
         """Builds the input/output portion of the rule."""
-        log_path_chunk_adder = "-{chunk}" if self.is_embarrassingly_parallel else ""
+        log_path_chunk_adder = "-{chunk}" if self.is_auto_parallel else ""
         # Handle output files vs directories
         files = [path for path in self.output if Path(path).suffix != ""]
         if len(files) == len(self.output):
@@ -260,7 +259,7 @@ rule:
 class CheckpointRule(Rule):
     """A :class:`Rule` that defines a checkpoint.
 
-    When running an :class:`~easylink.implementation.Implementation` in an embarrassingly
+    When running an :class:`~easylink.implementation.Implementation` in an auto
     parallel way, we do not know until runtime how many parallel jobs there will
     be (e.g. we don't know beforehand how many chunks a large incoming dataset will
     be split into since the incoming dataset isn't created until runtime). The
@@ -326,7 +325,7 @@ checkpoint:
 class AggregationRule(Rule):
     """A :class:`Rule` that aggregates the processed chunks of output data.
 
-    When running an :class:`~easylink.implementation.Implementation` in an embarrassingly
+    When running an :class:`~easylink.implementation.Implementation` in an auto
     parallel way, we need to aggregate the output files from each parallel job
     into a single output file.
     """
@@ -347,10 +346,10 @@ class AggregationRule(Rule):
     def build_rule(self) -> str:
         """Builds the Snakemake rule for this aggregator.
 
-        When running an :class:`~easylink.step.EmbarrassinglyParallelStep`, we need
+        When running an :class:`~easylink.step.AutoParallelStep`, we need
         to aggregate the output files from each parallel job into a single output file.
         This rule relies on a dynamically generated aggregation function which returns
-        all of the **processed** chunks (from running the ``EmbarrassinglyParallelStep's``
+        all of the **processed** chunks (from running the ``AutoParallelStep's``
         container in parallel) and uses them as inputs to the actual aggregation
         rule.
 

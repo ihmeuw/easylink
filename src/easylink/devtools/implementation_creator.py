@@ -21,8 +21,8 @@ from loguru import logger
 
 from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.step import (
+    AutoParallelStep,
     ChoiceStep,
-    EmbarrassinglyParallelStep,
     HierarchicalStep,
     IOStep,
     Step,
@@ -319,7 +319,7 @@ class ImplementationCreator:
             elif isinstance(node, TemplatedStep):
                 _process_step(node.template_step)
                 return
-            elif isinstance(node, EmbarrassinglyParallelStep):
+            elif isinstance(node, AutoParallelStep):
                 _process_step(node.step)
                 return
             elif isinstance(node, ChoiceStep):

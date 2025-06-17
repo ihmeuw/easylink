@@ -74,7 +74,7 @@ The ``pipeline.yaml`` section for the cloneable section diagrammed above might l
    :emphasize-lines: 7,12,17,22
 
    determining_exclusions_and_removing_records:
-     parallel:
+     clones:
        - determining_exclusions:
            implementation:
              name: default_determining_exclusions
@@ -103,7 +103,7 @@ both steps in the above diagram received the output of the splitter.
 
 It is very important that the user:
 
-* Create a number of clones (items in the list under ``parallel``) that matches the number of files
+* Create a number of clones (items in the list under ``clones``) that matches the number of files
 * Pass each clone the name of one of the files
 * Pass each sub-step *within* each clone the same file name
 
