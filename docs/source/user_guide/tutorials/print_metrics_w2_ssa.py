@@ -86,7 +86,7 @@ nonlinks = predictions_df[
     predictions_df["simulant_id_l"] != predictions_df["simulant_id_r"]
 ].sort_values("Probability", ascending=False)
 
-THRESHOLD = 0.85
+THRESHOLD = 0.25
 
 cols_to_print = [
     "ssn_l",

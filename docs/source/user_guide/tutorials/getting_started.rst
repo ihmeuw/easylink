@@ -4,244 +4,241 @@
 Getting Started
 ===============
 
-Naive demo notes
-================
+Introduction
+============
+EasyLink is a framework that allows users to build and run highly configurable record linkage pipelines, 
+as demonstrated in this tutorial. EasyLink allows users to "mix and match" different pieces of record 
+linkage software, by ensuring that each piece of the pipeline conforms to standard patterns. 
+
+For example, users at the Census Bureau could easily evaluate whether using a more sophisticated "blocking" 
+method would improve results in a certain pipeline, without having to rewrite the entire pipeline. For more 
+information, read about the `motivation <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#motivation>`
+behind EasyLink.
+
+Audience
+--------
+This tutorial is intented for people familiar with the practive of record linkage, who are interested
+in easily comparing linkage results across different methods. The tutorial will demonstrate how to 
+easily swap different record linkage method implementations in and out 
+using the EasyLink software.
+
+Overview
+--------
+This tutorial introduces EasyLink concepts and features by demonstrating the software's usage. Covered 
+concepts include the EasyLink record linkage pipeline schema, Easylink pipeline configuration, running 
+pipelines, changing record linkage step implementations, changing input data, evaluating and comparing 
+results, and more. 
+
+Tutorial prerequisites
+----------------------
+Install `EasyLink <https://github.com/ihmeuw/easylink>`_ if you haven't already. 
+
+The tutorial uses the `Splink <https://moj-analytical-services.github.io/splink/index.html>` Python package 
+for record linkage implemenetations. Splink knowledge is not required to complete the tutorial but may be 
+helpful in the sections about configuring the Splink models.
+
+
+Configuring a "naive" Splink model
+==================================
+Our first demonstration of running an EasyLink pipeline will configure a simple, "naive" record linkage
+model using Splink implementations. Our pipeline will link the 
+`pseudopeople <https://pseudopeople.readthedocs.io/en/latest/>`_ 
+``Social Security Administration`` `dataset <https://pseudopeople.readthedocs.io/en/latest/datasets/index.html>`_ to the ``Tax forms: W-2 & 1099`` dataset.
+
+``easylink run`` parameters
+---------------------------
+The command we will use to run the pipeline will look like this:
 
 .. code-block:: console
 
-   $ cd docs/source/user_guide/tutorials/
-   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo_naive.yaml -e ../../../../tests/specifications/common/environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
 
+.. todo:: 
+    Remove ``-I`` flag (or change and add ``-I`` section) so that images will be downloaded from Zenodo when that is ready
 
+More information is available in the :ref:`easylink run <cli>` command docs, but let's briefly review each 
+parameter and file we will pass to the command.
 
-First Pipeline
-==============
+Input data
+^^^^^^^^^^
+The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying a list 
+of paths to files or directories containing input data to be used by the pipeline. 
+The contents of 
+:download:`input_data_demo.yaml <input_data_demo.yaml>` are shown below -- download it to the 
+directory from which you will run ``easylink run``. 
 
-``common/pipeline.yaml``
-------------------------
-Let's run our first pipeline with EasyLink by passing pipeline specification, input data specification, and 
-environment specification files to the :ref:`easylink run <cli>` command.
+.. code-block:: yaml
 
-This command will validate the pipeline specification against the pipeline schema and configure and run the pipeline.
-We will start by using some pre-written specifications from the the EasyLink automated tests, and will explain 
-more about the contents of the specifications later.
+    input_file_ssa_2020: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_ssa_2020.parquet
+    input_file_w2_2020: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_w2_2020.parquet
+    known_clusters: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/main/known_clusters.parquet
+
+Here we have defined the locations of the three input files we will use: the 2020 versions of the 
+``Social Security Administration`` and ``W2 & 1099`` datasets, and an empty ``known_clusters`` file, since no
+clusters are known to us before running this pipeline. 
 
 .. note::
-   The steps run by this pipeline are dummy steps designed for EasyLink development. This tutorial 
-   will need to be updated to reflect the record linkage pipeline schema when it is available, rather than the dummy
-   development schema.
-
-.. note::
-   At the moment the EasyLink tests require input files stored on the IHME cluster, so it is not yet 
-   possible to run them without IHME cluster access.
-
-.. code-block:: console
-
-   $ conda activate easylink
-   $ cd tests
-   $ easylink run -p specifications/common/pipeline.yaml -i specifications/common/input_data.yaml -e specifications/common/environment_local.yaml
-   2025-04-22 10:41:27.992 | 0:00:02.533972 | run:158 - Running pipeline
-   2025-04-22 10:41:27.993 | 0:00:02.535549 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_22_10_41_27
-   2025-04-22 10:41:31.621 | 0:00:06.163666 | main:115 - Running Snakemake
-   [Tue Apr 22 10:41:32 2025]
-   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
-   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
-   [Tue Apr 22 10:41:32 2025]
-   Job 6: Validating step_1_python_pandas input slot step_1_main_input
-   Reason: Missing output files: input_validations/step_1_python_pandas/step_1_main_input_validator
-   [Tue Apr 22 10:41:34 2025]
-   Job 5: Running step_1 implementation: step_1_python_pandas
-   Reason: Missing output files: intermediate/step_1_python_pandas/result.parquet; Input files updated by another job: input_validations/step_1_python_pandas/step_1_main_input_validator
-   [Tue Apr 22 10:41:37 2025]
-   Job 7: Validating step_2_python_pandas input slot step_2_main_input
-   Reason: Missing output files: input_validations/step_2_python_pandas/step_2_main_input_validator; Input files updated by another job: intermediate/step_1_python_pandas/result.parquet
-   ...
-   [Tue Apr 22 10:41:58 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
-
-.. note:: 
-   The pipeline output in its current state can be a little confusing. Note that the number assigned 
-   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
-   assigned by snakemake. Also note that the first job to be run is input validation for step 4, along 
-   with input validation for step 1 - this is because these are the only jobs with no dependencies 
-   in the pipeline DAG, which is shown in the `Pipeline schema and steps`_ section.
-
-   Finally, despite the final output line containing the phrase "Missing output files", 
-   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
-   why the job was run (the step inputs were ready but the output file did not yet exist), not 
-   conveying an error message.
-
-   We have a `ticket <https://jira.ihme.washington.edu/browse/MIC-6019>`_ about improving this.
-
-Inputs and outputs
-------------------
-Input and output data is stored in parquet files. The locations of the input data files passed to EasyLink 
-in our last command are found in ``specifications/common/input_data.yaml``.
-We can view the contents of these Parquet files using Python:
-
-.. code-block:: console
-
-   $ # Create/activate a conda environment if you don't want to install globally!
-   $ pip install pandas pyarrow
-   $ python
-   >>> import pandas as pd
-   >>> pd.read_parquet("/mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet")
-          foo bar  counter
-   0        0   a        0
-   1        1   b        0
-   2        2   c        0
-   3        3   d        0
-   4        4   e        0
-   ...    ...  ..      ...
-   9995  9995   a        0
-   9996  9996   b        0
-   9997  9997   c        0
-   9998  9998   d        0
-   9999  9999   e        0
-
-   [10000 rows x 3 columns]
-
-The other two input files look identical, each with 10k rows.
-
-It can also be useful to setup an alias to more easily preview parquet files. Add the following to your 
-``.bash_aliases`` or ``.bashrc`` file, and restart your terminal.
-
-.. code-block:: console
-
-   pqprint() { python -c "import pandas as pd; print(pd.read_parquet('$1'))" ; }
-
-Let's use the alias to print the results parquet, the location of which was printed when we ran the pipeline.
-
-.. code-block:: console
-
-   $ pqprint results/2025_04_22_10_41_27/result.parquet
-           foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
-   0         0   a        4             0.0             1.0             2.0             3.0               4
-   1         1   b        4             0.0             1.0             2.0             3.0               4
-   2         2   c        4             0.0             1.0             2.0             3.0               4
-   3         3   d        4             0.0             1.0             2.0             3.0               4
-   4         4   e        4             0.0             1.0             2.0             3.0               4
-   ...     ...  ..      ...             ...             ...             ...             ...             ...
-   59995  9995   a        1             0.0             0.0             0.0             0.0               4
-   59996  9996   b        1             0.0             0.0             0.0             0.0               4
-   59997  9997   c        1             0.0             0.0             0.0             0.0               4
-   59998  9998   d        1             0.0             0.0             0.0             0.0               4
-   59999  9999   e        1             0.0             0.0             0.0             0.0               4
-
-If we compare the input data to the results, we can see that new columns were added, the data now has 60k rows, 
-the counter column is incremented for many rows, and other columns have different values for different rows 
-as well.
-Next we will examine the steps the pipeline executed, where they are defined and implemented, and how they transformed 
-the data.
-
-.. _Pipeline schema and steps:
-
-Pipeline schema and steps
--------------------------
-.. note::
-   This section will likely be very different for the record linkage pipeline schema which will have 
-   different steps. It will need to be updated when we are no longer using the dummy development schema, but 
-   for now these are my notes for understanding what happens when we run a schema.
-
-The pipeline specification we passed to ``easylink run``, ``specifications/common/pipeline.yaml``, 
-configures the pipeline for this run, by specifying configuration details for each step 
-defined by the pipeline schema. The schema steps, and the edges between them, are defined in 
-``pipeline_schema_constants/development.py``. The schema steps, or nodes, define input and output slots for 
-data used or produced by the schema steps, as well as any logical or behavioral structure of the step,
-such as defining a step as a ``LoopStep``, ``ParallelStep``, ``ChoiceStep``, or ``HierarchicalStep``. The edges 
-define how data moves between steps' input and output slots.
-
-``pipeline_schema_constants/development.py`` defines that the pipeline schema requires four steps, that the 
-third step is ``EmbarrassinglyParallel``, that the fourth step is a ``ChoiceStep``, and that all steps have 
-one input except the fourth step, which has two.
-The edges in the ``EDGES`` variable in that file connect the steps, so an output from one becomes an input
-to another.
+    To meet the input specifications for :ref:`datasets` defined by the pipeline schema,
+    the ``SSA`` and ``W2`` datasets, after being generated by pseudopeople, were modified
+    to add the required ``Record ID`` column. 
 
 .. todo::
-   Include a diagram for the record linkage schema when available.
+    I also modified the ``SSA`` dataset ``middle_name`` column to be a ``middle_initial``
+    column before passing the dataset to easlink. I should probably do this instead by 
+    creating a pre-processing implementation.
 
-An implementation is chosen for each step, which defines a 
-`Singularity container <https://docs.sylabs.io/guides/latest/user-guide/>`_, script,
-outputs and other details for a step. The possible implementations for each of the steps in 
-``pipeline_schema_constants/development.py`` are defined in ``implementation_metadata.yaml``. For each 
-development schema step, one of these implementations is chosen and specified in the pipeline specification 
-``specifications/common/pipeline.yaml``.
+Pipeline specification
+^^^^^^^^^^^^^^^^^^^^^^
+The ``--pipeline-specification`` (``-p``) argument to ``easylink run`` accepts a YAML file specifying 
+the implementations and other configuration options for the pipeline being run. The contents of 
+:download:`pipeline_demo_naive.yaml <pipeline_demo_naive.yaml>` are shown below -- download it to the 
+directory from which you will run ``easylink run``. The pipeline specification follows the structure 
+defined in the :ref:`pipeline_schema` docs.
 
-You can see in the ``implementation_metadata.yaml`` that the ``_python_pandas`` implementations we've selected
-for the four steps all use the same Singularity container, or ``image_path``.
-However, the step implementations can't be the exact same, because Step 4 has two inputs.
-The default behavior of the container is to accept a *single* input using the environment variable
-``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the environment variable specified in the single
-input slot defined in ``pipeline_schema_constants/development.py`` for Steps 1, 2, and 3.
-If this default behavior weren't changed for Step 4, ``step_4_python_pandas`` would ignore the second
-input it receives!
-To correct this, ``step_4_python_pandas`` in ``implementation_metadata.yaml``
-passes the value ``"DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS,DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS"`` 
-to the ``env`` parameter ``INPUT_ENV_VARS``.
-This changes the behavior of the container to read from both environment variables specified
-on Step 4's input slots, rather than only ``DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS``, which is the default value for ``INPUT_ENV_VARS``.
+.. code-block:: yaml
 
-.. note::
-   EasyLink wouldn't throw an error if the container's default behavior were used for ``step_4_python_pandas``;
-   EasyLink makes inputs *available* to each implementation according
-   to the definition of the implemented step in the pipeline schema, but it has no way of knowing whether
-   a given implementation is actually *using* those inputs.
+  steps:
+    entity_resolution:
+      substeps:
+        determining_exclusions_and_removing_records:
+          parallel:
+            - determining_exclusions:
+                implementation:
+                  name: default_determining_exclusions
+                  configuration:
+                    INPUT_DATASET: input_file_ssa_2020
+              removing_records:
+                implementation:
+                  name: default_removing_records
+                  configuration:
+                    INPUT_DATASET: input_file_ssa_2020
+            - determining_exclusions:
+                implementation:
+                  name: default_determining_exclusions
+                  configuration:
+                    INPUT_DATASET: input_file_w2_2020
+              removing_records:
+                implementation:
+                  name: default_removing_records
+                  configuration:
+                    INPUT_DATASET: input_file_w2_2020
+        clustering:
+          substeps:
+            clusters_to_links:
+              implementation:
+                name: default_clusters_to_links
+            linking:
+              substeps:
+                pre-processing:
+                  parallel:
+                  - implementation:
+                      name: dummy_pre-processing
+                      configuration: 
+                        INPUT_DATASET: input_file_ssa_2020
+                  - implementation:
+                      name: dummy_pre-processing
+                      configuration: 
+                        INPUT_DATASET: input_file_w2_2020
+                schema_alignment:
+                  implementation:
+                    name: default_schema_alignment
+                blocking_and_filtering:
+                  implementation:
+                    name: splink_blocking_and_filtering
+                    configuration:
+                      BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                      LINK_ONLY: true
+                evaluating_pairs:
+                  implementation:
+                    name: splink_evaluating_pairs
+                    configuration:
+                      BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                      COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
+                      PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
+                      THRESHOLD_MATCH_PROBABILITY: 0
+                      LINK_ONLY: true
+            links_to_clusters:
+              implementation:
+                name: splink_links_to_clusters
+                configuration:
+                  THRESHOLD_MATCH_PROBABILITY: 0.997
+        updating_clusters:
+          implementation:
+            name: default_updating_clusters
+    canonicalizing_and_downstream_analysis:
+      implementation:
+        name: dummy_canonicalizing_and_downstream_analysis
 
-.. note::
-   This use of ``env`` in the ``implementation_metadata.yaml`` is a result of using a single container
-   for multiple implementations.
-   In the record linkage pipeline schema, we anticipate there being a separate container for each implementation,
-   so ``INPUT_ENV_VARS`` will probably not have an analogue.
+Structure
+"""""""""
 
-Running the pipeline generates a DAG.svg file in the results directory which shows the implementations 
-and data dependencies in the pipeline.
+Let's break down the configuration keys and values defined in the file. 
+First, note that all of the keys defined as direct children of a ``steps`` 
+or ``substeps`` key represent record linkage steps from the 
+:ref:`pipeline_schema`. They are nested in the same structure defined in 
+those docs. For example, :ref:`linking_sub_steps` shows the same 
+substeps as are listed under ``linking`` in the YAML -- ``pre-processing``, 
+``schema_alignment``, ``blocking_and_filtering``, and ``evaluating_pairs``.
 
-.. image:: DAG-common-pipeline.svg
-   :width: 400
+Now that we understand the nested step structure of the pipeline specification 
+YAML, let's discuss the keys which are used to configure each step of the pipeline.
 
-As you can see, each implementation has a single input and a validator for it, 
-except that ``step_4`` has two inputs, as defined in 
-``pipeline_schema_constants/development.py`` and discussed above. 
+.. _implementation_configuration:
 
-.. warning::
-   Note that this diagram doesn't show the dependencies on original (user-provided) input data, and 
-   displays validations, and doesn't show Step 3 because it is embarrassingly parallel. See 
-   `this ticket <https://jira.ihme.washington.edu/browse/MIC-5767>`_ where we plan to fix these issues.
+Implementation configuration
+""""""""""""""""""""""""""""
+The keys ``implementation``, ``name`` and ``configuration``, as well as implementation-specific 
+configuration variables, are used to configure the implementations for each step.
+Let's look at ``links_to_clusters`` as an example.
 
-Now we can understand why the final output has 60k rows. For the current dummy implementation, when there are multiple input data files, the rows 
-in the files are concatenated. So ``step_1`` concatenates three 10k row datasets, and ``step_4`` concatenates these 
-30k rows with another 30k rows.
+The ``implementation`` section indicates that the subkeys that follow configure the 
+implementation to be used when running the ``links_to_clusters`` step for this 
+pipeline. 
 
-``step_3`` is aggregated and split because it is defined as 
-``EmbarrassinglyParallel``.
+The ``name`` key selects which of the available implementations for this step will 
+be used in this pipeline.
 
-We've already viewed the final output, but if we want to see how the data is transformed over the course 
-of the pipeline, we can view intermediary outputs as well::
+.. todo:: 
+    Link to docs for "available implementations" for each step when that is available.
 
-   $ pqprint results/2025_04_22_10_41_27/intermediate/step_1_python_pandas/result.parquet
-            foo bar  counter  added_column_0  added_column_1
-   0         0   a        1               0               1
-   1         1   b        1               0               1
-   2         2   c        1               0               1
-   3         3   d        1               0               1
-   4         4   e        1               0               1
-   ...     ...  ..      ...             ...             ...
-   29995  9995   a        1               0               1
-   29996  9996   b        1               0               1
-   29997  9997   c        1               0               1
-   29998  9998   d        1               0               1
-   29999  9999   e        1               0               1
+The ``configuration`` section lists implementation-specific configuration variables
+which control how the implementation will run. For example ``THRESHOLD_MATCH_PROBABILITY`` 
+here allows the user to define at what probability a pair of records being considered 
+as a pontential link will be considered part of the same cluster by the 
+``splink_links_to_clusters`` implementation.
 
-   [30000 rows x 5 columns]
+Cloneable Sections
+""""""""""""""""""
+Certain sections of the pipeline, such as the ``determining_exclusions`` and 
+``removing_records`` the schema defines steps of the :ref:`entity_resolution_sub_steps`
+as :ref:`cloneable_sections`, which create multiple copies of that section and allow 
+different implementations or inputs to be defined for each copy.
 
-Environments
-============
+In this case, ``determining_exclusions_and_removing_records`` is defined as 
+clonable using the ``parallel`` key, and two copies are made of its substeps, 
+``determining_exclusions`` and ``removing_records``. The ``-`` denotes the beginning
+of each of the two copies, each of which must contain both of the substeps. 
+
+We can see that the only difference between the two copies is what filename is passed 
+to the ``INPUT_DATASET`` environment variables for each step. In 
+the first copy, the ``ssa`` dataset files are used as inputs for both steps, 
+while in the second copy, the ``w2`` dataset files are the inputs. In practice, 
+this means that records to exclude will be identified and removed separately for 
+each input file, as required by the schema.
+
+.. todo :: 
+    Reorder pipeline section to be after inputs section
+
+.. todo:: 
+    Update cloneable keyword when we finalize it.
+
+Computing Environment
+"""""""""""""""""""""
 The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
 information about the computing environment which will execute the steps of the 
-pipeline. When we ran our first pipeline, ``tests/specifications/common/pipeline.yaml`` above, we passed 
-``tests/specifications/common/environment_local.yaml`` 
-to this argument. The contents of this YAML file are shown below.
+pipeline. The contents of :download:`environment_local.yaml <../../../../tests/specifications/common/environment_local.yaml>`
+are shown below -- download it to the 
+directory from which you will run ``easylink run``. 
 
 .. code-block:: yaml
 
@@ -254,484 +251,244 @@ For example, if you ran the ``easylink run`` command on your laptop, the impleme
 if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
 and so on.
 
-Let's run this same pipeline with the ``slurm`` computing environment. `Slurm <https://slurm.schedmd.com/overview.html>`_ is an open-source job scheduler and 
-cluster management system which EasyLink can interface with to schedule and run the steps of a pipeline using the resources of a computing cluster. This means that instead of 
-running all pipeline steps in your local computing environment, each step can be run with the additional resources of a separate compute node.
+Configuring Splink
+------------------
+Having explained how the inputs, computing environment, and pipeline (in general) 
+are specified, now we will discuss how the pipeline specification configures 
+our actual Splink record linkage model.
 
-To run the pipeline using slurm, we will pass :download:`environment_slurm.yaml <environment_slurm.yaml>` 
-to the ``--computing-environment`` command line parameter. Download the file to the directory you will run ``easylink`` 
-in -- I downloaded it to the root ``easylink`` directory. The YAML looks like this:
+There are three ``splink`` implementations in the pipeline specification YAML 
+for us to configure: ``splink_blocking_and_filtering``, ``splink_evaluating_pairs``,
+and ``splink_links_to_clusters``. Each of these implementations has its own variables 
+to configure. For all other pipeline steps, we've selected a default implementation, which 
+either does nothing or simply passes inputs to outputs as appropriate.
 
-.. code-block:: yaml
+For ``splink_blocking_and_filtering``, we set::
 
-   computing_environment: slurm
-   container_engine: singularity
-   slurm:
-      account: proj_simscience
-      partition: all.q
-   implementation_resources:
-      memory: 1  # GB
-      cpus: 1
-      time_limit: 1  # hours
+    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+    LINK_ONLY: true
 
-The ``account`` and ``partition`` parameters are specific to your Slurm cluster configuration - you may need 
-to ask your system administrator for these. The parameters shown above would work for someone on the Simulation 
-Science team at IHME. For more information see the `Slurm docs <https://slurm.schedmd.com/overview.html>`_.
+These variables are used by the Splink implementation to define which pairs of records 
+will be considered as possible matches (records with matching first or last names), 
+and to instruct Splink to link records without first de-depulicating, respectively. 
 
-The ``implementation_resources`` parameter specifies the compute resources which will be reserved by the Slurm 
-system for the implementation container for each step, including a ``time_limit`` for the job's execution.
+For ``splink_evaluating_pairs``, we set::
 
-.. note::
-   When using the ``slurm`` environment, you may have to wait for the computing resources your jobs need to become 
-   available on the cluster. The wait time will depend on how busy your cluster is with jobs submitted by other users. 
+    BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+    COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
+    PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01
+    THRESHOLD_MATCH_PROBABILITY: 0
+    LINK_ONLY: true  
 
-So now that we understand the ``slurm`` configuration, let's run the same ``common/pipeline.yaml`` pipeline from the last 
-section, but using the ``slurm`` environment rather than ``local``.
+The first variable is similar to what was set for the previous implementation. The second 
+defines the columns which will be compared by the Splink model, and how Splink will evaluate
+whether the column values match (exact comparisons). The third is a parameter used in training
+the model. The fourth determines at what match probability a pair of records will be outputted
+from the step (``0`` outputs all pairs). The fifth is used in the same way as in the previous
+implementation.
+
+For ``splink_links_to_clusters``, as discussed in the :ref:`implementation_configuration` section,
+we set::
+
+    THRESHOLD_MATCH_PROBABILITY: 0.997    
+
+Running the pipeline
+====================
+Now that we understand all the inputs to ``easylink run``, lets actually run the pipeline::
+
+    $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+    2025-06-17 10:40:24.859 | 0:00:02.515481 | run:196 - Running pipeline
+    2025-06-17 10:40:24.860 | 0:00:02.516496 | run:198 - Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_17_10_40_24
+    2025-06-17 10:40:51.886 | 0:00:29.542638 | main:124 - Running Snakemake
+    [Tue Jun 17 10:40:52 2025]
+    Job 19: Validating determining_exclusions_and_removing_records_parallel_split_2_determining_exclusions_default_determining_exclusions input slot known_clusters
+    Reason: Missing output files: input_validations/determining_exclusions_and_removing_records_parallel_split_2_determining_exclusions_default_determining_exclusions/known_clusters_validator
+    ...
+    [Tue Jun 17 10:40:56 2025]
+    Job 11: Running determining_exclusions implementation: default_determining_exclusions
+    Reason: Missing output files: intermediate/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/result.parquet; Input files updated by another job: input_validations/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/input_datasets_validator, input_validations/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/known_clusters_validator
+    ...
+    [Tue Jun 17 10:41:30 2025]
+    Job 4: Running evaluating_pairs implementation: splink_evaluating_pairs
+    Reason: Missing output files: intermediate/splink_evaluating_pairs/result.parquet; Input files updated by another job: input_validations/splink_evaluating_pairs/blocks_validator, intermediate/default_clusters_to_links/result.parquet, intermediate/splink_blocking_and_filtering/blocks, input_validations/splink_evaluating_pairs/known_links_validator
+    ...
+    [Tue Jun 17 10:42:09 2025]
+    Job 0: Grabbing final output
+    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet, input_validations/final_validator
+
+
+.. note:: 
+   The pipeline output in its current state can be a little confusing. Note that the number assigned 
+   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
+   assigned by snakemake. Also note that several input validation jobs will run before any actual 
+   step implementations.
+
+   Finally, despite the final output line containing the phrase "Missing output files", 
+   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
+   why the job was run (the step inputs were ready but the output file did not yet exist), not 
+   conveying an error message.
+
+Inputs and outputs
+------------------
+Input and output data is stored in parquet files. The locations of the input data files passed to EasyLink 
+in our last command are found in ``input_data_demo.yaml``.
+We can view the contents of these Parquet files using Python:
+
+.. code-block:: console
+
+   $ # Create/activate a conda environment if you don't want to install globally!
+   $ pip install pandas pyarrow
+   $ python
+   >>> import pandas as pd
+   >>> pd.read_parquet("/mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_ssa_2020.parquet")
+        simulant_id          ssn first_name    middle_name       last_name date_of_birth     sex event_type event_date  Record ID middle_initial
+    0         0_19979  786-77-6454     Evelyn  Granddaughter         Sorrell      19191204  Female   creation   19191204          0              G
+    1          0_6846  688-88-6377     George         Robert           Kelly      19210616    Male   creation   19210616          1              R
+    2         0_19983  651-33-9561   Beatrice         Jennie      Livingston      19220113  Female   creation   19220113          2              J
+    3           0_262  665-25-7858       Eura         Nadine       Hutchison      19220305  Female   creation   19220305          3              N
+    4         0_12473  875-10-2359    Roberta           Ruth        Mcintyre      19220306  Female   creation   19220306          4              R
+    ...           ...          ...        ...            ...             ...           ...     ...        ...        ...        ...            ...
+    16492     0_20687  183-90-0619    Matthew        Michael        Stephens      19800224  Female   creation   20201229      16492              M
+    16493     0_20686  803-81-8527     Jermey          Tyler          Morris      19860415    Male   creation   20201229      16493              T
+    16494     0_20692  170-62-5253  Brittanie         Lauren             Kim      19950118  Female   creation   20201229      16494              L
+    16495     0_20662  281-88-9330     Marcus         Jasper            None      20201230    Male   creation   20201230      16495              J
+    16496     0_20673  547-99-7034     Analia        Brielle  Ascencio Maria      20201231  Female   creation   20201231      16496              B
+    [15984 rows x 11 columns]
+    >>> pd.read_parquet("/mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_w2_2020.parquet")
+        simulant_id household_id employer_id          ssn  wages  ... mailing_address_state mailing_address_zipcode tax_form tax_year Record ID
+    0            0_4          0_8          95  584-16-0130  10192  ...                    WA                   00000       W2     2020         0
+    1            0_5          0_8          29  854-13-6295  28355  ...                    WA                   00000       W2     2020         1
+    2            0_5          0_8          30  854-13-6295  18243  ...                    WA                   00000       W2     2020         2
+    3         0_5621       0_2289          46  674-27-1745   7704  ...                    WA                   00000       W2     2020         3
+    4         0_5623       0_2289          83  794-23-1522   3490  ...                    WA                   00000       W2     2020         4
+    ...          ...          ...         ...          ...    ...  ...                   ...                     ...      ...      ...       ...
+    9898     0_18936       0_7621          23  006-92-7857   9585  ...                    WA                   00000       W2     2020      9898
+    9899     0_18936       0_7621          90  006-92-7857  57906  ...                    WA                   00000       W2     2020      9899
+    9900     0_18937       0_7621           1  182-82-5017  19609  ...                    WA                   00000     1099     2020      9900
+    9901     0_18937       0_7621         105  182-82-5017   8061  ...                    WA                   00000     1099     2020      9901
+    9902     0_18939       0_7621           9  283-97-5940   4961  ...                    WA                   00000       W2     2020      9902
+    [9903 rows x 25 columns]
+
+Recall that the ``known_clusters.parquet`` input file is empty.
+
+It can also be useful to setup an alias to more easily preview parquet files. Add the following to your 
+``.bash_aliases`` or ``.bashrc`` file, and restart your terminal.
 
 .. code-block:: console
 
-   $ easylink run -p tests/specifications/common/pipeline.yaml -i tests/specifications/common/input_data.yaml -e environment_slurm.yaml
-   2025-05-01 08:24:01.901 | 0:00:02.805179 | run:158 - Running pipeline
-   2025-05-01 08:24:01.901 | 0:00:02.805621 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_01_08_24_01
-   2025-05-01 08:24:05.205 | 0:00:06.109547 | main:115 - Running Snakemake
-   [Thu May  1 08:24:06 2025]
-   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
-   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
-   ...
-   [Thu May  1 08:26:16 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
+   pqprint() { python -c "import pandas as pd; print(pd.read_parquet('$1'))" ; }
 
-The output should look identical to the ``local`` output, except that you may notice the timestamps of the jobs are more spread out 
-using the ``slurm`` environment. This is because, as noted above, ``slurm`` jobs for each step may need to wait for cluster computing 
-resources to become available before they can be scheduled, whereas the computing environment for ``local`` jobs is already active when 
-the pipeline is launched (via ``easylink run``), since it *is* the environment the pipeline was launched in.
-
-Since the current step implementations are trivial, this wait time makes the total pipeline execution time longer under the ``slurm`` 
-environment. However, for a real large-scale record linkage pipeline, the additional computing resources available on a cluster can make it 
-faster than ``local``, or make it *possible* to run the pipeline when it wouldn't be otherwise 
-(in the case where the local environment doesn't have sufficient resources to run the pipeline).
-
-Input data
-==========
-The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying a list 
-of paths to files or directories containing input data to be used by the pipeline. 
-When we ran our first pipeline, ``common/pipeline.yaml``, above, we passed 
-``tests/specifications/common/input_data.yaml`` 
-as this YAML file, shown below::
-
-   input_file_1: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet
-   input_file_2: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_2.parquet
-   input_file_3: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_3.parquet
-
-Let's try passing a different input data specification YAML file, 
-:download:`input_data.yaml <input_data.yaml>`, which looks like this::
-
-   input_file_1: input_file_1.parquet
-   input_file_2: input_file_2.parquet
-   input_file_3: input_file_3.parquet
-
-Download the file to the directory you will run EasyLink in, and then download the three input 
-Parquet files, :download:`input_file_1.parquet <input_file_1.parquet>`, :download:`input_file_2.parquet <input_file_2.parquet>` 
-and :download:`input_file_3.parquet <input_file_3.parquet>` to the same directory. In this case 
-I downloaded them to the root ``easylink`` directory.
-
-These input files look a little different than the three input files we used in the pipelines we ran above, 
-where all three input files listed in the YAML specification were identical. Let's compare one of those, 
-``/mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet``, to 
-the three files we will use here::
-
-   $ pqprint /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/dummy/input_file_1.parquet
-         foo bar  counter
-   0        0   a        0
-   1        1   b        0
-   2        2   c        0
-   3        3   d        0
-   4        4   e        0
-   ...    ...  ..      ...
-   9995  9995   a        0
-   9996  9996   b        0
-   9997  9997   c        0
-   9998  9998   d        0
-   9999  9999   e        0
-   [10000 rows x 3 columns]
-   $ pqprint input_file_1.parquet 
-      foo bar  counter
-   0     0   l       10
-   1     1   m       10
-   2     2   n       10
-   3     3   o       10
-   4     4   p       10
-   ..  ...  ..      ...
-   95   95   l       10
-   96   96   m       10
-   97   97   n       10
-   98   98   o       10
-   99   99   p       10
-
-   [100 rows x 3 columns]
-   $ pqprint input_file_2.parquet 
-      foo bar  counter
-   0     0   q       20
-   1     1   r       20
-   2     2   s       20
-   3     3   t       20
-   4     4   u       20
-   ..  ...  ..      ...
-   95   95   q       20
-   96   96   r       20
-   97   97   s       20
-   98   98   t       20
-   99   99   u       20
-   [100 rows x 3 columns]
-   $ pqprint input_file_3.parquet 
-      foo bar  counter
-   0     0   v       30
-   1     1   w       30
-   2     2   x       30
-   3     3   y       30
-   4     4   z       30
-   ..  ...  ..      ...
-   95   95   v       30
-   96   96   w       30
-   97   97   x       30
-   98   98   y       30
-   99   99   z       30
-   [100 rows x 3 columns]
-
-Our three new input files look different from each other and from the previous input files.
-They have 100 rows each instead of 10000, the ``bar`` column has a different set of values 
-for each file, and the ``counter`` in each file starts at a different value.
-
-Let's run the same pipeline as before, but with this new input data YAML.
+Let's use the alias to print the results parquet, the location of which was printed when we ran the pipeline.
 
 .. code-block:: console
-   
-   $ easylink run -p tests/specifications/common/pipeline.yaml -i input_data.yaml -e tests/specifications/common/environment_local.yaml
-   2025-05-01 08:05:01.123 | 0:00:02.781384 | run:158 - Running pipeline
-   2025-05-01 08:05:01.123 | 0:00:02.781776 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_01_08_05_01
-   2025-05-01 08:05:04.498 | 0:00:06.156166 | main:115 - Running Snakemake
-   [Thu May  1 08:05:05 2025]
-   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
-   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
-   ...
-   [Thu May  1 08:05:32 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_python_pandas/result.parquet, input_validations/final_validator
-   $ pqprint results/2025_05_01_08_05_01/result.parquet 
-      foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
-   0      0   l       14             0.0             1.0             2.0             3.0               4
-   1      1   m       14             0.0             1.0             2.0             3.0               4
-   2      2   n       14             0.0             1.0             2.0             3.0               4
-   3      3   o       14             0.0             1.0             2.0             3.0               4
-   4      4   p       14             0.0             1.0             2.0             3.0               4
-   ..   ...  ..      ...             ...             ...             ...             ...             ...
-   595   95   v       31             0.0             0.0             0.0             0.0               4
-   596   96   w       31             0.0             0.0             0.0             0.0               4
-   597   97   x       31             0.0             0.0             0.0             0.0               4
-   598   98   y       31             0.0             0.0             0.0             0.0               4
-   599   99   z       31             0.0             0.0             0.0             0.0               4
 
-As expected, the ``results.parquet`` has 600 rows (as opposed to 60k with the old input YAML) 
-and the range of ``bar`` and ``counter``  values are consistent 
-with our new input files. As before, the transformation of the data is specific to the development schema and will 
-change.
+   $ pqprint results/2025_06_17_10_40_24/result.parquet 
+          Input Record Dataset  Input Record ID                    Cluster ID
+    0      input_file_ssa_2020             7345   input_file_ssa_2020-__-7345
+    1      input_file_ssa_2020             7346   input_file_ssa_2020-__-7346
+    2      input_file_ssa_2020             7347   input_file_ssa_2020-__-7347
+    3      input_file_ssa_2020             7348   input_file_ssa_2020-__-7348
+    4      input_file_ssa_2020             7349   input_file_ssa_2020-__-7349
+    ...                    ...              ...                           ...
+    25178   input_file_w2_2020             7546   input_file_ssa_2020-__-2590
+    25179   input_file_w2_2020             7547   input_file_ssa_2020-__-2590
+    25180   input_file_w2_2020             8593  input_file_ssa_2020-__-10469
+    25181   input_file_w2_2020             9215   input_file_ssa_2020-__-2971
+    25182   input_file_w2_2020             9216   input_file_ssa_2020-__-2971
+    [25183 rows x 3 columns]
 
-Implementations
+As we can see, the pipeline has successfully outputted a ``Cluster ID`` for every 
+input record it was able to link to another record for our probability threshold 
+of ``.997``. ``Cluster ID`` names are chosen by Splink based on the first record 
+assigned to them.
+
+Running the pipeline also generates a :download:`DAG.svg <DAG-naive-pipeline.svg>` file in 
+the results directory which shows the implementations, data dependencies and 
+input validations preesnt in the pipeline.
+
+To see how the model linked records before assigning them to clusters, we can 
+look at the intermediate output produced by the ``splink_evaluating_pairs`` 
+implementation::
+
+    $ pqprint results/2025_06_17_10_40_24/intermediate/splink_evaluating_pairs/result.parquet
+            Left Record Dataset  Left Record ID Right Record Dataset  Right Record ID  Probability
+    0       input_file_ssa_2020           16314   input_file_w2_2020             7604      0.00057
+    1       input_file_ssa_2020           16318   input_file_w2_2020             7604      0.00057
+    2       input_file_ssa_2020           16326   input_file_w2_2020             6049      0.00057
+    3       input_file_ssa_2020           16351   input_file_w2_2020             3549      0.00057
+    4       input_file_ssa_2020           16353   input_file_w2_2020             7434      0.00057
+    ...                     ...             ...                  ...              ...          ...
+    515790  input_file_ssa_2020           16309   input_file_w2_2020             7604      0.00057
+    515791  input_file_ssa_2020           16310   input_file_w2_2020             7604      0.00057
+    515792  input_file_ssa_2020           16311   input_file_w2_2020             7604      0.00057
+    515793  input_file_ssa_2020           16312   input_file_w2_2020             7604      0.00057
+    515794  input_file_ssa_2020           16313   input_file_w2_2020             7604      0.00057
+
+    [515795 rows x 5 columns] 
+
+The record pairs displayed in the preview are all far below the match threshold, but the results could 
+be investigated further using ``pandas.read_parquet()`` in a Python session.
+
+The Splink implementations in our pipeline also produce some diagnostic charts which can be useful 
+for evaluating results, such as the :download:`match weights chart<naive_match_weights.html>` and 
+:download:`comparison viewer tool<naive_comparison_viewer.html>`.
+
+Finally, since we generated the input datasets ourselves, and therfore know the ground truth of 
+which records are truly links, lets see how our naive model performed. For a threshold match
+probability of ``.997`` (chosen using match rate evaluation metrics), out of ``9262`` true links, 
+we can calculate that our model results contained ``260`` false positives and ``43`` false negatives, 
+with the rest of the links being accurate.
+
+
+Configuring an improved pipeline
+================================
+Next, lets modify our naive pipeline configuration YAML to try to improve those results. Primarily, we 
+will change the ``COMPARISONS`` we pass to ``splink_evaluating_pairs`` to use more flexible comparison 
+methods than exact matches, allowing us to link records which have typos or other noise in them. We'll 
+use a new pipeline configuration YAML, :download:`pipeline_demo_improved.yaml` with these changes.
+
+In ``splink_evaluating_pairs``, our implementation configuration will now look like this::
+
+    BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+    COMPARISONS: "'ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name'"
+    PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0000625  # == 1 / len(ssa)
+    THRESHOLD_MATCH_PROBABILITY: 0
+    LINK_ONLY: true
+
+``COMPARISONS`` now uses 
+`Levenshtein <https://moj-analytical-services.github.io/splink/api_docs/comparison_library.html#splink.comparison_library.LevenshteinAtThresholds>`_
+comparisons for ``ssn``, and 
+`Name <https://moj-analytical-services.github.io/splink/api_docs/comparison_library.html#splink.comparison_library.NameComparison>`_
+comparisons for ``first_name`` and ``last_name``, to link similar but not identical SSNs and names.
+
+We also use a more accurate value for 
+`PROBABILITY_TWO_RANDOM_RECORDS_MATCH <https://moj-analytical-services.github.io/splink/api_docs/training.html#splink.internals.linker_components.training.LinkerTraining.estimate_parameters_using_expectation_maximisation>`_.
+
+By re-running the pipeline with these changes, we can see how our results compare::
+
+    $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+    
+For a threshold match
+probability of ``.25`` (chosen using match rate evaluation metrics), out of ``9262`` true links, 
+we can calculate that our model results contained ``236`` false positives and ``9`` false negatives, 
+with the rest of the links being accurate.
+
+The false negatives are significantly lower, thanks to our model linking more records with columns that 
+are similar but don't exactly match. The false positives are only slightly lower, since ``216`` records, or
+around 2%, are affected by 
+`"borrow a social security number" <https://pseudopeople.readthedocs.io/en/latest/noise/column_noise.html#borrow-a-social-security-number>`_
+pseudopeople noise. The ``SSA`` and ``W2`` dataset have extremely limited columns in common aside 
+from SSNs (first, middle initial and last), which makes it difficult to link these borrowed SSN records.
+
+Changing inputs
 ===============
-EasyLink is a powerful tool that allows users to use any valid implementation for each step in the pipeline. 
-Users can define their own implementations or use Easylink-provided ones. In the pipelines we've run so far, 
-we've only used the ``python_pandas`` implementations of the development schema steps, as we can see if we 
-look at ``tests/specifications/common/pipeline.yaml``::
+Finally, lets run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
+as the input YAML, which uses the ``SSA`` and ``W2`` datasets from ``2030`` rather than 
+``2020``::
 
-   steps:
-      step_1:
-         implementation:
-            name: step_1_python_pandas
-      step_2:
-         implementation:
-            name: step_2_python_pandas
-      step_3:
-         implementation:
-            name: step_3_python_pandas
-      choice_section:
-         type: simple
-         step_4:
-            implementation:
-               name: step_4_python_pandas
-
-Let's try an example where we choose some alternative implementations instead. For now, while we are using 
-the development pipeline schema, the implementations we can choose from are listed in 
-``implementation_metadata.yaml``. In addition to the ``step_N_python_pandas`` implementations, each step 
-also has a ``step_N_r`` implementation and a ``step_N_python_pyspark`` implementation to choose from.
-
-For the purposes of the development pipeline, all these implementations will have the same effect on the 
-data, but the ``r`` implementation is written in R instead of Python, and the ``python_pyspark`` implementation is written 
-using the `Python API for Apache Spark <https://spark.apache.org/docs/latest/api/python/index.html>`_ and 
-utilizes `Spark <https://spark.apache.org/>`_ for distributed data processing. Running a Spark 
-implementation involves some additional setup and initialization of the Spark engine during the step, but 
-enables distributed processing of a large-scale dataset on high-performance computing nodes or clusters. 
-
-Let's run a new pipeline defined in :download:`r_spark_pipeline.yaml <r_spark_pipeline.yaml>` which uses 
-all three of our currently available types of implementations::
-
-   steps:
-      step_1:
-         implementation:
-            name: step_1_r
-      step_2:
-         implementation:
-            name: step_2_python_pyspark
-      step_3:
-         implementation:
-            name: step_3_python_pandas
-      choice_section:
-         type: simple
-         step_4:
-            implementation:
-               name: step_4_python_pandas
-
-
-Download the file to the directory you will run EasyLink in, and then run the pipeline::
-
-   $ easylink run -p r_spark_pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml
-   2025-05-06 12:04:36.283 | 0:00:01.876659 | run:158 - Running pipeline
-   2025-05-06 12:04:36.283 | 0:00:01.876886 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_06_12_04_36
-   2025-05-06 12:04:39.437 | 0:00:05.031270 | main:115 - Running Snakemake
-   [Tue May  6 12:04:40 2025]
-   localrule wait_for_spark_master:
-      output: spark_logs/spark_master_uri.txt
-      jobid: 9
-      reason: Missing output files: spark_logs/spark_master_uri.txt
-      resources: tmpdir=/tmp
-   [Tue May  6 12:04:40 2025]
-   Job 12: Validating step_4_python_pandas input slot step_4_secondary_input
-   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
-   [Tue May  6 12:04:40 2025]
-   localrule start_spark_master:
-      output: spark_logs/spark_master_log.txt
-      jobid: 16
-      reason: Missing output files: spark_logs/spark_master_log.txt
-      resources: tmpdir=/tmp
-   ...
-   [Tue May  6 12:04:42 2025]
-   Job 5: Running step_1 implementation: step_1_r
-   Reason: Missing output files: intermediate/step_1_r/result.parquet; Input files updated by another job: input_validations/step_1_r/step_1_main_input_validator
-   ...
-   [Tue May  6 12:05:10 2025]
-   Job 4: Running step_2 implementation: step_2_python_pyspark
-   Reason: Missing output files: intermediate/step_2_python_pyspark/result.parquet; Input files updated by another job: spark_logs/spark_worker_started_2-of-2.txt, input_validations/step_2_python_pyspark/step_2_main_input_validator, intermediate/step_1_r/result.parquet, spark_logs/spark_worker_started_1-of-2.txt, spark_logs/spark_master_uri.txt
-   ...
-   [Tue May  6 12:05:58 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: spark_logs/spark_worker_log_2-of-2.txt, spark_logs/spark_master_terminated.txt, intermediate/step_4_python_pandas/result.parquet, spark_logs/spark_worker_log_1-of-2.txt, input_validations/final_validator, spark_logs/spark_master_log.txt
-
-We can see in the output that both the ``pyspark`` and ``r`` implementations were run. The output also shows 
-some of the PySpark setup -- the full output shows more of the process, such as the initialization of the Spark 
-master and workers (see the `Spark documentation <https://spark.apache.org/docs/latest/>`_ for more information) 
-and the splitting and aggregating of input data chunks for Spark processing. 
-
-We can also vizualize the new implementations in the pipeline DAG:
-
-.. image:: DAG-r-pyspark.svg
-   :width: 400
-
-If we check we'll see that the results are the same as they were when we ran
-``tests/specifications/common/pipeline.yaml`` previously::
-
-   $ pqprint results/2025_05_06_12_04_36/result.parquet 
-           foo bar  counter  added_column_0  added_column_1  added_column_2  added_column_3  added_column_4
-   0         0   a        4             0.0             1.0             2.0             3.0               4
-   1         1   b        4             0.0             1.0             2.0             3.0               4
-   2         2   c        4             0.0             1.0             2.0             3.0               4
-   3         3   d        4             0.0             1.0             2.0             3.0               4
-   4         4   e        4             0.0             1.0             2.0             3.0               4
-   ...     ...  ..      ...             ...             ...             ...             ...             ...
-   59995  9995   a        1             0.0             0.0             0.0             0.0               4
-   59996  9996   b        1             0.0             0.0             0.0             0.0               4
-   59997  9997   c        1             0.0             0.0             0.0             0.0               4
-   59998  9998   d        1             0.0             0.0             0.0             0.0               4
-   59999  9999   e        1             0.0             0.0             0.0             0.0               4
-   [60000 rows x 8 columns]
-
-
-Implementation Configuration
-----------------------------
-Additionally, implementations can be configured in the pipeline YAML. An implementation may have some settings
-that allow it to be configured in different ways for different pipelines. These settings are defined by the 
-implementation itself, rather than the pipeline schema, so it is up to the user of the implementation to 
-understand and configure them. 
-
-These settings are configured by placing environment variables in the ``configuration`` section of the 
-``implementation`` definition in the YAML. We'll use a new pipeline YAML, 
-:download:`impl-config-pipeline.yaml <impl-config-pipeline.yaml>`, as an example::
-
-   steps:
-      step_1:
-         implementation:
-            name: step_1_python_pandas
-            configuration:
-               DUMMY_CONTAINER_INCREMENT: 11
-      step_2:
-         implementation:
-            name: step_2_python_pandas
-            configuration:
-               DUMMY_CONTAINER_INCREMENT: 50
-      step_3:
-         implementation:
-            name: step_3_python_pandas
-      choice_section:
-         type: simple
-         step_4:
-            implementation:
-               name: step_4_python_pandas
-
-The ``python_pandas`` implementations define an environment variable ``DUMMY_CONTAINER_INCREMENT`` which 
-specifies the number of columns the step should add to the dataset (the default is 1). As in other 
-parts of this tutorial, this particular implementation, and therefore the associated environment variable,
-is specific to the development schema, but the 
-concept of configuring implementations using environment variables is not. Real record linkage implementations 
-will have environment variables which will be configurable in the same way.
-
-Let's run our pipeline and see how the results compare to the ``tests/specifications/common/pipeline.yaml`` 
-results that have been our baseline throughout the tutorial. 
-
-.. code-block:: console
-
-   $ easylink run -p impl-config-pipeline.yaml -i tests/specifications/common/input_data.yaml -e tests/specifications/common/environment_local.yaml 
-   2025-05-06 08:44:38.236 | 0:00:04.044818 | run:158 - Running pipeline
-   2025-05-06 08:44:38.236 | 0:00:04.045102 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/results/2025_05_06_08_44_38
-   2025-05-06 08:44:40.749 | 0:00:06.557575 | main:115 - Running Snakemake
-   [Tue May  6 08:44:41 2025]
-   Job 9: Validating step_4_python_pandas input slot step_4_secondary_input
-   Reason: Missing output files: input_validations/step_4_python_pandas/step_4_secondary_input_validator
-   ...
-   [Tue May  6 08:44:59 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/step_4_python_pandas/result.parquet
-   $ pqprint results/2025_05_06_08_44_38/result.parquet 
-         foo bar  counter  added_column_59  added_column_60  added_column_61  added_column_62  added_column_63
-   0         0   a       63             59.0             60.0             61.0             62.0               63
-   1         1   b       63             59.0             60.0             61.0             62.0               63
-   2         2   c       63             59.0             60.0             61.0             62.0               63
-   3         3   d       63             59.0             60.0             61.0             62.0               63
-   4         4   e       63             59.0             60.0             61.0             62.0               63
-   ...     ...  ..      ...              ...              ...              ...              ...              ...
-   59995  9995   a        1              0.0              0.0              0.0              0.0               63
-   59996  9996   b        1              0.0              0.0              0.0              0.0               63
-   59997  9997   c        1              0.0              0.0              0.0              0.0               63
-   59998  9998   d        1              0.0              0.0              0.0              0.0               63
-   59999  9999   e        1              0.0              0.0              0.0              0.0               63
-   [60000 rows x 8 columns]
-
-As you can see, the output shows that 63 columns were added, as expected.
-
-.. note::
-   11 from ``step_1``, 50 from ``step_2``, 1 from ``step_3`` and 1 from ``step_4``. 
-   Only the last 5 columns added are kept in the dataset at each step.
-
-To double check this behavior, we can look at the output after ``step_1`` and see that there have been 11 columns 
-added, as specified in the YAML::
-
-   $ pqprint results/2025_05_06_08_44_38/intermediate/step_1_python_pandas/result.parquet 
-           foo bar  counter  added_column_7  added_column_8  added_column_9  added_column_10  added_column_11
-   0         0   a       11               7               8               9               10               11
-   1         1   b       11               7               8               9               10               11
-   2         2   c       11               7               8               9               10               11
-   3         3   d       11               7               8               9               10               11
-   4         4   e       11               7               8               9               10               11
-   ...     ...  ..      ...             ...             ...             ...              ...              ...
-   29995  9995   a       11               7               8               9               10               11
-   29996  9996   b       11               7               8               9               10               11
-   29997  9997   c       11               7               8               9               10               11
-   29998  9998   d       11               7               8               9               10               11
-   29999  9999   e       11               7               8               9               10               11
-   [30000 rows x 8 columns]
-
-More Pipeline Specifications
-============================
-The ``tests`` folder includes several other pipeline specification files (YAML files). While some are special 
-configurations only usable by the testing infrastructure, others can be run directly using the command line - the 
-ones with four steps which target the development schema. Let's try running another complete pipeline.
-
-``e2e/pipeline.yaml``
----------------------
-This pipeline is different from ``common/pipeline.yaml`` in that steps 2 and 4 have different implementations 
-(for example, step 2 runs on Spark here), and that steps 2-4 are configured to increment the counter in the input data by a custom value, as can be seen by
-comparing the YAMLs.
-
-.. code-block:: console
-
-   $ easylink run -p specifications/e2e/pipeline.yaml -i specifications/common/input_data.yaml -e specifications/e2e/environment_slurm.yaml
-   2025-04-02 09:37:40.320 | 0:00:01.436867 | run:158 - Running pipeline
-   2025-04-02 09:37:40.321 | 0:00:01.437074 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_02_09_37_40
-   ...
-   [Wed Apr  2 09:42:05 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4_r/result.parquet, input_validations/final_validator, spark_logs/spark_master_log.txt, spark_logs/spark_worker_log_1-of-1.txt, spark_logs/spark_master_terminated.txt
-
-
-.. code-block:: console
-
-   $ pqprint results/2025_04_02_09_37_40/result.parquet
-         foo bar  counter  ...  added_column_1713  added_column_1714  added_column_1715
-   0         0   a     1715  ...               1713               1714               1715
-   1         1   b     1715  ...               1713               1714               1715
-   2         2   c     1715  ...               1713               1714               1715
-   3         3   d     1715  ...               1713               1714               1715
-   4         4   e     1715  ...               1713               1714               1715
-   ...     ...  ..      ...  ...                ...                ...                ...
-   59995  9995   a      912  ...               1713               1714               1715
-   59996  9996   b      912  ...               1713               1714               1715
-   59997  9997   c      912  ...               1713               1714               1715
-   59998  9998   d      912  ...               1713               1714               1715
-   59999  9999   e      912  ...               1713               1714               1715
-
-   [60000 rows x 8 columns]
-
-.. image:: DAG-e2e-pipeline.svg
-   :width: 500
-
-.. todo::
-   Explain spark in above diagram
-
-
-``e2e/pipeline_expanded.yaml``
-------------------------------
-A longer, more complex pipeline.
-
-.. code-block:: console
-
-   $ easylink run -p specifications/e2e/pipeline_expanded.yaml -i specifications/common/input_data.yaml -e specifications/e2e/environment_slurm.yaml
-   2025-04-01 07:04:16.812 | 0:00:01.500753 | run:158 - Running pipeline
-   2025-04-01 07:04:16.812 | 0:00:01.500984 | run:160 - Results directory: /mnt/share/homes/tylerdy/easylink/tests/results/2025_04_01_07_04_16
-   ...
-   [Tue Apr  1 07:27:22 2025]
-   Job 0: Grabbing final output
-   Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/step_4b_python_pandas/result.parquet, input_validations/final_validator
-
-
-.. code-block:: console
-
-   $ pqprint results/2025_04_01_07_04_16/result.parquet
-            foo bar  counter  added_column_2  added_column_3  added_column_4  added_column_5  added_column_6
-   0          0   a        6             2.0             3.0             4.0             5.0               6
-   1          1   b        6             2.0             3.0             4.0             5.0               6
-   2          2   c        6             2.0             3.0             4.0             5.0               6
-   3          3   d        6             2.0             3.0             4.0             5.0               6
-   4          4   e        6             2.0             3.0             4.0             5.0               6
-   ...      ...  ..      ...             ...             ...             ...             ...             ...
-   149995  9995   a        1             0.0             0.0             0.0             0.0               6
-   149996  9996   b        1             0.0             0.0             0.0             0.0               6
-   149997  9997   c        1             0.0             0.0             0.0             0.0               6
-   149998  9998   d        1             0.0             0.0             0.0             0.0               6
-   149999  9999   e        1             0.0             0.0             0.0             0.0               6
-
-   [150000 rows x 8 columns]
-
-.. image:: DAG-e2e-pipeline-expanded.svg
-   :width: 600
-
-
-That's all the valid pipelines currently available in the ``tests`` directory! Next we will create
-some pipelines of our own to run by copying the ``tests`` pipelines and making some changes.
+    $ easylink run -p pipeline_demo_improved_2030.yaml -i input_data_demo_2030.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+    
+For a threshold match
+probability of ``.25`` (chosen using match rate evaluation metrics), out of ``10345`` true links, 
+we can calculate that our model results contained ``144`` false positives and ``7`` false negatives, 
+with the rest of the links being accurate.
