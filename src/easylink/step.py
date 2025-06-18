@@ -92,6 +92,7 @@ class Step:
         input_slot_mappings: Iterable[InputSlotMapping] = (),
         output_slot_mappings: Iterable[OutputSlotMapping] = (),
         is_auto_parallel: bool = False,
+        default_implementation: str | None = None,
     ) -> None:
         if not step_name and not name:
             raise ValueError("All Steps must contain a step_name, name, or both.")
@@ -127,6 +128,9 @@ class Step:
         ``OutputSlotMappings`` of this ``Step``."""
         self.is_auto_parallel = is_auto_parallel
         """Whether or not this ``Step`` is to be automatically run in parallel."""
+        self.default_implementation = default_implementation
+        """The default implementation to use for this ``Step`` if the ``Step`` is
+        not explicitly configured in the pipeline specification."""
         self.parent_step = None
         """This ``Step's`` parent ``Step``, if applicable."""
         self._configuration_state = None
@@ -580,6 +584,7 @@ class HierarchicalStep(Step):
         input_slot_mappings=(),
         output_slot_mappings=(),
         directly_implemented=True,
+        default_implementation: str | None = None,
     ):
         super().__init__(
             step_name,
@@ -588,6 +593,7 @@ class HierarchicalStep(Step):
             output_slots,
             input_slot_mappings,
             output_slot_mappings,
+            default_implementation=default_implementation,
         )
         self.nodes = nodes
         """All sub-nodes (i.e. sub-``Steps``) that make up this ``HierarchicalStep``."""
@@ -722,13 +728,19 @@ class HierarchicalStep(Step):
             step = self.step_graph.nodes[node]["step"]
             if isinstance(step, IOStep):
                 continue
+            if step.name not in step_config:
+                default_implementation = self.step_graph.nodes[step.name][
+                    "step"
+                ].default_implementation
+                step_errors = (
+                    {f"step {step.name}": ["The step is not configured."]}
+                    if not default_implementation
+                    else {}
+                )
             else:
-                if step.name not in step_config:
-                    step_errors = {f"step {step.name}": ["The step is not configured."]}
-                else:
-                    step_errors = step.validate_step(
-                        step_config[step.name], combined_implementations, input_data_config
-                    )
+                step_errors = step.validate_step(
+                    step_config[step.name], combined_implementations, input_data_config
+                )
             if step_errors:
                 errors.update(step_errors)
         extra_steps = set(step_config.keys()) - set(self.step_graph.nodes)
@@ -830,12 +842,14 @@ class TemplatedStep(Step, ABC):
     def __init__(
         self,
         template_step: Step,
+        default_implementation: str | None = None,
     ) -> None:
         super().__init__(
             template_step.step_name,
             template_step.name,
             template_step.input_slots.values(),
             template_step.output_slots.values(),
+            default_implementation=default_implementation,
         )
         self.step_graph = None
         """The :class:`~easylink.graph_components.StepGraph` i.e. the directed acyclic 
@@ -1110,8 +1124,9 @@ class LoopStep(TemplatedStep):
         self,
         template_step: Step | None = None,
         self_edges: Iterable[EdgeParams] = (),
+        default_implementation: str | None = None,
     ) -> None:
-        super().__init__(template_step)
+        super().__init__(template_step, default_implementation)
         self.self_edges = self_edges
         """:class:`~easylink.graph_components.EdgeParams` that represent self-edges,
         i.e. edges that connect the output of one loop to the input of the next."""
@@ -2181,15 +2196,32 @@ class NonLeafConfigurationState(ConfigurationState):
 
         This method recursively traverses the ``StepGraph`` and sets the configuration
         state for each ``Step`` until reaching all leaf nodes.
+
+        Notes
+        -----
+        If a ``Step`` name is missing from the ``step_config``, we know that it
+        must have a default implementation because we already validated that one
+        exists during :meth:`HierarchicalStep._validate_step_graph`. In that case,
+        we manually instantiate and use a ``step_config`` with the default implementation.
         """
         for sub_node in self._step.step_graph.nodes:
             sub_step = self._step.step_graph.nodes[sub_node]["step"]
-            # IOSteps, SplitterSteps, and AggregatorSteps never appear explicitly in the configuration
-            step_config = (
-                self.step_config
-                if isinstance(sub_step, (IOStep, SplitterStep, AggregatorStep))
-                else self.step_config[sub_step.name]
-            )
+            try:
+                step_config = (
+                    self.step_config
+                    if isinstance(sub_step, StandaloneStep)
+                    else self.step_config[sub_step.name]
+                )
+            except KeyError:
+                # We know that any missing keys must have a default implementation
+                # (because we have already checked that it exists during validation)
+                step_config = LayeredConfigTree(
+                    {
+                        "implementation": {
+                            "name": sub_step.default_implementation,
+                        }
+                    }
+                )
             sub_step.set_configuration_state(
                 step_config, self.combined_implementations, self.input_data_config
             )

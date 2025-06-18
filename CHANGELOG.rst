@@ -1,3 +1,7 @@
+**0.1.22 - 6/24/25**
+
+ - Feature: add support for default implementations
+
 **0.1.21 - 6/16/25**
 
  - Update the "parallel" pipeline configuration key to "clones"

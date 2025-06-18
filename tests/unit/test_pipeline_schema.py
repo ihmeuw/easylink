@@ -2,13 +2,14 @@ from pathlib import Path
 from re import match
 
 import networkx as nx
+import pytest
 
+from easylink.configuration import Config
 from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import SCHEMA_PARAMS
-from easylink.step import Step
-from easylink.utilities.aggregator_utils import concatenate_datasets
-from easylink.utilities.splitter_utils import split_data_by_size
+from easylink.step import CloneableStep, HierarchicalStep, LoopStep, Step
+from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -58,7 +59,7 @@ def test_validate_input(test_dir: str) -> None:
     )
 
 
-def test_pipeline_schema_get_implementation_graph(default_config) -> None:
+def test_pipeline_schema_get_implementation_graph(default_config: Config) -> None:
     nodes, edges = SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
     schema.configure_pipeline(default_config.pipeline, default_config.input_data)
@@ -180,3 +181,158 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
     assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
         assert edge in implementation_graph.edges(data=True)
+
+
+def test_default_implementation_is_used(
+    default_config_params: dict[str, Path], unit_test_specifications_dir: Path
+) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    # remove all steps (because they all have default implementations)
+    all_steps = ["step_1", "step_2", "step_3", "step_4"]
+    for step_name in all_steps:
+        config_params["pipeline"]["steps"].pop(step_name)
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+
+    assert not config.pipeline.steps
+    assert all(
+        schema.step_graph.nodes[step_name]["step"].default_implementation
+        in implementation_graph.nodes
+        for step_name in all_steps
+    )
+
+
+def test_default_implementation_can_be_overridden(
+    default_config_params: dict[str, Path], unit_test_specifications_dir: Path
+) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    config_params["pipeline"]["steps"]["step_2"] = {"implementation": {"name": "step_2_r"}}
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+
+    requested_step_2_implementation = config.pipeline.steps.step_2.implementation.name
+    assert (
+        requested_step_2_implementation
+        != schema.step_graph.nodes["step_2"]["step"].default_implementation
+    )
+    assert requested_step_2_implementation in implementation_graph.nodes
+
+
+def test_default_implementation_hierarchical_step_missing(
+    default_config_params: dict[str, Path], unit_test_specifications_dir: Path
+) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    # remove step 1 (which is a HierarchicalStep with a default outer implementation)
+    config_params["pipeline"]["steps"].pop("step_1")
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+    assert "step_1" not in config.pipeline.steps
+    step_1 = schema.step_graph.nodes["step_1"]["step"]
+    assert isinstance(step_1, HierarchicalStep)
+    assert step_1.default_implementation in implementation_graph.nodes
+
+
+@pytest.mark.parametrize("missing_substep", ["step_1a", "step_1b"])
+def test_default_implementation_hierarchical_step_missing_partial_substeps(
+    missing_substep: str,
+    default_config_params: dict[str, Path],
+    unit_test_specifications_dir: Path,
+) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    config_params["pipeline"]["steps"]["step_1"]["substeps"].pop(missing_substep)
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+    assert missing_substep not in config.pipeline.steps
+    assert (
+        schema.step_graph.nodes["step_1"]["step"]
+        .step_graph.nodes[missing_substep]["step"]
+        .default_implementation
+        in implementation_graph.nodes
+    )
+
+
+def test_default_implementation_hierarchical_step_missing_all_substeps(
+    default_config_params: dict[str, Path], unit_test_specifications_dir: Path
+) -> None:
+    """Test that all default substeps are used if empty dict is passed.
+
+    Should use default substeps even if an outer Step default is defined.
+    """
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    # replace the substeps value with an empty dict
+    config_params["pipeline"]["steps"]["step_1"]["substeps"] = {}
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+    step_1 = schema.step_graph.nodes["step_1"]["step"]
+    for substep in ["step_1a", "step_1b"]:
+        assert substep not in config.pipeline.steps
+        assert (
+            step_1.step_graph.nodes[substep]["step"].default_implementation
+            in implementation_graph.nodes
+        )
+    # Assert that there is an outer Step default implementation defined that simply
+    # wasn't used in favor of the substep defaults.
+    assert step_1.default_implementation
+    assert step_1.default_implementation not in implementation_graph.nodes
+
+
+def test_default_implemetation_templated_step(
+    default_config_params: dict[str, Path], unit_test_specifications_dir: Path
+) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    # remove steps 3 and 4 (which are LoopSteps and CloneableSteps, respectively)
+    for step in ["step_3", "step_4"]:
+        config_params["pipeline"]["steps"].pop(step)
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+    for step_name in ["step_3", "step_4"]:
+        assert step_name not in config.pipeline.steps
+        step = schema.step_graph.nodes[step_name]["step"]
+        assert (
+            isinstance(step, LoopStep)
+            if step_name == "step_3"
+            else isinstance(step, CloneableStep)
+        )
+        assert step.default_implementation in implementation_graph.nodes

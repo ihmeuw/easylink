@@ -27,4 +27,5 @@ SCHEMA_PARAMS = {
     "auto_parallel_cloneable_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_CLONEABLE_STEP,
     "auto_parallel_loop_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_LOOP_STEP,
     "auto_parallel_hierarchical_step": testing.SCHEMA_PARAMS_AUTO_PARALLEL_HIERARCHICAL_STEP,
+    "default_implementations": testing.SCHEMA_PARAMS_DEFAULT_IMPLEMENTATIONS,
 }
