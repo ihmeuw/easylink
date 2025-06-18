@@ -33,7 +33,7 @@ ready to implement that knowledge using EasyLink.
 
 Tutorial prerequisites
 ----------------------
-Install `EasyLink <https://github.com/ihmeuw/easylink>`_ if you haven't already. 
+`Install EasyLink <https://github.com/ihmeuw/easylink>`_ if you haven't already. 
 
 The tutorial uses the `Splink <https://moj-analytical-services.github.io/splink/index.html>`_ Python package 
 for record linkage implementations. Splink knowledge is not required to complete the tutorial but may be 
@@ -415,7 +415,7 @@ assigned to them.
 
 Running the pipeline also generates a :download:`DAG.svg <DAG-naive-pipeline.svg>` file in 
 the results directory which shows the implementations, data dependencies and 
-input validations preesnt in the pipeline.
+input validations present in the pipeline.
 
 To see how the model linked records before assigning them to clusters, we can 
 look at the intermediate output produced by the ``splink_evaluating_pairs`` 
