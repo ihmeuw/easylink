@@ -190,8 +190,10 @@ def test_default_implementation_is_used(
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
     )
-    # remove step 2 (which has a default implementation)
-    config_params["pipeline"]["steps"].pop("step_2")
+    # remove all steps (because they all have default implementations)
+    all_steps = ["step_1", "step_2", "step_3", "step_4"]
+    for step_name in all_steps:
+        config_params["pipeline"]["steps"].pop(step_name)
     config = Config(config_params, schema_name="default_implementations")
     schema = PipelineSchema(
         "default_implementations", *SCHEMA_PARAMS["default_implementations"]
@@ -199,10 +201,11 @@ def test_default_implementation_is_used(
     schema.configure_pipeline(config.pipeline, config.input_data)
     implementation_graph = schema.get_implementation_graph()
 
-    assert "step_2" not in config.pipeline.steps
-    assert (
-        schema.step_graph.nodes["step_2"]["step"].default_implementation
+    assert not config.pipeline.steps
+    assert all(
+        schema.step_graph.nodes[step_name]["step"].default_implementation
         in implementation_graph.nodes
+        for step_name in all_steps
     )
 
 
