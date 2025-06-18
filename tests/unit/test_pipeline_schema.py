@@ -1,14 +1,13 @@
 from pathlib import Path
 from re import match
-
+import pytest
 import networkx as nx
 
+from easylink.configuration import Config
 from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.step import Step
-from easylink.utilities.aggregator_utils import concatenate_datasets
-from easylink.utilities.splitter_utils import split_data_by_size
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
 
@@ -58,7 +57,7 @@ def test_validate_input(test_dir: str) -> None:
     )
 
 
-def test_pipeline_schema_get_implementation_graph(default_config) -> None:
+def test_pipeline_schema_get_implementation_graph(default_config: Config) -> None:
     nodes, edges = SCHEMA_PARAMS["development"]
     schema = PipelineSchema("development", nodes=nodes, edges=edges)
     schema.configure_pipeline(default_config.pipeline, default_config.input_data)
@@ -180,3 +179,47 @@ def test_pipeline_schema_get_implementation_graph(default_config) -> None:
     assert len(implementation_graph.edges) == len(expected_edges)
     for edge in expected_edges:
         assert edge in implementation_graph.edges(data=True)
+
+
+def test_default_implementation_is_used(default_config_params: dict[str, Path]) -> None:
+    config_params = default_config_params
+    # The default_implementations schema for this test has step_2 with a defined
+    # default implementation and step_1 with no defined default implementation.
+    for step in ["step_2", "step_3", "choice_section"]:
+        config_params["pipeline"]["steps"].pop(step)
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+
+    assert "step_2" not in config.pipeline.steps
+    assert (
+        schema.step_graph.nodes["step_2"]["step"].default_implementation
+        in implementation_graph.nodes
+    )
+
+
+def test_default_implementation_can_be_overridden(
+    default_config_params: dict[str, Path]
+) -> None:
+    config_params = default_config_params
+    # The default_implementations schema for this test has step_2 with a defined
+    # default implementation and step_1 with no defined default implementation.
+    for step in ["step_3", "choice_section"]:
+        config_params["pipeline"]["steps"].pop(step)
+    config_params["pipeline"]["steps"]["step_2"] = {"implementation": {"name": "step_2_r"}}
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+
+    requested_step_2_implementation = config.pipeline.steps.step_2.implementation.name
+    assert (
+        requested_step_2_implementation
+        != schema.step_graph.nodes["step_2"]["step"].default_implementation
+    )
+    assert requested_step_2_implementation in implementation_graph.nodes

@@ -640,3 +640,38 @@ EDGES_OUTPUT_DIR = [
     ),
 ]
 SCHEMA_PARAMS_OUTPUT_DIR = (NODES_OUTPUT_DIR, EDGES_OUTPUT_DIR)
+
+
+NODES_TWO_STEPS_ONE_DEFAULT = [
+    InputStep(),
+    Step(
+        step_name="step_1",
+        input_slots=[
+            InputSlot(
+                name="step_1_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_1_main_output")],
+        # no default implementation defined
+    ),
+    Step(
+        step_name="step_2",
+        input_slots=[
+            InputSlot(
+                name="step_2_main_input",
+                env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                validator=validate_input_file_dummy,
+            )
+        ],
+        output_slots=[OutputSlot("step_2_main_output")],
+        default_implementation="step_2_python_pandas",
+    ),
+    OutputStep(
+        input_slots=[
+            InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)
+        ],
+    ),
+]
+SCHEMA_PARAMS_DEFAULT_IMPLEMENTATIONS = (NODES_TWO_STEPS_ONE_DEFAULT, EDGES_TWO_STEPS)
