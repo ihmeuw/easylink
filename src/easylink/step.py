@@ -17,7 +17,6 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 
 from layered_config_tree import LayeredConfigTree
-from loguru import logger
 
 from easylink.graph_components import (
     EdgeParams,
@@ -843,12 +842,14 @@ class TemplatedStep(Step, ABC):
     def __init__(
         self,
         template_step: Step,
+        default_implementation: str | None = None,
     ) -> None:
         super().__init__(
             template_step.step_name,
             template_step.name,
             template_step.input_slots.values(),
             template_step.output_slots.values(),
+            default_implementation=default_implementation,
         )
         self.step_graph = None
         """The :class:`~easylink.graph_components.StepGraph` i.e. the directed acyclic 
@@ -1123,8 +1124,9 @@ class LoopStep(TemplatedStep):
         self,
         template_step: Step | None = None,
         self_edges: Iterable[EdgeParams] = (),
+        default_implementation: str | None = None,
     ) -> None:
-        super().__init__(template_step)
+        super().__init__(template_step, default_implementation)
         self.self_edges = self_edges
         """:class:`~easylink.graph_components.EdgeParams` that represent self-edges,
         i.e. edges that connect the output of one loop to the input of the next."""

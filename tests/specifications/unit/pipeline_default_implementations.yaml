@@ -10,3 +10,15 @@ steps:
   step_2:
     implementation:
       name: step_2_python_pandas
+  step_3:
+    iterate:
+      - implementation:
+          name: step_3_python_pandas
+      - implementation:
+          name: step_3_r
+  step_4:
+    clones:
+      - implementation:
+          name: step_4_python_pandas
+      - implementation:
+          name: step_4_r

@@ -716,6 +716,46 @@ NODES_DEFAULT_IMPLEMENTATIONS = [
         output_slots=[OutputSlot("step_2_main_output")],
         default_implementation="step_2_python_pandas",
     ),
+    LoopStep(
+        template_step=Step(
+            step_name="step_3",
+            input_slots=[
+                InputSlot(
+                    name="step_3_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                )
+            ],
+            output_slots=[OutputSlot("step_3_main_output")],
+        ),
+        self_edges=[
+            EdgeParams(
+                source_node="step_3",
+                target_node="step_3",
+                output_slot="step_3_main_output",
+                input_slot="step_3_main_input",
+            ),
+        ],
+        default_implementation="step_3_python_pandas",
+    ),
+    CloneableStep(
+        template_step=Step(
+            step_name="step_4",
+            input_slots=[
+                InputSlot(
+                    name="step_4_main_input",
+                    env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                    validator=validate_input_file_dummy,
+                ),
+            ],
+            output_slots=[
+                OutputSlot(
+                    name="step_4_main_output",
+                ),
+            ],
+        ),
+        default_implementation="step_4_python_pandas",
+    ),
     OutputStep(
         input_slots=[
             InputSlot(name="result", env_var=None, validator=validate_input_file_dummy)

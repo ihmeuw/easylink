@@ -8,7 +8,7 @@ from easylink.configuration import Config
 from easylink.graph_components import InputSlot, OutputSlot
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import SCHEMA_PARAMS
-from easylink.step import HierarchicalStep, Step
+from easylink.step import CloneableStep, HierarchicalStep, LoopStep, Step
 from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.validation_utils import validate_input_file_dummy
 
@@ -306,3 +306,30 @@ def test_default_implementation_hierarchical_step_missing_all_substeps(
     # wasn't used in favor of the substep defaults.
     assert step_1.default_implementation
     assert step_1.default_implementation not in implementation_graph.nodes
+
+
+def test_default_implemetation_templated_step(
+    default_config_params: dict[str, Path], unit_test_specifications_dir: Path
+) -> None:
+    config_params = default_config_params
+    config_params["pipeline"] = load_yaml(
+        f"{unit_test_specifications_dir}/pipeline_default_implementations.yaml"
+    )
+    # remove steps 3 and 4 (which are LoopSteps and CloneableSteps, respectively)
+    for step in ["step_3", "step_4"]:
+        config_params["pipeline"]["steps"].pop(step)
+    config = Config(config_params, schema_name="default_implementations")
+    schema = PipelineSchema(
+        "default_implementations", *SCHEMA_PARAMS["default_implementations"]
+    )
+    schema.configure_pipeline(config.pipeline, config.input_data)
+    implementation_graph = schema.get_implementation_graph()
+    for step_name in ["step_3", "step_4"]:
+        assert step_name not in config.pipeline.steps
+        step = schema.step_graph.nodes[step_name]["step"]
+        assert (
+            isinstance(step, LoopStep)
+            if step_name == "step_3"
+            else isinstance(step, CloneableStep)
+        )
+        assert step.default_implementation in implementation_graph.nodes
