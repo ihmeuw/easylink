@@ -12,15 +12,8 @@ linkage software, by ensuring that each piece of the pipeline conforms to standa
 
 For example, users at the Census Bureau could easily evaluate whether using a more sophisticated "blocking" 
 method would improve results in a certain pipeline, without having to rewrite the entire pipeline. For more 
-information, read about the `motivation <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#motivation>`
+information, read about the `motivation <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#motivation>`_
 behind EasyLink.
-
-Audience
---------
-This tutorial is intented for people familiar with the practive of record linkage, who are interested
-in easily comparing linkage results across different methods. The tutorial will demonstrate how to 
-easily swap different record linkage method implementations in and out 
-using the EasyLink software.
 
 Overview
 --------
@@ -29,13 +22,22 @@ concepts include the EasyLink record linkage pipeline schema, Easylink pipeline 
 pipelines, changing record linkage step implementations, changing input data, evaluating and comparing 
 results, and more. 
 
+.. contents::
+
+Audience
+--------
+This tutorial is intended for people familiar with record linkage practices, who are interested
+in easily comparing linkage results across different methods. This tutorial will *not* cover information 
+about linkage techniques or software and assumes the reader is familiar with these concepts and 
+ready to implement that knowledge using EasyLink.
+
 Tutorial prerequisites
 ----------------------
 Install `EasyLink <https://github.com/ihmeuw/easylink>`_ if you haven't already. 
 
-The tutorial uses the `Splink <https://moj-analytical-services.github.io/splink/index.html>` Python package 
-for record linkage implemenetations. Splink knowledge is not required to complete the tutorial but may be 
-helpful in the sections about configuring the Splink models.
+The tutorial uses the `Splink <https://moj-analytical-services.github.io/splink/index.html>`_ Python package 
+for record linkage implementations. Splink knowledge is not required to complete the tutorial but may be 
+helpful when configuring Splink models.
 
 
 Configuring a "naive" Splink model
@@ -43,7 +45,8 @@ Configuring a "naive" Splink model
 Our first demonstration of running an EasyLink pipeline will configure a simple, "naive" record linkage
 model using Splink implementations. Our pipeline will link the 
 `pseudopeople <https://pseudopeople.readthedocs.io/en/latest/>`_ 
-``Social Security Administration`` `dataset <https://pseudopeople.readthedocs.io/en/latest/datasets/index.html>`_ to the ``Tax forms: W-2 & 1099`` dataset.
+``Social Security Administration`` and ``Tax forms: W-2 & 1099`` 
+`datasets <https://pseudopeople.readthedocs.io/en/latest/datasets/index.html>`_.
 
 ``easylink run`` parameters
 ---------------------------
@@ -92,8 +95,15 @@ Pipeline specification
 The ``--pipeline-specification`` (``-p``) argument to ``easylink run`` accepts a YAML file specifying 
 the implementations and other configuration options for the pipeline being run. The contents of 
 :download:`pipeline_demo_naive.yaml <pipeline_demo_naive.yaml>` are shown below -- download it to the 
-directory from which you will run ``easylink run``. The pipeline specification follows the structure 
-defined in the :ref:`pipeline_schema` docs.
+directory from which you will run ``easylink run``. 
+
+The pipeline specification follows the structure defined in the :ref:`pipeline_schema`. This document
+is the part of EasyLink that enforces the standard patterns that linkage step implementations must 
+follow, enabling easy configuration and swapping. Examples of patterns defined in the document include 
+breaking the record linkage process into a set of steps by which most common record linkage implementations
+can be described, providing a set of operators allowing users to customize how data flows through those
+steps, and enforcing specifications for the format of step inputs and outputs. The set of steps, their 
+hierarchy, and an operator example (``parallel``) can be seen below.
 
 .. code-block:: yaml
 
@@ -176,45 +186,45 @@ Let's break down the configuration keys and values defined in the file.
 First, note that all of the keys defined as direct children of a ``steps`` 
 or ``substeps`` key represent record linkage steps from the 
 :ref:`pipeline_schema`. They are nested in the same structure defined in 
-those docs. For example, :ref:`linking_sub_steps` shows the same 
-substeps as are listed under ``linking`` in the YAML -- ``pre-processing``, 
+that document. For example, :ref:`linking_sub_steps` and the ``linking`` YAML 
+key both list the same substeps -- ``pre-processing``, 
 ``schema_alignment``, ``blocking_and_filtering``, and ``evaluating_pairs``.
 
 Now that we understand the nested step structure of the pipeline specification 
-YAML, let's discuss the keys which are used to configure each step of the pipeline.
+YAML, let's discuss the keys used to configure individual steps.
 
 .. _implementation_configuration:
 
 Implementation configuration
 """"""""""""""""""""""""""""
-The keys ``implementation``, ``name`` and ``configuration``, as well as implementation-specific 
-configuration variables, are used to configure the implementations for each step.
-Let's look at ``links_to_clusters`` as an example.
+We can see in the YAML that many steps use all three of the ``implementation``, ``name`` 
+and ``configuration`` keys, as well as implementation-specific keys. Let's look at 
+``links_to_clusters`` as an example.
 
-The ``implementation`` section indicates that the subkeys that follow configure the 
-implementation to be used when running the ``links_to_clusters`` step for this 
-pipeline. 
+The ``implementation`` section simply indicates that the subkeys that follow define the
+step's implementation in this pipeline.
 
 The ``name`` key selects which of the available implementations for this step will 
-be used in this pipeline.
+be used.
 
 .. todo:: 
     Link to docs for "available implementations" for each step when that is available.
 
-The ``configuration`` section lists implementation-specific configuration variables
-which control how the implementation will run. For example ``THRESHOLD_MATCH_PROBABILITY`` 
+The ``configuration`` section lists implementation-specific configuration keys
+which control how the implementation will run. For example, ``THRESHOLD_MATCH_PROBABILITY`` 
 here allows the user to define at what probability a pair of records being considered 
 as a pontential link will be considered part of the same cluster by the 
 ``splink_links_to_clusters`` implementation.
 
 Cloneable Sections
 """"""""""""""""""
-Certain sections of the pipeline, such as the ``determining_exclusions`` and 
-``removing_records`` the schema defines steps of the :ref:`entity_resolution_sub_steps`
-as :ref:`cloneable_sections`, which create multiple copies of that section and allow 
-different implementations or inputs to be defined for each copy.
+Certain sections of the pipeline are defined as as :ref:`cloneable_sections`, which create 
+multiple copies of that section and allow different implementations or inputs to be defined 
+for each copy. We can see that :ref:`entity_resolution_sub_steps` defines
+``determining_exclusions`` and ``removing_records`` as cloneable in the diagram 
+(blue dashed box).
 
-In this case, ``determining_exclusions_and_removing_records`` is defined as 
+In the YAML, the superstep ``determining_exclusions_and_removing_records`` is marked as 
 clonable using the ``parallel`` key, and two copies are made of its substeps, 
 ``determining_exclusions`` and ``removing_records``. The ``-`` denotes the beginning
 of each of the two copies, each of which must contain both of the substeps. 
@@ -224,10 +234,9 @@ to the ``INPUT_DATASET`` environment variables for each step. In
 the first copy, the ``ssa`` dataset files are used as inputs for both steps, 
 while in the second copy, the ``w2`` dataset files are the inputs. In practice, 
 this means that records to exclude will be identified and removed separately for 
-each input file, as required by the schema.
-
-.. todo :: 
-    Reorder pipeline section to be after inputs section
+each input file, as required by the schema since each input file has different data. 
+This cloneable section also allows different implementations to be used for each dataset 
+if desired.
 
 .. todo:: 
     Update cloneable keyword when we finalize it.
@@ -253,15 +262,18 @@ and so on.
 
 Configuring Splink
 ------------------
-Having explained how the inputs, computing environment, and pipeline (in general) 
+Having explained how the inputs, general pipeline format, and computing environment
 are specified, now we will discuss how the pipeline specification configures 
 our actual Splink record linkage model.
 
-There are three ``splink`` implementations in the pipeline specification YAML 
+There are three Splink implementations in the pipeline specification YAML 
 for us to configure: ``splink_blocking_and_filtering``, ``splink_evaluating_pairs``,
 and ``splink_links_to_clusters``. Each of these implementations has its own variables 
 to configure. For all other pipeline steps, we've selected a default implementation, which 
 either does nothing or simply passes inputs to outputs as appropriate.
+
+.. todo::
+  Update when add custom pre-processing implementation for middle name -\> middle initial
 
 For ``splink_blocking_and_filtering``, we set::
 
@@ -287,7 +299,7 @@ the model. The fourth determines at what match probability a pair of records wil
 from the step (``0`` outputs all pairs). The fifth is used in the same way as in the previous
 implementation.
 
-For ``splink_links_to_clusters``, as discussed in the :ref:`implementation_configuration` section,
+For ``splink_links_to_clusters``, as discussed earlier in the :ref:`implementation_configuration` section,
 we set::
 
     THRESHOLD_MATCH_PROBABILITY: 0.997    
@@ -325,14 +337,13 @@ Now that we understand all the inputs to ``easylink run``, lets actually run the
 
    Finally, despite the final output line containing the phrase "Missing output files", 
    this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
-   why the job was run (the step inputs were ready but the output file did not yet exist), not 
+   why the job was run (the step inputs were ready but the output file did not yet exist), rather than 
    conveying an error message.
 
 Inputs and outputs
 ------------------
-Input and output data is stored in parquet files. The locations of the input data files passed to EasyLink 
-in our last command are found in ``input_data_demo.yaml``.
-We can view the contents of these Parquet files using Python:
+Input and output data is stored in Parquet files. We can view the contents of the files listed in 
+``input_data_demo.yaml`` using Python:
 
 .. code-block:: console
 
@@ -431,9 +442,10 @@ be investigated further using ``pandas.read_parquet()`` in a Python session.
 
 The Splink implementations in our pipeline also produce some diagnostic charts which can be useful 
 for evaluating results, such as the :download:`match weights chart<naive_match_weights.html>` and 
-:download:`comparison viewer tool<naive_comparison_viewer.html>`.
+:download:`comparison viewer tool<naive_comparison_viewer.html>`. These charts are available in the 
+``diagnostics/splink_evaluating_pairs`` subdirectory of the results directory for each pipeline run.
 
-Finally, since we generated the input datasets ourselves, and therfore know the ground truth of 
+Finally, since we generated the input datasets ourselves, and therefore know the ground truth of 
 which records are truly links, lets see how our naive model performed. For a threshold match
 probability of ``.997`` (chosen using match rate evaluation metrics), out of ``9262`` true links, 
 we can calculate that our model results contained ``260`` false positives and ``43`` false negatives, 
@@ -443,9 +455,9 @@ with the rest of the links being accurate.
 Configuring an improved pipeline
 ================================
 Next, lets modify our naive pipeline configuration YAML to try to improve those results. Primarily, we 
-will change the ``COMPARISONS`` we pass to ``splink_evaluating_pairs`` to use more flexible comparison 
-methods than exact matches, allowing us to link records which have typos or other noise in them. We'll 
-use a new pipeline configuration YAML, :download:`pipeline_demo_improved.yaml` with these changes.
+will change the ``COMPARISONS`` we pass to ``splink_evaluating_pairs`` to use flexible comparison 
+methods rather than exact matches, allowing us to link records which have typos or other noise in them. We'll 
+use a new pipeline configuration YAML, :download:`pipeline_demo_improved.yaml`, with these changes.
 
 In ``splink_evaluating_pairs``, our implementation configuration will now look like this::
 
@@ -478,7 +490,7 @@ are similar but don't exactly match. The false positives are only slightly lower
 around 2%, are affected by 
 `"borrow a social security number" <https://pseudopeople.readthedocs.io/en/latest/noise/column_noise.html#borrow-a-social-security-number>`_
 pseudopeople noise. The ``SSA`` and ``W2`` dataset have extremely limited columns in common aside 
-from SSNs (first, middle initial and last), which makes it difficult to link these borrowed SSN records.
+from SSNs (first, middle initial and last), which makes it difficult to link these "borrowed SSN" records.
 
 Changing inputs
 ===============
