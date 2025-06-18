@@ -642,19 +642,67 @@ EDGES_OUTPUT_DIR = [
 SCHEMA_PARAMS_OUTPUT_DIR = (NODES_OUTPUT_DIR, EDGES_OUTPUT_DIR)
 
 
-NODES_TWO_STEPS_ONE_DEFAULT = [
+NODES_DEFAULT_IMPLEMENTATIONS = [
     InputStep(),
-    Step(
+    HierarchicalStep(
         step_name="step_1",
         input_slots=[
             InputSlot(
                 name="step_1_main_input",
                 env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
                 validator=validate_input_file_dummy,
-            )
+            ),
         ],
         output_slots=[OutputSlot("step_1_main_output")],
-        # no default implementation defined
+        nodes=[
+            Step(
+                step_name="step_1a",
+                input_slots=[
+                    InputSlot(
+                        name="step_1a_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                ],
+                output_slots=[OutputSlot("step_1a_main_output")],
+                default_implementation="step_1a_python_pandas",
+            ),
+            Step(
+                step_name="step_1b",
+                input_slots=[
+                    InputSlot(
+                        name="step_1b_main_input",
+                        env_var="DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS",
+                        validator=validate_input_file_dummy,
+                    ),
+                ],
+                output_slots=[OutputSlot("step_1b_main_output")],
+                default_implementation="step_1b_python_pandas",
+            ),
+        ],
+        edges=[
+            EdgeParams(
+                source_node="step_1a",
+                target_node="step_1b",
+                output_slot="step_1a_main_output",
+                input_slot="step_1b_main_input",
+            ),
+        ],
+        input_slot_mappings=[
+            InputSlotMapping(
+                parent_slot="step_1_main_input",
+                child_node="step_1a",
+                child_slot="step_1a_main_input",
+            ),
+        ],
+        output_slot_mappings=[
+            OutputSlotMapping(
+                parent_slot="step_1_main_output",
+                child_node="step_1b",
+                child_slot="step_1b_main_output",
+            ),
+        ],
+        default_implementation="step_1_python_pandas",
     ),
     Step(
         step_name="step_2",
@@ -674,4 +722,4 @@ NODES_TWO_STEPS_ONE_DEFAULT = [
         ],
     ),
 ]
-SCHEMA_PARAMS_DEFAULT_IMPLEMENTATIONS = (NODES_TWO_STEPS_ONE_DEFAULT, EDGES_TWO_STEPS)
+SCHEMA_PARAMS_DEFAULT_IMPLEMENTATIONS = (NODES_DEFAULT_IMPLEMENTATIONS, EDGES_TWO_STEPS)

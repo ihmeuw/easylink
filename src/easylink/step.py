@@ -585,6 +585,7 @@ class HierarchicalStep(Step):
         input_slot_mappings=(),
         output_slot_mappings=(),
         directly_implemented=True,
+        default_implementation: str | None = None,
     ):
         super().__init__(
             step_name,
@@ -593,6 +594,7 @@ class HierarchicalStep(Step):
             output_slots,
             input_slot_mappings,
             output_slot_mappings,
+            default_implementation=default_implementation,
         )
         self.nodes = nodes
         """All sub-nodes (i.e. sub-``Steps``) that make up this ``HierarchicalStep``."""
