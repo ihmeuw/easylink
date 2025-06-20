@@ -33,7 +33,7 @@ steps:
               pre-processing:
                 parallel:
                 - implementation:
-                    name: dummy_pre-processing
+                    name: middle_name_to_initial
                     configuration: 
                       INPUT_DATASET: input_file_ssa_2020
                 - implementation:
