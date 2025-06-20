@@ -362,3 +362,10 @@ update_clusters_by_connected_components:
   script_cmd: python /update_clusters_by_connected_components.py
   outputs:
     clusters: result.parquet
+middle_name_to_initial:
+  steps:
+  - pre-processing
+  image_name: tylerdy/middle_name_to_initial.sif
+  script_cmd: python /middle_name_to_initial.py
+  outputs:
+    dataset: result.parquet
