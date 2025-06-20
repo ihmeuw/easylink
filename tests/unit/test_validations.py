@@ -213,7 +213,7 @@ def test_pipeline_validation(
     )
 
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     _check_expected_validation_exit(
         error=e,
@@ -229,7 +229,7 @@ def test_out_of_order_steps(default_config_params, unit_test_specifications_dir)
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_out_of_order.yaml"
     )
-    Config(config_params, "development")
+    Config(config_params, schema_name="development")
 
 
 def test_unsupported_step(
@@ -243,7 +243,7 @@ def test_unsupported_step(
     )
 
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     _check_expected_validation_exit(
         error=e,
@@ -270,7 +270,7 @@ def test_unsupported_implementation(
     )
 
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     implementation_metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
     supported_implementations = (
@@ -297,7 +297,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
     config_params = load_params_from_specification(**config_paths)
     config_params["input_data"] = {}
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     _check_expected_validation_exit(
         error=e,
@@ -314,7 +314,7 @@ def test_pipeline_schema_bad_input_data_type(default_config_paths, test_dir, cap
     )
     config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     _check_expected_validation_exit(
         error=e,
@@ -338,7 +338,7 @@ def test_pipeline_schema_bad_input_data(default_config_paths, test_dir, caplog):
     )
     config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     _check_expected_validation_exit(
         error=e,
@@ -359,7 +359,7 @@ def test_pipeline_schema_missing_input_file(default_config_paths, test_dir, capl
     )
     config_params = load_params_from_specification(**config_paths)
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
 
     _check_expected_validation_exit(
         error=e,
@@ -378,7 +378,7 @@ def test_unsupported_container_engine(default_config_params, caplog):
     config_params = default_config_params
     config_params["environment"] = {"container_engine": "foo"}
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
     _check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -395,7 +395,7 @@ def test_missing_slurm_details(default_config_params, caplog):
     config_params = default_config_params
     config_params["environment"] = {"computing_environment": "slurm"}
     with pytest.raises(SystemExit) as e:
-        Config(config_params, "development")
+        Config(config_params, schema_name="development")
     _check_expected_validation_exit(
         error=e,
         caplog=caplog,
@@ -416,18 +416,24 @@ def test_missing_slurm_details(default_config_params, caplog):
 ############
 
 
-def test_no_container(default_config, caplog, mocker):
-    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
-    metadata["step_1_python_pandas"]["image_path"] = "some/path/with/no/container.sif"
-    metadata["step_2_python_pandas"]["image_path"] = "some/path/with/no/container_2.sif"
-    metadata["step_3_python_pandas"]["image_path"] = "some/path/with/no/container_3.sif"
-    metadata["step_4_python_pandas"]["image_path"] = "some/path/with/no/container_4.sif"
-    mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
-    mocker.PropertyMock(
-        "easylink.implementation.Implementation._container_engine", return_value="undefined"
-    )
+def test_missing_image(default_config_params, caplog, mocker):
+
+    # We mock the download_image function to simulate some probably-impossible
+    # scenario where the image is not downloaded but the function itself didn't
+    # actually raise.
+    mocker.patch("easylink.implementation.download_image")
     with pytest.raises(SystemExit) as e:
-        Pipeline(default_config)
+        Pipeline(
+            Config(
+                default_config_params,
+                schema_name="development",
+                images_dir="some/path/",
+            )
+        )
+
+    msg_str = (
+        "Image 'some/path/python_pandas.sif' does not exist and could not be downloaded."
+    )
 
     _check_expected_validation_exit(
         error=e,
@@ -435,18 +441,51 @@ def test_no_container(default_config, caplog, mocker):
         error_no=errno.EINVAL,
         expected_msg={
             IMPLEMENTATION_ERRORS_KEY: {
-                "step_1_python_pandas": [
-                    "Container 'some/path/with/no/container.sif' does not exist.",
-                ],
-                "step_2_python_pandas": [
-                    "Container 'some/path/with/no/container_2.sif' does not exist.",
-                ],
-                "step_3_python_pandas": [
-                    "Container 'some/path/with/no/container_3.sif' does not exist.",
-                ],
-                "step_4_python_pandas": [
-                    "Container 'some/path/with/no/container_4.sif' does not exist.",
-                ],
+                "step_1_python_pandas": [msg_str],
+                "step_2_python_pandas": [msg_str],
+                "step_3_python_pandas": [msg_str],
+                "step_4_python_pandas": [msg_str],
+            },
+        },
+    )
+
+
+def test_missing_zenodo_info(default_config_params, caplog, mocker):
+
+    # Mock the metadata to remove the zenodo information
+    metadata = load_yaml(paths.IMPLEMENTATION_METADATA)
+    metadata["step_1_python_pandas"].pop("zenodo_record_id")
+    metadata["step_2_python_pandas"].pop("zenodo_record_id")
+    metadata["step_3_python_pandas"].pop("md5_checksum")
+    metadata["step_4_python_pandas"].pop("zenodo_record_id")
+    metadata["step_4_python_pandas"].pop("md5_checksum")
+
+    # HACK: I couldn't figure out how to mock the underlying Implementation._metadata
+    # attr itself, so I just mock the load_yaml() method. This only works b/c
+    # that's the only place this function is called here.
+    mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
+    with pytest.raises(SystemExit) as e:
+        Pipeline(
+            Config(
+                default_config_params,
+                schema_name="development",
+                images_dir="some/path/",
+            )
+        )
+
+    missing_record_id = "Image 'some/path/python_pandas.sif' does not exist and no Zenodo record ID is provided to download it."
+    missing_md5 = "Image 'some/path/python_pandas.sif' does not exist and no MD5 checksum is provided to verify from the host."
+
+    _check_expected_validation_exit(
+        error=e,
+        caplog=caplog,
+        error_no=errno.EINVAL,
+        expected_msg={
+            IMPLEMENTATION_ERRORS_KEY: {
+                "step_1_python_pandas": [missing_record_id],
+                "step_2_python_pandas": [missing_record_id],
+                "step_3_python_pandas": [missing_md5],
+                "step_4_python_pandas": [missing_record_id, missing_md5],
             },
         },
     )
@@ -458,8 +497,8 @@ def test_implemenation_does_not_match_step(default_config, caplog, mocker):
     metadata["step_2_python_pandas"]["steps"] = ["not-the-step-2-name"]
     mocker.patch("easylink.implementation.load_yaml", return_value=metadata)
     mocker.patch(
-        "easylink.implementation.Implementation._validate_container_exists",
-        side_effect=lambda x: x,
+        "easylink.implementation.Implementation._download_and_validate_image",
+        side_effect=lambda x, y: x,
     )
 
     with pytest.raises(SystemExit) as e:

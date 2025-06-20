@@ -60,12 +60,14 @@ new_clusters_df = load_file(new_clusters_filepath)
 def merge_clusters(known_clusters_df, new_clusters_df):
     # Combine both dataframes
     combined_df = pd.concat([known_clusters_df, new_clusters_df], ignore_index=True)
-
-    # Drop records with missing cluster IDs
-    combined_df = combined_df.dropna(subset=["Cluster ID"])
+    combined_df["Input Record Key"] = (
+        combined_df["Input Record Dataset"]
+        + "-__-"
+        + combined_df["Input Record ID"].astype(int).astype(str)
+    )
 
     # Group by Cluster ID to get connected records
-    cluster_groups = combined_df.groupby("Cluster ID")["Input Record ID"].apply(list)
+    cluster_groups = combined_df.groupby("Cluster ID")["Input Record Key"].apply(list)
 
     # Build a graph of all connections implied by cluster IDs
     G = nx.Graph()
@@ -75,8 +77,8 @@ def merge_clusters(known_clusters_df, new_clusters_df):
                 G.add_edge(group[i], group[j])
 
     # Add isolated nodes (records with unique clusters)
-    all_ids = set(combined_df["Input Record ID"])
-    G.add_nodes_from(all_ids)
+    all_keys = set(combined_df["Input Record Key"])
+    G.add_nodes_from(all_keys)
 
     # Compute connected components
     components = list(nx.connected_components(G))
@@ -84,13 +86,19 @@ def merge_clusters(known_clusters_df, new_clusters_df):
     # Assign new cluster IDs
     merged_data = []
     for cluster_id, records in enumerate(components, start=1):
-        for record_id in records:
-            merged_data.append((record_id, cluster_id))
+        for record_key in records:
+            merged_data.append((record_key, cluster_id))
 
     # Build the final DataFrame
-    merged_df = pd.DataFrame(merged_data, columns=["Input Record ID", "Cluster ID"])
+    merged_df = pd.DataFrame(merged_data, columns=["Input Record Key", "Cluster ID"])
 
-    return merged_df
+    merged_df[["Input Record Dataset", "Input Record ID"]] = merged_df[
+        "Input Record Key"
+    ].str.split("-__-", n=1, expand=True)
+
+    merged_df["Input Record ID"] = merged_df["Input Record ID"].astype(int)
+
+    return merged_df[["Input Record Dataset", "Input Record ID", "Cluster ID"]]
 
 
 output_df = merge_clusters(known_clusters_df, new_clusters_df)

@@ -8,13 +8,17 @@ This module contains utility functions for handling data files and directories.
 
 """
 
+import hashlib
 import os
 import shutil
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
+import requests
 import yaml
+from loguru import logger
+from tqdm import tqdm
 
 
 def modify_umask(func: Callable) -> Callable:
@@ -152,3 +156,71 @@ def load_yaml(filepath: str | Path) -> dict:
     with open(filepath, "r") as file:
         data = yaml.safe_load(file)
     return data
+
+
+@modify_umask
+def download_image(
+    images_dir: str | Path, record_id: int, filename: str, md5_checksum: str
+) -> None:
+    """Downloads an image from zenodo.
+
+    Parameters
+    ----------
+    images_dir
+        The directory to download the image to.
+    record_id
+        The zenodo record ID that the image is a part of.
+    filename
+        The name of the image file to download.
+    md5_checksum
+        The expected MD5 checksum of the image file.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the image file was not downloaded.
+    ValueError
+        If the MD5 checksum of the downloaded file does not match the expected checksum.
+    """
+
+    images_dir = Path(images_dir).resolve()
+    if not images_dir.exists():
+        images_dir.mkdir(parents=True, exist_ok=True)
+
+    url = f"https://zenodo.org/record/{record_id}/files/{filename}?download=1"
+
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+
+    total_size = int(response.headers.get("Content-Length", 0))
+    output_path = images_dir / filename
+    logger.info(f"Downloading {filename} to {output_path}...")
+    with open(output_path, "wb") as file, tqdm(
+        total=total_size, unit="B", unit_scale=True, desc=filename
+    ) as progress_bar:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                file.write(chunk)
+                progress_bar.update(len(chunk))
+
+    if not output_path.exists():
+        raise FileNotFoundError(f"Failed to download the image: {filename}")
+
+    # Verify MD5 checksum
+    calculated_md5_checksum = calculate_md5_checksum(output_path)
+    if calculated_md5_checksum != md5_checksum:
+        raise ValueError(
+            f"MD5 checksum does not match for {filename}.\n"
+            f"Try manually downloading the image and then moving it to the {images_dir} directory.\n"
+            f"Download the image by visiting this link: {url}"
+        )
+
+
+def calculate_md5_checksum(output_path: Path) -> str:
+    md5_hash = hashlib.md5()
+    with open(output_path, "rb") as file:
+        while chunk := file.read(8192):
+            md5_hash.update(chunk)
+
+    calculated_md5_checksum = md5_hash.hexdigest()
+    return calculated_md5_checksum

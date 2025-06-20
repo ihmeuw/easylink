@@ -9,6 +9,7 @@ from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.runner import main
 from easylink.utilities.general_utils import is_on_slurm
+from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 
@@ -34,6 +35,7 @@ def test_slurm(
             computing_environment=SPECIFICATIONS_DIR
             / "integration/environment_spark_slurm.yaml",
             results_dir=test_specific_results_dir,
+            images_dir=DEV_IMAGES_DIR,
             debug=True,
         )
     assert exit.value.code == 0

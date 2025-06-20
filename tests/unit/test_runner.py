@@ -23,7 +23,7 @@ def test_get_singularity_args(default_config, test_dir):
 
 
 def test_get_environment_args_local(default_config_params):
-    config = Config(default_config_params, "development")
+    config = Config(default_config_params, schema_name="development")
     assert _get_environment_args(config) == []
 
 
@@ -36,7 +36,7 @@ def test_get_environment_args_slurm(default_config_params, unit_test_specificati
     slurm_config_params["environment"] = load_yaml(
         f"{unit_test_specifications_dir}/environment_spark_slurm.yaml"
     )
-    slurm_config = Config(slurm_config_params, "development")
+    slurm_config = Config(slurm_config_params, schema_name="development")
     resources = slurm_config.slurm_resources
     assert _get_environment_args(slurm_config) == [
         "--executor",

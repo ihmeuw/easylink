@@ -1,3 +1,11 @@
+**0.1.20 - 6/11/25**
+
+ - Update implementation creator tool for new implementation_metadata.yaml format
+
+**0.1.19 - 6/11/25**
+
+ - Implement support for images hosted on zenodo
+
 **0.1.18 - 5/14/25**
 
  - Refactor to use a single pipeline schema rather than multiple potential schemas

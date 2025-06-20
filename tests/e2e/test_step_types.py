@@ -4,6 +4,7 @@ import sys
 
 import pytest
 
+from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 
@@ -57,6 +58,7 @@ def test_step_types(
             f"-i {SPECIFICATIONS_DIR / input_data} "
             f"-e {SPECIFICATIONS_DIR / computing_environment} "
             f"-o {str(test_specific_results_dir)} "
+            f"-I {DEV_IMAGES_DIR} "
             "--no-timestamp "
             "--schema development "
         )

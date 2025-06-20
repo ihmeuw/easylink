@@ -25,7 +25,6 @@ from easylink.rule import (
 )
 from easylink.utilities.general_utils import exit_with_validation_error
 from easylink.utilities.paths import SPARK_SNAKEFILE
-from easylink.utilities.validation_utils import validate_input_file_dummy
 
 IMPLEMENTATION_ERRORS_KEY = "IMPLEMENTATION ERRORS"
 
@@ -135,7 +134,10 @@ class Pipeline:
         """
         errors = defaultdict(dict)
         for implementation in self.pipeline_graph.implementations:
-            implementation_errors = implementation.validate()
+            implementation_errors = implementation.validate(
+                skip_image_validation=(self.config.command == "generate_dag"),
+                images_dir=self.config.images_dir,
+            )
             if implementation_errors:
                 errors[IMPLEMENTATION_ERRORS_KEY][implementation.name] = implementation_errors
         return errors
@@ -329,7 +331,7 @@ use rule start_spark_worker from spark_cluster with:
             resources=resources,
             envvars=implementation.environment_variables,
             diagnostics_dir=str(diagnostics_dir),
-            image_path=implementation.singularity_image_path,
+            image_path=self.config.images_dir / implementation.singularity_image_name,
             script_cmd=implementation.script_cmd,
             requires_spark=implementation.requires_spark,
             is_embarrassingly_parallel=is_embarrassingly_parallel,

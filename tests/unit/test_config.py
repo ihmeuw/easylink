@@ -137,7 +137,7 @@ def test_required_attributes(mocker, default_config_params, key, value):
     if value:
         config_params["environment"][key] = value
     env_dict = {key: value} if value else {}
-    retrieved = Config(config_params, "development").environment[key]
+    retrieved = Config(config_params, schema_name="development").environment[key]
     expected = DEFAULT_ENVIRONMENT["environment"].copy()
     expected.update(env_dict)
     assert retrieved == expected[key]
@@ -159,7 +159,7 @@ def test_implementation_resource_requests(default_config_params, resource_reques
     config_params = default_config_params
     if resource_request:
         config_params["environment"][key] = resource_request
-    config = Config(config_params, "development")
+    config = Config(config_params, schema_name="development")
     env_dict = {key: resource_request.copy()} if resource_request else {}
     retrieved = config.environment[key].to_dict()
     expected = DEFAULT_ENVIRONMENT["environment"][key].copy()
@@ -207,7 +207,7 @@ def test_spark_requests(default_config_params, spark_request, requires_spark):
 
     if spark_request:
         config_params["environment"][key] = spark_request
-    retrieved = Config(config_params, "development").environment[key].to_dict()
+    retrieved = Config(config_params, schema_name="development").environment[key].to_dict()
     expected_env_dict = {key: spark_request.copy()} if spark_request else {}
     expected = LayeredConfigTree(SPARK_DEFAULTS, layers=["initial_data", "user"])
     if spark_request:
@@ -223,7 +223,7 @@ def test_combined_implementations(default_config_params, is_default):
     if not is_default:
         config_params["pipeline"]["combined_implementations"] = combined_dict
     combined_implementations = Config(
-        config_params, "development"
+        config_params, schema_name="development"
     ).pipeline.combined_implementations
     expected = {} if is_default else combined_dict
     assert combined_implementations.to_dict() == expected

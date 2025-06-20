@@ -16,9 +16,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from layered_config_tree import LayeredConfigTree
+from loguru import logger
 
 from easylink.utilities import paths
-from easylink.utilities.data_utils import load_yaml
+from easylink.utilities.data_utils import (
+    calculate_md5_checksum,
+    download_image,
+    load_yaml,
+)
 
 if TYPE_CHECKING:
     from easylink.graph_components import InputSlot, OutputSlot
@@ -74,14 +79,14 @@ class Implementation:
     def __repr__(self) -> str:
         return f"Implementation.{self.name}"
 
-    def validate(self) -> list[str]:
+    def validate(self, skip_image_validation: bool, images_dir: str | Path) -> list[str]:
         """Validates individual ``Implementation`` instances.
 
         Returns
         -------
             A list of logs containing any validation errors. Each item in the list
             is a distinct message about a particular validation error (e.g. if a
-            required container does not exist).
+            required image does not exist).
 
         Notes
         -----
@@ -89,7 +94,8 @@ class Implementation:
         """
         logs = []
         logs = self._validate_expected_steps(logs)
-        logs = self._validate_container_exists(logs)
+        if not skip_image_validation:
+            logs = self._download_and_validate_image(logs, images_dir)
         return logs
 
     ##################
@@ -110,11 +116,82 @@ class Implementation:
             )
         return logs
 
-    def _validate_container_exists(self, logs: list[str]) -> list[str]:
-        """Validates that the container to run exists."""
-        err_str = f"Container '{self.singularity_image_path}' does not exist."
-        if not Path(self.singularity_image_path).exists():
-            logs.append(err_str)
+    def _download_and_validate_image(
+        self, logs: list[str], images_dir: str | Path
+    ) -> list[str]:
+        """Downloads the image if required and validates it exists.
+
+        If the image does not exist in the specified images directory, it will
+        attempt to download it.
+        """
+        # HACK: We manually create the image path here as well as later when writing
+        # each implementations Snakefile rule.
+        image_path = Path(images_dir) / self.singularity_image_name
+        expected_md5_checksum = self._metadata.get("md5_checksum", None)
+        record_id = self._metadata.get("zenodo_record_id", None)
+        if image_path.exists():
+            self._handle_conflicting_checksums(
+                logs, image_path, expected_md5_checksum, record_id
+            )
+        else:
+            if not record_id:
+                logs.append(
+                    f"Image '{str(image_path)}' does not exist and no Zenodo record ID "
+                    "is provided to download it."
+                )
+            if not expected_md5_checksum:
+                logs.append(
+                    f"Image '{str(image_path)}' does not exist and no MD5 checksum "
+                    "is provided to verify from the host."
+                )
+            if not record_id or not expected_md5_checksum:
+                return logs
+            download_image(
+                images_dir=images_dir,
+                record_id=record_id,
+                filename=self.singularity_image_name,
+                md5_checksum=expected_md5_checksum,
+            )
+        if not image_path.exists():
+            logs.append(
+                f"Image '{str(image_path)}' does not exist and could not be downloaded."
+            )
+        return logs
+
+    @staticmethod
+    def _handle_conflicting_checksums(
+        logs: list[str],
+        image_path: Path,
+        expected_md5_checksum: str | None,
+        record_id: str | None,
+    ) -> list[str]:
+        # TODO: Strengthen the following logic to better handle image updates.
+        # If using the default images directory and the image already exists
+        # but with a different checksum than in the implementation metadata,
+        # re-download.
+        calculated_md5_checksum = calculate_md5_checksum(image_path)
+        if (
+            image_path.parent == paths.DEFAULT_IMAGES_DIR
+            and expected_md5_checksum
+            and calculated_md5_checksum != expected_md5_checksum
+        ):
+            if not record_id:
+                logs.append(
+                    f"Image '{str(image_path)}' exists but has a different MD5 checksum "
+                    f"({calculated_md5_checksum}) than expected ({expected_md5_checksum}). "
+                    "No Zenodo record ID is provided to re-download the image."
+                )
+            logger.info(
+                f"Image '{str(image_path)}' exists but has a different MD5 checksum "
+                f"({calculated_md5_checksum}) than expected ({expected_md5_checksum}). "
+                "Re-downloading the image."
+            )
+            download_image(
+                images_dir=image_path.parent,
+                record_id=record_id,
+                filename=image_path.name,
+                md5_checksum=expected_md5_checksum,
+            )
         return logs
 
     def _get_env_vars(self, implementation_config: LayeredConfigTree) -> dict[str, str]:
@@ -124,9 +201,9 @@ class Implementation:
         return env_vars
 
     @property
-    def singularity_image_path(self) -> str:
+    def singularity_image_name(self) -> str:
         """The path to the required Singularity image."""
-        return self._metadata["image_path"]
+        return self._metadata["image_name"]
 
     @property
     def script_cmd(self) -> str:

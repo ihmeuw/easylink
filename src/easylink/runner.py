@@ -34,6 +34,7 @@ def main(
     input_data: str | Path,
     computing_environment: str | Path | None,
     results_dir: str | Path,
+    images_dir: str | None,
     schema_name: str = "main",
     debug: bool = False,
 ) -> None:
@@ -59,6 +60,9 @@ def main(
         to run the pipeline on. If None, the pipeline will be run locally.
     results_dir
         The directory to write results and incidental files (logs, etc.) to.
+    images_dir
+        The directory containing the images or to download the images to if they
+        don't exist. If None, will default to ~/.easylink_images.
     schema_name
         The name of the schema to validate the pipeline configuration against.
     debug
@@ -68,7 +72,9 @@ def main(
     config_params = load_params_from_specification(
         pipeline_specification, input_data, computing_environment, results_dir
     )
-    config = Config(config_params, schema_name)
+    config = Config(
+        config_params, schema_name=schema_name, images_dir=images_dir, command=command
+    )
     pipeline = Pipeline(config)
     # After validation is completed, create the results directory
     create_results_directory(Path(results_dir))

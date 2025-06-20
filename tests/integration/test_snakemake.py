@@ -4,6 +4,7 @@ import pytest
 from easylink.pipeline_schema import PipelineSchema
 from easylink.pipeline_schema_constants import SCHEMA_PARAMS
 from easylink.runner import main
+from easylink.utilities.paths import DEV_IMAGES_DIR
 from tests.conftest import SPECIFICATIONS_DIR
 
 
@@ -29,6 +30,7 @@ def test_missing_results(test_specific_results_dir, mocker, caplog):
             input_data=SPECIFICATIONS_DIR / "common/input_data.yaml",
             computing_environment=SPECIFICATIONS_DIR / "common/environment_local.yaml",
             results_dir=test_specific_results_dir,
+            images_dir=DEV_IMAGES_DIR,
         )
     assert exit.value.code == 1
     assert "MissingOutputException" in caplog.text
@@ -62,6 +64,7 @@ def test_outputting_a_directory(outputs_specified: bool, test_specific_results_d
             input_data=SPECIFICATIONS_DIR / "common/input_data_one_file.yaml",
             computing_environment=SPECIFICATIONS_DIR / "common/environment_local.yaml",
             results_dir=test_specific_results_dir,
+            images_dir=DEV_IMAGES_DIR,
         )
     assert exit.value.code == 0
     assert (

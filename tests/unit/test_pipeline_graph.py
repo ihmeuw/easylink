@@ -521,14 +521,14 @@ def test_spark_is_required(default_config_params, requires_spark):
         config_params["pipeline"]["steps"]["step_1"]["implementation"][
             "name"
         ] = "step_1_python_pyspark"
-    config = Config(config_params, "development")
+    config = Config(config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config)
     assert pipeline_graph.spark_is_required == requires_spark
 
 
 def test_get_whether_embarrassingly_parallel(default_config_params):
     config_params = default_config_params
-    config = Config(config_params, "development")
+    config = Config(config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config)
     for node in pipeline_graph.implementation_nodes:
         if node == "step_3_python_pandas":
@@ -539,7 +539,7 @@ def test_get_whether_embarrassingly_parallel(default_config_params):
 
 @pytest.mark.parametrize("any_embarrassingly_parallel", [True, False])
 def test_any_embarrassingly_parallel(default_config_params, any_embarrassingly_parallel):
-    config = Config(default_config_params, "development")
+    config = Config(default_config_params, schema_name="development")
     pipeline_graph = PipelineGraph(config, freeze=False)
     if not any_embarrassingly_parallel:
         pipeline_graph.remove_node("step_3_python_pandas")
@@ -554,7 +554,7 @@ def test_merge_combined_implementations(
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_combine_two_steps.yaml"
     )
-    pipeline_graph = PipelineGraph(Config(config_params, "development"))
+    pipeline_graph = PipelineGraph(Config(config_params, schema_name="development"))
     expected_nodes = {
         "input_data",
         "step_1_2",
@@ -680,7 +680,7 @@ def test_merge_combined_implementations_parallel(
     config_params["pipeline"] = load_yaml(
         f"{unit_test_specifications_dir}/pipeline_combine_with_parallel.yaml"
     )
-    pipeline_graph = PipelineGraph(Config(config_params, "development"))
+    pipeline_graph = PipelineGraph(Config(config_params, schema_name="development"))
     expected_nodes = {
         "input_data",
         "step_1_parallel_split_1_step_1_python_pandas",
@@ -842,7 +842,7 @@ def test_bad_combined_configuration_raises(
         if use_custom_schema:
             PipelineGraph(Config(config_params, problem_key))
         else:
-            PipelineGraph(Config(config_params, "development"))
+            PipelineGraph(Config(config_params, schema_name="development"))
 
 
 def test_nested_templated_steps(
