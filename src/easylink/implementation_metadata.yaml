@@ -260,7 +260,7 @@ dummy_step_2_for_output_dir_example:
 default_removing_records:
   steps:
   - removing_records
-  image_name: main/default_removing_records.sif
+  image_name: zmbc/default_removing_records.sif
   script_cmd: python /default_removing_records.py
   outputs:
     dataset: dataset
@@ -274,7 +274,7 @@ default_clusters_to_links:
 default_determining_exclusions:
   steps:
   - determining_exclusions
-  image_name: main/default_determining_exclusions.sif
+  image_name: zmbc/default_determining_exclusions.sif
   script_cmd: python /default_determining_exclusions.py
   outputs:
     ids_to_remove: result.parquet
@@ -344,24 +344,38 @@ fastLink_links_to_clusters:
 exclude_clustered:
   steps:
   - determining_exclusions
-  image_name: main/exclude_clustered.sif
+  image_name: zmbc/exclude_clustered.sif
   script_cmd: python /exclude_clustered.py
   outputs:
     ids_to_remove: result.parquet
 exclude_none:
   steps:
   - determining_exclusions
-  image_name: main/exclude_none.sif
+  image_name: zmbc/exclude_none.sif
   script_cmd: python /exclude_none.py
   outputs:
     ids_to_remove: result.parquet
 update_clusters_by_connected_components:
   steps:
   - updating_clusters
-  image_name: main/update_clusters_by_connected_components.sif
+  image_name: zmbc/update_clusters_by_connected_components.sif
   script_cmd: python /update_clusters_by_connected_components.py
   outputs:
     clusters: result.parquet
+one_to_many_links_to_clusters:
+  steps:
+  - links_to_clusters
+  image_name: zmbc/one_to_many_links_to_clusters.sif
+  script_cmd: python /one_to_many_links_to_clusters.py
+  outputs:
+    clusters: result.parquet
+accept_all_pairs:
+  steps:
+  - evaluating_pairs
+  image_name: zmbc/accept_all_pairs.sif
+  script_cmd: python /accept_all_pairs.py
+  outputs:
+    links: result.parquet
 middle_name_to_initial:
   steps:
   - pre-processing

@@ -341,8 +341,8 @@ def _validate_pairs(df: pd.DataFrame, filepath: str) -> None:
 def validate_ids_to_remove(filepath: str) -> None:
     """Validates a file containing IDs to remove.
 
-    - The file must contain a single column: "Record ID".
-    - "Record ID" must have unique values.
+    - The file must contain a single column: "Input Record ID".
+    - "Input Record ID" must have unique values.
 
     Parameters
     ----------
@@ -352,13 +352,13 @@ def validate_ids_to_remove(filepath: str) -> None:
     Raises
     ------
     LookupError
-        If the file is missing the "Record ID" column.
+        If the file is missing the "Input Record ID" column.
     ValueError
-        If the "Record ID" column is not unique.
+        If the "Input Record ID" column is not unique.
     """
-    _validate_required_columns(filepath, {"Record ID"})
+    _validate_required_columns(filepath, {"Input Record ID"})
     df = _read_file(filepath)
-    _validate_unique_column(df, "Record ID", filepath)
+    _validate_unique_column(df, "Input Record ID", filepath)
 
 
 def validate_records(filepath: str) -> None:
