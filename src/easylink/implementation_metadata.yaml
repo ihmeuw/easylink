@@ -316,7 +316,7 @@ splink_blocking_and_filtering:
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_name: /mnt/team/simulation_science/priv/engineering/er_ecosystem/images/tylerdy/splink_evaluating_pairs.sif
+  image_name: tylerdy/splink_evaluating_pairs.sif
   script_cmd: python /splink_evaluating_pairs.py
   outputs:
     links: result.parquet
@@ -368,4 +368,4 @@ middle_name_to_initial:
   image_name: tylerdy/middle_name_to_initial.sif
   script_cmd: python /middle_name_to_initial.py
   outputs:
-    dataset: result.parquet
+    dataset: dataset

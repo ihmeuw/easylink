@@ -54,15 +54,15 @@ steps:
                   name: splink_evaluating_pairs
                   configuration:
                     BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-                    COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
-                    PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
+                    COMPARISONS: "'ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name'"
+                    PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0000625  # == 1 / len(ssa)
                     THRESHOLD_MATCH_PROBABILITY: 0
                     LINK_ONLY: true
           links_to_clusters:
             implementation:
               name: splink_links_to_clusters
               configuration:
-                THRESHOLD_MATCH_PROBABILITY: 0.997
+                THRESHOLD_MATCH_PROBABILITY: 0.25
       updating_clusters:
         implementation:
           name: default_updating_clusters
