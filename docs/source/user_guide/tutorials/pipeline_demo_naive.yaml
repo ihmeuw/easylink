@@ -33,11 +33,11 @@ steps:
               pre-processing:
                 parallel:
                 - implementation:
-                    name: dummy_pre-processing
+                    name: middle_name_to_initial
                     configuration: 
                       INPUT_DATASET: input_file_ssa_2020
                 - implementation:
-                    name: middle_name_to_initial
+                    name: dummy_pre-processing
                     configuration: 
                       INPUT_DATASET: input_file_w2_2020
               schema_alignment:

@@ -368,4 +368,4 @@ middle_name_to_initial:
   image_name: tylerdy/middle_name_to_initial.sif
   script_cmd: python /middle_name_to_initial.py
   outputs:
-    dataset: result.parquet
+    dataset: dataset
