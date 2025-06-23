@@ -150,4 +150,3 @@ df.plot(
 plt.savefig(str(Path(results_dir / "matches_and_duplicates_by_prob.png")))
 print("Plot data:")
 print(df)
-print(df["Probability"] > 0.95)
