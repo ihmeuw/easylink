@@ -1,6 +1,6 @@
 steps:
   step_1:
-    parallel:
+    clones:
     - input_data_file: file1
       implementation:
         name: step_1_python_pandas

@@ -149,11 +149,11 @@ configures the pipeline for this run, by specifying configuration details for ea
 defined by the pipeline schema. The schema steps, and the edges between them, are defined in 
 ``pipeline_schema_constants/development.py``. The schema steps, or nodes, define input and output slots for 
 data used or produced by the schema steps, as well as any logical or behavioral structure of the step,
-such as defining a step as a ``LoopStep``, ``ParallelStep``, ``ChoiceStep``, or ``HierarchicalStep``. The edges 
+such as defining a step as a ``LoopStep``, ``CloneableStep``, ``ChoiceStep``, or ``HierarchicalStep``. The edges 
 define how data moves between steps' input and output slots.
 
 ``pipeline_schema_constants/development.py`` defines that the pipeline schema requires four steps, that the 
-third step is ``EmbarrassinglyParallel``, that the fourth step is a ``ChoiceStep``, and that all steps have 
+third step is ``AutoParallel``, that the fourth step is a ``ChoiceStep``, and that all steps have 
 one input except the fourth step, which has two.
 The edges in the ``EDGES`` variable in that file connect the steps, so an output from one becomes an input
 to another.
@@ -206,15 +206,14 @@ except that ``step_4`` has two inputs, as defined in
 
 .. warning::
    Note that this diagram doesn't show the dependencies on original (user-provided) input data, and 
-   displays validations, and doesn't show Step 3 because it is embarrassingly parallel. See 
+   displays validations, and doesn't show Step 3 because it is an auto-parallel step. See 
    `this ticket <https://jira.ihme.washington.edu/browse/MIC-5767>`_ where we plan to fix these issues.
 
 Now we can understand why the final output has 60k rows. For the current dummy implementation, when there are multiple input data files, the rows 
 in the files are concatenated. So ``step_1`` concatenates three 10k row datasets, and ``step_4`` concatenates these 
 30k rows with another 30k rows.
 
-``step_3`` is aggregated and split because it is defined as 
-``EmbarrassinglyParallel``.
+``step_3`` is aggregated and split because it is defined as ``AutoParallel``.
 
 We've already viewed the final output, but if we want to see how the data is transformed over the course 
 of the pipeline, we can view intermediary outputs as well::

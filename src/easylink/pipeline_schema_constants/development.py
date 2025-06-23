@@ -18,13 +18,13 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
+    AutoParallelStep,
     ChoiceStep,
-    EmbarrassinglyParallelStep,
+    CloneableStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
     OutputStep,
-    ParallelStep,
     Step,
 )
 from easylink.utilities.aggregator_utils import concatenate_datasets
@@ -33,7 +33,7 @@ from easylink.utilities.validation_utils import validate_input_file_dummy
 
 NODES = [
     InputStep(),
-    ParallelStep(
+    CloneableStep(
         template_step=Step(
             step_name="step_1",
             input_slots=[
@@ -58,7 +58,7 @@ NODES = [
         output_slots=[OutputSlot("step_2_main_output")],
     ),
     LoopStep(
-        template_step=EmbarrassinglyParallelStep(
+        template_step=AutoParallelStep(
             step=Step(
                 step_name="step_3",
                 input_slots=[

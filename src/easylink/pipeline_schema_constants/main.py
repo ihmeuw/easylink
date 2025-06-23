@@ -12,11 +12,11 @@ from easylink.graph_components import (
     OutputSlotMapping,
 )
 from easylink.step import (
+    CloneableStep,
     HierarchicalStep,
     InputStep,
     LoopStep,
     OutputStep,
-    ParallelStep,
     Step,
 )
 from easylink.utilities.validation_utils import (
@@ -56,8 +56,8 @@ NODES = [
             ],
             output_slots=[OutputSlot("clusters")],
             nodes=[
-                ParallelStep(
-                    # NOTE: Splitters/aggregators on the ParallelStep are implicit!
+                CloneableStep(
+                    # NOTE: Splitters/aggregators on the CloneableStep are implicit!
                     template_step=HierarchicalStep(
                         step_name="determining_exclusions_and_removing_records",
                         directly_implemented=False,
@@ -190,7 +190,7 @@ NODES = [
                                 ],
                                 output_slots=[OutputSlot("links")],
                                 nodes=[
-                                    ParallelStep(
+                                    CloneableStep(
                                         template_step=LoopStep(
                                             template_step=Step(
                                                 step_name="pre-processing",
@@ -265,7 +265,7 @@ NODES = [
                                         source_node="pre-processing",
                                         target_node="schema_alignment",
                                         output_slot="dataset",
-                                        # NOTE: The implicit ParallelStep aggregator has
+                                        # NOTE: The implicit CloneableStep aggregator has
                                         # made this multiple (a list)
                                         input_slot="datasets",
                                     ),
