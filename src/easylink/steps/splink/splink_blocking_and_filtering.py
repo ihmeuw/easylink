@@ -33,10 +33,6 @@ grouped = records.rename(columns={"Input Record ID": "unique_id"}).groupby(
     "Input Record Dataset"
 )
 
-grouped = records.rename(columns={"Input Record ID": "unique_id"}).groupby(
-    "Input Record Dataset"
-)
-
 db_api = DuckDBAPI()
 linker = Linker(
     [df for _, df in grouped],
@@ -156,5 +152,5 @@ cumulative_comparisons_to_be_scored_from_blocking_rules_chart(
     db_api=db_api,
     link_type=link_type,
     unique_id_column_name="unique_id",
-    source_dataset_column_name="Input Record Dataset",  # TBD change to dataset column when that's ready
+    source_dataset_column_name="Input Record Dataset",
 ).save(chart_path)
