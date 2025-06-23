@@ -131,6 +131,7 @@ def test_pipeline_splink_dummy(
 
         eq_df = correct_results.eq(results)
         from functools import reduce
+
         import numpy as np
 
         eq_ser = reduce(np.logical_and, (eq_df[c] for c in eq_df.columns))

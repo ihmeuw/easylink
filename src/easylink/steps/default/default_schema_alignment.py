@@ -38,10 +38,7 @@ for dir in dataset_dirs:
             datasets[Path(file).stem] = load_file(os.path.join(root, file))
 
 records = pd.concat(
-    [
-        df.assign(**{"Input Record Dataset": dataset})
-        for dataset, df in datasets.items()
-    ],
+    [df.assign(**{"Input Record Dataset": dataset}) for dataset, df in datasets.items()],
     ignore_index=True,
     sort=False,
 )
