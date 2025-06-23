@@ -19,12 +19,17 @@ def load_file(file_path, file_format=None):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("results_dir", type=Path)
+parser.add_argument("threshold", type=Path)
 
 p = parser.parse_args()
 if not p.results_dir.exists():
     print(f"No argument for results directory path")
 
+if not p.threshold.exists():
+    print(f"No argument for threshold")
+
 results_dir = p.results_dir
+threshold = p.threshold
 
 records = load_file(
     str(Path(results_dir / "intermediate/default_schema_alignment/result.parquet"))
@@ -66,8 +71,6 @@ nonlinks = predictions_df[
     predictions_df["simulant_id_l"] != predictions_df["simulant_id_r"]
 ].sort_values("Probability", ascending=False)
 
-THRESHOLD = 0.85
-
 cols_to_print = [
     "ssn_l",
     "ssn_r",
@@ -79,10 +82,10 @@ cols_to_print = [
     "last_name_r",
 ]
 pd.set_option("display.max_columns", None)
-false_positives = nonlinks[nonlinks["Probability"] >= THRESHOLD]
-false_negatives = links[links["Probability"] < THRESHOLD]
+false_positives = nonlinks[nonlinks["Probability"] >= threshold]
+false_negatives = links[links["Probability"] < threshold]
 print(f"{len(links)} true links")
-print(f"For threshold {THRESHOLD}, {len(false_positives)=}; {len(false_negatives)=}")
+print(f"For threshold {threshold}, {len(false_positives)=}; {len(false_negatives)=}")
 print("\n---------False Positives----------")
 print(false_positives[cols_to_print])
 print("\n---------False Negatives----------")
