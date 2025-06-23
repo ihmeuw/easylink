@@ -19,13 +19,13 @@ def load_file(file_path, file_format=None):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("results_dir", type=Path)
-parser.add_argument("threshold", type=Path)
+parser.add_argument("threshold", type=float)
 
 p = parser.parse_args()
 if not p.results_dir.exists():
     print(f"No argument for results directory path")
 
-if not p.threshold.exists():
+if not p.threshold:
     print(f"No argument for threshold")
 
 results_dir = p.results_dir
@@ -57,9 +57,9 @@ predictions_df["unique_id_r"] = (
 )
 
 predictions_df = predictions_df.merge(
-    records.add_suffix("_l"), left_on="unique_id_l", right_on="unique_id", how="left"
+    records.add_suffix("_l"), left_on="unique_id_l", right_on="unique_id_l", how="left"
 ).merge(
-    records.add_suffix("_r"), left_on="unique_id_r", right_on="unique_id", how="left"
+    records.add_suffix("_r"), left_on="unique_id_r", right_on="unique_id_r", how="left"
 )
 
 # sort links by lowest match_probability to see if we missed any
