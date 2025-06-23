@@ -7,22 +7,22 @@ steps:
               implementation:
                 name: default_determining_exclusions
                 configuration:
-                  INPUT_DATASET: input_file_ssa_2020
+                  INPUT_DATASET: input_file_ssa
             removing_records:
               implementation:
                 name: default_removing_records
                 configuration:
-                  INPUT_DATASET: input_file_ssa_2020
+                  INPUT_DATASET: input_file_ssa
           - determining_exclusions:
               implementation:
                 name: default_determining_exclusions
                 configuration:
-                  INPUT_DATASET: input_file_w2_2020
+                  INPUT_DATASET: input_file_w2
             removing_records:
               implementation:
                 name: default_removing_records
                 configuration:
-                  INPUT_DATASET: input_file_w2_2020
+                  INPUT_DATASET: input_file_w2
       clustering:
         substeps:
           clusters_to_links:
@@ -35,11 +35,11 @@ steps:
                 - implementation:
                     name: middle_name_to_initial
                     configuration: 
-                      INPUT_DATASET: input_file_ssa_2020
+                      INPUT_DATASET: input_file_ssa
                 - implementation:
                     name: dummy_pre-processing
                     configuration: 
-                      INPUT_DATASET: input_file_w2_2020
+                      INPUT_DATASET: input_file_w2
               schema_alignment:
                 implementation:
                   name: default_schema_alignment
