@@ -120,10 +120,24 @@ def test_pipeline_splink_dummy(
         # Check that the results file matches the expected value
         results = (
             pd.read_parquet(final_output)
-            .sort_values("Input Record ID")
+            .sort_values(["Input Record Dataset", "Input Record ID"])
             .reset_index(drop=True)
         )
-        correct_results = pd.read_csv(correct_results_csv)
+        correct_results = (
+            pd.read_csv(correct_results_csv)
+            .sort_values(["Input Record Dataset", "Input Record ID"])
+            .reset_index(drop=True)
+        )
+
+        eq_df = correct_results.eq(results)
+        from functools import reduce
+        import numpy as np
+
+        eq_ser = reduce(np.logical_and, (eq_df[c] for c in eq_df.columns))
+        print("Printing any non-equal rows:")
+        print(results[~eq_ser])
+        print(correct_results[~eq_ser])
+
         # Equal, except for inconsequential differences in order
         assert (
             results.sort_values(["Input Record Dataset", "Input Record ID"])
