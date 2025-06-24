@@ -1,11 +1,7 @@
 import pandas as pd
-import pdb
 
 import argparse
 from pathlib import Path
-
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def load_file(file_path, file_format=None):
@@ -57,10 +53,8 @@ predictions_df["unique_id_r"] = (
 )
 
 predictions_df = predictions_df.merge(
-    records.add_suffix("_l"), left_on="unique_id_l", right_on="unique_id_l", how="left"
-).merge(
-    records.add_suffix("_r"), left_on="unique_id_r", right_on="unique_id_r", how="left"
-)
+    records.add_suffix("_l"), on="unique_id_l", how="left"
+).merge(records.add_suffix("_r"), on="unique_id_r", how="left")
 
 # sort links by lowest match_probability to see if we missed any
 links = predictions_df[

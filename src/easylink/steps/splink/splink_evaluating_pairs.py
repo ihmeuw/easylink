@@ -63,7 +63,7 @@ for block_dir in blocks_dir.iterdir():
         input_table_aliases=[name for name, _ in grouped],
     )
 
-    linker.training.estimate_u_using_random_sampling(max_pairs=5e6)
+    linker.training.estimate_u_using_random_sampling(max_pairs=5e6, seed=1234)
 
     blocking_rules_for_training = os.environ["BLOCKING_RULES_FOR_TRAINING"].split(",")
 
