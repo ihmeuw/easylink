@@ -184,7 +184,9 @@ class Config(LayeredConfigTree):
     #################
 
     def _get_schema(self, schema_name: str = "main") -> PipelineSchema:
-        """Returns the first :class:`~easylink.pipeline_schema.PipelineSchema` that validates the requested pipeline.
+        """Gets the requested :class:`~easylink.pipeline_schema.PipelineSchema`.
+
+        The schema is only returned if it validates the pipeline configuration.
 
         Parameters
         ----------
@@ -205,11 +207,10 @@ class Config(LayeredConfigTree):
         Notes
         -----
         This acts as the pipeline configuration file's validation method since
-        we can only find a matching ``PipelineSchema`` if that file is valid.
+        we can only validate the ``PipelineSchema`` if that file is valid.
 
         """
         errors = defaultdict(dict)
-        # Try each schema until one is validated
         schema = PipelineSchema.get_schema(schema_name)
         logs = schema.validate_step(self.pipeline, self.input_data)
         if logs:

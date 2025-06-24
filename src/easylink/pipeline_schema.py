@@ -159,10 +159,10 @@ class PipelineSchema(HierarchicalStep):
         )
 
     @classmethod
-    def get_schema(cls, name: str = "main") -> list["PipelineSchema"]:
-        """Gets all allowable ``PipelineSchemas``.
+    def get_schema(cls, name: str = "main") -> "PipelineSchema":
+        """Gets the requested ``PipelineSchema``.
 
-        These ``PipelineSchemas`` represent the fully supported pipelines and are
+        This ``PipelineSchema`` represents the fully supported pipelines and is
         used to validate the user-requested pipeline.
 
         Parameters
