@@ -378,7 +378,7 @@ def test_loop_implementation_graph(
 
     step_config = LayeredConfigTree(
         {
-            "iterate": [
+            "iterations": [
                 {
                     "implementation": {
                         "name": "step_3_python_pandas",
@@ -732,10 +732,10 @@ def test__duplicate_template_step(
     mocker.patch("easylink.implementation.Implementation.validate", return_value=[])
     if step_type == "loop":
         step = LoopStep(**loop_step_params)
-        config_key = "iterate"
+        config_key = "iterations"
     else:  # cloneable
         step = CloneableStep(**cloneable_step_params)
-        config_key = "parallel"
+        config_key = "clones"
     implementation_config = [
         {
             "implementation": {
@@ -749,6 +749,9 @@ def test__duplicate_template_step(
         },
     )
     step.set_configuration_state(step_config, {}, {})
+    # Just check that we've not mucked up the configuration key
+    node_name = list(step.step_graph.nodes)[0]
+    assert "loop_1" in node_name if step_type == "loop" else "clone_1" in node_name
     step.template_step.set_configuration_state(
         LayeredConfigTree(
             {
@@ -1082,7 +1085,7 @@ def test_complex_choice_step_implementation_graph(choice_step_params: dict[str, 
                         },
                     },
                     "step_6": {
-                        "iterate": [
+                        "iterations": [
                             {
                                 "implementation": {
                                     "name": "step_6_python_pandas",
@@ -1549,7 +1552,7 @@ def test_auto_parallel_loop_step_implementation_graph(
     auto_parallel_step = AutoParallelStep(**auto_parallel_loop_step_params)
     step_config = LayeredConfigTree(
         {
-            "iterate": [
+            "iterations": [
                 {
                     "substeps": {
                         "step_3a": {"implementation": {"name": "step_3a_python_pandas"}},

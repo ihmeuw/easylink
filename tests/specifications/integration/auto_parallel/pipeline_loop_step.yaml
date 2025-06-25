@@ -1,6 +1,6 @@
 steps:
   step_1:
-    iterate:
+    iterations:
       - implementation:
           name: step_1_python_pandas
       - implementation:

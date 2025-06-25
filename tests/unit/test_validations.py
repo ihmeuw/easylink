@@ -110,7 +110,7 @@ def test_batch_validation():
             {
                 PIPELINE_ERRORS_KEY: {
                     "development": {
-                        "step step_3": ["No loop instances configured under iterate key."],
+                        "step step_3": ["No loop instances configured under iterations key."],
                     },
                 },
             },
