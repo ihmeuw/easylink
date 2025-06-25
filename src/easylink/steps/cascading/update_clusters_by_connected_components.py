@@ -50,8 +50,8 @@ if len(known_clusters_filepaths) == 0:
 known_clusters_filepath = known_clusters_filepaths[0]
 known_clusters_df = load_file(known_clusters_filepath)
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (clusters.parquet)
-results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a path to a single file (clusters.parquet)
+results_filepath = os.environ["OUTPUT_PATHS"]
 Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 new_clusters_df = load_file(new_clusters_filepath)

@@ -1,3 +1,4 @@
+
 Bootstrap: docker
 From: python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a721899
 
@@ -16,18 +17,6 @@ From: python@sha256:1c26c25390307b64e8ff73e7edf34b4fbeac59d41da41c08da28dc316a72
 
 %environment
     export LC_ALL=C
-    export PYTHONPATH=/app:$PYTHONPATH
 
 %runscript
-    python /dummy_step.py "$@"
-
-%labels
-    Author Patrick Nast
-    Version v1.0
-    Description Python Pandas Implementation
-
-%startscript
-    # These directories should be bound when running the container
-    mkdir -p /results
-    mkdir -p /diagnostics
-    mkdir -p /input_data
+    python /dummy_step.py '$@'

@@ -69,8 +69,8 @@ clustered_record_ids = set(dataset_df["Record ID"].unique()) & set(
 
 IDS_TO_REMOVE = pd.DataFrame({"Record ID": list(clustered_record_ids)})
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a file (results.parquet)
-results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a single path to a file (results.parquet)
+results_filepath = os.environ["OUTPUT_PATHS"]
 
 logging.info(f"Writing output for dataset from input {dataset_path} to {results_filepath}")
 IDS_TO_REMOVE.to_parquet(results_filepath)

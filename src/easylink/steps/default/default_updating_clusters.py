@@ -54,8 +54,8 @@ if len(known_clusters_df) > 0:
         "Default implementation of updating_clusters passed a non-empty set of known clusters"
     )
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (clusters.parquet)
-results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a path to a single file (clusters.parquet)
+results_filepath = os.environ["OUTPUT_PATHS"]
 Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 clusters_df = load_file(new_clusters_filepath)

@@ -182,15 +182,15 @@ rule:
         # TODO [MIC-5787]: handle multiple wildcards, e.g.
         #   output_paths = ",".join(self.output)
         #   wildcards_subdir = "/".join([f"{{wildcards.{wc}}}" for wc in self.wildcards])
-        #   and then in shell cmd: export DUMMY_CONTAINER_OUTPUT_PATHS={output_paths}/{wildcards_subdir}
+        #   and then in shell cmd: export OUTPUT_PATHS={output_paths}/{wildcards_subdir}
 
         # snakemake shell commands require wildcards to be prefaced with 'wildcards.'
         output_files = ",".join(self.output).replace("{chunk}", "{wildcards.chunk}")
         shell_cmd = f"""
     shell:
         '''
-        export DUMMY_CONTAINER_OUTPUT_PATHS={output_files}
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
+        export OUTPUT_PATHS={output_files}
+        export DIAGNOSTICS_DIRECTORY={self.diagnostics_dir}"""
         for input_slot_attrs in self.input_slots.values():
             # snakemake shell commands require wildcards to be prefaced with 'wildcards.'
             input_files = ",".join(input_slot_attrs["filepaths"]).replace(
@@ -200,8 +200,8 @@ rule:
         export {input_slot_attrs["env_var"]}={input_files}"""
         if self.requires_spark:
             shell_cmd += f"""
-        read -r DUMMY_CONTAINER_SPARK_MASTER_URL < {{input.master_url}}
-        export DUMMY_CONTAINER_SPARK_MASTER_URL"""
+        read -r SPARK_MASTER_URL < {{input.master_url}}
+        export  SPARK_MASTER_URL"""
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
         export {var_name}={var_value}"""

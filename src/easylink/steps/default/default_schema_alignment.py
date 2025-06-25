@@ -45,8 +45,8 @@ records = pd.concat(
 
 records = records.rename(columns={"Record ID": "Input Record ID"})
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single filepath
-output_path = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a single filepath
+output_path = os.environ["OUTPUT_PATHS"]
 Path(output_path).parent.mkdir(exist_ok=True, parents=True)
 
 logging.info(f"Writing output to {output_path}")

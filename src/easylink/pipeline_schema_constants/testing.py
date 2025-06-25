@@ -607,7 +607,7 @@ NODES_OUTPUT_DIR = [
         input_slots=[
             InputSlot(
                 name="step_2_main_input",
-                env_var="DUMMY_CONTAINER_MAIN_INPUT_DIR_PATH",
+                env_var="MAIN_INPUT_DIR_PATH",
                 validator=validate_dir,
             )
         ],

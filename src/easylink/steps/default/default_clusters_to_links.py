@@ -80,8 +80,8 @@ if len(clusters_filepaths) == 0:
 
 clusters_filepath = clusters_filepaths[0]
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
-results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a path to a single file (results.parquet)
+results_filepath = os.environ["OUTPUT_PATHS"]
 
 clusters_df = load_file(clusters_filepath)
 links_df = clusters_to_links(clusters_df)

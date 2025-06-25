@@ -7,8 +7,8 @@ import pandas as pd
 
 records = pd.read_parquet(os.environ["RECORDS_FILE_PATH"])
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory ('dataset')
-results_dir = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a single path to a directory ('dataset')
+results_dir = os.environ["OUTPUT_PATHS"]
 
 import splink
 

@@ -33,8 +33,8 @@ def load_file(file_path, file_format=None):
 
 # CLUSTERS_FILE_PATH is a path to a single file
 clusters_path = os.environ["CLUSTERS_FILE_PATH"]
-# DUMMY_CONTAINER_OUTPUT_PATHS is a path to a single file (results.parquet)
-results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a path to a single file (results.parquet)
+results_filepath = os.environ["OUTPUT_PATHS"]
 
 clusters_df = load_file(clusters_path)
 

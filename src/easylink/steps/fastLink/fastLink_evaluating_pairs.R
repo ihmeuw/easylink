@@ -10,8 +10,8 @@ library(stringr)
 # Check required environment variables
 required_env_vars <- c(
   "BLOCKS_DIR_PATH",
-  "DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY",
-  "DUMMY_CONTAINER_OUTPUT_PATHS",
+  "DIAGNOSTICS_DIRECTORY",
+  "OUTPUT_PATHS",
   "COMPARISONS",
   "THRESHOLD_MATCH_PROBABILITY"
 )
@@ -24,8 +24,8 @@ if (length(missing_vars) > 0) {
 }
 
 blocks_dir <- Sys.getenv("BLOCKS_DIR_PATH")
-diagnostics_dir <- Sys.getenv("DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY")
-output_path <- Sys.getenv("DUMMY_CONTAINER_OUTPUT_PATHS")
+diagnostics_dir <- Sys.getenv("DIAGNOSTICS_DIRECTORY")
+output_path <- Sys.getenv("OUTPUT_PATHS")
 comparisons <- strsplit(Sys.getenv("COMPARISONS"), ",")[[1]]
 
 all_predictions <- list()

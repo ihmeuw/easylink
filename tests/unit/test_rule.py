@@ -94,16 +94,16 @@ def test_implemented_rule_build_rule(
     elif output == ["some/file.txt", "some/other/file.txt"]:
         expected_str = expected_str.replace("output: ['some/file.txt']", f"output: {output}")
         expected_str = expected_str.replace(
-            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt",
-            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt,some/other/file.txt",
+            "export OUTPUT_PATHS=some/file.txt",
+            "export OUTPUT_PATHS=some/file.txt,some/other/file.txt",
         )
     elif output == ["some/directory"]:
         expected_str = expected_str.replace(
             "output: ['some/file.txt']", "output: directory('some/directory')"
         )
         expected_str = expected_str.replace(
-            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt",
-            "export DUMMY_CONTAINER_OUTPUT_PATHS=some/directory",
+            "export OUTPUT_PATHS=some/file.txt",
+            "export OUTPUT_PATHS=some/directory",
         )
     else:
         raise NotImplementedError

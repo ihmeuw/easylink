@@ -106,7 +106,7 @@ if (broken) {
 }
 
 output_file_format <- Sys.getenv("DUMMY_CONTAINER_OUTPUT_FILE_FORMAT", "parquet")
-output_file_paths <- strsplit(Sys.getenv("DUMMY_CONTAINER_OUTPUT_PATHS", paste0("/results/result.", output_file_format)), ",")[[1]]
+output_file_paths <- strsplit(Sys.getenv("OUTPUT_PATHS", paste0("/results/result.", output_file_format)), ",")[[1]]
 
 diagnostics$num_output_files <- length(output_file_paths)
 diagnostics$output_file_paths <- output_file_paths
@@ -123,7 +123,7 @@ for (output_file_path in output_file_paths) {
     }
 }
 
-diagnostics_dir <- Sys.getenv("DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY", "/diagnostics")
+diagnostics_dir <- Sys.getenv("DIAGNOSTICS_DIRECTORY", "/diagnostics")
 if (dir.exists(diagnostics_dir) && file.access(diagnostics_dir, mode = 2) == 0) {
     write_yaml(diagnostics, file.path(diagnostics_dir, 'diagnostics.yaml'))
 }
