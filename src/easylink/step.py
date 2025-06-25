@@ -1134,7 +1134,7 @@ class LoopStep(TemplatedStep):
     @property
     def config_key(self):
         """The pipeline specification key required for a ``LoopStep``."""
-        return "iterate"
+        return "iterations"
 
     @property
     def node_prefix(self):

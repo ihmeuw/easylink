@@ -1,6 +1,6 @@
 steps:
   entity_resolution:
-    iterate:
+    iterations:
       - substeps:
           determining_exclusions_and_removing_records:
             clones:

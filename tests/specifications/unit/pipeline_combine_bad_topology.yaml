@@ -1,6 +1,6 @@
 steps:
   step_1:
-    iterate:
+    iterations:
     - substeps:
         step_1a:
           implementation:
