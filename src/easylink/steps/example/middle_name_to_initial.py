@@ -45,8 +45,8 @@ for path in dataset_paths:
 if dataset_path is None:
     raise ValueError(f"No dataset matching {splitter_choice} found")
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory ('dataset')
-results_dir = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
+# OUTPUT_PATHS is a single path to a directory ('dataset')
+results_dir = Path(os.environ["OUTPUT_PATHS"])
 results_dir.mkdir(exist_ok=True, parents=True)
 
 output_path = results_dir / Path(dataset_path).name

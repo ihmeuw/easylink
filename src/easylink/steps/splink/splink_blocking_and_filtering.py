@@ -144,7 +144,7 @@ records["unique_id"] = (
     str(records["Input Record Dataset"]) + "_" + str(records["Input Record ID"])
 )
 db_api = DuckDBAPI()
-diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
+diagnostics_dir = Path(os.environ["DIAGNOSTICS_DIRECTORY"])
 chart_path = diagnostics_dir / f"blocking_cumulative_comparisons_chart_block_0.png"
 cumulative_comparisons_to_be_scored_from_blocking_rules_chart(
     table_or_tables=records,
