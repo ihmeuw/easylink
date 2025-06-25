@@ -47,12 +47,12 @@ steps:
                 implementation:
                   name: splink_blocking_and_filtering
                   configuration:
-                    BLOCKING_RULES: "'l.last_name == r.last_name'"
+                    BLOCKING_RULES: "l.last_name == r.last_name"
               evaluating_pairs:
                 implementation:
                   name: fastLink_evaluating_pairs
                   configuration:
-                    COMPARISONS: "'first_name:exact,last_name:exact'"
+                    COMPARISONS: "first_name:exact,last_name:exact"
                     THRESHOLD_MATCH_PROBABILITY: 0.1
           links_to_clusters:
             implementation:
