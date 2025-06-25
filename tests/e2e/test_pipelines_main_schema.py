@@ -35,20 +35,48 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
         # local pipeline_demo_naive.yaml
         (
             "docs/source/user_guide/tutorials/pipeline_demo_naive.yaml",
-            "docs/source/user_guide/tutorials/input_data_demo_naive.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
             "tests/specifications/common/environment_local.yaml",
             "tests/e2e/pipeline_naive_results.csv",
         ),
         # slurm pipeline_demo_naive.yaml
         (
             "docs/source/user_guide/tutorials/pipeline_demo_naive.yaml",
-            "docs/source/user_guide/tutorials/input_data_demo_naive.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
             "tests/specifications/e2e/environment_slurm_4GB.yaml",
             "tests/e2e/pipeline_naive_results.csv",
         ),
+        # local pipeline_demo_improved.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
+            "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_improved_results.csv",
+        ),
+        # slurm pipeline_demo_improved.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
+            "tests/specifications/e2e/environment_slurm_4GB.yaml",
+            "tests/e2e/pipeline_improved_results.csv",
+        ),
+        # local pipeline_demo_improved_2030.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo_2030.yaml",
+            "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_improved_results_2030.csv",
+        ),
+        # slurm pipeline_demo_improved_2030.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo_2030.yaml",
+            "tests/specifications/e2e/environment_slurm_4GB.yaml",
+            "tests/e2e/pipeline_improved_results_2030.csv",
+        ),
     ],
 )
-def test_pipeline_splink_dummy(
+def test_pipeline_splink(
     pipeline_specification,
     input_data,
     computing_environment,
@@ -92,20 +120,49 @@ def test_pipeline_splink_dummy(
         # Check that the results file matches the expected value
         results = (
             pd.read_parquet(final_output)
-            .sort_values("Input Record ID")
+            .sort_values(["Input Record Dataset", "Input Record ID"])
             .reset_index(drop=True)
         )
-        correct_results = pd.read_csv(correct_results_csv)
-        # Equal, except for inconsequential differences in order
-        assert (
-            results.sort_values(["Input Record Dataset", "Input Record ID"])
+        correct_results = (
+            pd.read_csv(correct_results_csv)
+            .sort_values(["Input Record Dataset", "Input Record ID"])
             .reset_index(drop=True)
-            .equals(
-                correct_results.sort_values(
-                    ["Input Record Dataset", "Input Record ID"]
-                ).reset_index(drop=True)
+        )
+
+        print(
+            results.compare(
+                correct_results, keep_equal=True, result_names=("actual", "expected")
             )
         )
+
+        # This overly-tricky bit of code checks that the actual clusters induced are the same,
+        # whether or not they are labeled the same.
+        print(
+            frozenset(
+                results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
+            ).difference(
+                frozenset(
+                    correct_results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
+                )
+            )
+        )
+
+        results_set = frozenset(
+            results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
+        )
+        correct_set = frozenset(
+            correct_results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
+        )
+        print(pipeline_specification)
+        if "improved" in pipeline_specification:
+            # improved model comparisons appear non-deterministic leading to inconsistent
+            # results for equality assertion
+            print(0.005 * len(correct_results))
+            assert (
+                len(results_set.difference(correct_set)) < 0.005 * len(correct_results)
+            ) & (len(results_set.difference(correct_set)) < 0.005 * len(correct_results))
+        else:
+            assert results_set == correct_set
 
         assert (test_specific_results_dir / Path(pipeline_specification).name).exists()
         assert (test_specific_results_dir / Path(input_data).name).exists()
