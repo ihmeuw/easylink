@@ -42,6 +42,7 @@ records = pd.concat(
     ignore_index=True,
     sort=False,
 )
+# TODO: check both datasets contain all the columns
 
 records = records.rename(columns={"Record ID": "Input Record ID"})
 
