@@ -1,3 +1,7 @@
+**0.1.23 - 6/24/25**
+
+ - Remove "dummy" pipeline references from codebase
+
 **0.1.22 - 6/24/25**
 
  - Feature: add support for default implementations

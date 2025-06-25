@@ -11,8 +11,8 @@ rule:
     container: "Multipolarity.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_OUTPUT_PATHS=some/file.txt
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
+        export OUTPUT_PATHS=some/file.txt
+        export DIAGNOSTICS_DIRECTORY=spam
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=foo
         export DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS=bar
         export eggs=coconut

@@ -45,8 +45,8 @@ if dataset_path is None:
 
 # IDS_TO_REMOVE_FILE_PATH is a single filepath (Cloneable section)
 ids_filepath = os.environ["IDS_TO_REMOVE_FILE_PATH"]
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a directory ('dataset')
-results_dir = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
+# OUTPUT_PATHS is a single path to a directory ('dataset')
+results_dir = Path(os.environ["OUTPUT_PATHS"])
 results_dir.mkdir(exist_ok=True, parents=True)
 
 dataset = load_file(dataset_path)

@@ -11,8 +11,8 @@ rule:
     container: "Multipolarity.sif"
     shell:
         '''
-        export DUMMY_CONTAINER_OUTPUT_PATHS=some/path/to/processed/{wildcards.chunk}/result.parquet
-        export DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY=spam
+        export OUTPUT_PATHS=some/path/to/processed/{wildcards.chunk}/result.parquet
+        export DIAGNOSTICS_DIRECTORY=spam
         export DUMMY_CONTAINER_MAIN_INPUT_FILE_PATHS=some/path/to/input_chunks/{wildcards.chunk}/result.parquet
         export DUMMY_CONTAINER_SECONDARY_INPUT_FILE_PATHS=bar
         export eggs=coconut

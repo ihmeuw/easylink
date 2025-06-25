@@ -12,7 +12,7 @@ library(stringr)
 # Check required environment variables
 required_env_vars <- c(
     "LINKS_FILE_PATH",
-    "DUMMY_CONTAINER_OUTPUT_PATHS",
+    "OUTPUT_PATHS",
     "THRESHOLD_MATCH_PROBABILITY"
 )
 missing_vars <- required_env_vars[!nzchar(Sys.getenv(required_env_vars))]
@@ -24,7 +24,7 @@ if (length(missing_vars) > 0) {
 }
 
 links_file_path <- Sys.getenv("LINKS_FILE_PATH")
-output_path <- Sys.getenv("DUMMY_CONTAINER_OUTPUT_PATHS")
+output_path <- Sys.getenv("OUTPUT_PATHS")
 
 if (!file.exists(links_file_path)) {
     stop(sprintf("File not found: %s", links_file_path))

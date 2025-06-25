@@ -101,9 +101,9 @@ else:
     df.drop(columns=columns_to_drop, inplace=True)
 
 output_file_format = os.getenv("DUMMY_CONTAINER_OUTPUT_FILE_FORMAT", "parquet")
-output_file_paths = os.getenv(
-    "DUMMY_CONTAINER_OUTPUT_PATHS", f"/results/result.{output_file_format}"
-).split(",")
+output_file_paths = os.getenv("OUTPUT_PATHS", f"/results/result.{output_file_format}").split(
+    ","
+)
 
 diagnostics["num_output_files"] = len(output_file_paths)
 diagnostics["output_file_paths"] = output_file_paths
@@ -117,7 +117,7 @@ for output_file_path in output_file_paths:
     else:
         raise ValueError()
 
-diagnostics_dir = os.getenv("DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY", "/diagnostics")
+diagnostics_dir = os.getenv("DIAGNOSTICS_DIRECTORY", "/diagnostics")
 try:
     with open(f"{diagnostics_dir}/diagnostics.yaml", "w") as f:
         yaml.dump(diagnostics, f, default_flow_style=False)

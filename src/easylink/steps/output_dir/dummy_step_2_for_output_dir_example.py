@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-dir_path = Path(os.environ["DUMMY_CONTAINER_MAIN_INPUT_DIR_PATH"])
+dir_path = Path(os.environ["MAIN_INPUT_DIR_PATH"])
 saved = False
 
 for i, f in enumerate([f for f in dir_path.iterdir() if f.is_file()]):
@@ -16,7 +16,7 @@ for i, f in enumerate([f for f in dir_path.iterdir() if f.is_file()]):
         continue
 
     if not saved:
-        shutil.copy(f, os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
+        shutil.copy(f, os.environ["OUTPUT_PATHS"])
         saved = True
 
     print(pd.read_parquet(f))

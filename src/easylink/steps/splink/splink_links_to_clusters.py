@@ -32,7 +32,7 @@ dummy_records_df = pd.DataFrame(
         )
     }
 )
-output_path = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
+output_path = Path(os.environ["OUTPUT_PATHS"])
 
 db_api = DuckDBAPI()
 

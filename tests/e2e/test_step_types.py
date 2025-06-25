@@ -62,6 +62,7 @@ def test_step_types(
             "--no-timestamp "
             "--schema development "
         )
+        print(f"Running command: \n{cmd}\n")
         subprocess.run(
             cmd,
             shell=True,

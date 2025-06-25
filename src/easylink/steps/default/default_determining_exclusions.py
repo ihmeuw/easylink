@@ -74,8 +74,8 @@ if len(clusters_df) > 0:
 
 IDS_TO_REMOVE = pd.DataFrame(columns=["Record ID"])
 
-# DUMMY_CONTAINER_OUTPUT_PATHS is a single path to a file (results.parquet)
-results_filepath = os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"]
+# OUTPUT_PATHS is a single path to a file (results.parquet)
+results_filepath = os.environ["OUTPUT_PATHS"]
 
 logging.info(f"Writing output for dataset from input {dataset_path} to {results_filepath}")
 IDS_TO_REMOVE.to_parquet(results_filepath)

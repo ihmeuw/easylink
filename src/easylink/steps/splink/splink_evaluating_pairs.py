@@ -10,8 +10,8 @@ import splink.comparison_library as cl
 from splink import Linker, SettingsCreator
 
 blocks_dir = Path(os.environ["BLOCKS_DIR_PATH"])
-diagnostics_dir = Path(os.environ["DUMMY_CONTAINER_DIAGNOSTICS_DIRECTORY"])
-output_path = Path(os.environ["DUMMY_CONTAINER_OUTPUT_PATHS"])
+diagnostics_dir = Path(os.environ["DIAGNOSTICS_DIRECTORY"])
+output_path = Path(os.environ["OUTPUT_PATHS"])
 Path(output_path).parent.mkdir(exist_ok=True, parents=True)
 link_only = os.getenv("LINK_ONLY", "false").lower() in ("true", "yes", "1")
 
