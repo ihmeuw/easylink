@@ -68,6 +68,7 @@ def test_easylink_run(
             "--no-timestamp "
             "--schema development "
         )
+        print(f"Running command: \n{cmd}\n")
         subprocess.run(
             cmd,
             shell=True,

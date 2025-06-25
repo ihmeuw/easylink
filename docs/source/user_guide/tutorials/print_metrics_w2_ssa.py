@@ -1,10 +1,9 @@
-import pandas as pd
-
 import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 
 def load_file(file_path, file_format=None):
@@ -40,9 +39,7 @@ predictions_df = load_file(
 
 # concatenate Record Dataset and Record ID columns for merge
 records["unique_id"] = (
-    records["Input Record Dataset"].astype(str)
-    + "_"
-    + records["Input Record ID"].astype(str)
+    records["Input Record Dataset"].astype(str) + "_" + records["Input Record ID"].astype(str)
 )
 predictions_df["unique_id_l"] = (
     predictions_df["Left Record Dataset"].astype(str)
@@ -89,9 +86,7 @@ print("\n---------False Negatives----------")
 print(false_negatives[cols_to_print])
 
 print("\n False Positives with same ssn:")
-print(
-    false_positives[false_positives["ssn_l"] == false_positives["ssn_r"]][cols_to_print]
-)
+print(false_positives[false_positives["ssn_l"] == false_positives["ssn_r"]][cols_to_print])
 
 
 clusters_df = load_file(str(Path(results_dir / "result.parquet")))
@@ -104,9 +99,7 @@ print(
 
 
 data = []
-num_w2s = records[records["Input Record Dataset"].str.contains("w2")][
-    "unique_id"
-].nunique()
+num_w2s = records[records["Input Record Dataset"].str.contains("w2")]["unique_id"].nunique()
 probabilities = np.sort(np.round(predictions_df["Probability"], decimals=3).unique())
 for prob in probabilities[probabilities < 1]:  # drop probability==1 if it exists
     matches_w2_to_ssa = predictions_df[

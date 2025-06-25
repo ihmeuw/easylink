@@ -2,7 +2,7 @@ steps:
   entity_resolution:
     substeps:
       determining_exclusions_and_removing_records:
-        parallel:
+        clones:
           - determining_exclusions:
               implementation:
                 name: default_determining_exclusions
@@ -31,7 +31,7 @@ steps:
           linking:
             substeps:
               pre-processing:
-                parallel:
+                clones:
                 - implementation:
                     name: middle_name_to_initial
                     configuration: 

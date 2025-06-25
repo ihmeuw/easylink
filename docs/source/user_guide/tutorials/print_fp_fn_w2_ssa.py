@@ -1,7 +1,7 @@
-import pandas as pd
-
 import argparse
 from pathlib import Path
+
+import pandas as pd
 
 
 def load_file(file_path, file_format=None):
@@ -37,9 +37,7 @@ predictions_df = load_file(
 
 # concatenate Record Dataset and Record ID columns for merge
 records["unique_id"] = (
-    records["Input Record Dataset"].astype(str)
-    + "_"
-    + records["Input Record ID"].astype(str)
+    records["Input Record Dataset"].astype(str) + "_" + records["Input Record ID"].astype(str)
 )
 predictions_df["unique_id_l"] = (
     predictions_df["Left Record Dataset"].astype(str)

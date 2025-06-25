@@ -108,6 +108,7 @@ def test_pipeline_splink(
             "--no-timestamp "
             "--schema main "
         )
+        print(f"Running command: \n{cmd}\n")
         subprocess.run(
             cmd,
             shell=True,
@@ -247,6 +248,7 @@ def test_pipelines_same_output_relabeled(
             "--no-timestamp "
             "--schema main "
         )
+        print(f"Running command: \n{cmd}\n")
         subprocess.run(
             cmd,
             shell=True,
