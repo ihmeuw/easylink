@@ -48,14 +48,14 @@ steps:
                   name: splink_blocking_and_filtering
                   configuration:
                     LINK_ONLY: true
-                    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+                    BLOCKING_RULES: "l.first_name == r.first_name,l.last_name == r.last_name"
               evaluating_pairs:
                 implementation:
                   name: splink_evaluating_pairs
                   configuration:
                     LINK_ONLY: true
-                    BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-                    COMPARISONS: "'ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name'"
+                    BLOCKING_RULES_FOR_TRAINING: "l.first_name == r.first_name,l.last_name == r.last_name"
+                    COMPARISONS: "ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name"
                     PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
           links_to_clusters:
             implementation:

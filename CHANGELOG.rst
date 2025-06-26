@@ -1,3 +1,7 @@
+**0.1.24 - 6/26/25**
+
+ - Properly escape special characters in envars specified via pipeline configuration
+
 **0.1.23 - 6/25/25**
 
  - Remove "dummy" pipeline references from codebase
