@@ -75,19 +75,12 @@ def clusters_to_links(clusters_df):
 predictions_df = clusters_to_links(clusters_df)
 
 # concatenate Record Dataset and Record ID columns for merge
-records["unique_id"] = (
-    records["Input Record Dataset"].astype(str) + "_" + records["Input Record ID"].astype(str)
-)
-predictions_df["unique_id_l"] = (
-    predictions_df["Left Record Dataset"].astype(str)
-    + "_"
-    + predictions_df["Left Record ID"].astype(str)
-)
-predictions_df["unique_id_r"] = (
-    predictions_df["Right Record Dataset"].astype(str)
-    + "_"
-    + predictions_df["Right Record ID"].astype(str)
-)
+def unique_id_column(df, record_name="Input"):
+    return df[f"{record_name} Record Dataset"].astype(str) + "_" + df[f"{record_name} Record ID"].astype(str)
+
+records["unique_id"] = unique_id_column(records)
+predictions_df["unique_id_l"] = unique_id_column(predictions_df, record_name="Left")
+predictions_df["unique_id_r"] = unique_id_column(predictions_df, record_name="Right")
 
 links = (
     records.add_suffix("_l").merge(
@@ -102,9 +95,9 @@ links = (
             )
         ])
 )
+pd.set_option('future.no_silent_downcasting', True)
 links = links.merge(predictions_df[["unique_id_l", "unique_id_r"]].assign(matched=True), on=["unique_id_l", "unique_id_r"], how="left")
-links["matched"] = links["matched"].fillna(False)
-import pdb; pdb.set_trace()
+links["matched"] = links["matched"].fillna(False).astype(bool)
 
 predictions_df = predictions_df.merge(
     records.add_suffix("_l"), on="unique_id_l", how="left"
