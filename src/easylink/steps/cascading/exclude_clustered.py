@@ -62,9 +62,16 @@ clusters_filepath = clusters_filepaths[0]
 
 # Exclude records that have been clustered
 clusters_df = load_file(clusters_filepath)
+# NOTE: We defined "clustered" for these purposes as clustered *with* anything else.
+# Simply putting a record into its own cluster does not indicate to us that it has
+# been sufficiently clustered to ignore.
+cluster_sizes = clusters_df.groupby("Cluster ID").size()
+clusters_df["size"] = cluster_sizes.loc[clusters_df["Cluster ID"]].values
+clusters_df = clusters_df[clusters_df["size"] > 1]
+
 dataset_df = load_file(dataset_path)
 clustered_record_ids = set(dataset_df["Record ID"].unique()) & set(
-    clusters_df["Input Record ID"].unique()
+    clusters_df[clusters_df["Input Record Dataset"] == splitter_choice]["Input Record ID"].unique()
 )
 
 IDS_TO_REMOVE = pd.DataFrame({"Input Record ID": list(clustered_record_ids)})
