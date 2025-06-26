@@ -260,7 +260,7 @@ dummy_step_2_for_output_dir_example:
 default_removing_records:
   steps:
   - removing_records
-  image_name: main/default_removing_records.sif
+  image_name: zmbc/default_removing_records.sif
   script_cmd: python /default_removing_records.py
   outputs:
     dataset: dataset
