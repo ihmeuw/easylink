@@ -1,4 +1,4 @@
-**0.1.23 - 6/26/25**
+**0.1.24 - 6/26/25**
 
  - Properly escape special characters in envars specified via pipeline configuration
 
