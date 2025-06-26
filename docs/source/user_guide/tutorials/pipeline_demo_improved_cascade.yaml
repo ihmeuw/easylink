@@ -1,6 +1,6 @@
 steps:
   entity_resolution:
-    iterate:
+    iterations:
       - substeps:
           determining_exclusions_and_removing_records:
             clones:
@@ -96,7 +96,7 @@ steps:
                   pre-processing:
                     clones:
                     - implementation:
-                        name: dummy_pre-processing
+                        name: middle_name_to_initial
                         configuration: 
                           INPUT_DATASET: input_file_ssa
                     - implementation:
@@ -118,14 +118,14 @@ steps:
                       configuration:
                         BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
                         COMPARISONS: "'ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name'"
-                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0000625  # == 1 / len(ssa)
+                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
                         THRESHOLD_MATCH_PROBABILITY: 0
                         LINK_ONLY: true
               links_to_clusters:
                 implementation:
                   name: splink_links_to_clusters
                   configuration:
-                    THRESHOLD_MATCH_PROBABILITY: 0.25
+                    THRESHOLD_MATCH_PROBABILITY: 0.996
           updating_clusters:
             implementation:
               name: update_clusters_by_connected_components
