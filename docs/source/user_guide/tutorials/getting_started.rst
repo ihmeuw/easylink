@@ -6,9 +6,9 @@ Getting Started
 
 Introduction
 ============
-EasyLink is a framework that allows users to build and run highly configurable record linkage pipelines, 
-as demonstrated in this tutorial. EasyLink allows users to "mix and match" different pieces of record 
-linkage software, by ensuring that each piece of the pipeline conforms to standard patterns. 
+EasyLink is a framework that allows users to build and run highly configurable record linkage pipelines. 
+Its configurability enables users to "mix and match" different pieces of record 
+linkage software by ensuring that each piece of the pipeline conforms to standard patterns. 
 
 For example, users at the Census Bureau could easily evaluate whether using a more sophisticated "blocking" 
 method would improve results in a certain pipeline, without having to rewrite the entire pipeline. For more 
@@ -18,7 +18,7 @@ behind EasyLink.
 Overview
 --------
 This tutorial introduces EasyLink concepts and features by demonstrating the software's usage. Covered 
-concepts include the EasyLink record linkage pipeline schema, Easylink pipeline configuration, running 
+concepts include the EasyLink record linkage "pipeline schema", Easylink pipeline configuration, running 
 pipelines, changing record linkage step implementations, changing input data, evaluating and comparing 
 results, and more. 
 
@@ -33,52 +33,112 @@ ready to implement that knowledge using EasyLink.
 
 Tutorial prerequisites
 ----------------------
-`Install EasyLink <https://github.com/ihmeuw/easylink>`_ if you haven't already. 
+`Install EasyLink <https://github.com/ihmeuw/easylink?tab=readme-ov-file#installation>`_ if you haven't already. 
 
 The tutorial uses the `Splink <https://moj-analytical-services.github.io/splink/index.html>`_ Python package 
-for record linkage implementations. Splink knowledge is not required to complete the tutorial but may be 
-helpful when configuring Splink models.
+for record linkage implementations, which is included when you install EasyLink. Splink knowledge is not 
+required to complete the tutorial but may be helpful when configuring Splink models.
 
 
-Configuring a "naive" Splink model
-==================================
+Simulated input data
+--------------------
 Our first demonstration of running an EasyLink pipeline will configure a simple, "naive" record linkage
-model using Splink implementations. Our pipeline will link the 
-`pseudopeople <https://pseudopeople.readthedocs.io/en/latest/>`_ 
-``Social Security Administration`` and ``Tax forms: W-2 & 1099`` 
-`datasets <https://pseudopeople.readthedocs.io/en/latest/datasets/index.html>`_.
+model using Splink implementations. Our pipeline will link the
+two of the `pseudopeople <https://pseudopeople.readthedocs.io/en/latest/>`_
+simulated `datasets <https://pseudopeople.readthedocs.io/en/latest/datasets/index.html>`_:
+``Social Security Administration`` and ``Tax forms: W-2 & 1099``.
 
-``easylink run`` parameters
----------------------------
-The command we will use to run the pipeline will look like this:
+
+Naive model - running a pipeline
+================================
+Let's start by using the ``easylink run`` :ref:`command <cli>` to run a pipeline that configures a simple 
+record linkage model.
 
 .. code-block:: console
 
-   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+    $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+    2025-06-17 10:40:24.859 | 0:00:02.515481 | run:196 - Running pipeline
+    2025-06-17 10:40:24.860 | 0:00:02.516496 | run:198 - Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_17_10_40_24
+    2025-06-17 10:40:51.886 | 0:00:29.542638 | main:124 - Running Snakemake
+    [Tue Jun 17 10:40:52 2025]
+    Job 19: Validating determining_exclusions_and_removing_records_parallel_split_2_determining_exclusions_default_determining_exclusions input slot known_clusters
+    Reason: Missing output files: input_validations/determining_exclusions_and_removing_records_parallel_split_2_determining_exclusions_default_determining_exclusions/known_clusters_validator
+    ...
+    [Tue Jun 17 10:40:56 2025]
+    Job 11: Running determining_exclusions implementation: default_determining_exclusions
+    Reason: Missing output files: intermediate/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/result.parquet; Input files updated by another job: input_validations/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/input_datasets_validator, input_validations/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/known_clusters_validator
+    ...
+    [Tue Jun 17 10:41:30 2025]
+    Job 4: Running evaluating_pairs implementation: splink_evaluating_pairs
+    Reason: Missing output files: intermediate/splink_evaluating_pairs/result.parquet; Input files updated by another job: input_validations/splink_evaluating_pairs/blocks_validator, intermediate/default_clusters_to_links/result.parquet, intermediate/splink_blocking_and_filtering/blocks, input_validations/splink_evaluating_pairs/known_links_validator
+    ...
+    [Tue Jun 17 10:42:09 2025]
+    Job 0: Grabbing final output
+    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet, input_validations/final_validator
+
+Success! Our pipeline has linked the input data and outputted the results, the clusters of records it found. We'll take a look 
+at these results later and see how the model performed. But first we will explore each of the arguments we 
+passed to the command.
 
 .. todo:: 
-    Remove ``-I`` flag (or change and add ``-I`` section) so that images will be downloaded from Zenodo when that is ready
+  Dont ellipse clusters job running.
 
-More information is available in the :ref:`easylink run <cli>` command docs, but let's briefly review each 
-parameter and file we will pass to the command.
+.. note:: 
+   The pipeline output in its current state can be a little confusing. Note that the number assigned 
+   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
+   assigned by `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_, a workflow manager for reproducible,
+   scalable data analyses. Also note that several input validation jobs will run before any actual 
+   step implementations.
 
-Input data
-^^^^^^^^^^
-The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying a list 
-of paths to files or directories containing input data to be used by the pipeline. 
-The contents of 
-:download:`input_data_demo.yaml <input_data_demo.yaml>` are shown below -- download it to the 
+   Finally, despite the final output line containing the phrase "Missing output files", 
+   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
+   why the job was run (the step inputs were ready but the output file did not yet exist), rather than 
+   conveying an error message. We plan to improve these error messages in the future.
+
+Naive model - command line arguments
+====================================
+
+Computing Environment
+---------------------
+The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
+information about the computing environment which will execute the steps of the 
+pipeline. The contents of :download:`environment_local.yaml <../../../../tests/specifications/common/environment_local.yaml>`
+are shown below -- download it to the 
 directory from which you will run ``easylink run``. 
 
 .. code-block:: yaml
 
-    input_file_ssa_2020: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_ssa_2020.parquet
-    input_file_w2_2020: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/tylerdy/input_file_w2_2020.parquet
-    known_clusters: /mnt/team/simulation_science/priv/engineering/er_ecosystem/input_data/main/known_clusters.parquet
+   computing_environment: local
+   container_engine: singularity
+
+It specifies a ``local`` computing environment using ``singularity`` as the container engine. These parameters indicate that no new compute resources will 
+be used to execute the pipeline steps, and that the Singularity container for each implementation will run within the context where ``easylink run`` is being executed.
+For example, if you ran the ``easylink run`` command on your laptop, the implementations would run on your laptop;
+if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
+and so on.
+
+Input data
+----------
+The ``--input-data`` (``-i``) argument to ``easylink run`` accepts a YAML file specifying a list 
+of paths to files or directories containing input data to be used by the pipeline. 
+The contents of 
+:download:`input_data_demo.yaml` are shown below -- download it to the 
+directory from which you will run EasyLink. 
+
+.. code-block:: yaml
+
+  input_file_ssa: 2020/input_file_ssa.parquet
+  input_file_w2: 2020/input_file_w2.parquet
+  known_clusters: known_clusters.parquet
 
 Here we have defined the locations of the three input files we will use: the 2020 versions of the 
 ``Social Security Administration`` and ``W2 & 1099`` datasets, and an empty ``known_clusters`` file, since no
 clusters are known to us before running this pipeline. 
+
+Download :download:`known_clusters.parquet` to the directory from which you will run EasyLink.
+In that directory create a new directory ``/2020`` and  download 
+:download:`input_file_ssa.parquet <2020/input_file_ssa.parquet>` and 
+:download:`input_file_w2.parquet <2020/input_file_w2.parquet>` to it.
 
 .. note::
     To meet the input specifications for :ref:`datasets` defined by the pipeline schema,
@@ -88,13 +148,13 @@ clusters are known to us before running this pipeline.
   
 
 Pipeline specification
-^^^^^^^^^^^^^^^^^^^^^^
+----------------------
 The ``--pipeline-specification`` (``-p``) argument to ``easylink run`` accepts a YAML file specifying 
 the implementations and other configuration options for the pipeline being run. The contents of 
-:download:`pipeline_demo_naive.yaml <pipeline_demo_naive.yaml>` are shown below -- download it to the 
+:download:`pipeline_demo_naive.yaml` are shown below -- download it to the 
 directory from which you will run ``easylink run``. 
 
-The pipeline specification follows the structure defined in the :ref:`pipeline_schema`. This document
+The pipeline specification follows the structure defined in the :ref:`pipeline_schema`. The schema
 is the part of EasyLink that enforces the standard patterns that linkage step implementations must 
 follow, enabling easy configuration and swapping. Examples of patterns defined in the document include 
 breaking the record linkage process into a set of steps by which most common record linkage implementations
@@ -177,7 +237,7 @@ hierarchy, and an operator example (``parallel``) can be seen below.
         name: dummy_canonicalizing_and_downstream_analysis
 
 Structure
-"""""""""
+^^^^^^^^^
 
 Let's break down the configuration keys and values defined in the file. 
 First, note that all of the keys defined as direct children of a ``steps`` 
@@ -193,7 +253,7 @@ YAML, let's discuss the keys used to configure individual steps.
 .. _implementation_configuration:
 
 Implementation configuration
-""""""""""""""""""""""""""""
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 We can see in the YAML that many steps use all three of the ``implementation``, ``name`` 
 and ``configuration`` keys, as well as implementation-specific keys. Let's look at 
 ``links_to_clusters`` as an example.
@@ -211,10 +271,11 @@ The ``configuration`` section lists implementation-specific configuration keys
 which control how the implementation will run. For example, ``THRESHOLD_MATCH_PROBABILITY`` 
 here allows the user to define at what probability a pair of records being considered 
 as a pontential link will be considered part of the same cluster by the 
-``splink_links_to_clusters`` implementation.
+``splink_links_to_clusters`` implementation. The Splink docs have 
+`more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`_.
 
 Cloneable Sections
-""""""""""""""""""
+^^^^^^^^^^^^^^^^^^
 Certain sections of the pipeline are defined as as :ref:`cloneable_sections`, which create 
 multiple copies of that section and allow different implementations or inputs to be defined 
 for each copy. We can see that :ref:`entity_resolution_sub_steps` defines
@@ -238,27 +299,8 @@ if desired.
 .. todo:: 
     Update cloneable keyword when we finalize it.
 
-Computing Environment
-"""""""""""""""""""""
-The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
-information about the computing environment which will execute the steps of the 
-pipeline. The contents of :download:`environment_local.yaml <../../../../tests/specifications/common/environment_local.yaml>`
-are shown below -- download it to the 
-directory from which you will run ``easylink run``. 
-
-.. code-block:: yaml
-
-   computing_environment: local
-   container_engine: singularity
-
-It specifies a ``local`` computing environment using ``singularity`` as the container engine. These parameters indicate that no new compute resources will 
-be used to execute the pipeline steps, and that the Singularity container for each implementation will run within the context where ``easylink run`` is being executed.
-For example, if you ran the ``easylink run`` command on your laptop, the implementations would run on your laptop;
-if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
-and so on.
-
-Configuring Splink
-------------------
+Naive model - configuring Splink
+================================
 Having explained how the inputs, general pipeline format, and computing environment
 are specified, now we will discuss how the pipeline specification configures 
 our actual Splink record linkage model.
@@ -276,73 +318,41 @@ either does nothing or simply passes inputs to outputs as appropriate.
 
 For ``splink_blocking_and_filtering``, we set::
 
-    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
     LINK_ONLY: true
+    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
 
-These variables are used by the Splink implementation to define which pairs of records 
-will be considered as possible matches (records with matching first or last names), 
-and to instruct Splink to link records without first de-depulicating, respectively. 
+The first variable instructs Splink to link records between datasets without de-depulicating within 
+datasets, respectively. 
+The second is used by the Splink implementation to define which pairs of records 
+will be considered as possible matches (records with matching first or last names).
 
 For ``splink_evaluating_pairs``, we set::
 
+    LINK_ONLY: true  
     BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
     COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
     PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01
-    THRESHOLD_MATCH_PROBABILITY: 0
-    LINK_ONLY: true  
 
-The first variable is similar to what was set for the previous implementation. The second 
+The first variable  is used in the same way as in the previous
+implementation. The second is similar to what was set for the previous implementation. The third 
 defines the columns which will be compared by the Splink model, and how Splink will evaluate
-whether the column values match (exact comparisons). The third is a parameter used in training
-the model. The fourth determines at what match probability a pair of records will be outputted
-from the step (``0`` outputs all pairs). The fifth is used in the same way as in the previous
-implementation.
+whether the column values match (exact comparisons). The fourth is a parameter used in training
+the model and making predictions (see the Splink docs for 
+`more info <https://moj-analytical-services.github.io/splink/api_docs/training.html#splink.internals.linker_components.training.LinkerTraining.estimate_parameters_using_expectation_maximisation>`_). 
 
 For ``splink_links_to_clusters``, as discussed earlier in the :ref:`implementation_configuration` section,
 we set::
 
-    THRESHOLD_MATCH_PROBABILITY: 0.997    
+    THRESHOLD_MATCH_PROBABILITY: 0.997  
 
-Running the pipeline
-====================
-Now that we understand all the inputs to ``easylink run``, lets actually run the pipeline::
+And that's our naive Splink model! Next let's take a look at the results from when we ran the 
+pipeline earlier.
 
-    $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
-    2025-06-17 10:40:24.859 | 0:00:02.515481 | run:196 - Running pipeline
-    2025-06-17 10:40:24.860 | 0:00:02.516496 | run:198 - Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_17_10_40_24
-    2025-06-17 10:40:51.886 | 0:00:29.542638 | main:124 - Running Snakemake
-    [Tue Jun 17 10:40:52 2025]
-    Job 19: Validating determining_exclusions_and_removing_records_parallel_split_2_determining_exclusions_default_determining_exclusions input slot known_clusters
-    Reason: Missing output files: input_validations/determining_exclusions_and_removing_records_parallel_split_2_determining_exclusions_default_determining_exclusions/known_clusters_validator
-    ...
-    [Tue Jun 17 10:40:56 2025]
-    Job 11: Running determining_exclusions implementation: default_determining_exclusions
-    Reason: Missing output files: intermediate/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/result.parquet; Input files updated by another job: input_validations/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/input_datasets_validator, input_validations/determining_exclusions_and_removing_records_parallel_split_1_determining_exclusions_default_determining_exclusions/known_clusters_validator
-    ...
-    [Tue Jun 17 10:41:30 2025]
-    Job 4: Running evaluating_pairs implementation: splink_evaluating_pairs
-    Reason: Missing output files: intermediate/splink_evaluating_pairs/result.parquet; Input files updated by another job: input_validations/splink_evaluating_pairs/blocks_validator, intermediate/default_clusters_to_links/result.parquet, intermediate/splink_blocking_and_filtering/blocks, input_validations/splink_evaluating_pairs/known_links_validator
-    ...
-    [Tue Jun 17 10:42:09 2025]
-    Job 0: Grabbing final output
-    Reason: Missing output files: result.parquet; Input files updated by another job: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet, input_validations/final_validator
+Naive model results
+===================
 
-
-.. note:: 
-   The pipeline output in its current state can be a little confusing. Note that the number assigned 
-   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
-   assigned by snakemake. Also note that several input validation jobs will run before any actual 
-   step implementations.
-
-   Finally, despite the final output line containing the phrase "Missing output files", 
-   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
-   why the job was run (the step inputs were ready but the output file did not yet exist), rather than 
-   conveying an error message.
-
-Inputs and outputs
-------------------
-Input and output data is stored in Parquet files. We can view the contents of the files listed in 
-``input_data_demo.yaml`` using Python:
+Input and output data is stored in Parquet files. For example, to see our original records, 
+we can view the contents of the input files listed in ``input_data_demo.yaml`` using Python:
 
 .. code-block:: console
 
@@ -379,7 +389,12 @@ Input and output data is stored in Parquet files. We can view the contents of th
     9902     0_18939       0_7621           9  283-97-5940   4961  ...                    WA                   00000       W2     2020      9902
     [9903 rows x 25 columns]
 
-Recall that the ``known_clusters.parquet`` input file is empty.
+The ``known_clusters.parquet`` input file is empty::
+
+  $ pd.read_parquet("known_clusters.parquet")
+  Empty DataFrame
+  Columns: [Input Record Dataset, Input Record ID, Cluster ID]
+  Index: []
 
 It can also be useful to setup an alias to more easily preview parquet files. Add the following to your 
 ``.bash_aliases`` or ``.bashrc`` file, and restart your terminal.
@@ -409,14 +424,17 @@ Let's use the alias to print the results parquet, the location of which was prin
 
 As we can see, the pipeline has successfully outputted a ``Cluster ID`` for every 
 input record it was able to link to another record for our probability threshold 
-of ``.997``. ``Cluster ID`` names are chosen by Splink based on the first record 
+of ``99.7%.``. ``Cluster ID`` names are chosen by Splink based on the first record 
 assigned to them.
 
-Running the pipeline also generates a :download:`DAG.svg <DAG-naive-pipeline.svg>` file in 
-the results directory which shows the implementations, data dependencies and 
-input validations present in the pipeline.
+.. note::
 
-To see how the model linked records before assigning them to clusters, we can 
+  Running the pipeline also generates a :download:`DAG.svg <DAG-naive-pipeline.svg>` file in 
+  the results directory which shows the implementations, data dependencies and 
+  input validations present in the pipeline. Due to the large number of steps, the figure is 
+  not very readable when embedded in this page, but can be opened in a new tab.
+
+To see how the model linked pairs of records before resolving them into clusters, we can 
 look at the intermediate output produced by the ``splink_evaluating_pairs`` 
 implementation::
 
@@ -440,20 +458,34 @@ The record pairs displayed in the preview are all far below the match threshold,
 be investigated further using ``pandas.read_parquet()`` in a Python session.
 
 The Splink implementations in our pipeline also produce some diagnostic charts which can be useful 
-for evaluating results, such as the :download:`match weights chart<naive_match_weights.html>` and 
-:download:`comparison viewer tool<naive_comparison_viewer.html>`. These charts are available in the 
+for evaluating results, such as the :download:`match weights chart <naive_match_weights.html>` 
+(`Splink docs <https://moj-analytical-services.github.io/splink/charts/match_weights_chart.html>_`) and 
+:download:`comparison viewer tool <naive_comparison_viewer.html>` 
+(`Splink docs <https://moj-analytical-services.github.io/splink/charts/comparison_viewer_dashboard.html>`_). 
+These charts are available in the 
 ``diagnostics/splink_evaluating_pairs`` subdirectory of the results directory for each pipeline run.
 
-Finally, since we generated the input datasets ourselves, and therefore know the ground truth of 
-which records are truly links, lets see how our naive model performed. For a threshold match
-probability of ``.997`` (chosen using match rate evaluation metrics), out of ``9262`` true links, 
-we can calculate that our model results contained ``260`` false positives and ``43`` false negatives, 
-with the rest of the links being accurate.
+Finally, since we are using simulated input datasets, and therefore know the ground truth of 
+which records are truly links, we can directly see how our naive model performed with the help of 
+a script to evaluate false positives and false negatives, :download:`print_fp_fn_w2_ssa.py`.
+Download and run it::
+
+  $ python print_fp_fn_w2_ssa.py results/V3_NAIVE .997
+
+In other words, a threshold 
+probability of ``.997``, out of 9,262 true links to be found our model missed 43 (false negatives),
+and additionally linked 260 pairs that shouldn't have been linked (false positives). 
+
+
+Depending on our goals with the linked data, we might increase the threshold to reduce false positives,
+at the cost of increased false negatives.
+But this was a simple linkage model.
+Let's improve it to see if we can get a better performance tradeoff!
 
 
 Configuring an improved pipeline
 ================================
-Next, lets modify our naive pipeline configuration YAML to try to improve those results. Primarily, we 
+Next, let's modify our naive pipeline configuration YAML to try to improve our results. Primarily, we 
 will change the ``COMPARISONS`` we pass to ``splink_evaluating_pairs`` to use flexible comparison 
 methods rather than exact matches, allowing us to link records which have typos or other noise in them. We'll 
 use a new pipeline configuration YAML, :download:`pipeline_demo_improved.yaml`, with these changes.
@@ -489,15 +521,15 @@ are similar but don't exactly match. The false positives are only slightly lower
 around 2%, are affected by 
 `"borrow a social security number" <https://pseudopeople.readthedocs.io/en/latest/noise/column_noise.html#borrow-a-social-security-number>`_
 pseudopeople noise. The ``SSA`` and ``W2`` dataset have extremely limited columns in common aside 
-from SSNs (first, middle initial and last), which makes it difficult to link these "borrowed SSN" records.
+from SSNs (first, middle initial and last), which makes it difficult not to link these "borrowed SSN" records.
 
-Changing inputs
-===============
-Finally, lets run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
-as the input YAML, which uses the ``SSA`` and ``W2`` datasets from ``2030`` rather than 
-``2020``::
+Linking 2030 datasets using improved pipeline
+=============================================
+Finally, let's run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
+as the input YAML, which uses the ``SSA`` and ``W2`` datasets from 2030 rather than 
+2020. We can run the same pipeline on different data by changing only the input parameter::
 
-    $ easylink run -p pipeline_demo_improved_2030.yaml -i input_data_demo_2030.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+    $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
     
 For a threshold match
 probability of ``.25`` (chosen using match rate evaluation metrics), out of ``10345`` true links, 

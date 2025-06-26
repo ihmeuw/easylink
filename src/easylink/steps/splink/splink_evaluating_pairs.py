@@ -135,7 +135,7 @@ for block_dir in blocks_dir.iterdir():
 
     sqls = predict_from_comparison_vectors_sqls_using_settings(
         linker._settings_obj,
-        float(os.environ["THRESHOLD_MATCH_PROBABILITY"]),
+        float(os.getenv("THRESHOLD_MATCH_PROBABILITY", 0)),
         threshold_match_weight=None,
         sql_infinity_expression=linker._infinity_expression,
     )

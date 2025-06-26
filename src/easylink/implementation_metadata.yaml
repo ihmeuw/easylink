@@ -316,7 +316,7 @@ splink_blocking_and_filtering:
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_name: main/splink_evaluating_pairs.sif
+  image_name: tylerdy/splink_evaluating_pairs.sif
   script_cmd: python /splink_evaluating_pairs.py
   outputs:
     links: result.parquet
