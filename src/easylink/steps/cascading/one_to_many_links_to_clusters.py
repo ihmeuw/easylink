@@ -55,18 +55,19 @@ links["Right Record Key"] = (
 
 links_to_accept = (
     links[links["Probability"] >= float(os.environ["THRESHOLD_MATCH_PROBABILITY"])]
-    # Pre-emptively break probability ties by left record ID for the highest_id method
-    .sort_values(["Probability", "Left Record ID"], ascending=False)
-    .groupby(["Right Record ID", "Left Record Dataset"])
+    # Pre-emptively break probability ties by right record key for the highest_id method
+    .sort_values(["Probability", "Right Record Key"], ascending=False)
+    # No duplicates in the *right* means only one link per *left* record
+    .groupby(["Left Record Key"])
     .first()
 )
 
 if break_ties_method == "drop":
     num_tied = (
         links_to_accept.merge(
-            links, on=["Right Record ID", "Left Record Dataset", "Probability"]
+            links, on=["Left Record Key", "Probability"]
         )
-        .groupby(["Right Record ID", "Left Record Dataset"])
+        .groupby(["Left Record Key"])
         .size()
     )
     print("Ties:")
@@ -79,15 +80,15 @@ elif break_ties_method == "highest_id":
 else:
     raise ValueError(f"Unknown break_ties_method {break_ties_method}")
 
+# NOTE: We only include nodes involved in an accepted link in our cluster.
+# If a node isn't involved in an accepted link, that could just represent
+# that we haven't evaluated the right pairs involving it, not confidence that
+# it is a singleton.
 G = nx.from_pandas_edgelist(
-    links_to_accept[["Left Record Key", "Right Record Key"]].rename(
+    links_to_accept.reset_index()[["Left Record Key", "Right Record Key"]].rename(
         columns={"Left Record Key": "source", "Right Record Key": "target"}
     )
 )
-
-# Add isolated nodes
-all_keys = set(links["Left Record Key"]) | set(links["Right Record Key"])
-G.add_nodes_from(all_keys)
 
 # Compute connected components
 components = list(nx.connected_components(G))
