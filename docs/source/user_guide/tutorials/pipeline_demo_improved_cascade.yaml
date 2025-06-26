@@ -48,7 +48,7 @@ steps:
                     implementation:
                       name: splink_blocking_and_filtering
                       configuration:
-                        BLOCKING_RULES: "'l.ssn == r.ssn'"
+                        BLOCKING_RULES: "'l.ssn == r.ssn and l.first_name == r.first_name and l.last_name == r.last_name'"
                         LINK_ONLY: true
                   evaluating_pairs:
                     implementation:
@@ -123,8 +123,9 @@ steps:
                         LINK_ONLY: true
               links_to_clusters:
                 implementation:
-                  name: splink_links_to_clusters
+                  name: one_to_many_links_to_clusters
                   configuration:
+                    NO_DUPLICATES_DATASET: input_file_ssa
                     THRESHOLD_MATCH_PROBABILITY: 0.996
           updating_clusters:
             implementation:
