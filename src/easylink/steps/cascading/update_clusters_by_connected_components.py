@@ -56,10 +56,13 @@ Path(results_filepath).parent.mkdir(exist_ok=True, parents=True)
 
 new_clusters_df = load_file(new_clusters_filepath)
 
-
 def merge_clusters(known_clusters_df, new_clusters_df):
     # Combine both dataframes
-    combined_df = pd.concat([known_clusters_df, new_clusters_df], ignore_index=True)
+    combined_df = pd.concat([
+        # Ensure cluster names are unique
+        known_clusters_df.assign(**{"Cluster ID": lambda df: "known__" + df["Cluster ID"].astype(str)}),
+        new_clusters_df.assign(**{"Cluster ID": lambda df: "new__" + df["Cluster ID"].astype(str)}),
+    ], ignore_index=True)
     combined_df["Input Record Key"] = (
         combined_df["Input Record Dataset"]
         + "-__-"
