@@ -290,7 +290,7 @@ default_updating_clusters:
 save_clusters:
   steps:
   - canonicalizing_and_downstream_analysis
-  image_name: zmbc/save_clusters.sif
+  image_name: main/save_clusters.sif
   script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
   outputs:
     analysis_output: result.parquet
@@ -299,7 +299,7 @@ save_clusters:
 no_pre-processing:
   steps:
   - pre-processing
-  image_name: zmbc/no_pre-processing.sif
+  image_name: main/no_pre-processing.sif
   script_cmd: python /dummy_pre-processing.py
   outputs:
     dataset: dataset
