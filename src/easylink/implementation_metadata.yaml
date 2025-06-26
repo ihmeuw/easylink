@@ -285,17 +285,21 @@ default_updating_clusters:
   script_cmd: python /default_updating_clusters.py
   outputs:
     clusters: clusters.parquet
-dummy_canonicalizing_and_downstream_analysis:
+# NOTE: This was made from dummy_canonicalizing_and_downstream_analysis.py,
+# if rebuilding change the name of that file to save_clusters.py
+save_clusters:
   steps:
   - canonicalizing_and_downstream_analysis
-  image_name: main/dummy_canonicalizing_and_downstream_analysis.sif
+  image_name: zmbc/save_clusters.sif
   script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
   outputs:
     analysis_output: result.parquet
-dummy_pre-processing:
+# NOTE: This was made from dummy_pre-processing.py,
+# if rebuilding change the name of that file to no_pre-processing.py
+no_pre-processing:
   steps:
   - pre-processing
-  image_name: main/dummy_pre-processing.sif
+  image_name: zmbc/no_pre-processing.sif
   script_cmd: python /dummy_pre-processing.py
   outputs:
     dataset: dataset
