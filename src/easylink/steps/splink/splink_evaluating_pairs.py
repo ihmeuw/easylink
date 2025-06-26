@@ -35,6 +35,7 @@ for block_dir in blocks_dir.iterdir():
             comparisons.append(cl.LevenshteinAtThresholds(column))
         else:
             raise ValueError(f"Unknown comparison method {method}")
+    # TODO: check both datasets contain all the columns
 
     # Create the Splink linker in dedupe mode
     settings = SettingsCreator(
