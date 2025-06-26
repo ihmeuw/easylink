@@ -121,3 +121,26 @@ def test_easylink_run(
             "\n\n*** END OF TEST ***\n"
             f"[{pipeline_specification}, {input_data}, {computing_environment}]\n"
         )
+
+
+@pytest.mark.skipif(
+    not is_on_slurm(),
+    reason="Must be on slurm to run this test.",
+)
+def test_easylink_generate_dag(test_specific_results_dir):
+    cmd = (
+        "easylink generate-dag "
+        f"-p {SPECIFICATIONS_DIR / 'e2e' / 'pipeline.yaml'} "
+        f"-i {SPECIFICATIONS_DIR / 'common' / 'input_data.yaml'} "
+        f"-o {str(test_specific_results_dir)} "
+        "--no-timestamp "
+        "--schema development "
+    )
+    subprocess.run(
+        cmd,
+        shell=True,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        check=True,
+    )
+    assert (test_specific_results_dir / "DAG.svg").exists()

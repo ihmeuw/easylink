@@ -243,6 +243,7 @@ def generate_dag(
         input_data=input_data,
         computing_environment=None,
         results_dir=results_dir,
+        images_dir=None,
         schema_name=schema,
     )
     logger.info("*** DAG saved to result directory ***")

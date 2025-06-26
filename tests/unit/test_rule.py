@@ -1,5 +1,6 @@
 # mypy: ignore-errors
 import os
+import shlex
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -244,6 +245,103 @@ def test_validation_rule_build_rule():
     )
     file_path = Path(os.path.dirname(__file__)) / RULE_STRINGS["validation_rule"]
     _check_rule(rule, file_path)
+
+
+@pytest.mark.parametrize(
+    "name, value, expected",
+    [
+        # Basic cases
+        ("SIMPLE_VAR", "simple_value", "export SIMPLE_VAR=simple_value"),
+        (
+            "VAR_WITH_SPACES",
+            "value with spaces",
+            "export VAR_WITH_SPACES='value with spaces'",
+        ),
+        # Quote cases
+        (
+            "VAR_WITH_SINGLE_QUOTES",
+            "value with 'single quotes'",
+            "export VAR_WITH_SINGLE_QUOTES='value with '\"'\"'single quotes'\"'\"''",
+        ),
+        (
+            "VAR_WITH_DOUBLE_QUOTES",
+            'with "double" quotes',
+            "export VAR_WITH_DOUBLE_QUOTES='with \"double\" quotes'",
+        ),
+        (
+            "VAR_WITH_MIXED_QUOTES",
+            "with both \"double\" and 'single' quotes",
+            "export VAR_WITH_MIXED_QUOTES='with both \"double\" and '\"'\"'single'\"'\"' quotes'",
+        ),
+        # Complex structured data
+        (
+            "VAR_WITH_CHARS",
+            "col1='value1',col2='value2'",
+            "export VAR_WITH_CHARS='col1='\"'\"'value1'\"'\"',col2='\"'\"'value2'\"'\"''",
+        ),
+        (
+            "COMPLEX_VAR",
+            "l.first_name == r.first_name,l.last_name == r.last_name,col1='value1',col2='value2'",
+            "export COMPLEX_VAR='l.first_name == r.first_name,l.last_name == r.last_name,col1='\"'\"'value1'\"'\"',col2='\"'\"'value2'\"'\"''",
+        ),
+        # Edge cases that could cause shell injection or parsing issues
+        ("EMPTY_VAR", "", "export EMPTY_VAR=''"),
+        (
+            "SHELL_METACHAR_VAR",
+            "with$dollar`backtick",
+            "export SHELL_METACHAR_VAR='with$dollar`backtick'",
+        ),
+        (
+            "COMMAND_SEP_VAR",
+            "with;semicolon&ampersand",
+            "export COMMAND_SEP_VAR='with;semicolon&ampersand'",
+        ),
+        (
+            "PIPE_REDIRECT_VAR",
+            "with|pipe>redirect",
+            "export PIPE_REDIRECT_VAR='with|pipe>redirect'",
+        ),
+        (
+            "WHITESPACE_VAR",
+            "with\nnewline\ttab",
+            "export WHITESPACE_VAR='with\nnewline\ttab'",
+        ),
+        # Original bug cases
+        (
+            "BLOCKING_RULES",
+            "l.last_name == r.last_name",
+            "export BLOCKING_RULES='l.last_name == r.last_name'",
+        ),
+        (
+            "BLOCKING_RULES_FOR_TRAINING",
+            "l.first_name == r.first_name,l.last_name == r.last_name",
+            "export BLOCKING_RULES_FOR_TRAINING='l.first_name == r.first_name,l.last_name == r.last_name'",
+        ),
+    ],
+)
+def test_implemented_rule_envvar_quoting(name, value, expected):
+    """Test that environment variables with special characters are properly quoted in shell commands."""
+
+    rule = ImplementedRule(
+        name="test_rule",
+        step_name="test_step",
+        implementation_name="test_impl",
+        input_slots={},
+        validations=[],
+        output=["test_output.txt"],
+        resources=None,
+        envvars={name: value},
+        diagnostics_dir="test_diagnostics",
+        image_path="test.sif",
+        script_cmd="echo test",
+        requires_spark=False,
+    )
+
+    shell_cmd = rule._build_shell_cmd()
+
+    # Verify that each environment variable is properly quoted using shlex.quote
+    assert expected == f"export {name}={shlex.quote(str(value))}"
+    assert expected in shell_cmd
 
 
 ####################
