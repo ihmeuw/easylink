@@ -72,6 +72,9 @@ below, then reading the information about it while the files download. Hopefully
 complete by the time you reach the next interactive section! The progress of your image downloads will be 
 displayed in the console.
 
+.. todo::
+  Remove -I
+
 .. code-block:: console
 
     $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
@@ -456,7 +459,7 @@ And that's the whole pipeline specification for our naive Splink model! Next let
 pipeline earlier.
 
 Naive model - results
-===================
+=====================
 
 Input and output data is stored in Parquet files. For example, to see our original records, 
 we can view the contents of the input files listed in ``input_data_demo.yaml`` using Python:
