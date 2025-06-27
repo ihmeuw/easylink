@@ -65,7 +65,7 @@ the other files, then create a ``/2020`` directory and save :download:`input_fil
 :download:`input_file_w2.parquet <2020/input_file_w2.parquet>` to it.
 
 Now we can run the pipeline. Note that if this is your first time running EasyLink, the command will first
-download the required `singularity <https://docs.sylabs.io/guides/latest/user-guide/introduction.html>`_`  
+download the required `singularity <https://docs.sylabs.io/guides/latest/user-guide/introduction.html>`_
 container images. These files contain the code EasyLink will run for each step in the record linkage 
 pipeline. The total amount to be downloaded is approximately 5GB, so we recommend first running the command 
 below, then reading the information about it while the files download. Hopefully the download will be 
