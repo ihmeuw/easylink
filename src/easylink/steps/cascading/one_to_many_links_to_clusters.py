@@ -99,9 +99,11 @@ for cluster_id, records in enumerate(components, start=1):
 # Build the final DataFrame
 merged_df = pd.DataFrame(merged_data, columns=["Input Record Key", "Cluster ID"])
 
-merged_df[["Input Record Dataset", "Input Record ID"]] = merged_df[
-    "Input Record Key"
-].str.split("-__-", n=1, expand=True)
+merged_df[["Input Record Dataset", "Input Record ID"]] = (
+    merged_df["Input Record Key"].str.split("-__-", n=1, expand=True)
+    if not merged_df.empty
+    else pd.DataFrame(columns=["Input Record Dataset", "Input Record ID"])
+)
 merged_df["Input Record ID"] = merged_df["Input Record ID"].astype(int)
 
 merged_df[["Input Record Dataset", "Input Record ID", "Cluster ID"]].to_parquet(output_path)

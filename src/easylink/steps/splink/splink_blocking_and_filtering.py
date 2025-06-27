@@ -90,12 +90,18 @@ blocked_pairs = (
     .drop(columns=["match_key"])
 )
 
-blocked_pairs[["Left Record Dataset", "Left Record ID"]] = blocked_pairs.pop(
-    "join_key_l"
-).str.split("-__-", n=1, expand=True)
-blocked_pairs[["Right Record Dataset", "Right Record ID"]] = blocked_pairs.pop(
-    "join_key_r"
-).str.split("-__-", n=1, expand=True)
+blocked_pairs[["Left Record Dataset", "Left Record ID"]] = (
+    blocked_pairs.pop("join_key_l").str.split("-__-", n=1, expand=True)
+    if not blocked_pairs.empty
+    else pd.DataFrame(columns=["Left Record Dataset", "Left Record ID"])
+)
+
+blocked_pairs[["Right Record Dataset", "Right Record ID"]] = (
+    blocked_pairs.pop("join_key_r").str.split("-__-", n=1, expand=True)
+    if not blocked_pairs.empty
+    else pd.DataFrame(columns=["Right Record Dataset", "Right Record ID"])
+)
+
 blocked_pairs[["Left Record ID", "Right Record ID"]] = blocked_pairs[
     ["Left Record ID", "Right Record ID"]
 ].astype(int)
