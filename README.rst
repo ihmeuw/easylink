@@ -16,6 +16,9 @@ Installation
 
 .. _installation:
 
+NOTE: This package requires AMD64 CPU architecture - it is not compatible with
+Apple's ARM64 architecture which is used in M1 and newer Macs. 
+
 There are a few things to install in order to use this package:
 
 - Set up Linux.
