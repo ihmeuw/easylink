@@ -14,6 +14,7 @@ dynamically as strings and appended to the Snakefile.
 """
 
 import os
+import shlex
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -204,7 +205,7 @@ rule:
         export  SPARK_MASTER_URL"""
         for var_name, var_value in self.envvars.items():
             shell_cmd += f"""
-        export {var_name}={var_value}"""
+        export {var_name}={shlex.quote(str(var_value))}"""
         # Log stdout/stderr to diagnostics directory
         shell_cmd += f"""
         {self.script_cmd} > {{log}} 2>&1

@@ -33,11 +33,11 @@ steps:
               pre-processing:
                 clones:
                 - implementation:
-                    name: dummy_pre-processing
+                    name: no_pre-processing
                     configuration: 
                       INPUT_DATASET: input_file_1
                 - implementation:
-                    name: dummy_pre-processing
+                    name: no_pre-processing
                     configuration: 
                       INPUT_DATASET: input_file_2
               schema_alignment:
@@ -47,12 +47,12 @@ steps:
                 implementation:
                   name: splink_blocking_and_filtering
                   configuration:
-                    BLOCKING_RULES: "'l.last_name == r.last_name'"
+                    BLOCKING_RULES: "l.last_name == r.last_name"
               evaluating_pairs:
                 implementation:
                   name: fastLink_evaluating_pairs
                   configuration:
-                    COMPARISONS: "'first_name:exact,last_name:exact'"
+                    COMPARISONS: "first_name:exact,last_name:exact"
                     THRESHOLD_MATCH_PROBABILITY: 0.1
           links_to_clusters:
             implementation:
@@ -64,4 +64,4 @@ steps:
           name: default_updating_clusters
   canonicalizing_and_downstream_analysis:
     implementation:
-      name: dummy_canonicalizing_and_downstream_analysis
+      name: save_clusters
