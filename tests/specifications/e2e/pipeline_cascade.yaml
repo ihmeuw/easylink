@@ -34,11 +34,11 @@ steps:
                   pre-processing:
                     clones:
                     - implementation:
-                        name: dummy_pre-processing
+                        name: no_pre-processing
                         configuration: 
                           INPUT_DATASET: input_file_1
                     - implementation:
-                        name: dummy_pre-processing
+                        name: no_pre-processing
                         configuration: 
                           INPUT_DATASET: input_file_2
                   schema_alignment:
@@ -98,11 +98,11 @@ steps:
                   pre-processing:
                     clones:
                     - implementation:
-                        name: dummy_pre-processing
+                        name: no_pre-processing
                         configuration: 
                           INPUT_DATASET: input_file_1
                     - implementation:
-                        name: dummy_pre-processing
+                        name: no_pre-processing
                         configuration: 
                           INPUT_DATASET: input_file_2
                   schema_alignment:
@@ -131,4 +131,4 @@ steps:
               name: update_clusters_by_connected_components
   canonicalizing_and_downstream_analysis:
     implementation:
-      name: dummy_canonicalizing_and_downstream_analysis
+      name: save_clusters
