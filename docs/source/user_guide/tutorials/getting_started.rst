@@ -455,7 +455,7 @@ the model and making predictions (see the Splink docs for
 And that's the whole pipeline specification for our naive Splink model! Next let's take a look at the results from when we ran the 
 pipeline earlier.
 
-Naive model results
+Naive model - results
 ===================
 
 Input and output data is stored in Parquet files. For example, to see our original records, 
@@ -627,7 +627,10 @@ Linking 2030 datasets using improved pipeline
 =============================================
 Finally, let's run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
 as the input YAML, which uses the ``ssa`` and ``w2`` datasets from 2030 rather than 
-2020. We can run the same pipeline on different data by changing only the input parameter::
+2020. Like before, create a ``/2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
+:download:`input_file_w2.parquet <2030/input_file_w2.parquet>` to it -- these are the 2030 versions of the datasets.
+
+We can run the same pipeline on different data by changing only the input parameter::
 
   $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
   python print_fp_fn_w2_ssa.py results/2025_06_26_11_17_52 .996
