@@ -37,7 +37,7 @@ steps:
                     configuration: 
                       INPUT_DATASET: input_file_ssa
                 - implementation:
-                    name: dummy_pre-processing
+                    name: no_pre-processing
                     configuration: 
                       INPUT_DATASET: input_file_w2
               schema_alignment:
@@ -67,4 +67,4 @@ steps:
           name: default_updating_clusters
   canonicalizing_and_downstream_analysis:
     implementation:
-      name: dummy_canonicalizing_and_downstream_analysis
+      name: save_clusters
