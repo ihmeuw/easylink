@@ -48,19 +48,15 @@ steps:
                     implementation:
                       name: splink_blocking_and_filtering
                       configuration:
-                        BLOCKING_RULES: "l.last_name == r.last_name"
+                        BLOCKING_RULES: "l.date_of_birth == r.date_of_birth and l.first_name == r.first_name and l.last_name == r.last_name"
                   evaluating_pairs:
                     implementation:
-                      name: splink_evaluating_pairs
-                      configuration:
-                        BLOCKING_RULES_FOR_TRAINING: "l.first_name == r.first_name,l.last_name == r.last_name"
-                        COMPARISONS: "first_name:exact,last_name:exact"
-                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
-                        THRESHOLD_MATCH_PROBABILITY: 0.1
+                      name: accept_all_pairs
               links_to_clusters:
                 implementation:
-                  name: splink_links_to_clusters
+                  name: one_to_many_links_to_clusters
                   configuration:
+                    NO_DUPLICATES_DATASET: input_file_2
                     THRESHOLD_MATCH_PROBABILITY: 0.1
           updating_clusters:
             implementation:
@@ -117,14 +113,15 @@ steps:
                     implementation:
                       name: splink_evaluating_pairs
                       configuration:
-                        BLOCKING_RULES_FOR_TRAINING: "l.first_name == r.first_name,l.last_name == r.last_name"
+                        BLOCKING_RULES_FOR_TRAINING: "l.age == r.age"
                         COMPARISONS: "first_name:exact,last_name:exact"
                         PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.01 
                         THRESHOLD_MATCH_PROBABILITY: 0.1
               links_to_clusters:
                 implementation:
-                  name: splink_links_to_clusters
+                  name: one_to_many_links_to_clusters
                   configuration:
+                    NO_DUPLICATES_DATASET: input_file_2
                     THRESHOLD_MATCH_PROBABILITY: 0.1
           updating_clusters:
             implementation:
