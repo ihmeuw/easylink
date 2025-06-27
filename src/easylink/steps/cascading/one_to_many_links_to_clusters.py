@@ -58,15 +58,12 @@ links_to_accept = (
     # Pre-emptively break probability ties by right record key for the highest_id method
     .sort_values(["Probability", "Right Record Key"], ascending=False)
     # No duplicates in the *right* means only one link per *left* record
-    .groupby(["Left Record Key"])
-    .first()
+    .groupby(["Left Record Key"]).first()
 )
 
 if break_ties_method == "drop":
     num_tied = (
-        links_to_accept.merge(
-            links, on=["Left Record Key", "Probability"]
-        )
+        links_to_accept.merge(links, on=["Left Record Key", "Probability"])
         .groupby(["Left Record Key"])
         .size()
     )

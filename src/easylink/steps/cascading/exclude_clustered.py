@@ -71,7 +71,9 @@ clusters_df = clusters_df[clusters_df["size"] > 1]
 
 dataset_df = load_file(dataset_path)
 clustered_record_ids = set(dataset_df["Record ID"].unique()) & set(
-    clusters_df[clusters_df["Input Record Dataset"] == splitter_choice]["Input Record ID"].unique()
+    clusters_df[clusters_df["Input Record Dataset"] == splitter_choice][
+        "Input Record ID"
+    ].unique()
 )
 
 IDS_TO_REMOVE = pd.DataFrame({"Input Record ID": list(clustered_record_ids)})
