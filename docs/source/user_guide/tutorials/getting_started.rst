@@ -73,7 +73,7 @@ complete by the time you reach the next interactive section! The progress of you
 displayed in the console.
 
 .. todo::
-  Remove -I
+  Remove -I flag (for all times we run easylink)
 
 .. code-block:: console
 
@@ -255,7 +255,7 @@ implementations or inputs to be specified for each copy. We'll see one of those 
 
 .. important::
 
-  Stop! Before proceeding, it's critical to make sure you understand the relationship between a pipeline, a pipeline 
+  Before proceeding, it's important to understand the relationship between a pipeline, a pipeline 
   specification (YAML file), and the pipeline schema:
 
   - A `pipeline <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#pipelines>`_ 
@@ -266,7 +266,7 @@ implementations or inputs to be specified for each copy. We'll see one of those 
     implementation which will be run for each step, and performs any necessary configuration for those implementations. An 
     example specification is expandable above.
   - The EasyLink :ref:`pipeline_schema` defines the universe of pipelines that can be constructed using EasyLink, including
-    steps, inputs and outputs, and operators, as described above. All pipelines must adhere to the pipeline schema! 
+    steps, inputs and outputs, and operators, as described above. All pipelines must adhere to the pipeline schema and implement all its steps! 
 
 Top-level steps
 ^^^^^^^^^^^^^^^
@@ -289,9 +289,9 @@ The children of the ``steps`` key are the top-level steps in the pipeline - as y
 only two. We can see our first example of a step being configured if we look at ``canonicalizing_and_downstream_analysis``. 
 The children of the ``implementation`` key define and configure the code we will run for 
 `the step <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#canonicalizing-and-downstream-analysis>`_.
-We use the ``name`` key to choose to run the ``save_clusters`` implementation of ``canonicalization_and_downstream_analysis``.
+We use the ``name`` key to choose the ``save_clusters`` implementation of ``canonicalization_and_downstream_analysis``.
 ``save_clusters`` corresponds to one of the images which was downloaded the first time you ran the pipeline. The image contains code 
-which will simply save the clusters which are inputted into the step (see the diagram linked above) to disk. 
+which will simply save the step input -- clusters -- to disk (see the diagram linked above). 
 
 Entity resolution substeps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -330,7 +330,9 @@ in the pipeline schema::
       name: default_updating_clusters
 
 The last step shown, ``updating_clusters``, looks similar to ``canonicalization_and_downstream_analysis`` above; it simply chooses 
-an implementation for the step using the ``name`` key. The substeps of ``clustering`` are hidden -- we'll look at them next. 
+an implementation for the step using the ``name`` key. 
+
+The substeps of ``clustering`` are hidden -- we'll look at them next. 
 
 The complicated part is ``determining_exclusions_and_removing_records`` and its ``clones`` key:
 
@@ -356,8 +358,8 @@ if desired.
 
 .. note::
   All the steps listed here use ``default`` implementations. Default implementations generally just pass their input directly to their 
-  output without changing it. The behavior of each of these default steps is described in the pipeline schema section linked above the 
-  code block.
+  output without changing it, or other trivial behavior. The pipeline schema section linked above the code block describes the behavior 
+  of each of these default steps.
 
 Clustering substeps
 ^^^^^^^^^^^^^^^^^^^
@@ -383,8 +385,8 @@ We will show the hidden linking substeps in the next section.
 In ``links_to_clusters`` we see our first example of configuring an implementation. The children of the ``configuration`` key are 
 implementation-specific variables which control how the implementation will run. 
 
-``THRESHOLD_MATCH_PROBABILITY`` here allows the user to define at what probability a pair of records being considered 
-as a pontential link will be considered part of the same cluster by ``splink_links_to_clusters``, which uses the Splink package to 
+``THRESHOLD_MATCH_PROBABILITY`` here allows the user to define at what probability a pair of records 
+will be considered part of the same cluster by ``splink_links_to_clusters``, which uses the Splink package to 
 implement the ``links_to_clusters`` `step <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#links-to-clusters>`_.
 The Splink docs have
 `more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`__ on the 
@@ -427,28 +429,28 @@ in the pipeline schema::
 
 We see that ``pre-processing`` is another cloneable step, allowing us to select different pre-processing implementations for different
 input datasets. In this case, we leave the ``w2`` dataset unchanged, while changing the ``middle_name`` column in the ``ssa`` dataset 
-to a ``middle_initial`` column to match ``w2``.
+to a ``middle_initial`` column to match the ``w2`` data.
 
 Finally, we will configure the two Splink implementations.
 
 For ``splink_blocking_and_filtering``, we set::
 
     LINK_ONLY: true
-    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+    BLOCKING_RULES: "l.first_name == r.first_name,l.last_name == r.last_name"
 
 The first variable instructs Splink to link records between datasets without de-depulicating within 
-datasets, respectively. 
+datasets.
 The second is used by the Splink implementation to define which pairs of records 
-will be considered as possible matches (records with matching first or last names).
+will be considered as possible matches (only records with matching first or last names).
 
 For ``splink_evaluating_pairs``, we set::
 
   LINK_ONLY: true
-  BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-  COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
+  BLOCKING_RULES_FOR_TRAINING: "l.first_name == r.first_name,l.last_name == r.last_name"
+  COMPARISONS: "ssn:exact,first_name:exact,middle_initial:exact,last_name:exact"
   PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
 
-The first == two variables are used similarly to the previous implementation. The third 
+The first two variables are used similarly to the previous implementation. The third 
 defines the columns which will be compared by the Splink model, and how Splink will evaluate
 whether the column values match (exact comparisons). The fourth is a parameter used in training
 the model and making predictions (see the Splink docs for 
@@ -603,12 +605,17 @@ will change the ``COMPARISONS`` we pass to ``splink_evaluating_pairs`` to use fl
 methods rather than exact matches, allowing us to link records which have typos or other noise in them. We'll 
 use a new pipeline configuration YAML, :download:`pipeline_demo_improved.yaml`, with these changes.
 
-In ``splink_evaluating_pairs``, our implementation configuration will now look like this::
+In ``splink_evaluating_pairs``, we make the following changes:
 
-  LINK_ONLY: true
-  BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-  COMPARISONS: "'ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name'"
-  PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
+.. code-block:: diff
+
+     LINK_ONLY: true
+     BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+  -  COMPARISONS: "ssn:exact,first_name:exact,middle_initial:exact,last_name:exact"
+  +  COMPARISONS: "ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name"
+     PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
+
+
 
 ``COMPARISONS`` now uses 
 `Levenshtein <https://moj-analytical-services.github.io/splink/api_docs/comparison_library.html#splink.comparison_library.LevenshteinAtThresholds>`_
