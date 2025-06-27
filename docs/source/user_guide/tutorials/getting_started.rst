@@ -279,7 +279,7 @@ Let's take a closer look at the pipeline specification YAML bit by bit. We'll st
         name: save_clusters
 
 This code block shows the same file, but with all the substeps of ``entity_resolution`` hidden, 
-like in `this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#easylink-pipeline-schema>`_
+like in `this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#easylink-pipeline-schema>`__
 of the pipeline schema. 
 
 The children of the ``steps`` key are the top-level steps in the pipeline - as you can see, there are 
@@ -294,7 +294,7 @@ Entity resolution substeps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Next we will show the ellipsed part of the above code block, which corresponds to 
-`this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#entity-resolution-sub-steps>`_
+`this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#entity-resolution-sub-steps>`__
 in the pipeline schema::
 
   determining_exclusions_and_removing_records:
@@ -360,7 +360,7 @@ Clustering substeps
 ^^^^^^^^^^^^^^^^^^^
 
 Next we will show the ellipsed part of the above code block, which corresponds to 
-`this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#clustering-sub-steps>`_
+`this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#clustering-sub-steps>`__
 in the pipeline schema::
 
   clusters_to_links:
@@ -384,14 +384,14 @@ implementation-specific variables which control how the implementation will run.
 as a pontential link will be considered part of the same cluster by ``splink_links_to_clusters``, which uses the Splink package to 
 implement the ``links_to_clusters`` `step <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#links-to-clusters>`_.
 The Splink docs have
-`more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`_ on the 
+`more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`__ on the 
 ``THRESHOLD_MATCH_PROBABILITY`` variable.
 
 Linking substeps
 ^^^^^^^^^^^^^^^^
 
 Next we will show the ellipsed part of the above code block, which corresponds to 
-`this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#linking-sub-steps>`_
+`this diagram <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#linking-sub-steps>`__
 in the pipeline schema::
 
   pre-processing:
@@ -426,7 +426,32 @@ We see that ``pre-processing`` is another cloneable step, allowing us to select 
 input datasets. In this case, we leave the ``w2`` dataset unchanged, while changing the ``middle_name`` column in the ``ssa`` dataset 
 to a ``middle_initial`` column to match ``w2``.
 
+Finally, we will configure the two Splink implementations.
 
+For ``splink_blocking_and_filtering``, we set::
+
+    LINK_ONLY: true
+    BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+
+The first variable instructs Splink to link records between datasets without de-depulicating within 
+datasets, respectively. 
+The second is used by the Splink implementation to define which pairs of records 
+will be considered as possible matches (records with matching first or last names).
+
+For ``splink_evaluating_pairs``, we set::
+
+  LINK_ONLY: true
+  BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
+  COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
+  PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
+
+The first == two variables are used similarly to the previous implementation. The third 
+defines the columns which will be compared by the Splink model, and how Splink will evaluate
+whether the column values match (exact comparisons). The fourth is a parameter used in training
+the model and making predictions (see the Splink docs for 
+`more info <https://moj-analytical-services.github.io/splink/api_docs/training.html#splink.internals.linker_components.training.LinkerTraining.estimate_parameters_using_expectation_maximisation>`__). 
+
+And that's the whole 
 
 Structure
 ^^^^^^^^^
@@ -464,7 +489,7 @@ which control how the implementation will run. For example, ``THRESHOLD_MATCH_PR
 here allows the user to define at what probability a pair of records being considered 
 as a pontential link will be considered part of the same cluster by the 
 ``splink_links_to_clusters`` implementation. The Splink docs have 
-`more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`_.
+`more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`__.
 
 Cloneable Sections
 ^^^^^^^^^^^^^^^^^^
@@ -526,7 +551,7 @@ The first == two variables are used similarly to the previous implementation. Th
 defines the columns which will be compared by the Splink model, and how Splink will evaluate
 whether the column values match (exact comparisons). The fourth is a parameter used in training
 the model and making predictions (see the Splink docs for 
-`more info <https://moj-analytical-services.github.io/splink/api_docs/training.html#splink.internals.linker_components.training.LinkerTraining.estimate_parameters_using_expectation_maximisation>`_). 
+`more info <https://moj-analytical-services.github.io/splink/api_docs/training.html#splink.internals.linker_components.training.LinkerTraining.estimate_parameters_using_expectation_maximisation>`__). 
 
 For ``splink_links_to_clusters``, as discussed earlier in the :ref:`implementation_configuration` section,
 we set::
@@ -648,9 +673,9 @@ be investigated further using ``pandas.read_parquet()`` in a Python session.
 
 The Splink implementations in our pipeline also produce some diagnostic charts which can be useful 
 for evaluating results, such as the :download:`match weights chart <naive_match_weights.html>` 
-(`Splink docs <https://moj-analytical-services.github.io/splink/charts/match_weights_chart.html>`_) and 
+(`Splink docs <https://moj-analytical-services.github.io/splink/charts/match_weights_chart.html>`__) and 
 :download:`comparison viewer tool <naive_comparison_viewer.html>` 
-(`Splink docs <https://moj-analytical-services.github.io/splink/charts/comparison_viewer_dashboard.html>`_). 
+(`Splink docs <https://moj-analytical-services.github.io/splink/charts/comparison_viewer_dashboard.html>`__). 
 These charts are from the 
 ``diagnostics/splink_evaluating_pairs`` subdirectory of the results directory for each pipeline run.
 
