@@ -1,3 +1,6 @@
+# NOTE: This file was used for debugging and exploring pipeline options for the tutorial.
+# It is kept for historical purposes and future development only; it is not included in the tutorial itself.
+
 import argparse
 from pathlib import Path
 

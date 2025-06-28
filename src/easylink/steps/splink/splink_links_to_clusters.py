@@ -53,6 +53,8 @@ cc = (
 # Split "Record Key" back into "Input Record Dataset" and "Input Record ID"
 cc[["Input Record Dataset", "Input Record ID"]] = (
     cc["Record Key"].astype(str).str.split("-__-", n=1, expand=True)
+    if not cc.empty
+    else pd.DataFrame(columns=["Input Record Dataset", "Input Record ID"])
 )
 cc = cc.drop(columns=["Record Key"])
 cc["Input Record ID"] = cc["Input Record ID"].astype(int)

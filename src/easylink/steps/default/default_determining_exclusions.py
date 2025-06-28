@@ -72,7 +72,7 @@ if len(clusters_df) > 0:
 
 # SAVE OUTPUTS
 
-IDS_TO_REMOVE = pd.DataFrame(columns=["Record ID"])
+IDS_TO_REMOVE = pd.DataFrame(columns=["Input Record ID"])
 
 # OUTPUT_PATHS is a single path to a file (results.parquet)
 results_filepath = os.environ["OUTPUT_PATHS"]

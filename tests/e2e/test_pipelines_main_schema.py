@@ -74,6 +74,20 @@ from easylink.utilities.paths import DEV_IMAGES_DIR
             "tests/specifications/e2e/environment_slurm_4GB.yaml",
             "tests/e2e/pipeline_improved_results_2030.csv",
         ),
+        # local pipeline_demo_improved_cascade.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved_cascade.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
+            "tests/specifications/common/environment_local.yaml",
+            "tests/e2e/pipeline_improved_cascade_results.csv",
+        ),
+        # slurm pipeline_demo_improved_cascade.yaml
+        (
+            "docs/source/user_guide/tutorials/pipeline_demo_improved_cascade.yaml",
+            "docs/source/user_guide/tutorials/input_data_demo.yaml",
+            "tests/specifications/e2e/environment_slurm_4GB.yaml",
+            "tests/e2e/pipeline_improved_cascade_results.csv",
+        ),
     ],
 )
 def test_pipeline_splink(
@@ -158,10 +172,11 @@ def test_pipeline_splink(
         if "improved" in pipeline_specification:
             # improved model comparisons appear non-deterministic leading to inconsistent
             # results for equality assertion
-            print(0.005 * len(correct_results))
+            wiggle_room = 0.005 * len(correct_results)
+            print(wiggle_room)
             assert (
-                len(results_set.difference(correct_set)) < 0.005 * len(correct_results)
-            ) & (len(results_set.difference(correct_set)) < 0.005 * len(correct_results))
+                len(results_set.difference(correct_set)) < wiggle_room
+            ) and (len(correct_set.difference(results_set)) < wiggle_room)
         else:
             assert results_set == correct_set
 
