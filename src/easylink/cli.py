@@ -201,16 +201,20 @@ def run(
     main = handle_exceptions(
         func=runner.main, exceptions_logger=logger, with_debugger=with_debugger
     )
-    main(
-        command="run",
-        pipeline_specification=pipeline_specification,
-        input_data=input_data,
-        computing_environment=computing_environment,
-        results_dir=results_dir,
-        images_dir=images,
-        schema_name=schema,
-    )
-    logger.info("*** FINISHED ***")
+    try:
+        main(
+            command="run",
+            pipeline_specification=pipeline_specification,
+            input_data=input_data,
+            computing_environment=computing_environment,
+            results_dir=results_dir,
+            images_dir=images,
+            schema_name=schema,
+        )
+    except SystemExit:
+        # Snakemake uses SystemExit for completion - log success and re-raise
+        logger.info("*** FINISHED ***")
+        raise
 
 
 @easylink.command()

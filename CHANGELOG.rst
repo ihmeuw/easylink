@@ -1,6 +1,7 @@
 **0.1.25 - 6/30/25**
 
  - Release new images
+ - Clean up stdout logging
 
 **0.1.24 - 6/26/25**
 
