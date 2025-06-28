@@ -126,33 +126,40 @@ def main(
     logger.debug(f"Snakemake arguments: {argv}")
 
     # Run snakemake
-    snake_main(argv) if debug else _run_snakemake_with_filtered_output(
-        argv, Path(results_dir)
-    )
+    if debug:
+        snake_main(argv)
+    else:
+        _run_snakemake_with_filtered_output(argv, Path(results_dir))
 
 
 def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> None:
-    """Run Snakemake with simplified log filtering.
+    """Runs Snakemake with simplified log filtering.
 
     Parameters
     ----------
-    argv : list of str
+    argv
         Snakemake command line arguments.
-    results_dir : pathlib.Path
+    results_dir
         Directory to save the full Snakemake log.
-
-    Returns
-    -------
-    None
-        This function does not return a value.
     """
     snakemake_log_file = results_dir / "snakemake.log"
 
     # Create a filtering output handler that processes lines in real-time
     class FilteringOutput:
+        """Handles real-time filtering and logging of Snakemake output.
+
+        This class writes all snakemake output to a log file and selectively logs
+        filtered lines to the logger for user visibility.
+
+        Parameters
+        ----------
+        log_file_path
+            The path to the log file where all output will be written.
+
+        """
+
         def __init__(self, log_file_path: Path):
             self.log_file = open(log_file_path, "w")
-            self.log_file.write("=== SNAKEMAKE OUTPUT ===\n")
             self.buffer = ""
 
         def write(self, text: str) -> int:
@@ -182,22 +189,25 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
                     logger.info(filtered_line)
             self.log_file.close()
 
-    # Create the filtering output handler
-    filtering_output = FilteringOutput(snakemake_log_file)
+        def __enter__(self):
+            return self
 
-    try:
-        # Redirect both stdout and stderr to our filtering handler
-        with redirect_stdout(filtering_output), redirect_stderr(filtering_output):
-            snake_main(argv)
-    except SystemExit as e:
-        # Snakemake uses SystemExit, which is expected behavior
-        if e.code != 0:
-            # Non-zero exit means there was an error
-            pass
-    finally:
-        filtering_output.close()
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.close()
 
-    logger.info(f"Pipeline completed. Full Snakemake log saved to: {snakemake_log_file}")
+    # Create the filtering output handler and ensure the log file is always closed
+    with FilteringOutput(snakemake_log_file) as filtering_output:
+        try:
+            # Redirect both stdout and stderr to our filtering handler
+            with redirect_stdout(filtering_output), redirect_stderr(filtering_output):
+                snake_main(argv)
+        except SystemExit:
+            # Snakemake uses SystemExit for both success and failure
+            logger.info(
+                f"Pipeline finished running. Full Snakemake log saved to: {snakemake_log_file}"
+            )
+            # Always re-raise to allow test frameworks to detect completion
+            raise
 
 
 def _filter_snakemake_output_simple(line: str) -> str | None:
@@ -206,7 +216,7 @@ def _filter_snakemake_output_simple(line: str) -> str | None:
 
     Parameters
     ----------
-    line : str
+    line
         A single line of Snakemake output.
 
     Returns
