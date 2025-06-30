@@ -45,7 +45,7 @@ There are a few things to install in order to use this package:
   check if you already have conda installed by running the command ``conda --version``.
   For an existing installation, a version will be displayed.
 
-- Create a conda environment with python and graphviz installed
+- Create a conda environment with python and graphviz installed.
 
   ::
 
