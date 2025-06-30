@@ -670,7 +670,9 @@ We'll add cascading to our pipeline specification by giving the ``entity_resolut
 iterations.
 ``entity_resolution`` is what's called a :ref:`"loop-able section" <loopable_sections>`, which works
 similarly to a cloneable section.
-The main difference is that the ``iterations`` key is used instead of ``clones``.
+The main difference in syntax is that the ``iterations`` key is used instead of ``clones``.
+When the pipeline is run, rather than running in parallel like clones, these iterations will be executed
+in order, with the output from one iteration being passed as input to the next.
 
 .. code-block:: yaml
 
