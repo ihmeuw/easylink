@@ -116,7 +116,7 @@ at these results later and see how the model performed.
 
 Naive model - command line arguments
 ====================================
-This section will explain the command line argument and show the file we pass to each one, including the 
+This section will explain the command line arguments and show the file we pass to each one, including the 
 pipeline specification YAML and how it relates to the EasyLink pipeline schema. That file can look a 
 little complicated at first, so feel free to skip ahead to the :ref:`naive_results` section, where the 
 interactive part of the tutorial continues, and come back later.
@@ -349,7 +349,7 @@ The substeps of ``clustering`` are hidden -- we'll look at them next.
 The complicated part is ``determining_exclusions_and_removing_records`` and its ``clones`` key:
 
 As described in the link above, the steps "determining exclusions and removing records" identify and remove
-records that can be excluded from this linking pass to save computational time, generally, because they have 
+records that can be excluded from this linking pass to save computational time, generally because they have 
 already been assigned to clusters.
 
 The schema can define :ref:`cloneable sections <cloneable_sections>`, which allow a pipeline to create 
@@ -680,9 +680,9 @@ We get similar, but not identical, results with the 2030 data.
 
 .. note::
 
-  In its current state, EasyLink provides only one implementation for each step, does not yet have documentation 
-  to support users in creating their own implementations, and is intended to be used for demonstration purposes 
-  only. However, interested users are encouraged to utilize the provided implementations to their full potential
+  In its current state, EasyLink provides only one or two implementations for each step, does not yet have documentation 
+  to support users in creating their own implementations, and is not yet stable enough to be recommended as a tool for production pipelines.
+  However, interested users are encouraged to utilize the provided implementations to their full potential
   by creating more pipelines, changing how implementations are configured, and linking different datasets. 
 
   We hope to be able to add more features in the future, including:
