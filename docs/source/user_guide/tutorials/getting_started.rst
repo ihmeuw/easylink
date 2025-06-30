@@ -75,9 +75,9 @@ displayed in the console.
 .. code-block:: console
 
   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml
-  ... Downloading Images ...
   2025-06-26 10:13:31.501 | 0:00:01.693505 | run:196 - Running pipeline
   2025-06-26 10:13:31.502 | 0:00:01.693704 | run:198 - Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31
+  ... Downloading Images ...
   2025-06-26 10:13:52.719 | 0:00:22.911314 | main:124 - Running Snakemake
   [Thu Jun 26 10:13:53 2025]
   Job 14: Validating determining_exclusions_and_removing_records_clone_1_removing_records_default_removing_records input slot input_datasets
