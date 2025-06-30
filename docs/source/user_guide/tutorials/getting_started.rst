@@ -72,12 +72,10 @@ below, then reading the information about it while the files download. Hopefully
 complete by the time you reach the next interactive section! The progress of your image downloads will be 
 displayed in the console.
 
-.. todo::
-  Remove -I flag (for all times we run easylink)
-
 .. code-block:: console
 
-    $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+  $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml
+  ... Downloading Images ...
   2025-06-26 10:13:31.501 | 0:00:01.693505 | run:196 - Running pipeline
   2025-06-26 10:13:31.502 | 0:00:01.693704 | run:198 - Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31
   2025-06-26 10:13:52.719 | 0:00:22.911314 | main:124 - Running Snakemake
@@ -653,7 +651,7 @@ comparisons for ``first_name`` and ``last_name``, to link similar but not identi
 
 By re-running the pipeline with these changes and then running the evauation script, we can see how our results compare::
 
-  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo.yaml -e environment_local.yaml
   $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_08_57 .996
   9292 true links
   For threshold 0.996, len(false_positives)=19; len(false_negatives)=158
@@ -670,7 +668,7 @@ as the input YAML, which uses the SSA and W-2 datasets from 2030 rather than
 
 We can run the same pipeline on different data by changing only the input parameter::
 
-  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml -e environment_local.yaml
   python print_fp_fn_w2_ssa.py results/2025_06_26_11_17_52 .996
   10345 true links
   For threshold 0.996, len(false_positives)=14; len(false_negatives)=149
@@ -678,17 +676,26 @@ We can run the same pipeline on different data by changing only the input parame
 We get similar, but not identical, results with the 2030 data.
 
 
-.. note::
 
-  In its current state, EasyLink provides only one or two implementations for each step, does not yet have documentation 
-  to support users in creating their own implementations, and is not yet stable enough to be recommended as a tool for production pipelines.
-  However, interested users are encouraged to utilize the provided implementations to their full potential
-  by creating more pipelines, changing how implementations are configured, and linking different datasets. 
+Wrapping Up
+===========
 
-  We hope to be able to add more features in the future, including:
+In this tutorial, we've introduced EasyLink and demonstrated how to configure and run EasyLink pipelines, change step
+implementations, change input data, and evaluate and compare results between pipelines.
 
-  - Full suite of implementations reflecting a range of common record linkage techniques
-  - Documentation supporting users in creating their own implementations
-  - User-experience improvements, especially regarding writing pipeline specifications and implementations
-  - Auto-parallel sections for processing large scale data
-  - Spark support
+Not everything EasyLink can do has been covered in this tutorial. EasyLink currently includes a few more implementations 
+we haven't used here, can run pipelines on a computational cluster managed by `Slurm <https://slurm.schedmd.com/documentation.html>`_
+or distribute work using `Apache Spark <https://spark.apache.org/docs/latest/quick-start.html>`_, and has additional flexibility in
+the pipeline schema that we haven't demonstrated here.
+
+In its current state, EasyLink provides only one or two implementations for each step, does not yet have documentation 
+to support users in creating their own implementations, and is not yet stable enough to be recommended as a tool for production pipelines.
+However, interested users are encouraged to utilize the provided implementations to their full potential
+by creating more pipelines, changing how implementations are configured, and linking different datasets. 
+
+We hope to be able to add more features in the future, including:
+
+- Full suite of implementations reflecting a range of common record linkage techniques
+- Documentation supporting users in creating their own implementations
+- User-experience improvements, especially regarding writing pipeline specifications and implementations
+- Auto-parallel sections for processing large scale data
