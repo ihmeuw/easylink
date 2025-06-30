@@ -860,7 +860,7 @@ Now we're ready to run the cascading pipeline on the 2020 data and check our acc
 
 .. code::
 
-   $ easylink run -p pipeline_demo_improved_cascade.yaml -i input_data_demo.yaml -e environment_local.yaml -I /mnt/team/simulation_science/priv/engineering/er_ecosystem/images
+   $ easylink run -p pipeline_demo_improved_cascade.yaml -i input_data_demo.yaml -e environment_local.yaml
    $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_32_15
    12509 true links
    len(false_positives)=47; len(false_negatives)=505
