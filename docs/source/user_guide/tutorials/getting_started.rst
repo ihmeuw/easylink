@@ -248,10 +248,8 @@ the implementations and other configuration options for the pipeline being run. 
   </details>
 
 The pipeline specification follows the structure defined in the :ref:`pipeline_schema`, a very important
-part of EasyLink. The EasyLink pipeline schema enforces the standard patterns that implementations of each step in the linkage process must 
-each input or output data file.
-These standard patterns, which implementations of each step in the linkage process must follow,
-enable easy configuration and swapping.
+part of EasyLink. The EasyLink pipeline schema enforces the standard patterns that implementations of each step in the linkage process must follow.
+These standard patterns enable easy configuration and swapping.
 
 There are some flexible sections in the pipeline schema, such as :ref:`cloneable sections <cloneable_sections>`, which allow a pipeline to create multiple copies of that section and use different 
 implementations or inputs for each copy. We'll see one of those soon.
