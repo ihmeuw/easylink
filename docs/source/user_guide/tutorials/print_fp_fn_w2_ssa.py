@@ -22,8 +22,12 @@ if not p.results_dir.exists():
 results_dir = p.results_dir
 
 import yaml
-# Read YAML file
-with open(results_dir / "input_data_demo.yaml", 'r') as stream:
+import glob
+# Read input data YAML file -- note that this assumes it starts with input_data,
+# though that isn't a formal EasyLink requirement!
+input_data_yaml_path = glob.glob(str(results_dir / 'input_data_*.yaml'))
+assert len(input_data_yaml_path) == 1
+with open(input_data_yaml_path[0]) as stream:
     input_data_yaml = yaml.safe_load(stream)
 
 input_data_files = {k: Path(p).resolve() for k, p in input_data_yaml.items() if Path(p).stem != 'known_clusters'}
