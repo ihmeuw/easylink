@@ -1,3 +1,8 @@
+**0.2.0 - 6/30/25**
+
+ - Official demo release
+ - Add progress dots to terminal output
+
 **0.1.25 - 6/30/25**
 
  - Release new images
