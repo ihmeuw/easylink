@@ -336,6 +336,8 @@ will be considered part of the same cluster.
 Our ``one_to_many_links_to_clusters`` implementation implements `this step <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#links-to-clusters>`_ by filtering out links
 below the threshold, and then choosing the single *best-matching* SSA record for each
 W-2 record (since linking a W-2 to multiple SSA records would imply those SSA records were duplicates).
+The name of the implementation reflects that in the resulting clusters, *one* SSA record can have *many*
+W-2 records (but not vice versa).
 
 While this implementation doesn't use the Splink package,
 the Splink docs have
