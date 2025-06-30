@@ -849,6 +849,8 @@ any records (since all SSA records remain eligible to match regardless of what i
 ``exclude_clustered``, which we use for W-2, excludes records that have already been clustered with
 any other records; so this implements the rule described above, that we can drop W-2 records that have
 already linked to an SSA record.
+All SSA records remain eligible, while some W-2 records are excluded,
+because there can be duplicate W-2 records for the same SSA record, but not the other way around.
 
 The full pipeline specification YAML resulting from these changes is :download:`pipeline_demo_improved_cascade.yaml`.
 
