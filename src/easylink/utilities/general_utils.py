@@ -97,24 +97,34 @@ def _add_logging_sink(
         Whether the logs should be converted to JSON before they're dumped
         to the logging sink.
     """
-    message_format = (
-        "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <green>{elapsed}</green> | "
-        "<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
-    )
+
+    def format_message(record):
+        elapsed_seconds = int(record["elapsed"].total_seconds())
+        hours = elapsed_seconds // 3600
+        minutes = (elapsed_seconds % 3600) // 60
+        seconds = elapsed_seconds % 60
+        elapsed_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        time_str = record["time"].strftime("%Y-%m-%d %H:%M:%S")
+
+        if colorize:
+            return f"\033[32m{time_str}\033[0m | \033[32m{elapsed_str}\033[0m | {record['message']}\n"
+        else:
+            return f"{time_str} | {elapsed_str} | {record['message']}\n"
+
     if verbose == 0:
         logger.add(
             sink,
-            colorize=colorize,
+            colorize=False,  # We handle colors in format_message
             level="INFO",
-            format=message_format,
+            format=format_message,
             serialize=serialize,
         )
     elif verbose >= 1:
         logger.add(
             sink,
-            colorize=colorize,
+            colorize=False,  # We handle colors in format_message
             level="DEBUG",
-            format=message_format,
+            format=format_message,
             serialize=serialize,
         )
 
