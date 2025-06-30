@@ -348,7 +348,7 @@ The substeps of ``clustering`` are hidden -- we'll look at them next.
 
 The complicated part is ``determining_exclusions_and_removing_records`` and its ``clones`` key:
 
-As described in the link above, the steps "determining exclusions and removing records" identify and remove
+As described :ref:`in the pipeline schema <entity_resolution_sub_steps>`, the steps "determining exclusions and removing records" identify and remove
 records that can be excluded from this linking pass to save computational time, generally because they have 
 already been assigned to clusters.
 
