@@ -1,3 +1,7 @@
+**0.1.25 - 6/30/25**
+
+ - Release new images
+
 **0.1.24 - 6/26/25**
 
  - Properly escape special characters in envars specified via pipeline configuration
