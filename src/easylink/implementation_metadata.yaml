@@ -2,7 +2,7 @@ step_1_python_pandas:
   steps:
   - step_1
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   outputs:
@@ -11,7 +11,7 @@ step_1a_python_pandas:
   steps:
   - step_1a
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -22,7 +22,7 @@ step_1b_python_pandas:
   steps:
   - step_1b
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -33,7 +33,7 @@ step_2_python_pandas:
   steps:
   - step_2
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   outputs:
@@ -42,7 +42,7 @@ step_3_python_pandas:
   steps:
   - step_3
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   outputs:
@@ -51,7 +51,7 @@ step_4_python_pandas:
   steps:
   - step_4
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -62,7 +62,7 @@ step_5_python_pandas:
   steps:
   - step_5
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -73,7 +73,7 @@ step_6_python_pandas:
   steps:
   - step_6
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -84,7 +84,7 @@ step_4a_python_pandas:
   steps:
   - step_4a
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -95,7 +95,7 @@ step_4b_python_pandas:
   steps:
   - step_4b
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -106,7 +106,7 @@ step_4b_r:
   steps:
   - step_4b
   image_name: r-image.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: a4a03b836694a2b81a1bd2852736ccc5
   script_cmd: Rscript /dummy_step.R
   env:
@@ -117,7 +117,7 @@ step_1_python_pyspark:
   steps:
   - step_1
   image_name: python_pyspark.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: c948577ab0607411dd4b640622d9ec3a
   script_cmd: python3 /code/dummy_step.py
   outputs:
@@ -127,7 +127,7 @@ step_2_python_pyspark:
   steps:
   - step_2
   image_name: python_pyspark.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: c948577ab0607411dd4b640622d9ec3a
   script_cmd: python3 /code/dummy_step.py
   outputs:
@@ -137,7 +137,7 @@ step_3_python_pyspark:
   steps:
   - step_3
   image_name: python_pyspark.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: c948577ab0607411dd4b640622d9ec3a
   script_cmd: python3 /code/dummy_step.py
   outputs:
@@ -147,7 +147,7 @@ step_4_python_pyspark:
   steps:
   - step_4
   image_name: python_pyspark.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: c948577ab0607411dd4b640622d9ec3a
   script_cmd: python3 /code/dummy_step.py
   env:
@@ -158,7 +158,7 @@ step_1_r:
   steps:
   - step_1
   image_name: r-image.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: a4a03b836694a2b81a1bd2852736ccc5
   script_cmd: Rscript /dummy_step.R
   outputs:
@@ -168,7 +168,7 @@ step_2_r:
   steps:
   - step_2
   image_name: r-image.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: a4a03b836694a2b81a1bd2852736ccc5
   script_cmd: Rscript /dummy_step.R
   outputs:
@@ -178,7 +178,7 @@ step_3_r:
   steps:
   - step_3
   image_name: r-image.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: a4a03b836694a2b81a1bd2852736ccc5
   script_cmd: Rscript /dummy_step.R
   outputs:
@@ -188,7 +188,7 @@ step_4_r:
   steps:
   - step_4
   image_name: r-image.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: a4a03b836694a2b81a1bd2852736ccc5
   script_cmd: Rscript /dummy_step.R
   env:
@@ -201,7 +201,7 @@ step_1_and_step_2_combined_python_pandas:
   - step_1
   - step_2
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   outputs:
@@ -211,7 +211,7 @@ step_1_and_step_2_parallel_python_pandas:
   - step_1
   - step_2
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   env:
@@ -223,7 +223,7 @@ step_3_and_step_4_combined_python_pandas:
   - step_3
   - step_4
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   outputs:
@@ -233,7 +233,7 @@ step_1a_and_step_1b_combined_python_pandas:
   - step_1a
   - step_1b
   image_name: python_pandas.sif
-  zenodo_record_id: 15733426
+  zenodo_record_id: 15757317
   md5_checksum: 9177b8e168fcc9cae91bf61265f2185c
   script_cmd: python /dummy_step.py
   outputs:
@@ -241,47 +241,55 @@ step_1a_and_step_1b_combined_python_pandas:
 dummy_step_1_for_output_dir_example:
   steps:
   - step_1_for_output_dir_example
-  image_name: main/dummy_step_1_for_output_dir_example.sif
+  image_name: dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
   outputs:
     step_1_main_output_directory: output_dir/
 dummy_step_1_for_output_dir_example_default:
   steps:
   - step_1_for_output_dir_example
-  image_name: main/dummy_step_1_for_output_dir_example.sif
+  image_name: dummy_step_1_for_output_dir_example.sif
   script_cmd: python /dummy_step_1_for_output_dir_example.py
 dummy_step_2_for_output_dir_example:
   steps:
   - step_2_for_output_dir_example
-  image_name: main/dummy_step_2_for_output_dir_example.sif
+  image_name: dummy_step_2_for_output_dir_example.sif
   script_cmd: python /dummy_step_2_for_output_dir_example.py
   outputs:
     step_2_main_output: result.parquet
 default_removing_records:
   steps:
   - removing_records
-  image_name: main/default_removing_records.sif
+  image_name: default_removing_records.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 85dba6fd73c9f8f504fddb6d5c30f2de
   script_cmd: python /default_removing_records.py
   outputs:
     dataset: dataset
 default_clusters_to_links:
   steps:
   - clusters_to_links
-  image_name: main/default_clusters_to_links.sif
+  image_name: default_clusters_to_links.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 0d00d1272bd8193f60727791097aa065
   script_cmd: python /default_clusters_to_links.py
   outputs:
     known_links: result.parquet
 default_determining_exclusions:
   steps:
   - determining_exclusions
-  image_name: main/default_determining_exclusions.sif
+  image_name: default_determining_exclusions.sif
+  zenodo_record_id: 15757317
+  md5_checksum: e61cb32ad45b79ca9a2c36db4e76ef7e
   script_cmd: python /default_determining_exclusions.py
   outputs:
     ids_to_remove: result.parquet
 default_updating_clusters:
   steps:
   - updating_clusters
-  image_name: main/default_updating_clusters.sif
+  image_name: default_updating_clusters.sif
+  zenodo_record_id: 15757317
+  md5_checksum: cc6bd29e099c2523347fa04545aa35c9
   script_cmd: python /default_updating_clusters.py
   outputs:
     clusters: clusters.parquet
@@ -290,7 +298,9 @@ default_updating_clusters:
 save_clusters:
   steps:
   - canonicalizing_and_downstream_analysis
-  image_name: main/save_clusters.sif
+  image_name: save_clusters.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 384ab2be668cbadc45160a674f621022
   script_cmd: python /dummy_canonicalizing_and_downstream_analysis.py
   outputs:
     analysis_output: result.parquet
@@ -299,77 +309,89 @@ save_clusters:
 no_pre-processing:
   steps:
   - pre-processing
-  image_name: main/no_pre-processing.sif
+  image_name: no_pre-processing.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 9a9c080cf145078152501cf96bf61f27
   script_cmd: python /dummy_pre-processing.py
   outputs:
     dataset: dataset
 default_schema_alignment:
   steps:
   - schema_alignment
-  image_name: main/default_schema_alignment.sif
+  image_name: default_schema_alignment.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 3166587f9cfec478b999a17074d628f7
   script_cmd: python /default_schema_alignment.py
   outputs:
     records: result.parquet
 splink_blocking_and_filtering:
   steps:
   - blocking_and_filtering
-  image_name: main/splink_blocking_and_filtering.sif
+  image_name: splink_blocking_and_filtering.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 8a365b90295ef6beaad2b7f80a03d768
   script_cmd: python /splink_blocking_and_filtering.py
   outputs:
     blocks: blocks
 splink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_name: main/splink_evaluating_pairs.sif
+  image_name: splink_evaluating_pairs.sif
+  zenodo_record_id: 15757317
+  md5_checksum: b57f4bd16b7a3aa5099569078ea4c064
   script_cmd: python /splink_evaluating_pairs.py
   outputs:
     links: result.parquet
 splink_links_to_clusters:
   steps:
   - links_to_clusters
-  image_name: main/splink_links_to_clusters.sif
+  image_name: splink_links_to_clusters.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 645937f7bab9c2557b7aacafaf4e4765
   script_cmd: python /splink_links_to_clusters.py
   outputs:
     clusters: result.parquet
 fastLink_evaluating_pairs:
   steps:
   - evaluating_pairs
-  image_name: main/fastLink_evaluating_pairs.sif
+  image_name: fastLink_evaluating_pairs.sif
   script_cmd: Rscript /fastLink_evaluating_pairs.R
   outputs:
     links: result.parquet
 fastLink_links_to_clusters:
   steps:
   - links_to_clusters
-  image_name: main/fastLink_links_to_clusters.sif
+  image_name: fastLink_links_to_clusters.sif
   script_cmd: Rscript /fastLink_links_to_clusters.R
   outputs:
     clusters: result.parquet
 exclude_clustered:
   steps:
   - determining_exclusions
-  image_name: main/exclude_clustered.sif
+  image_name: exclude_clustered.sif
   script_cmd: python /exclude_clustered.py
   outputs:
     ids_to_remove: result.parquet
 exclude_none:
   steps:
   - determining_exclusions
-  image_name: main/exclude_none.sif
+  image_name: exclude_none.sif
   script_cmd: python /exclude_none.py
   outputs:
     ids_to_remove: result.parquet
 update_clusters_by_connected_components:
   steps:
   - updating_clusters
-  image_name: main/update_clusters_by_connected_components.sif
+  image_name: update_clusters_by_connected_components.sif
   script_cmd: python /update_clusters_by_connected_components.py
   outputs:
     clusters: result.parquet
 middle_name_to_initial:
   steps:
   - pre-processing
-  image_name: main/middle_name_to_initial.sif
+  image_name: middle_name_to_initial.sif
+  zenodo_record_id: 15757317
+  md5_checksum: 89db9c3318300cda9d538cde08c3c323
   script_cmd: python /middle_name_to_initial.py
   outputs:
     dataset: dataset
