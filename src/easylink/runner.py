@@ -200,7 +200,7 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
             while "\n" in self.buffer:
                 line, self.buffer = self.buffer.split("\n", 1)
                 if line.strip():
-                    filtered_line = _filter_snakemake_output_simple(line.strip())
+                    filtered_line = _filter_snakemake_output(line.strip())
                     if filtered_line:
                         # Add newline after dots if we've printed any
                         if (
@@ -226,7 +226,7 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
 
             # Process and log any remaining buffer content
             if self.buffer.strip():
-                filtered_line = _filter_snakemake_output_simple(self.buffer.strip())
+                filtered_line = _filter_snakemake_output(self.buffer.strip())
                 if filtered_line:
                     # Add newline after dots if we've printed any
                     if (
@@ -268,9 +268,8 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
             raise
 
 
-def _filter_snakemake_output_simple(line: str) -> str | None:
-    """
-    Simple filter for Snakemake output showing only localrules and Job messages.
+def _filter_snakemake_output(line: str) -> str:
+    """Filter for Snakemake output.
 
     Parameters
     ----------
@@ -279,12 +278,11 @@ def _filter_snakemake_output_simple(line: str) -> str | None:
 
     Returns
     -------
-    str or None
-        The filtered line for display, or None to suppress the line.
+        The filtered line for display.
     """
     # Skip empty lines
     if not line.strip():
-        return None
+        return ""
 
     if line.startswith("localrule "):
         # Show localrule names (without the "localrule" prefix)
@@ -294,10 +292,10 @@ def _filter_snakemake_output_simple(line: str) -> str | None:
         # Show Job messages
         # Extract everything after "Job ##: "
         parts = line.split(":", 1)
-        filtered_line = parts[1].strip() if len(parts) > 1 else None
+        filtered_line = parts[1].strip() if len(parts) > 1 else ""
     else:
         # Suppress everything else
-        filtered_line = None
+        filtered_line = ""
     return filtered_line
 
 
