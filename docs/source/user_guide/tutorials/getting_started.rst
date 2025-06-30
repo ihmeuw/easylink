@@ -75,27 +75,25 @@ displayed in the console.
 .. code-block:: console
 
   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml
-  2025-06-26 10:13:31.501 | 0:00:01.693505 | run:196 - Running pipeline
-  2025-06-26 10:13:31.502 | 0:00:01.693704 | run:198 - Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31
-  ... Downloading Images ...
-  2025-06-26 10:13:52.719 | 0:00:22.911314 | main:124 - Running Snakemake
-  [Thu Jun 26 10:13:53 2025]
-  Job 14: Validating determining_exclusions_and_removing_records_clone_1_removing_records_default_removing_records input slot input_datasets
-  Reason: Missing output files: input_validations/determining_exclusions_and_removing_records_clone_1_removing_records_default_removing_records/input_datasets_validator
-  ...
-  [Thu Jun 26 10:13:58 2025]
-  Job 28: Validating splink_evaluating_pairs input slot known_links
-  Reason: Missing output files: input_validations/splink_evaluating_pairs/known_links_validator; Input files updated by another job: intermediate/default_clusters_to_links/result.parquet
-  ...
-  [Thu Jun 26 10:14:47 2025]
-  Job 1: Running canonicalizing_and_downstream_analysis implementation: dummy_canonicalizing_and_downstream_analysis
-  Reason: Missing output files: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet; Input files updated by another job: input_validations/dummy_canonicalizing_and_downstream_analysis/input_datasets_validator, intermediate/default_updating_clusters/clusters.parquet, input_validations/dummy_canonicalizing_and_downstream_analysis/clusters_validator
-  [Thu Jun 26 10:14:50 2025]
-  Job 35: Validating results input slot analysis_output
-  Reason: Missing output files: input_validations/final_validator; Input files updated by another job: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet
-  [Thu Jun 26 10:14:51 2025]
-  Job 0: Grabbing final output
-  Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet
+   2025-06-30 14:17:58 | 00:00:01 | Running pipeline
+   2025-06-30 14:17:58 | 00:00:01 | Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31
+   ... Downloading Images ...
+   2025-06-30 14:18:21 | 00:00:24 | Running Snakemake
+   2025-06-30 14:18:22 | 00:00:25 | Validating determining_exclusions_and_removing_records_clone_2_removing_records_default_removing_records input slot input_datasets
+   ...
+   2025-06-30 14:18:24 | 00:00:27 | Running clusters_to_links implementation: default_clusters_to_links
+   2025-06-30 14:18:24 | 00:00:27 | Running determining_exclusions implementation: default_determining_exclusions
+   2025-06-30 14:18:24 | 00:00:27 | Running determining_exclusions implementation: default_determining_exclusions
+   ...
+   2025-06-30 14:18:39 | 00:00:42 | Validating splink_blocking_and_filtering input slot records
+   2025-06-30 14:18:42 | 00:00:45 | Running blocking_and_filtering implementation: splink_blocking_and_filtering
+   2025-06-30 14:18:50 | 00:00:53 | Validating splink_evaluating_pairs input slot blocks
+   2025-06-30 14:18:53 | 00:00:56 | Running evaluating_pairs implementation: splink_evaluating_pairs
+   ...
+   2025-06-30 14:19:19 | 00:01:22 | Running canonicalizing_and_downstream_analysis implementation: save_clusters
+   2025-06-30 14:19:21 | 00:01:24 | Validating results input slot analysis_output
+   2025-06-30 14:19:23 | 00:01:26 | Grabbing final output
+   2025-06-30 14:19:26 | 00:01:29 | Pipeline finished running - full log saved to: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31/pipeline.log
 
 Success! Our pipeline has linked the input data and outputted the results, the clusters of records it found. We'll take a look 
 at these results later and see how the model performed.
