@@ -174,9 +174,9 @@ def test_pipeline_splink(
             # results for equality assertion
             wiggle_room = 0.005 * len(correct_results)
             print(wiggle_room)
-            assert (
-                len(results_set.difference(correct_set)) < wiggle_room
-            ) and (len(correct_set.difference(results_set)) < wiggle_room)
+            assert (len(results_set.difference(correct_set)) < wiggle_room) and (
+                len(correct_set.difference(results_set)) < wiggle_room
+            )
         else:
             assert results_set == correct_set
 
