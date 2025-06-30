@@ -25,18 +25,19 @@ There are a few things to install in order to use this package:
 
   Singularity (and thus EasyLink) requires Linux to run. If you are not already
   using Linux, you will need to set up a virtual machine; refer to the 
-  `singularity documentation for installing on Windows or Mac <https://docs.sylabs.io/guides/4.1/admin-guide/installation.html#installation-on-windows-or-mac>`_. 
+  `Singularity documentation for installing on Windows or Mac <https://docs.sylabs.io/guides/4.1/admin-guide/installation.html#installation-on-windows-or-mac>`_. 
 
-- Install singularity.
+- Install Singularity.
 
-  First check if you already have singularity installed by running the command
-  ``singularity --version``. For an existing installation, your singularity version
+  First check if you already have Singularity installed by running the command
+  ``singularity --version``. For an existing installation, your Singularity version
   number is printed.
 
-  If singularity is not yet installed, you will need to install it;
-  refer to the `singularity docs for installing on Linux <https://docs.sylabs.io/guides/4.1/admin-guide/installation.html#installation-on-linux>`_.
+  If Singularity is not yet installed, you will need to install it;
+  refer to the `Singularity docs for installing on Linux <https://docs.sylabs.io/guides/4.1/admin-guide/installation.html#installation-on-linux>`_.
 
-  Note that you may need to request installation from your system admin.
+  Note that this requires administrator privileges; you may need to request installation
+  from your system admin if you are working in a shared computing environment.
 
 - Install conda. 
   
@@ -44,12 +45,14 @@ There are a few things to install in order to use this package:
   check if you already have conda installed by running the command ``conda --version``.
   For an existing installation, a version will be displayed.
 
-- Create a conda environment with python and graphviz installed.
+- Create a conda environment with python and graphviz installed
+
+  ::
 
   $ conda create --name easylink -c conda-forge python=3.12 graphviz 'gcc<14' -y
   $ conda activate easylink
 
-  - Install easylink in the environment.
+- Install easylink in the environment.
 
   Option 1 - Install from PyPI with pip::
 
