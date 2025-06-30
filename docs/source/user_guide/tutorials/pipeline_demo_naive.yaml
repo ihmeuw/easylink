@@ -32,14 +32,14 @@
               substeps:
                 pre-processing:
                   clones:
-                  - implementation:
-                      name: middle_name_to_initial
-                      configuration: 
-                        INPUT_DATASET: input_file_ssa
-                  - implementation:
-                      name: no_pre-processing
-                      configuration: 
-                        INPUT_DATASET: input_file_w2
+                    - implementation:
+                        name: middle_name_to_initial
+                        configuration: 
+                          INPUT_DATASET: input_file_ssa
+                    - implementation:
+                        name: no_pre-processing
+                        configuration: 
+                          INPUT_DATASET: input_file_w2
                 schema_alignment:
                   implementation:
                     name: default_schema_alignment
