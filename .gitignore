@@ -149,3 +149,5 @@ src/easylink/_version.py
 .specifications/
 .snakemake/
 */copilot-instructions.md
+
+results/

@@ -52,7 +52,7 @@ results_dir.mkdir(exist_ok=True, parents=True)
 dataset = load_file(dataset_path)
 ids_to_remove = load_file(ids_filepath)
 
-dataset = dataset[~dataset["Record ID"].isin(ids_to_remove)]
+dataset = dataset[~dataset["Record ID"].isin(ids_to_remove["Input Record ID"])]
 
 output_path = results_dir / Path(dataset_path).name
 logging.info(f"Writing output for dataset from input {dataset_path} to {output_path}")
