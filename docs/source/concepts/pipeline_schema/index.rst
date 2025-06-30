@@ -623,6 +623,8 @@ This step :ref:`has sub-steps <entity_resolution_sub_steps>`, which may be expan
   and similar incremental methods, the already-found clusters would be used directly
   and updated with new decisions about not-yet-clustered records.
 
+.. _canonicalizing:
+
 Canonicalizing and downstream analysis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
