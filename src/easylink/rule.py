@@ -147,7 +147,7 @@ rule:
             + f"""        
     output: {output}
     log: "{self.diagnostics_dir}/{self.name}-output{log_path_chunk_adder}.log"
-    container: "{self.image_path}BAD-CONTAINER-PATH" """
+    container: "{self.image_path}" """
         )
         return io_str
 
