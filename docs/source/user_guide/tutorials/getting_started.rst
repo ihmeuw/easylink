@@ -98,18 +98,6 @@ displayed in the console.
 Success! Our pipeline has linked the input data and outputted the results, the clusters of records it found. We'll take a look 
 at these results later and see how the model performed.
 
-.. note:: 
-   The pipeline output in its current state can be a little confusing. Note that the number assigned 
-   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
-   assigned by `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_, a workflow manager
-   that EasyLink uses to run your linkage pipeline. Also note that several input validation jobs will run before any actual 
-   step implementations.
-
-   Finally, despite the final output line containing the phrase "Missing output files", 
-   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
-   why the job was run (the step inputs were ready but the output file did not yet exist), rather than 
-   conveying an error message. We plan to improve these terminal outputs in the future.
-
 Naive model - command line arguments
 ====================================
 This section will explain the command line arguments and show the file we pass to each one, including the 
@@ -659,7 +647,7 @@ Linking 2030 datasets using improved pipeline
 =============================================
 Finally, let's run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
 as the input YAML, which uses the SSA and W-2 datasets from 2030 rather than 
-2020. Like we did for 2020, we'll create a ``2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
+1.    Like we did for 2020, we'll create a ``2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
 :download:`input_file_w2.parquet <2030/input_file_w2.parquet>` into it.
 
 We can run the same pipeline on different data by changing only the input parameter::
