@@ -666,7 +666,7 @@ last model before you ran on 2030 data:
    [515795 rows x 5 columns]
 
 We ran over half a million pairs of records through our Splink model.
-Can cascading decrease this number?
+Let's see if cascading can decrease this number.
 
 We'll add cascading to our pipeline specification by giving the ``entity_resolution`` step multiple
 iterations.
