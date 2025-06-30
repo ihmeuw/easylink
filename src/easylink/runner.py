@@ -142,7 +142,7 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
     results_dir
         Directory to save the full Snakemake log.
     """
-    snakemake_log_file = results_dir / "snakemake.log"
+    snakemake_log_file = results_dir / "pipeline.log"
 
     # Create a filtering output handler that processes lines in real-time
     class FilteringOutput:
@@ -204,7 +204,7 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
         except SystemExit:
             # Snakemake uses SystemExit for both success and failure
             logger.info(
-                f"Pipeline finished running. Full Snakemake log saved to: {snakemake_log_file}"
+                f"Pipeline finished running - full log saved to: {snakemake_log_file}"
             )
             # Always re-raise to allow test frameworks to detect completion
             raise
