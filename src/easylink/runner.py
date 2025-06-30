@@ -11,6 +11,7 @@ be called from the ``easylink.cli`` module.
 import os
 import socket
 import subprocess
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from graphviz import Source
@@ -123,7 +124,123 @@ def main(
     argv.extend(environment_args)
     logger.info(f"Running Snakemake")
     logger.debug(f"Snakemake arguments: {argv}")
-    snake_main(argv)
+
+    # Run snakemake
+    if debug:
+        snake_main(argv)
+    else:
+        _run_snakemake_with_filtered_output(argv, Path(results_dir))
+
+
+def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> None:
+    """Runs Snakemake with simplified log filtering.
+
+    Parameters
+    ----------
+    argv
+        Snakemake command line arguments.
+    results_dir
+        Directory to save the full Snakemake log.
+    """
+    snakemake_log_file = results_dir / "pipeline.log"
+
+    # Create a filtering output handler that processes lines in real-time
+    class FilteringOutput:
+        """Handles real-time filtering and logging of Snakemake output.
+
+        This class writes all snakemake output to a log file and selectively logs
+        filtered lines to the logger for user visibility.
+
+        Parameters
+        ----------
+        log_file_path
+            The path to the log file where all output will be written.
+
+        """
+
+        def __init__(self, log_file_path: Path):
+            self.log_file = open(log_file_path, "w")
+            self.buffer = ""
+
+        def write(self, text: str) -> int:
+            # Write to log file
+            self.log_file.write(text)
+            self.log_file.flush()
+
+            # Process and log filtered output
+            self.buffer += text
+            while "\n" in self.buffer:
+                line, self.buffer = self.buffer.split("\n", 1)
+                if line.strip():
+                    filtered_line = _filter_snakemake_output_simple(line.strip())
+                    if filtered_line:
+                        logger.info(filtered_line)
+
+            return len(text)
+
+        def flush(self):
+            self.log_file.flush()
+
+        def close(self):
+            # Process and log any remaining buffer content
+            if self.buffer.strip():
+                filtered_line = _filter_snakemake_output_simple(self.buffer.strip())
+                if filtered_line:
+                    logger.info(filtered_line)
+            self.log_file.close()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.close()
+
+    # Create the filtering output handler and ensure the log file is always closed
+    with FilteringOutput(snakemake_log_file) as filtering_output:
+        try:
+            # Redirect both stdout and stderr to our filtering handler
+            with redirect_stdout(filtering_output), redirect_stderr(filtering_output):
+                snake_main(argv)
+        except SystemExit:
+            # Snakemake uses SystemExit for both success and failure
+            logger.info(
+                f"Pipeline finished running - full log saved to: {snakemake_log_file}"
+            )
+            # Always re-raise to allow test frameworks to detect completion
+            raise
+
+
+def _filter_snakemake_output_simple(line: str) -> str | None:
+    """
+    Simple filter for Snakemake output showing only localrules and Job messages.
+
+    Parameters
+    ----------
+    line
+        A single line of Snakemake output.
+
+    Returns
+    -------
+    str or None
+        The filtered line for display, or None to suppress the line.
+    """
+    # Skip empty lines
+    if not line.strip():
+        return None
+
+    if line.startswith("localrule "):
+        # Show localrule names (without the "localrule" prefix)
+        # Extract rule name (remove "localrule " prefix and colon at the end)
+        filtered_line = line.replace("localrule ", "").rstrip(":")
+    elif line.startswith("Job ") and ":" in line:
+        # Show Job messages
+        # Extract everything after "Job ##: "
+        parts = line.split(":", 1)
+        filtered_line = parts[1].strip() if len(parts) > 1 else None
+    else:
+        # Suppress everything else
+        filtered_line = None
+    return filtered_line
 
 
 def _get_singularity_args(config: Config) -> str:

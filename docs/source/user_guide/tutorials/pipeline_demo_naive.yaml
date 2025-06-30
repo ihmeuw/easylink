@@ -59,8 +59,9 @@
                       PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
             links_to_clusters:
               implementation:
-                name: splink_links_to_clusters
+                name: one_to_many_links_to_clusters
                 configuration:
+                  NO_DUPLICATES_DATASET: input_file_ssa
                   THRESHOLD_MATCH_PROBABILITY: 0.996
         updating_clusters:
           implementation:
