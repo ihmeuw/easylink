@@ -11,7 +11,3 @@ Here we cover several core conceptual topics related using EasyLink.
 
     */index
     *
-
-.. todo::
-
-   Almost everything

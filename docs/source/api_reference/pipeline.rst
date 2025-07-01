@@ -1,1 +1,5 @@
+========
+Pipeline
+========
+
 .. automodule:: easylink.pipeline

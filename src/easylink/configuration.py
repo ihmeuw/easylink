@@ -1,8 +1,4 @@
 """
-=============
-Configuration
-=============
-
 This module is responsible for managing an easylink run's configuration as defined
 by various user-input specification files.
 

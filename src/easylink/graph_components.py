@@ -1,7 +1,4 @@
 """
-================
-Graph Components
-================
 
 This module is responsible for defining the modular building-block objects that 
 can be composed to create graph representations of pipelines.

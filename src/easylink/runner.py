@@ -1,7 +1,4 @@
 """
-======
-Runner
-======
 
 This module contains the main function for running a pipeline; it is intended to
 be called from the ``easylink.cli`` module.

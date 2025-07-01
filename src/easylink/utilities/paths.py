@@ -1,7 +1,4 @@
 """
-=========
-Filepaths
-=========
 
 This module contains commonly-used filepaths and directories.
 

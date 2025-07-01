@@ -8,7 +8,7 @@ Getting Started
 
 Introduction
 ============
-EasyLink is a framework that allows users to build and run highly configurable record linkage pipelines. 
+EasyLink is a tool that allows users to build and run highly configurable record linkage pipelines. 
 Its configurability enables users to "mix and match" different pieces of record 
 linkage software by ensuring that each piece of the pipeline conforms to standard patterns. 
 
@@ -55,8 +55,7 @@ Let's start by using the ``easylink run`` :ref:`command <cli>` to run a pipeline
 record linkage model.
 
 First we need to download the configuration files we will pass to the command line: 
-:download:`environment_local.yaml <environment_local.yaml>`, 
-:download:`input_data_demo.yaml`, and :download:`pipeline_demo_naive.yaml`. Save them into the directory
+:download:`input_data_demo.yaml` and :download:`pipeline_demo_naive.yaml`. Save them into the directory
 from which you will execute the ``easylink run`` command. 
 
 ``input_data_demo.yaml`` additionally references a few 
@@ -74,7 +73,7 @@ displayed in the console.
 
 .. code-block:: console
 
-  $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml -e environment_local.yaml
+  $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml
    2025-06-30 14:17:58 | 00:00:01 | Running pipeline
    2025-06-30 14:17:58 | 00:00:01 | Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31
    ... Downloading Images ...
@@ -105,22 +104,25 @@ pipeline specification YAML and how it relates to the EasyLink pipeline schema. 
 little complicated at first, so feel free to skip ahead to the :ref:`naive_results` section, where the 
 interactive part of the tutorial continues, and come back later.
 
-Computing Environment
----------------------
-The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
-information about the computing environment which will execute the steps of the 
-pipeline. We passed ``environment_local.yaml``, the contents of which are shown below:
+..
+   TODO: possibly move this elsewhere
 
-.. code-block:: yaml
+   Computing Environment
+   ---------------------
+   The ``--computing-environment`` (``-e``) argument to ``easylink run`` accepts a YAML file specifying 
+   information about the computing environment which will execute the steps of the 
+   pipeline. We passed ``environment_local.yaml``, the contents of which are shown below:
 
-   computing_environment: local
-   container_engine: singularity
+   .. code-block:: yaml
 
-It specifies a ``local`` computing environment using ``singularity`` as the container engine. These parameters indicate that no new compute resources will 
-be used to execute the pipeline steps, and that the Singularity container for each implementation will run within the context where ``easylink run`` is being executed.
-For example, if you ran the ``easylink run`` command on your laptop, the implementations would run on your laptop;
-if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
-and so on.
+      computing_environment: local
+      container_engine: singularity
+
+   It specifies a ``local`` computing environment using ``singularity`` as the container engine. These parameters indicate that no new compute resources will 
+   be used to execute the pipeline steps, and that the Singularity container for each implementation will run within the context where ``easylink run`` is being executed.
+   For example, if you ran the ``easylink run`` command on your laptop, the implementations would run on your laptop;
+   if you ran the ``easylink run`` command on a cloud (e.g. EC2) instance that you were connected to with SSH, the implementations would run on that instance,
+   and so on.
 
 Input data
 ----------
@@ -572,7 +574,7 @@ comparisons for ``first_name`` and ``last_name``, to link similar but not identi
 
 By re-running the pipeline with these changes and then running the evauation script, we can see how our results compare::
 
-  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo.yaml -e environment_local.yaml
+  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo.yaml
   $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_08_57
   12509 true links
   len(false_positives)=34; len(false_negatives)=488
@@ -590,7 +592,7 @@ Like we did for 2020, we'll create a ``2030`` directory and save :download:`inpu
 
 We can run the same pipeline on different data by changing only the input parameter::
 
-  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml -e environment_local.yaml
+  $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml
   $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_17_52
   13888 true links
   len(false_positives)=33; len(false_negatives)=547

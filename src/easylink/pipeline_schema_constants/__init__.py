@@ -1,7 +1,4 @@
 """
-=========================
-Pipeline Schema Constants
-=========================
 
 An EasyLink :class:`~easylink.pipeline_schema.PipelineSchema` is a collection of
 :class:`Steps<easylink.step.Step>` that define a fully supported pipeline. This 

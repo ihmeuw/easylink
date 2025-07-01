@@ -1,7 +1,4 @@
 """
-==========================
-Data Aggregating Utilities
-==========================
 
 This module contains utility functions for aggregating datasets. One primary use 
 case for this is to combine the results of sections that were automatically run

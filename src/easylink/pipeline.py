@@ -1,7 +1,4 @@
 """
-========
-Pipeline
-========
 
 This module is responsible for the ``Pipeline`` class, whose primary purpose
 is to perform validations as well as generate the Snakefile to be used by 

@@ -1,7 +1,4 @@
 """
-===============
-Snakemake Rules
-===============
 
 We have chosen to use `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_ 
 as the EasyLink workflow manager. This module is responsible for generating the 

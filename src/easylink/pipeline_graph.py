@@ -1,7 +1,4 @@
 """
-==============
-Pipeline Graph
-==============
 
 This module is responsible for managing the directed acyclic graph (DAG) of the
 entire pipeline to be run from an ``easylink run`` call.

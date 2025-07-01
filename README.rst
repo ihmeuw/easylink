@@ -2,8 +2,19 @@
 EasyLink
 ========
 
-EasyLink is a framework that allows users to build and run highly configurable
-entity resolution (ER) pipelines.
+.. _intro:
+
+EasyLink is a tool that allows users to build and run highly configurable record linkage/entity resolution pipelines.
+Its configurability enables users to "mix and match" different pieces of record 
+linkage software by ensuring that each piece of the pipeline conforms to standard patterns. 
+
+For example, users at the Census Bureau could easily evaluate whether using a more sophisticated "blocking" 
+method would improve results in a certain pipeline, without having to rewrite the entire pipeline.
+
+In its current state, EasyLink provides only one or two implementations for each step, does not yet have documentation 
+to support users in creating their own implementations, and is not yet stable enough to be recommended as a tool for production pipelines.
+
+.. _end_intro:
 
 .. _python_support:
 

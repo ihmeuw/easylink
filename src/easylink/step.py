@@ -1,7 +1,4 @@
 """
-=====
-Steps
-=====
 
 This module is responsible for defining the abstractions that represent desired
 steps to run in a pipeline. These so-called "steps" are high level and do not indicate

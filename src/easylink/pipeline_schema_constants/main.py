@@ -2,6 +2,10 @@
 =============================
 Main EasyLink Pipeline Schema
 =============================
+
+This module contains the parameters required to instantiate the 
+:class:`~easylink.pipeline_schema.PipelineSchema` for the main EasyLink Pipeline Schema.
+
 """
 
 from easylink.graph_components import (

@@ -1,7 +1,4 @@
 """
-===============
-Pipeline Schema
-===============
 
 This module is responsible for managing the "pipeline schemas", i.e. the allowable 
 and fully supported pipelines.
