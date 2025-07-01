@@ -1,12 +1,13 @@
 .wy-nav-content {
     max-width: 1000px !important;
 }
-/* make links red and bold */
-code.xref {
+/* make code links red and bold */
+/* download links are represented by code elements in Sphinx for some reason, so we exclude those */
+code.xref:not(.download) {
     color: red !important;
     font-weight: bold !important;
 }
 /* make inline code black */
-code {
+code:not(.download) {
     color: black !important;
 }

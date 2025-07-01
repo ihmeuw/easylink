@@ -22,20 +22,31 @@ if not p.results_dir.exists():
 results_dir = p.results_dir
 
 import yaml
-# Read YAML file
-with open(results_dir / "input_data_demo.yaml", 'r') as stream:
+import glob
+
+# Read input data YAML file -- note that this assumes it starts with input_data,
+# though that isn't a formal EasyLink requirement!
+input_data_yaml_path = glob.glob(str(results_dir / 'input_data_*.yaml'))
+assert len(input_data_yaml_path) == 1
+with open(input_data_yaml_path[0], "r") as stream:
     input_data_yaml = yaml.safe_load(stream)
 
-input_data_files = {k: Path(p).resolve() for k, p in input_data_yaml.items() if Path(p).stem != 'known_clusters'}
+input_data_files = {
+    k: Path(p).resolve()
+    for k, p in input_data_yaml.items()
+    if Path(p).stem != "known_clusters"
+}
 
-records = pd.concat([
-    pd.read_parquet(p).assign(**{"Input Record Dataset": p.stem})
-    for k, p in input_data_files.items()
-], ignore_index=True, sort=False).rename(columns={"Record ID": "Input Record ID"})
+records = pd.concat(
+    [
+        pd.read_parquet(p).assign(**{"Input Record Dataset": p.stem})
+        for k, p in input_data_files.items()
+    ],
+    ignore_index=True,
+    sort=False,
+).rename(columns={"Record ID": "Input Record ID"})
 
-clusters_df = load_file(
-    str(Path(results_dir / "result.parquet"))
-)
+clusters_df = load_file(str(Path(results_dir / "result.parquet")))
 
 # code example from pipeline schema docs
 def clusters_to_links(clusters_df):
@@ -71,31 +82,47 @@ def clusters_to_links(clusters_df):
     links_df["Probability"] = 1.0
     return links_df
 
+
 predictions_df = clusters_to_links(clusters_df)
 
 # concatenate Record Dataset and Record ID columns for merge
 def unique_id_column(df, record_name="Input"):
-    return df[f"{record_name} Record Dataset"].astype(str) + "_" + df[f"{record_name} Record ID"].astype(str)
+    return (
+        df[f"{record_name} Record Dataset"].astype(str)
+        + "_"
+        + df[f"{record_name} Record ID"].astype(str)
+    )
+
 
 records["unique_id"] = unique_id_column(records)
 predictions_df["unique_id_l"] = unique_id_column(predictions_df, record_name="Left")
 predictions_df["unique_id_r"] = unique_id_column(predictions_df, record_name="Right")
 
 links = (
-    records.add_suffix("_l").merge(
-        records.add_suffix("_r"), left_on="simulant_id_l", right_on="simulant_id_r", how="left"
+    records.add_suffix("_l")
+    .merge(
+        records.add_suffix("_r"),
+        left_on="simulant_id_l",
+        right_on="simulant_id_r",
+        how="left",
     )
-        .pipe(lambda df: df[
-            (df.unique_id_l != df.unique_id_r) &
-            (df["Input Record Dataset_l"] < df["Input Record Dataset_r"]) |
-            (
-                (df["Input Record Dataset_l"] == df["Input Record Dataset_r"]) &
-                (df["Input Record ID_l"] < df["Input Record ID_r"])
+    .pipe(
+        lambda df: df[
+            (df.unique_id_l != df.unique_id_r)
+            & (df["Input Record Dataset_l"] < df["Input Record Dataset_r"])
+            | (
+                (df["Input Record Dataset_l"] == df["Input Record Dataset_r"])
+                & (df["Input Record ID_l"] < df["Input Record ID_r"])
             )
-        ])
+        ]
+    )
 )
-pd.set_option('future.no_silent_downcasting', True)
-links = links.merge(predictions_df[["unique_id_l", "unique_id_r"]].assign(matched=True), on=["unique_id_l", "unique_id_r"], how="left")
+pd.set_option("future.no_silent_downcasting", True)
+links = links.merge(
+    predictions_df[["unique_id_l", "unique_id_r"]].assign(matched=True),
+    on=["unique_id_l", "unique_id_r"],
+    how="left",
+)
 links["matched"] = links["matched"].fillna(False).astype(bool)
 
 predictions_df = predictions_df.merge(

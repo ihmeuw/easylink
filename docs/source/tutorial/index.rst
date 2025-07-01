@@ -74,27 +74,25 @@ displayed in the console.
 .. code-block:: console
 
   $ easylink run -p pipeline_demo_naive.yaml -i input_data_demo.yaml
-  2025-06-26 10:13:31.501 | 0:00:01.693505 | run:196 - Running pipeline
-  2025-06-26 10:13:31.502 | 0:00:01.693704 | run:198 - Results directory: .../results/2025_06_26_10_13_31
-  ... Downloading Images ...
-  2025-06-26 10:13:52.719 | 0:00:22.911314 | main:124 - Running Snakemake
-  [Thu Jun 26 10:13:53 2025]
-  Job 14: Validating determining_exclusions_and_removing_records_clone_1_removing_records_default_removing_records input slot input_datasets
-  Reason: Missing output files: input_validations/determining_exclusions_and_removing_records_clone_1_removing_records_default_removing_records/input_datasets_validator
-  ...
-  [Thu Jun 26 10:13:58 2025]
-  Job 28: Validating splink_evaluating_pairs input slot known_links
-  Reason: Missing output files: input_validations/splink_evaluating_pairs/known_links_validator; Input files updated by another job: intermediate/default_clusters_to_links/result.parquet
-  ...
-  [Thu Jun 26 10:14:47 2025]
-  Job 1: Running canonicalizing_and_downstream_analysis implementation: dummy_canonicalizing_and_downstream_analysis
-  Reason: Missing output files: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet; Input files updated by another job: input_validations/dummy_canonicalizing_and_downstream_analysis/input_datasets_validator, intermediate/default_updating_clusters/clusters.parquet, input_validations/dummy_canonicalizing_and_downstream_analysis/clusters_validator
-  [Thu Jun 26 10:14:50 2025]
-  Job 35: Validating results input slot analysis_output
-  Reason: Missing output files: input_validations/final_validator; Input files updated by another job: intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet
-  [Thu Jun 26 10:14:51 2025]
-  Job 0: Grabbing final output
-  Reason: Missing output files: result.parquet; Input files updated by another job: input_validations/final_validator, intermediate/dummy_canonicalizing_and_downstream_analysis/result.parquet
+   2025-06-30 14:17:58 | 00:00:01 | Running pipeline
+   2025-06-30 14:17:58 | 00:00:01 | Results directory: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31
+   ... Downloading Images ...
+   2025-06-30 14:18:21 | 00:00:24 | Running Snakemake
+   2025-06-30 14:18:22 | 00:00:25 | Validating determining_exclusions_and_removing_records_clone_2_removing_records_default_removing_records input slot input_datasets
+   ...
+   2025-06-30 14:18:24 | 00:00:27 | Running clusters_to_links implementation: default_clusters_to_links
+   2025-06-30 14:18:24 | 00:00:27 | Running determining_exclusions implementation: default_determining_exclusions
+   2025-06-30 14:18:24 | 00:00:27 | Running determining_exclusions implementation: default_determining_exclusions
+   ...
+   2025-06-30 14:18:39 | 00:00:42 | Validating splink_blocking_and_filtering input slot records
+   2025-06-30 14:18:42 | 00:00:45 | Running blocking_and_filtering implementation: splink_blocking_and_filtering
+   2025-06-30 14:18:50 | 00:00:53 | Validating splink_evaluating_pairs input slot blocks
+   2025-06-30 14:18:53 | 00:00:56 | Running evaluating_pairs implementation: splink_evaluating_pairs
+   ...
+   2025-06-30 14:19:19 | 00:01:22 | Running canonicalizing_and_downstream_analysis implementation: save_clusters
+   2025-06-30 14:19:21 | 00:01:24 | Validating results input slot analysis_output
+   2025-06-30 14:19:23 | 00:01:26 | Grabbing final output
+   2025-06-30 14:19:26 | 00:01:29 | Pipeline finished running - full log saved to: /mnt/share/homes/tylerdy/easylink/docs/source/user_guide/tutorials/results/2025_06_26_10_13_31/pipeline.log
 
 Success! Our pipeline has linked the input data and outputted the results, the clusters of records it found. We'll take a look 
 at these results later and see how the model performed.
@@ -172,78 +170,8 @@ the implementations and other configuration options for the pipeline being run. 
    <details>
    <summary>Show pipeline_demo_naive.yaml</summary>
 
-.. code-block:: yaml
-
-  steps:
-      entity_resolution:
-        substeps:
-          determining_exclusions_and_removing_records:
-            clones:
-              - determining_exclusions:
-                  implementation:
-                    name: default_determining_exclusions
-                    configuration:
-                      INPUT_DATASET: input_file_ssa
-                removing_records:
-                  implementation:
-                    name: default_removing_records
-                    configuration:
-                      INPUT_DATASET: input_file_ssa
-              - determining_exclusions:
-                  implementation:
-                    name: default_determining_exclusions
-                    configuration:
-                      INPUT_DATASET: input_file_w2
-                removing_records:
-                  implementation:
-                    name: default_removing_records
-                    configuration:
-                      INPUT_DATASET: input_file_w2
-          clustering:
-            substeps:
-              clusters_to_links:
-                implementation:
-                  name: default_clusters_to_links
-              linking:
-                substeps:
-                  pre-processing:
-                    clones:
-                    - implementation:
-                        name: middle_name_to_initial
-                        configuration: 
-                          INPUT_DATASET: input_file_ssa
-                    - implementation:
-                        name: dummy_pre-processing
-                        configuration: 
-                          INPUT_DATASET: input_file_w2
-                  schema_alignment:
-                    implementation:
-                      name: default_schema_alignment
-                  blocking_and_filtering:
-                    implementation:
-                      name: splink_blocking_and_filtering
-                      configuration:
-                        LINK_ONLY: true
-                        BLOCKING_RULES: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-                  evaluating_pairs:
-                    implementation:
-                      name: splink_evaluating_pairs
-                      configuration:
-                        LINK_ONLY: true
-                        BLOCKING_RULES_FOR_TRAINING: "'l.first_name == r.first_name,l.last_name == r.last_name'"
-                        COMPARISONS: "'ssn:exact,first_name:exact,middle_initial:exact,last_name:exact'"
-                        PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
-              links_to_clusters:
-                implementation:
-                  name: splink_links_to_clusters
-                  configuration:
-                    THRESHOLD_MATCH_PROBABILITY: 0.996
-          updating_clusters:
-            implementation:
-              name: default_updating_clusters
-      canonicalizing_and_downstream_analysis:
-        implementation:
-          name: dummy_canonicalizing_and_downstream_analysis
+.. literalinclude:: pipeline_demo_naive.yaml
+   :language: YAML
 
 .. raw:: html
 
@@ -394,19 +322,27 @@ in the pipeline schema.
       ...
   links_to_clusters:
     implementation:
-      name: splink_links_to_clusters
+      name: one_to_many_links_to_clusters
       configuration:
+        DUPLICATE_FREE_DATASET: input_file_ssa
         THRESHOLD_MATCH_PROBABILITY: 0.996
 
 We will show the hidden linking substeps in the next section. 
 
 In ``links_to_clusters`` we see a more interesting example of configuring an implementation.
+``DUPLICATE_FREE_DATASET`` specifies which dataset is assumed not to contain duplicates within it.
 ``THRESHOLD_MATCH_PROBABILITY`` here allows the user to define at what probability a pair of records 
-will be considered part of the same cluster by ``splink_links_to_clusters``, which uses the Splink package to 
-implement the ``links_to_clusters`` `step <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#links-to-clusters>`_.
-The Splink docs have
-`more info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`__ on
-what the threshold means and how to choose it.
+will be considered part of the same cluster.
+Our ``one_to_many_links_to_clusters`` implementation implements `this step <https://easylink.readthedocs.io/en/latest/concepts/pipeline_schema/index.html#links-to-clusters>`_ by filtering out links
+below the threshold, and then choosing the single *best-matching* SSA record for each
+W-2 record (since linking a W-2 to multiple SSA records would imply those SSA records were duplicates).
+The name of the implementation reflects that in the resulting clusters, *one* SSA record can have *many*
+W-2 records (but not vice versa).
+
+While this implementation doesn't use the Splink package,
+the Splink docs have
+`helpful info <https://moj-analytical-services.github.io/splink/topic_guides/evaluation/edge_overview.html#choosing-a-threshold>`__ on
+how to choose a probability threshold.
 
 Linking substeps
 ^^^^^^^^^^^^^^^^
@@ -545,25 +481,24 @@ Let's use the alias to print the results parquet, the location of which was prin
 .. code-block:: console
 
   $ pqprint results/2025_06_26_10_13_31/result.parquet 
-        Input Record Dataset  Input Record ID               Cluster ID
-  0           input_file_ssa             4610   input_file_ssa-__-4610
-  1           input_file_ssa             4612   input_file_ssa-__-4612
-  2           input_file_ssa             4613   input_file_ssa-__-4613
-  3           input_file_ssa             4614   input_file_ssa-__-4614
-  4           input_file_ssa             4615   input_file_ssa-__-4615
-  ...                    ...              ...                      ...
-  25178        input_file_w2             4496  input_file_ssa-__-11207
-  25179       input_file_ssa            14652  input_file_ssa-__-14652
-  25180       input_file_ssa             9980  input_file_ssa-__-14652
-  25181        input_file_w2             5349  input_file_ssa-__-14652
-  25182        input_file_w2             5350  input_file_ssa-__-14652
+        Input Record Dataset  Input Record ID  Cluster ID
+  0           input_file_ssa             7371           1
+  1            input_file_w2                0           1
+  2           input_file_ssa             7037           2
+  3            input_file_w2                2           2
+  4            input_file_w2                1           2
+  ...                    ...              ...         ...
+  15810        input_file_w2              997        6693
+  15811       input_file_ssa             5883        6693
+  15812        input_file_w2              999        6694
+  15813       input_file_ssa             6358        6694
+  15814        input_file_w2              998        6694
 
-  [25183 rows x 3 columns]
+  [15815 rows x 3 columns]
 
 As we can see, the pipeline has successfully outputted a ``Cluster ID`` for every 
 input record it was able to link to another record for our probability threshold 
-of 99.6%. ``Cluster ID`` names are chosen by Splink based on the first record 
-assigned to them.
+of 99.6%.
 
 .. note::
 
@@ -609,13 +544,13 @@ which records are truly links, we can directly see how our naive model performed
 a script to evaluate false positives and false negatives, :download:`print_fp_fn_w2_ssa.py`.
 Download and run it::
 
-  $ python print_fp_fn_w2_ssa.py results/2025_06_26_10_13_31 .996
-  9292 true links
-  For threshold 0.996, len(false_positives)=19; len(false_negatives)=188
+  $ python print_fp_fn_w2_ssa.py results/2025_06_26_10_13_31
+  12509 true links
+  len(false_positives)=31; len(false_negatives)=555
 
 In other words, with a threshold 
-probability of 99.6%, out of 9,292 true links to be found, our model missed 188 (false negatives),
-and additionally linked 19 pairs that shouldn't have been linked (false positives). 
+probability of 99.6%, out of 12,509 true links to be found, our model missed 555 (false negatives),
+and additionally linked 31 pairs that shouldn't have been linked (false positives). 
 
 
 Depending on our goals with the linked data, we might decrease the threshold to reduce false negatives,
@@ -652,29 +587,313 @@ comparisons for ``first_name`` and ``last_name``, to link similar but not identi
 By re-running the pipeline with these changes and then running the evauation script, we can see how our results compare::
 
   $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo.yaml
-  $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_08_57 .996
-  9292 true links
-  For threshold 0.996, len(false_positives)=19; len(false_negatives)=158
+  $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_08_57
+  12509 true links
+  len(false_positives)=34; len(false_negatives)=488
 
-We eliminated 30 false negatives compared to the naive results, thanks to our model linking more records with columns that 
+We eliminated 67 false negatives compared to the naive results, thanks to our model linking more records with columns that 
 are similar but don't exactly match.
+At the cost of only three additional false positives, this seems like a good improvement!
 
 Linking 2030 datasets using improved pipeline
 =============================================
-Finally, let's run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
-as the input YAML, which uses the SSA and W-2 datasets from 2030 rather than 
-2020. Like we did for 2020, we'll create a ``2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
+Let's run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
+as the input YAML, which uses the SSA and W-2 datasets from 2030 rather than 2020.
+Like we did for 2020, we'll create a ``2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
 :download:`input_file_w2.parquet <2030/input_file_w2.parquet>` into it.
 
 We can run the same pipeline on different data by changing only the input parameter::
 
   $ easylink run -p pipeline_demo_improved.yaml -i input_data_demo_2030.yaml
-  python print_fp_fn_w2_ssa.py results/2025_06_26_11_17_52 .996
-  10345 true links
-  For threshold 0.996, len(false_positives)=14; len(false_negatives)=149
+  $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_17_52
+  13888 true links
+  len(false_positives)=33; len(false_negatives)=547
 
 We get similar, but not identical, results with the 2030 data.
 
+Linking with an iterative "cascade"
+===================================
+
+*Cascading* is an iterative approach to entity resolution
+used by the US Census Bureau (and possibly other organizations too)
+to deal with the computational challenge of linking billions of records.
+In cascading, multiple passes are made to find clusters, starting with
+faster techniques (such as exact matching) that
+can solve some "easy" cases and make the problem smaller.
+As the focus narrows to only the records that
+are hardest to cluster, making the size of the problem smaller,
+more sophisticated and computationally expensive
+techniques can be used.
+
+Cascading isn't found very often in the scientific literature, and its statistical
+properties are under-theorized.
+
+Cascading depends on having some way to determine, from an initial/provisional
+linkage result, which records are "done" and do not need to be considered any longer.
+In our case, because we know (or are willing to assume) that there are no duplicates in
+the SSA dataset, that means that any W-2 record that has already linked to one SSA record
+has found its only match and does not need to be compared against any more SSA records.
+
+Cascading can involve any number of iterative "passes," but for simplicity we will consider
+only two.
+In the first pass, we'll use deterministic linkage, linking records that match exactly on SSN, first name,
+and last name.
+In the second pass, we'll use our improved Splink model on the remaining records.
+
+We don't expect cascading to make our results any more accurate -- in fact, it seems likely
+that doing things in two steps might lead to a few more mistakes.
+Since cascading is a computational optimization, let's get a baseline of how much computation we
+are doing without it: how many pairs we evaluated with the improved Splink model.
+For this model, we'll return to 2020 data, so you'll want to go back and find the timestamp of the
+last model before you ran on 2030 data:
+
+.. code::
+
+   $ pqprint results/2025_06_26_10_13_31/intermediate/splink_evaluating_pairs/result.parquet 
+         Left Record Dataset  Left Record ID Right Record Dataset  Right Record ID   Probability
+   0           input_file_ssa           16314        input_file_w2             7604  5.593631e-06
+   1           input_file_ssa           16318        input_file_w2             7604  5.593631e-06
+   2           input_file_ssa           16326        input_file_w2             6049  5.593631e-06
+   3           input_file_ssa           16351        input_file_w2             3549  5.593631e-06
+   4           input_file_ssa           16353        input_file_w2             7434  5.593631e-06
+   ...                    ...             ...                  ...              ...           ...
+   515790      input_file_ssa            8586        input_file_w2              943  3.526073e-04
+   515791      input_file_ssa            8591        input_file_w2             3326  7.227902e-07
+   515792      input_file_ssa            8595        input_file_w2             3369  7.227902e-07
+   515793      input_file_ssa            8596        input_file_w2             6458  3.526073e-04
+   515794      input_file_ssa            8597        input_file_w2             3248  7.227902e-07
+
+   [515795 rows x 5 columns]
+
+We ran over half a million pairs of records through our Splink model.
+Let's see if cascading can decrease this number.
+
+We'll add cascading to our pipeline specification by giving the ``entity_resolution`` step multiple
+iterations.
+``entity_resolution`` is what's called a :ref:`"loop-able section" <loopable_sections>`, which works
+similarly to a cloneable section.
+The main difference in syntax is that the ``iterations`` key is used instead of ``clones``.
+When the pipeline is run, rather than running in parallel like clones, these iterations will be executed
+in order, with the output from one iteration being passed as input to the next.
+
+.. code-block:: yaml
+
+  steps:
+    entity_resolution:
+      iterations:
+        - substeps:
+            ...
+        - substeps:
+            ...
+    canonicalizing_and_downstream_analysis:
+      implementation:
+        name: save_clusters
+
+Within the first ellipsed ``substeps`` section (the specification for our first cascading pass)
+we will copy the entire substeps section from our improved model, but make some changes to
+make the linkage deterministic:
+
+.. code-block:: diff
+
+  substeps:
+    determining_exclusions_and_removing_records:
+      clones:
+        - determining_exclusions:
+            implementation:
+              name: default_determining_exclusions
+              configuration:
+                INPUT_DATASET: input_file_ssa
+          removing_records:
+            implementation:
+              name: default_removing_records
+              configuration:
+                INPUT_DATASET: input_file_ssa
+        - determining_exclusions:
+           implementation:
+              name: default_determining_exclusions
+              configuration:
+                INPUT_DATASET: input_file_w2
+          removing_records:
+            implementation:
+              name: default_removing_records
+              configuration:
+                INPUT_DATASET: input_file_w2
+    clustering:
+      substeps:
+        clusters_to_links:
+          implementation:
+            name: default_clusters_to_links
+        linking:
+          substeps:
+            pre-processing:
+              clones:
+              - implementation:
+  -               name: middle_name_to_initial
+  +               name: no_pre-processing
+                  configuration:
+                    INPUT_DATASET: input_file_ssa
+              - implementation:
+                  name: no_pre-processing
+                  configuration:
+                    INPUT_DATASET: input_file_w2
+            schema_alignment:
+              implementation:
+                name: default_schema_alignment
+            blocking_and_filtering:
+              implementation:
+                name: splink_blocking_and_filtering
+                configuration:
+                  LINK_ONLY: true
+  -               BLOCKING_RULES: "l.first_name == r.first_name,l.last_name == r.last_name"
+  +               BLOCKING_RULES: "l.ssn == r.ssn and l.first_name == r.first_name and l.last_name == r.last_name"
+            evaluating_pairs:
+              implementation:
+  -             name: splink_evaluating_pairs
+  -               configuration:
+  -                 LINK_ONLY: true
+  -                 BLOCKING_RULES_FOR_TRAINING: "l.first_name == r.first_name,l.last_name == r.last_name"
+  -                 COMPARISONS: "ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name"
+  -                 PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
+  +             name: accept_all_pairs
+        links_to_clusters:
+          implementation:
+            name: one_to_many_links_to_clusters
+            configuration:
+              NO_DUPLICATES_DATASET: input_file_ssa
+  -           THRESHOLD_MATCH_PROBABILITY: 0.996
+  +           # All come with certainty from accept_all_pairs anyway, so this doesn't matter
+  +           THRESHOLD_MATCH_PROBABILITY: 0.9
+
+To do our strict deterministic linkage, we change our ``BLOCKING_RULES`` to contain just one
+rule, for our determinstic linkage rule (exact match on SSN, first name, and last name).
+Then we replace our Splink evaluating-pairs model with an implementation called ``accept_all_pairs``
+which, as the name suggests, accepts every pair that passes blocking as a match with probability 1.
+
+For the second iteration, we can paste in *another* copy of our original improved model, with
+the following changes:
+
+.. code-block:: diff
+
+  substeps:
+    determining_exclusions_and_removing_records:
+      clones:
+        - determining_exclusions:
+            implementation:
+  -           name: default_determining_exclusions
+  +           name: exclude_none
+              configuration:
+                INPUT_DATASET: input_file_ssa
+          removing_records:
+            implementation:
+              name: default_removing_records
+              configuration:
+                INPUT_DATASET: input_file_ssa
+        - determining_exclusions:
+           implementation:
+  -           name: default_determining_exclusions
+  +           name: exclude_clustered
+              configuration:
+                INPUT_DATASET: input_file_w2
+          removing_records:
+            implementation:
+              name: default_removing_records
+              configuration:
+                INPUT_DATASET: input_file_w2
+    clustering:
+      substeps:
+        clusters_to_links:
+          implementation:
+            name: default_clusters_to_links
+        linking:
+          substeps:
+            pre-processing:
+              clones:
+              - implementation:
+                  name: middle_name_to_initial
+                  configuration:
+                    INPUT_DATASET: input_file_ssa
+              - implementation:
+                  name: no_pre-processing
+                  configuration:
+                    INPUT_DATASET: input_file_w2
+            schema_alignment:
+              implementation:
+                name: default_schema_alignment
+            blocking_and_filtering:
+              implementation:
+                name: splink_blocking_and_filtering
+                configuration:
+                  LINK_ONLY: true
+                  BLOCKING_RULES: "l.first_name == r.first_name,l.last_name == r.last_name"
+            evaluating_pairs:
+              implementation:
+                name: splink_evaluating_pairs
+                  configuration:
+                    LINK_ONLY: true
+                    BLOCKING_RULES_FOR_TRAINING: "l.first_name == r.first_name,l.last_name == r.last_name"
+                    COMPARISONS: "ssn:levenshtein,first_name:name,middle_initial:exact,last_name:name"
+                    PROBABILITY_TWO_RANDOM_RECORDS_MATCH: 0.0001  # == 1 / len(w2)
+        links_to_clusters:
+          implementation:
+            name: one_to_many_links_to_clusters
+            configuration:
+              NO_DUPLICATES_DATASET: input_file_ssa
+              THRESHOLD_MATCH_PROBABILITY: 0.996
+
+The only difference here is that we use new implementations for ``determining_exclusions``.
+The determining exclusions step exists in order to facilitate cascading,
+but the default implementation (``default_determining_exclusions``) implements the simplest
+case: no cascading.
+If it is used for anything other than the first cascade pass, it will throw an error.
+
+In its place, we've used ``exclude_none`` for SSA, which as the name suggests, does not exclude
+any records (since all SSA records remain eligible to match regardless of what is found in the first cascade pass).
+``exclude_clustered``, which we use for W-2, excludes records that have already been clustered with
+any other records; so this implements the rule described above, that we can drop W-2 records that have
+already linked to an SSA record.
+All SSA records remain eligible, while some W-2 records are excluded,
+because there can be duplicate W-2 records for the same SSA record, but not the other way around.
+
+The full pipeline specification YAML resulting from these changes is :download:`pipeline_demo_improved_cascade.yaml`.
+
+Now we're ready to run the cascading pipeline on the 2020 data and check our accuracy results!
+
+.. code::
+
+   $ easylink run -p pipeline_demo_improved_cascade.yaml -i input_data_demo.yaml -e environment_local.yaml
+   $ python print_fp_fn_w2_ssa.py results/2025_06_26_11_32_15
+   12509 true links
+   len(false_positives)=47; len(false_negatives)=505
+
+As we guessed, accuracy didn't get better; it actually got a bit worse.
+We had 13 more false positives than the base improved model on 2020 data,
+and 17 more false negatives as well.
+When we look at how many pairs we evaluated though, we see the benefits:
+
+.. code::
+
+   $ pqprint results/2025_06_26_11_32_15/intermediate/entity_resolution_loop_2_clustering_linking_linking_evaluating_pairs_splink_evaluating_pairs/result.parquet
+         Left Record Dataset  Left Record ID Right Record Dataset  Right Record ID  Probability
+   0          input_file_ssa               0        input_file_w2             9815     0.000759
+   1          input_file_ssa               1        input_file_w2             8608     0.000403
+   2          input_file_ssa               5        input_file_w2             9177     0.000202
+   3          input_file_ssa               6        input_file_w2             6195     0.001840
+   4          input_file_ssa               7        input_file_w2             9177     0.000202
+   ...                   ...             ...                  ...              ...          ...
+   91420      input_file_ssa           16156        input_file_w2              466     0.000037
+   91421      input_file_ssa           16244        input_file_w2              466     0.000037
+   91422      input_file_ssa           16270        input_file_w2              466     0.000037
+   91423      input_file_ssa           16353        input_file_w2              466     0.000037
+   91424      input_file_ssa           16421        input_file_w2              466     0.000037
+
+   [91425 rows x 5 columns]
+
+We evaluated only 17.7% as many pairs with our complex Splink model as when we weren't using
+cascading!
+Clearly, the first pass with deterministic linkage is quite effective in reducing the size of
+the problem.
+Though there is no noticeable runtime speedup with these small data, this difference could
+be enormous for large data, where evaluating pairs becomes the bottleneck.
 
 
 Wrapping Up
