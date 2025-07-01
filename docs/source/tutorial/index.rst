@@ -663,7 +663,7 @@ Linking 2030 datasets using improved pipeline
 =============================================
 Finally, let's run this same "improved" pipeline, but using :download:`input_data_demo_2030.yaml` 
 as the input YAML, which uses the SSA and W-2 datasets from 2030 rather than 
-1.    Like we did for 2020, we'll create a ``2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
+2020. Like we did for 2020, we'll create a ``2030`` directory and save :download:`input_file_ssa.parquet <2030/input_file_ssa.parquet>` and 
 :download:`input_file_w2.parquet <2030/input_file_w2.parquet>` into it.
 
 We can run the same pipeline on different data by changing only the input parameter::
