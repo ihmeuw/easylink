@@ -211,9 +211,14 @@ def run(
             images_dir=images,
             schema_name=schema,
         )
-    except SystemExit:
-        # Snakemake uses SystemExit for completion - log success and re-raise
-        logger.info("*** FINISHED ***")
+    except SystemExit as e:
+        # Snakemake uses SystemExit with exit code 0 for success, non-zero for failure
+        if e.code == 0:
+            logger.info("\033[32m*** FINISHED ***\033[0m")  # Green
+        else:
+            logger.error(
+                f"\033[31mERROR: Pipeline failed with exit code {e.code}\033[0m"
+            )  # Red
         raise
 
 

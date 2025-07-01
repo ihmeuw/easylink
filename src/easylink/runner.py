@@ -11,6 +11,8 @@ be called from the ``easylink.cli`` module.
 import os
 import socket
 import subprocess
+import threading
+import time
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -161,6 +163,32 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
         def __init__(self, log_file_path: Path):
             self.log_file = open(log_file_path, "w")
             self.buffer = ""
+            self.last_output_time = time.time()
+            self.heartbeat_timer = None
+            self.dots_printed = False  # Track if we've printed progress dots
+            self._start_heartbeat()
+
+        def _start_heartbeat(self):
+            """Start a timer that prints progress dots during long-running containers."""
+
+            def heartbeat():
+                current_time = time.time()
+                if current_time - self.last_output_time > 30:  # 30 seconds since last output
+                    # Print a dot to show progress - use original stdout if available
+                    if hasattr(self, "original_stdout") and self.original_stdout:
+                        self.original_stdout.write(".")
+                        self.original_stdout.flush()
+                        self.dots_printed = True  # Mark that we've printed dots
+                    self.last_output_time = current_time
+                # Schedule next heartbeat
+                self.heartbeat_timer = threading.Timer(30.0, heartbeat)
+                self.heartbeat_timer.daemon = True
+                self.heartbeat_timer.start()
+
+            # Start first heartbeat after 30 seconds
+            self.heartbeat_timer = threading.Timer(30.0, heartbeat)
+            self.heartbeat_timer.daemon = True
+            self.heartbeat_timer.start()
 
         def write(self, text: str) -> int:
             # Write to log file
@@ -172,9 +200,19 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
             while "\n" in self.buffer:
                 line, self.buffer = self.buffer.split("\n", 1)
                 if line.strip():
-                    filtered_line = _filter_snakemake_output_simple(line.strip())
+                    filtered_line = _filter_snakemake_output(line.strip())
                     if filtered_line:
+                        # Add newline after dots if we've printed any
+                        if (
+                            self.dots_printed
+                            and hasattr(self, "original_stdout")
+                            and self.original_stdout
+                        ):
+                            self.original_stdout.write("\n")
+                            self.original_stdout.flush()
+                            self.dots_printed = False  # Reset the flag
                         logger.info(filtered_line)
+                        self.last_output_time = time.time()  # Reset heartbeat timer
 
             return len(text)
 
@@ -182,10 +220,23 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
             self.log_file.flush()
 
         def close(self):
+            # Stop heartbeat timer
+            if self.heartbeat_timer:
+                self.heartbeat_timer.cancel()
+
             # Process and log any remaining buffer content
             if self.buffer.strip():
-                filtered_line = _filter_snakemake_output_simple(self.buffer.strip())
+                filtered_line = _filter_snakemake_output(self.buffer.strip())
                 if filtered_line:
+                    # Add newline after dots if we've printed any
+                    if (
+                        self.dots_printed
+                        and hasattr(self, "original_stdout")
+                        and self.original_stdout
+                    ):
+                        self.original_stdout.write("\n")
+                        self.original_stdout.flush()
+                        self.dots_printed = False
                     logger.info(filtered_line)
             self.log_file.close()
 
@@ -196,7 +247,14 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
             self.close()
 
     # Create the filtering output handler and ensure the log file is always closed
+    # Save original stdout for progress dots before redirection
+    import sys
+
+    original_stdout = sys.stdout
+
     with FilteringOutput(snakemake_log_file) as filtering_output:
+        # Pass original stdout to filtering output for progress dots
+        filtering_output.original_stdout = original_stdout
         try:
             # Redirect both stdout and stderr to our filtering handler
             with redirect_stdout(filtering_output), redirect_stderr(filtering_output):
@@ -210,9 +268,8 @@ def _run_snakemake_with_filtered_output(argv: list[str], results_dir: Path) -> N
             raise
 
 
-def _filter_snakemake_output_simple(line: str) -> str | None:
-    """
-    Simple filter for Snakemake output showing only localrules and Job messages.
+def _filter_snakemake_output(line: str) -> str:
+    """Filter for Snakemake output.
 
     Parameters
     ----------
@@ -221,12 +278,11 @@ def _filter_snakemake_output_simple(line: str) -> str | None:
 
     Returns
     -------
-    str or None
-        The filtered line for display, or None to suppress the line.
+        The filtered line for display.
     """
     # Skip empty lines
     if not line.strip():
-        return None
+        return ""
 
     if line.startswith("localrule "):
         # Show localrule names (without the "localrule" prefix)
@@ -236,10 +292,10 @@ def _filter_snakemake_output_simple(line: str) -> str | None:
         # Show Job messages
         # Extract everything after "Job ##: "
         parts = line.split(":", 1)
-        filtered_line = parts[1].strip() if len(parts) > 1 else None
+        filtered_line = parts[1].strip() if len(parts) > 1 else ""
     else:
         # Suppress everything else
-        filtered_line = None
+        filtered_line = ""
     return filtered_line
 
 
