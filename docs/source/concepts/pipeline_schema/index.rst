@@ -260,6 +260,8 @@ and combines them into a single flat directory of files
 (the labels on the arrows in gray show the number of files in each directory in our example, to illustrate this).
 Other combination methods are permitted; this is just an example.
 
+.. _loopable_sections:
+
 Loop-able sections
 ^^^^^^^^^^^^^^^^^^
 
