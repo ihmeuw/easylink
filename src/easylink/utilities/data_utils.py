@@ -1,8 +1,5 @@
 # mypy: ignore-errors
 """
-==============
-Data Utilities
-==============
 
 This module contains utility functions for handling data files and directories.
 

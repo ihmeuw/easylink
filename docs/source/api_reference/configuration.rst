@@ -1,1 +1,5 @@
+=============
+Configuration
+=============
+
 .. automodule:: easylink.configuration

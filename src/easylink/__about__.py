@@ -9,7 +9,7 @@ __all__ = [
 ]
 
 __title__ = "easylink"
-__summary__ = "Research repository for the EasyLink ER ecosystem project."
+__summary__ = "A tool that allows users to build and run highly configurable record linkage/entity resolution pipelines."
 __uri__ = "https://github.com/ihmeuw/easylink"
 
 __author__ = "The EasyLink developers"

@@ -1,9 +1,5 @@
 # mypy: ignore-errors
 """
-======================
-Command Line Interface
-======================
-
 This module is responsible for defining the command line interface (CLI) for running
 the EasyLink utility. We use the :mod:`click` library to define the commands and 
 their respective options. All commands are accessible via the ``easylink`` group.
@@ -40,6 +36,7 @@ As before, refer to ``easylink generate-dag --help`` for information on other op
 
 For usage documentation, see :ref:`cli`.
 """
+
 
 import os
 from collections.abc import Callable

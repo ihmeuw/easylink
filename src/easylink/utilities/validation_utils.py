@@ -1,7 +1,4 @@
 """
-=========================
-Data Validation Utilities
-=========================
 
 This module contains utility functions for validating datasets, e.g. the validation
 function(s) for processed data being passed out of one pipeline step and into the next.

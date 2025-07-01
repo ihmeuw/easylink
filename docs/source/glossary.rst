@@ -6,4 +6,4 @@ Glossary
 
 .. todo::
 
-   Everything
+   Add some terms to glossary

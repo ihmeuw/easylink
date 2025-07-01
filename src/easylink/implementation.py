@@ -1,7 +1,4 @@
 """
-===============
-Implementations
-===============
 
 This module is responsible for defining the abstractions that represent actual
 implementations of steps in a pipeline. Typically, these abstractions contain

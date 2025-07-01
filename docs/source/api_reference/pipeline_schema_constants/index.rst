@@ -1,5 +1,5 @@
-PipelineSchema Constants
-========================
+Pipeline Schema Constants
+=========================
 
 .. automodule:: easylink.pipeline_schema_constants
 

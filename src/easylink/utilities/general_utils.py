@@ -1,8 +1,5 @@
 # mypy: ignore-errors
 """
-=================
-General Utilities
-=================
 
 This module contains various utility functions.
 

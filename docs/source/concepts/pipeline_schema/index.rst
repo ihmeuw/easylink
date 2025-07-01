@@ -4,26 +4,8 @@ Pipeline Schema
 ===============
 
 .. contents::
-   :depth: 2
+   :depth: 1
    :local:
-
-Motivation
-----------
-
-Imagine the Census Bureau has an entity resolution pipeline that links people between datasets.
-One step in this pipeline, called "blocking," categorizes records into "blocks"
-in order to focus only on the pairs of records that might really be links.
-The current pipeline uses a simple blocking mechanism,
-which won't compare two records unless they match exactly on any of a few key attributes.
-Census wants to explore whether using more sophisticated blocking methods would improve results,
-without changing anything else in the pipeline.
-
-Currently, software for entity resolution is mostly created by researchers.
-Each researcher uses the technologies familiar to them and frames the entity resolution task
-in the way that is most natural for their own examples,
-making it hard to use multiple software modules together.
-As a result, trying a new blocking method is too expensive for the Census Bureau
-to undertake without knowing what the benefit will be.
 
 Introduction
 ------------

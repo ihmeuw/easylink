@@ -1,7 +1,4 @@
 """
-========================
-Data Splitting Utilities
-========================
 
 This module contains utility functions for splitting datasets into smaller datasets.
 One primary use case for this is to run sections of the pipeline in an auto 
