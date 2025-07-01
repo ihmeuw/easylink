@@ -97,18 +97,6 @@ displayed in the console.
 Success! Our pipeline has linked the input data and outputted the results, the clusters of records it found. We'll take a look 
 at these results later and see how the model performed.
 
-.. note:: 
-   The pipeline output in its current state can be a little confusing. Note that the number assigned 
-   to the slurm jobs is different than the order the jobs are executed in - these job IDs are 
-   assigned by `Snakemake <https://snakemake.readthedocs.io/en/stable/>`_, a workflow manager
-   that EasyLink uses to run your linkage pipeline. Also note that several input validation jobs will run before any actual 
-   step implementations.
-
-   Finally, despite the final output line containing the phrase "Missing output files", 
-   this pipeline finished executing successfully. The "Reason" displayed in the output is explaining 
-   why the job was run (the step inputs were ready but the output file did not yet exist), rather than 
-   conveying an error message. We plan to improve these terminal outputs in the future.
-
 Naive model - command line arguments
 ====================================
 This section will explain the command line arguments and show the file we pass to each one, including the 
