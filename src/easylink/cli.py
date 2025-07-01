@@ -214,9 +214,11 @@ def run(
     except SystemExit as e:
         # Snakemake uses SystemExit with exit code 0 for success, non-zero for failure
         if e.code == 0:
-            logger.info("*** FINISHED ***")
+            logger.info("\033[32m*** FINISHED ***\033[0m")  # Green
         else:
-            logger.error(f"Pipeline failed with exit code {e.code}")
+            logger.error(
+                f"\033[31mERROR: Pipeline failed with exit code {e.code}\033[0m"
+            )  # Red
         raise
 
 
