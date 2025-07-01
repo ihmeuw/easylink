@@ -5,7 +5,7 @@ import pytest
 
 from easylink.configuration import Config
 from easylink.runner import (
-    _filter_snakemake_output_simple,
+    _filter_snakemake_output,
     _get_environment_args,
     _get_singularity_args,
 )
@@ -80,37 +80,37 @@ def test_get_environment_args_slurm(default_config_params, unit_test_specificati
         ),
         ("Job 0: Grabbing final output", "Grabbing final output"),
         # Technical details should be suppressed
-        ("    output: spark_logs/spark_master_uri.txt", None),
-        ("    jobid: 9", None),
-        ("    reason: Missing output files: spark_logs/spark_master_uri.txt", None),
-        ("    resources: tmpdir=/tmp", None),
-        ("    wildcards: scatteritem=1-of-2", None),
-        ("", None),
-        ("   ", None),
+        ("    output: spark_logs/spark_master_uri.txt", ""),
+        ("    jobid: 9", ""),
+        ("    reason: Missing output files: spark_logs/spark_master_uri.txt", ""),
+        ("    resources: tmpdir=/tmp", ""),
+        ("    wildcards: scatteritem=1-of-2", ""),
+        ("", ""),
+        ("   ", ""),
         # Other technical messages should be suppressed
-        ("Searching for Spark master URL in spark_logs/spark_master_log.txt", None),
-        ("Starting spark master - logging to spark_logs/spark_master_log.txt", None),
-        ("Spark master URL found: spark://hostname:28508", None),
-        ("DAG of jobs will be updated after completion.", None),
+        ("Searching for Spark master URL in spark_logs/spark_master_log.txt", ""),
+        ("Starting spark master - logging to spark_logs/spark_master_log.txt", ""),
+        ("Spark master URL found: spark://hostname:28508", ""),
+        ("DAG of jobs will be updated after completion.", ""),
     ],
 )
 def test_filter_snakemake_output_simple(input_line, expected_output):
     """Test that the simple Snakemake output filter works correctly."""
-    result = _filter_snakemake_output_simple(input_line)
+    result = _filter_snakemake_output(input_line)
     assert result == expected_output
 
 
-def test_filter_snakemake_output_simple_edge_cases():
+def test_filter_snakemake_edge_cases():
     """Test edge cases for the simple output filter."""
     # Job line without colon should be suppressed
-    assert _filter_snakemake_output_simple("Job 5") is None
+    assert _filter_snakemake_output("Job 5") == ""
 
     # Job line with empty message should return empty string
-    assert _filter_snakemake_output_simple("Job 5: ") == ""
+    assert _filter_snakemake_output("Job 5: ") == ""
 
     # Localrule without colon should still work
-    assert _filter_snakemake_output_simple("localrule test") == "test"
+    assert _filter_snakemake_output("localrule test") == "test"
 
     # Lines that don't match patterns should be suppressed
-    assert _filter_snakemake_output_simple("Some random output") is None
-    assert _filter_snakemake_output_simple("Building DAG of jobs...") is None
+    assert _filter_snakemake_output("Some random output") == ""
+    assert _filter_snakemake_output("Building DAG of jobs...") == ""
