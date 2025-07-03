@@ -21,12 +21,13 @@ if not p.results_dir.exists():
 
 results_dir = p.results_dir
 
-import yaml
 import glob
+
+import yaml
 
 # Read input data YAML file -- note that this assumes it starts with input_data,
 # though that isn't a formal EasyLink requirement!
-input_data_yaml_path = glob.glob(str(results_dir / 'input_data_*.yaml'))
+input_data_yaml_path = glob.glob(str(results_dir / "input_data_*.yaml"))
 assert len(input_data_yaml_path) == 1
 with open(input_data_yaml_path[0], "r") as stream:
     input_data_yaml = yaml.safe_load(stream)

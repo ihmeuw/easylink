@@ -1,3 +1,7 @@
+**0.2.1 - 7/3/25**
+
+ - Skip demo e2e tests if run on Jenkins for slurm compute environment
+
 **0.2.0 - 6/30/25**
 
  - Official demo release

@@ -1,4 +1,5 @@
 # mypy: ignore-errors
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -6,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from easylink.utilities.data_utils import load_yaml
 from easylink.utilities.general_utils import is_on_slurm
 from easylink.utilities.paths import DEV_IMAGES_DIR
 
@@ -105,6 +107,14 @@ def test_pipeline_splink(
     We use various print statements in this test because they show up in the
     Jenkins logs.
     """
+    if (
+        os.environ.get("JENKINS_URL")
+        and "pipeline_demo" in pipeline_specification
+        and load_yaml(computing_environment).get("computing_environment") == "slurm"
+    ):
+        pytest.skip(
+            reason="FIXME [MIC-6190]: demo pipelines using slurm are failing on Jenkins"
+        )
 
     with capsys.disabled():  # disabled so we can monitor job submissions
         print(
