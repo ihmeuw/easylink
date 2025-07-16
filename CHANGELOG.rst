@@ -1,3 +1,7 @@
+**0.2.2 - 7/16/25**
+
+ - Support pinning of vivarium_build_utils; pin vivarium_build_utils>=1.1.0,<2.0.0
+
 **0.2.1 - 7/3/25**
 
  - Skip demo e2e tests if run on Jenkins for slurm compute environment
