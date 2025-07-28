@@ -1,4 +1,5 @@
 # mypy: ignore-errors
+import math
 import os
 import subprocess
 import sys
@@ -154,38 +155,28 @@ def test_pipeline_splink(
             .reset_index(drop=True)
         )
 
-        print(
-            results.compare(
-                correct_results, keep_equal=True, result_names=("actual", "expected")
-            )
-        )
-
-        # This overly-tricky bit of code checks that the actual clusters induced are the same,
+        # This overly-tricky bit of code prints the actual clusters induced that are not the same,
         # whether or not they are labeled the same.
-        print(
-            frozenset(
-                results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
-            ).difference(
-                frozenset(
-                    correct_results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
-                )
-            )
-        )
-
         results_set = frozenset(
             results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
         )
         correct_set = frozenset(
             correct_results.groupby("Cluster ID")["Input Record ID"].apply(frozenset)
         )
-        print(pipeline_specification)
+        if results_set != correct_set:
+            print('Clusters in run results not in "correct" results')
+            print(results_set.difference(correct_set))
+            print('Clusters in "correct" results not in run results')
+            print(correct_set.difference(results_set))
+            print(f"{results_set.intersection(correct_set)} clusters in common (not shown)")
+
         if "improved" in pipeline_specification:
             # improved model comparisons appear non-deterministic leading to inconsistent
             # results for equality assertion
-            wiggle_room = 0.005 * len(correct_results)
-            print(wiggle_room)
-            assert (len(results_set.difference(correct_set)) < wiggle_room) and (
-                len(correct_set.difference(results_set)) < wiggle_room
+            wiggle_room = math.floor(0.005 * len(correct_results))
+            print(f"Allowing {wiggle_room} clusters of difference in each direction")
+            assert (len(results_set.difference(correct_set)) <= wiggle_room) and (
+                len(correct_set.difference(results_set)) <= wiggle_room
             )
         else:
             assert results_set == correct_set
