@@ -1,3 +1,7 @@
+**0.2.3 - 7/28/25**
+
+ - Bugfix: fix nondeterministic test diagnostics
+
 **0.2.2 - 7/16/25**
 
  - Support pinning of vivarium_build_utils; pin vivarium_build_utils>=1.1.0,<2.0.0
