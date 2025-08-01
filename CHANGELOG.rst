@@ -1,3 +1,7 @@
+**0.2.4 - 8/4/25**
+
+ - Remove deprecated reusable_pipeline 'use_shared_fs' arg from Jenkinsfile
+
 **0.2.3 - 7/28/25**
 
  - Bugfix: fix nondeterministic test diagnostics
