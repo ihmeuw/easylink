@@ -43,7 +43,8 @@ if __name__ == "__main__":
         long_description = f.read()
 
     install_requirements = [
-        "vivarium_build_utils>=1.1.0,<2.0.0",
+        # "vivarium_build_utils>=1.1.0,<2.0.0",
+        "vivarium_build_utils @ git+https://github.com/ihmeuw/vivarium_build_utils@sbachmei/mic-6274/create-envs-in-team-folder",
         "click",
         "docker",
         "graphviz",
