@@ -22,7 +22,8 @@ Note that updating the shared repo will take affect on the next pipeline invocat
 
 // Load the get_vbu_version function from vivarium_build_utils/bootstrap/
 // (the directory to load from is defined in the Jenkins shared library configuration)
-@Library("get_vbu_version@main") _
+// TODO PUT BACK TO MAIN
+@Library("get_vbu_version@sbachmei/mic-6274/create-envs-in-team-folder") _ 
 
 // Load the full vivarium_build_utils library at the expected version
 library("vivarium_build_utils@${get_vbu_version()}")
