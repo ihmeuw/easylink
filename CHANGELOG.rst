@@ -1,3 +1,7 @@
+**0.2.5 - 9/30/25**
+
+ - Remove docstring mod reference to click
+
 **0.2.4 - 8/4/25**
 
  - Remove deprecated reusable_pipeline 'use_shared_fs' arg from Jenkinsfile
