@@ -1,4 +1,4 @@
-**0.2.5 - 10/1/25**
+**0.2.5 - 10/2/25**
 
  - Remove docstring mod reference to click
 
