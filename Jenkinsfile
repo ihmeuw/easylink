@@ -28,7 +28,8 @@ Note that updating the shared repo will take affect on the next pipeline invocat
 library("vivarium_build_utils@${get_vbu_version()}")
 
 reusable_pipeline(
-    scheduled_branches: ["main"], 
+    // # TODO: mic-6714 Add main back into scheduled branches
+    scheduled_branches: [], 
     test_types: ["unit", "integration", "e2e"], 
     upstream_repos: ["layered_config_tree"], 
     requires_slurm: true, 
