@@ -197,28 +197,12 @@ def download_image(
             response.raise_for_status()
             break
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429:
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2**attempt)
-                    logger.warning(
-                        f"Rate limited. Retrying in {delay} seconds... (attempt {attempt + 1}/{max_retries})"
-                    )
-                    time.sleep(delay)
-                else:
-                    # Final attempt after waiting 61 seconds
-                    logger.warning(
-                        "All retries exhausted. Waiting 61 seconds for final attempt..."
-                    )
-                    time.sleep(61)
-                    try:
-                        response = requests.get(url, stream=True)
-                        response.raise_for_status()
-                        break
-                    except requests.exceptions.HTTPError:
-                        logger.error(
-                            f"Final attempt failed after waiting 61 seconds for {filename}"
-                        )
-                        raise
+            if e.response.status_code == 429 and attempt < max_retries - 1:
+                delay = base_delay * (2**attempt)
+                logger.warning(
+                    f"Rate limited. Retrying in {delay} seconds... (attempt {attempt + 1}/{max_retries})"
+                )
+                time.sleep(delay)
             else:
                 raise
 
