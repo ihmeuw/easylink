@@ -8,6 +8,7 @@ This module contains utility functions for handling data files and directories.
 import hashlib
 import os
 import shutil
+import time
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -184,10 +185,26 @@ def download_image(
     if not images_dir.exists():
         images_dir.mkdir(parents=True, exist_ok=True)
 
-    url = f"https://zenodo.org/record/{record_id}/files/{filename}?download=1"
+    url = f"https://zenodo.org/records/{record_id}/files/{filename}?download=1"
 
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
+    # Retry logic for rate limiting
+    max_retries = 5
+    base_delay = 2  # seconds
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, stream=True)
+            response.raise_for_status()
+            break
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 429 and attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(
+                    f"Rate limited. Retrying in {delay} seconds... (attempt {attempt + 1}/{max_retries})"
+                )
+                time.sleep(delay)
+            else:
+                raise
 
     total_size = int(response.headers.get("Content-Length", 0))
     output_path = images_dir / filename

@@ -1,3 +1,7 @@
+**0.2.6 - 12/26/25**
+
+ - Implement backoff and retry when downloading from zenodo
+
 **0.2.5 - 10/2/25**
 
  - Remove docstring mod reference to click
