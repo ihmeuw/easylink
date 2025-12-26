@@ -197,7 +197,7 @@ def download_image(
             response.raise_for_status()
             break
         except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 429 and attempt < max_retries - 1:
+            if response.status_code == 429 and attempt < max_retries - 1:
                 delay = base_delay * (2**attempt)
                 logger.warning(
                     f"Rate limited. Retrying in {delay} seconds... (attempt {attempt + 1}/{max_retries})"
