@@ -1,4 +1,4 @@
-**0.2.6 - 12/26/25**
+**0.2.6 - 12/29/25**
 
  - Implement backoff and retry when downloading from zenodo
 
