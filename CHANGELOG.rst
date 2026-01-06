@@ -1,3 +1,7 @@
+**0.2.7 - 01/06/26**
+
+ - Fail deployment if changelog date does not match current date
+
 **0.2.6 - 12/29/25**
 
  - Implement backoff and retry when downloading from zenodo
