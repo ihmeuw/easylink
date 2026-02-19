@@ -18,7 +18,7 @@ to support users in creating their own implementations, and is not yet stable en
 
 .. _python_support:
 
-**Supported Python versions: 3.11, 3.12**
+**Supported Python versions: 3.11, 3.12, 3.13**
 
 .. _end_python_support:
 

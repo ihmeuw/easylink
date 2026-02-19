@@ -1,3 +1,7 @@
+**0.3.0 - 02/19/26**
+
+ - Add support for Python 3.13
+
 **0.2.7 - 01/06/26**
 
  - Fail deployment if changelog date does not match current date
