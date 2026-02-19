@@ -60,7 +60,7 @@ There are a few things to install in order to use this package:
 
   ::
 
-  $ conda create --name easylink -c conda-forge python=3.12 graphviz 'gcc<14' -y
+  $ conda create --name easylink -c conda-forge python=3.13 graphviz 'gcc<14' -y
   $ conda activate easylink
 
 - Install easylink in the environment.
