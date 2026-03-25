@@ -1,3 +1,7 @@
+**0.2.8 - 03/25/26**
+
+ - Remove upstream_repos from Jenkinsfile
+
 **0.2.7 - 01/06/26**
 
  - Fail deployment if changelog date does not match current date
