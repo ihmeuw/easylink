@@ -30,7 +30,6 @@ library("vivarium_build_utils@${get_vbu_version()}")
 reusable_pipeline(
     scheduled_branches: ["main"], 
     test_types: ["unit", "integration", "e2e"], 
-    upstream_repos: ["layered_config_tree"], 
     requires_slurm: true, 
     run_mypy: false,
 )
